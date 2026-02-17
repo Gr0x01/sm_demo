@@ -103,30 +103,32 @@ export async function POST(request: Request) {
       const ext = path.extname(heroImage).slice(1); // "webp"
       const mimeType = ext === "webp" ? "image/webp" : `image/${ext}`;
 
-      // Build edit-style prompt
-      const prompt = buildEditPrompt(selections);
+      // Build edit-style prompt + load swatch images
+      const { prompt, swatches } = await buildEditPrompt(selections);
+
+      // Assemble multimodal message: base room photo + swatch images + text prompt
+      const contentParts: Array<
+        | { type: "image"; image: Buffer; mediaType: string }
+        | { type: "text"; text: string }
+      > = [
+        { type: "image", image: imageBuffer, mediaType: mimeType },
+      ];
+
+      // Add each swatch image with a label
+      for (const swatch of swatches) {
+        contentParts.push({ type: "text", text: `[Swatch: ${swatch.label}]` });
+        contentParts.push({ type: "image", image: swatch.buffer, mediaType: swatch.mediaType });
+      }
+
+      // Add the main prompt last
+      contentParts.push({ type: "text", text: prompt });
 
       const result = await generateText({
         model: google("gemini-2.5-flash-preview-04-17"),
         providerOptions: {
           google: { responseModalities: ["TEXT", "IMAGE"] },
         },
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "image",
-                image: imageBuffer,
-                mediaType: mimeType,
-              },
-              {
-                type: "text",
-                text: prompt,
-              },
-            ],
-          },
-        ],
+        messages: [{ role: "user", content: contentParts }],
       });
 
       const imageFile = result.files?.find((f) =>

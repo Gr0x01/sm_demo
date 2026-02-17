@@ -217,7 +217,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selections: visualSelections }),
+        body: JSON.stringify({ selections: visualSelections, heroImage: activeStep.heroImage }),
       });
 
       if (!res.ok) throw new Error("Generation failed");
