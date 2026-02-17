@@ -39,6 +39,54 @@ body {
   }
 }
 
+/* Step content fade-slide-in animation */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade-slide-in {
+  animation: fadeSlideIn 300ms ease-out both;
+}
+
+/* Page fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fade-in {
+  animation: fadeIn 250ms ease-out both;
+}
+
+/* Image crossfade reveal */
+@keyframes imageReveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-image-reveal {
+  animation: imageReveal 600ms ease-out both;
+}
+
+/* Price highlight pulse */
+@keyframes pricePulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.08); color: var(--color-accent); }
+  100% { transform: scale(1); }
+}
+.animate-price-pulse {
+  animation: pricePulse 400ms ease-out;
+}
+
+/* GeneratingOverlay fade */
+.overlay-enter {
+  animation: fadeIn 200ms ease-out both;
+}
+
 /* Hide scrollbar for room strip */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

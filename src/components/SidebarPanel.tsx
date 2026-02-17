@@ -36,6 +36,18 @@ export function SidebarPanel({
     step.sections[0]?.title ?? ""
   );
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const [pricePulse, setPricePulse] = useState(false);
+  const prevTotal = useRef(total);
+
+  // Price pulse animation
+  useEffect(() => {
+    if (total !== prevTotal.current) {
+      prevTotal.current = total;
+      setPricePulse(true);
+      const timer = setTimeout(() => setPricePulse(false), 400);
+      return () => clearTimeout(timer);
+    }
+  }, [total]);
 
   // Track active section via IntersectionObserver
   useEffect(() => {
@@ -162,7 +174,7 @@ export function SidebarPanel({
       <div className="border-t border-gray-200 pt-3">
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-500">Total Upgrades</span>
-          <span className="text-lg font-bold text-[var(--color-navy)]">
+          <span className={`text-lg font-bold text-[var(--color-navy)] ${pricePulse ? "animate-price-pulse" : ""}`}>
             {total === 0 ? "Base Package" : `+$${total.toLocaleString()}`}
           </span>
         </div>

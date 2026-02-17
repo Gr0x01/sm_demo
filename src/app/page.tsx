@@ -43,35 +43,41 @@ export default function Home() {
 
   if (page === "landing") {
     return (
-      <LandingHero
-        onStart={() => setPage("picker")}
-        buyerName={buyer?.buyerName}
-        planName={buyer?.planName}
-        community={buyer?.community}
-      />
+      <div key="landing" className="animate-fade-in">
+        <LandingHero
+          onStart={() => setPage("picker")}
+          buyerName={buyer?.buyerName}
+          planName={buyer?.planName}
+          community={buyer?.community}
+        />
+      </div>
     );
   }
 
   if (page === "summary" && summaryData) {
     return (
-      <UpgradeSummary
-        selections={summaryData.selections}
-        quantities={summaryData.quantities}
-        generatedImageUrl={summaryData.generatedImageUrl}
-        planName={buyer?.planName ?? "Kinkade Plan"}
-        community={buyer?.community ?? "McClain Landing Phase 7"}
-        onBack={() => setPage("picker")}
-      />
+      <div key="summary" className="animate-fade-in">
+        <UpgradeSummary
+          selections={summaryData.selections}
+          quantities={summaryData.quantities}
+          generatedImageUrl={summaryData.generatedImageUrl}
+          planName={buyer?.planName ?? "Kinkade Plan"}
+          community={buyer?.community ?? "McClain Landing Phase 7"}
+          onBack={() => setPage("picker")}
+        />
+      </div>
     );
   }
 
   return (
-    <UpgradePicker
-      onFinish={(data) => {
-        setSummaryData(data);
-        setPage("summary");
-      }}
-      buyerId={BUYER_ID}
-    />
+    <div key="picker" className="animate-fade-in">
+      <UpgradePicker
+        onFinish={(data) => {
+          setSummaryData(data);
+          setPage("summary");
+        }}
+        buyerId={BUYER_ID}
+      />
+    </div>
   );
 }

@@ -11,6 +11,8 @@ import { StepContent } from "./StepContent";
 import { PriceTracker } from "./PriceTracker";
 import { GenerateButton } from "./GenerateButton";
 import { SidebarPanel } from "./SidebarPanel";
+import { SyncModal } from "./SyncModal";
+import { getSyncPartner } from "@/lib/sync-pairs";
 
 const visualSubCategoryIds = getVisualSubCategoryIds();
 
@@ -111,6 +113,13 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
   const hasLoadedRef = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(120);
+  const [syncPrompt, setSyncPrompt] = useState<{
+    sourceSubId: string;
+    targetSubId: string;
+    optionName: string;
+    targetOptionId: string;
+    label: string;
+  } | null>(null);
 
   // Measure header height dynamically
   useEffect(() => {
@@ -191,8 +200,37 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
   const handleSelect = useCallback(
     (subCategoryId: string, optionId: string) => {
       dispatch({ type: "SELECT_OPTION", subCategoryId, optionId });
+
+      // Check if this subcategory has a sync partner
+      const partner = getSyncPartner(subCategoryId);
+      if (!partner) return;
+
+      const sourceSub = subCategoryMap.get(subCategoryId);
+      const targetSub = subCategoryMap.get(partner.partnerSubId);
+      if (!sourceSub || !targetSub) return;
+
+      const selectedOption = sourceSub.options.find((o) => o.id === optionId);
+      if (!selectedOption) return;
+
+      // Find matching option in partner by name
+      const matchingOption = targetSub.options.find(
+        (o) => o.name === selectedOption.name
+      );
+      if (!matchingOption) return;
+
+      // Don't prompt if partner already has the same selection
+      const currentPartnerSelection = state.selections[partner.partnerSubId];
+      if (currentPartnerSelection === matchingOption.id) return;
+
+      setSyncPrompt({
+        sourceSubId: subCategoryId,
+        targetSubId: partner.partnerSubId,
+        optionName: selectedOption.name,
+        targetOptionId: matchingOption.id,
+        label: partner.label,
+      });
     },
-    []
+    [state.selections]
   );
 
   const handleSetQuantity = useCallback(
@@ -301,7 +339,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           {/* Right Column — scrollable options */}
           <div className="flex-1 min-w-0 pb-20 lg:pb-5">
             {/* Mobile-only: Hero image + generate button */}
-            <div className="lg:hidden">
+            <div key={activeStepId} className="lg:hidden animate-fade-slide-in">
               <StepHero
                 step={activeStep}
                 generatedImageUrl={activeStep.showGenerateButton ? state.generatedImageUrl : null}
@@ -350,6 +388,25 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
       <div className="lg:hidden">
         <PriceTracker total={total} />
       </div>
+
+      {/* Sync hardware modal */}
+      {syncPrompt && (
+        <SyncModal
+          sourceName={subCategoryMap.get(syncPrompt.sourceSubId)?.name ?? ""}
+          targetName={subCategoryMap.get(syncPrompt.targetSubId)?.name ?? ""}
+          optionName={syncPrompt.optionName}
+          label={syncPrompt.label}
+          onSync={() => {
+            dispatch({
+              type: "SELECT_OPTION",
+              subCategoryId: syncPrompt.targetSubId,
+              optionId: syncPrompt.targetOptionId,
+            });
+            setSyncPrompt(null);
+          }}
+          onDismiss={() => setSyncPrompt(null)}
+        />
+      )}
     </div>
   );
 }

@@ -22,7 +22,7 @@ export function StepContent({
   onSetQuantity,
 }: StepContentProps) {
   return (
-    <div className="space-y-8 mt-5">
+    <div key={step.id} className="space-y-8 mt-5 animate-fade-slide-in">
       {step.sections.map((section) => {
         const subCategories = section.subCategoryIds
           .map((id) => subCategoryMap.get(id))
