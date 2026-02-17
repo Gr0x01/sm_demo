@@ -285,8 +285,9 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
         ref={headerRef}
         className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200"
       >
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center">
+          {/* Logo — left */}
+          <div className="flex items-center gap-3 shrink-0">
             <img src="/logo.svg" alt="Stone Martin Builders" className="h-5 text-[var(--color-navy)]" />
             <div>
               <h1 className="text-sm font-bold text-[var(--color-navy)]">
@@ -297,22 +298,24 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               </p>
             </div>
           </div>
+
+          {/* Step nav — center */}
+          <div className="flex-1 min-w-0">
+            <StepNav
+              steps={steps}
+              activeStepId={activeStepId}
+              completionMap={completionMap}
+              onSelectStep={setActiveStepId}
+            />
+          </div>
+
+          {/* Finish — right */}
           <button
             onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrl: state.generatedImageUrl })}
-            className="text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors cursor-pointer"
+            className="text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors cursor-pointer shrink-0"
           >
             Finish &rarr;
           </button>
-        </div>
-
-        {/* Step nav inside header for sticky behavior */}
-        <div className="max-w-7xl mx-auto px-4 pb-2">
-          <StepNav
-            steps={steps}
-            activeStepId={activeStepId}
-            completionMap={completionMap}
-            onSelectStep={setActiveStepId}
-          />
         </div>
       </header>
 
