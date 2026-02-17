@@ -9,7 +9,12 @@ import { formatPrice } from "@/lib/pricing";
 // "Fairmont" → "Fairmont"
 function getShortName(name: string): string {
   const parts = name.split(" - ");
-  if (parts.length >= 3) return parts[1]; // color is the middle segment
+  if (parts.length >= 3) {
+    // Backsplash: "Baker Blvd 4x16 - White Gloss - 3rd Stagger Lay" → color is middle
+    // Flooring:   "7" LVP - Polaris Plus - Toasted Taupe" → color is last
+    const last = parts[parts.length - 1];
+    return last.toLowerCase().includes("lay") ? parts[1] : last;
+  }
   if (parts.length === 2) return parts[1]; // color is after the dash
   return name;
 }
