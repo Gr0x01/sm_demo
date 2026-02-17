@@ -19,7 +19,7 @@ export function SubCategoryGroup({
       <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 px-1">
         {subCategory.name}
         {subCategory.isVisual && (
-          <span className="ml-1.5 text-[var(--color-gold)]" title="Affects kitchen visualization">
+          <span className="ml-1.5 text-[var(--color-accent)]" title="Affects kitchen visualization">
             &#9679;
           </span>
         )}

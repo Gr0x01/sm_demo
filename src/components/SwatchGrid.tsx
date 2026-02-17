@@ -33,10 +33,10 @@ export function SwatchGrid({ subCategory, selectedOptionId, onSelect }: SwatchGr
             <button
               key={option.id}
               onClick={() => onSelect(option.id)}
-              className={`group relative flex flex-col items-center rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+              className={`group relative flex flex-col items-center overflow-hidden border-2 transition-all duration-150 cursor-pointer ${
                 isSelected
-                  ? "border-[var(--color-gold)] shadow-md bg-amber-50/50"
-                  : "border-gray-200 hover:border-gray-300 bg-white"
+                  ? "border-[var(--color-accent)] shadow-md bg-blue-50/50"
+                  : "border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white active:scale-[0.97]"
               }`}
             >
               {/* Swatch image or color block */}
@@ -45,8 +45,10 @@ export function SwatchGrid({ subCategory, selectedOptionId, onSelect }: SwatchGr
                   <img
                     src={option.swatchUrl}
                     alt={option.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                   />
+                ) : option.swatchColor ? (
+                  <div className="w-full h-full" style={{ backgroundColor: option.swatchColor }} />
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
                     <span className="text-[10px] text-gray-400 text-center px-1 leading-tight">
@@ -55,19 +57,21 @@ export function SwatchGrid({ subCategory, selectedOptionId, onSelect }: SwatchGr
                   </div>
                 )}
 
-                {/* Selected checkmark */}
-                {isSelected && (
-                  <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-[var(--color-gold)] flex items-center justify-center shadow">
-                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                )}
+                {/* Selected checkmark — always rendered, animated via opacity */}
+                <div
+                  className={`absolute top-1 right-1 w-5 h-5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shadow transition-all duration-150 ${
+                    isSelected ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                  }`}
+                >
+                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
 
                 {/* Nudge badge */}
                 {option.nudge && (
-                  <div className="absolute top-1 left-1 bg-amber-50/90 border border-amber-200 rounded px-1 py-0.5">
-                    <span className="text-[8px] font-bold uppercase tracking-wide text-[var(--color-gold)]">
+                  <div className="absolute top-1 left-1 bg-blue-50/90 border border-blue-200 px-1 py-0.5">
+                    <span className="text-[8px] font-bold uppercase tracking-wide text-[var(--color-accent)]">
                       Popular
                     </span>
                   </div>

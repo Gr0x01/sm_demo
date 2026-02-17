@@ -156,7 +156,7 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
   }, [state.selections]);
 
   return (
-    <div className="min-h-screen bg-[var(--color-warm-white)]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
@@ -173,7 +173,7 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
           </div>
           <button
             onClick={onFinish}
-            className="text-xs font-medium text-[var(--color-gold)] hover:text-[var(--color-gold-light)] transition-colors cursor-pointer"
+            className="text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors cursor-pointer"
           >
             Finish &rarr;
           </button>
@@ -207,7 +207,7 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
               hasChanges={state.visualSelectionsChangedSinceLastGenerate}
             />
             {state.error && (
-              <div className="mt-3 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              <div className="mt-3 bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
                 {state.error}
               </div>
             )}
@@ -226,7 +226,7 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
           <div className="mt-10">
             <button
               onClick={() => setShowOtherUpgrades(!showOtherUpgrades)}
-              className="w-full flex items-center justify-between py-3 px-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <span className="text-sm font-semibold text-[var(--color-navy)]">
@@ -238,12 +238,12 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
               </div>
               <div className="flex items-center gap-3">
                 {orphanTotal > 0 && (
-                  <span className="text-xs font-medium text-[var(--color-gold)]">
+                  <span className="text-xs font-medium text-[var(--color-accent)]">
                     +${orphanTotal.toLocaleString()}
                   </span>
                 )}
                 <svg
-                  className={`w-4 h-4 text-gray-400 transition-transform ${showOtherUpgrades ? "rotate-180" : ""}`}
+                  className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showOtherUpgrades ? "rotate-180" : ""}`}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -254,19 +254,21 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
               </div>
             </button>
 
-            {showOtherUpgrades && (
-              <div className="mt-2 space-y-2">
-                {orphanCategories.map((category) => (
-                  <CategoryAccordion
-                    key={category.id}
-                    category={category}
-                    selections={state.selections}
-                    onSelect={handleSelect}
-                    categoryTotal={getCategoryTotal(category.subCategories, state.selections)}
-                  />
-                ))}
+            <div className="accordion-content" data-open={showOtherUpgrades}>
+              <div>
+                <div className="mt-2 space-y-2">
+                  {orphanCategories.map((category) => (
+                    <CategoryAccordion
+                      key={category.id}
+                      category={category}
+                      selections={state.selections}
+                      onSelect={handleSelect}
+                      categoryTotal={getCategoryTotal(category.subCategories, state.selections)}
+                    />
+                  ))}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>

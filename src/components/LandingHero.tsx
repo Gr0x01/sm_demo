@@ -2,15 +2,15 @@
 
 export function LandingHero({ onStart }: { onStart: () => void }) {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-warm-white)] px-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6">
       <div className="max-w-2xl text-center">
         <div className="mb-8">
-          <h2 className="text-sm font-semibold tracking-widest uppercase text-[var(--color-gold)] mb-4">
+          <h2 className="text-sm font-semibold tracking-widest uppercase text-[var(--color-accent)] mb-4">
             Stone Martin Builders
           </h2>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight text-[var(--color-navy)] mb-6">
             Your buyers choose $40K+ in upgrades from a{" "}
-            <span className="text-[var(--color-gold)]">printed sheet.</span>
+            <span className="text-[var(--color-accent)]">printed sheet.</span>
           </h1>
           <p className="text-lg text-gray-600 leading-relaxed">
             No visuals. No price feedback. No upsell intelligence.
@@ -21,7 +21,7 @@ export function LandingHero({ onStart }: { onStart: () => void }) {
 
         <button
           onClick={onStart}
-          className="inline-flex items-center gap-2 px-8 py-4 bg-[var(--color-navy)] text-white text-lg font-semibold rounded-lg hover:bg-[#243358] transition-colors shadow-lg hover:shadow-xl cursor-pointer"
+          className="inline-flex items-center gap-2 px-8 py-4 bg-[var(--color-navy)] text-white text-lg font-semibold hover:bg-[#243358] transition-all duration-150 shadow-lg hover:shadow-xl active:scale-[0.98] cursor-pointer"
         >
           See It In Action
           <svg

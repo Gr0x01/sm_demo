@@ -25,7 +25,10 @@ export function buildPrompt(
   for (const [subId, optId] of Object.entries(visualSelections)) {
     const found = findOption(subId, optId);
     if (found?.option.promptDescriptor) {
-      descriptors.push(found.option.promptDescriptor);
+      const desc = found.option.swatchColor
+        ? `${found.option.promptDescriptor} (exact color: ${found.option.swatchColor})`
+        : found.option.promptDescriptor;
+      descriptors.push(desc);
     }
   }
 

@@ -3,6 +3,7 @@ export interface Option {
   name: string;
   price: number;
   swatchUrl?: string;
+  swatchColor?: string;
   promptDescriptor?: string;
   nudge?: string;
 }

@@ -10,10 +10,10 @@ interface RoomHeroProps {
 
 export function RoomHero({ room, generatedImageUrl, isGenerating }: RoomHeroProps) {
   return (
-    <div className="relative w-full aspect-[16/9] max-h-[45vh] rounded-xl overflow-hidden bg-gray-100">
+    <div className="relative w-full aspect-[16/9] max-h-[45vh] overflow-hidden bg-gray-100">
       {isGenerating && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
-          <div className="w-12 h-12 border-4 border-[var(--color-gold)] border-t-transparent rounded-full animate-spin mb-4" />
+          <div className="w-12 h-12 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin mb-4" />
           <p className="text-sm font-medium text-[var(--color-navy)]">
             Generating your kitchen...
           </p>

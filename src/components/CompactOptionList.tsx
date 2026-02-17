@@ -22,28 +22,34 @@ export function CompactOptionList({ subCategory, selectedOptionId, onSelect }: C
             <button
               key={option.id}
               onClick={() => onSelect(option.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md border transition-all cursor-pointer text-left ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 border transition-all duration-150 cursor-pointer text-left ${
                 isSelected
-                  ? "border-[var(--color-gold)] bg-amber-50/50"
-                  : "border-gray-200 hover:border-gray-300 bg-white"
+                  ? "border-[var(--color-accent)] bg-blue-50/50"
+                  : "border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white active:scale-[0.99]"
               }`}
             >
               <div
-                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors duration-150 ${
                   isSelected
-                    ? "border-[var(--color-gold)] bg-[var(--color-gold)]"
+                    ? "border-[var(--color-accent)] bg-[var(--color-accent)]"
                     : "border-gray-300"
                 }`}
               >
-                {isSelected && (
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                )}
+                <svg
+                  className={`w-2.5 h-2.5 text-white transition-all duration-150 ${
+                    isSelected ? "opacity-100 scale-100" : "opacity-0 scale-50"
+                  }`}
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={3}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
               <span className="text-sm text-[var(--color-navy)] flex-1 truncate">{option.name}</span>
               {option.nudge && (
-                <span className="flex-shrink-0 text-[9px] font-semibold uppercase text-[var(--color-gold)] bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                <span className="flex-shrink-0 text-[9px] font-semibold uppercase text-[var(--color-accent)] bg-blue-50 px-1.5 py-0.5 border border-blue-200">
                   {option.nudge}
                 </span>
               )}

@@ -17,17 +17,17 @@ export function RoomStrip({ rooms, activeRoomId, onSelectRoom }: RoomStripProps)
           <button
             key={room.id}
             onClick={() => onSelectRoom(room.id)}
-            className={`flex-shrink-0 group cursor-pointer relative rounded-lg overflow-hidden transition-all ${
+            className={`flex-shrink-0 group cursor-pointer relative overflow-hidden transition-all duration-150 ${
               isActive
-                ? "ring-2 ring-[var(--color-gold)] shadow-md"
-                : "ring-1 ring-gray-200 opacity-70 hover:opacity-100 hover:ring-gray-300"
+                ? "ring-2 ring-[var(--color-accent)] shadow-md"
+                : "ring-1 ring-gray-200 opacity-70 hover:opacity-100 hover:ring-gray-300 hover:shadow-sm active:scale-[0.97]"
             }`}
           >
             <div className="w-28 h-20 relative">
               <img
                 src={room.image}
                 alt={room.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
               <span className="absolute bottom-1 left-1.5 right-1.5 text-[10px] font-semibold text-white leading-tight">

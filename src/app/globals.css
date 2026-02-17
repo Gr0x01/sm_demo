@@ -1,17 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  --color-navy: #1a2744;
-  --color-gold: #c5943a;
-  --color-gold-light: #d4a94e;
-  --color-warm-white: #faf8f5;
-  --color-warm-gray: #f0ece6;
+  --color-navy: #1b2d4e;
+  --color-accent: #2767b1;
+  --color-accent-light: #3578c4;
 }
 
 body {
   font-family: "Inter", system-ui, -apple-system, sans-serif;
   color: var(--color-navy);
   background: white;
+}
+
+/* Accordion slide animation using grid rows */
+.accordion-content {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease-out;
+}
+.accordion-content[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.accordion-content > div {
+  overflow: hidden;
 }
 
 /* Hide scrollbar for room strip */

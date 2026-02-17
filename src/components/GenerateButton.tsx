@@ -17,10 +17,10 @@ export function GenerateButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`w-full py-3 px-6 rounded-lg font-semibold text-sm transition-all cursor-pointer ${
+      className={`w-full py-3 px-6 font-semibold text-sm transition-all duration-150 cursor-pointer ${
         disabled
           ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-          : "bg-[var(--color-gold)] text-[var(--color-navy)] hover:bg-[var(--color-gold-light)] shadow-md hover:shadow-lg"
+          : "bg-[var(--color-navy)] text-white hover:bg-[#243a5e] shadow-md hover:shadow-lg active:scale-[0.98]"
       }`}
     >
       {isGenerating ? (

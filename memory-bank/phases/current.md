@@ -23,13 +23,17 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - [x] Social proof nudges on ~15 high-value options
 - [x] Default selections (all $0 "included" options)
 
-### Stream C: Swatch Image Scraping — NOT STARTED
-- [ ] Scrape stonemartinbuilders.com/media/ for swatch images
-- [ ] Tools: ScrapingDog API (700k credits) or Apify
-- [ ] Targets: cabinet styles, cabinet colors, hardware, faucets, appliances
-- [ ] Stock images for: countertops, backsplash, flooring, sinks
-- [ ] Store in /public/swatches/ with consistent naming
-- [ ] Map swatchUrl in options-data.ts
+### Stream C: Swatch Image Scraping ✅
+- [x] Scraped stonemartinbuilders.com/media/ using ScrapingDog API (JS rendering)
+- [x] Downloaded 166 swatch images across 8 categories
+- [x] Cabinet styles (3), cabinet colors (12), cabinet hardware (22)
+- [x] Countertops (16 stones + 3 edges), backsplash (30+ tiles)
+- [x] Faucets (18), sinks (8), flooring (12 LVP + hardwood), appliances (20+)
+- [x] Stored in /public/swatches/{category}/ with consistent naming
+- [x] Mapped 146 swatchUrl entries in options-data.ts
+- [x] Build passes clean
+- Note: Delray hardwood (3 colors) + Crescent Beach not on SM site — no swatches
+- Note: Mythology Santorini backsplash — no exact image, used closest match
 
 ### Stream D: Upgrade Picker UI — DONE (room-based redesign)
 - [x] **Room-based visual tour layout** (replaced category accordion approach — see D18)
@@ -76,6 +80,9 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - Deleted dead components: KitchenViewer.tsx, OptionsPanel.tsx
 - Full options data from Kinkade PDF (all 15 categories)
 - Image generation pipeline with cache, validation, rate limiting
+- **166 swatch images scraped** from stonemartinbuilders.com via ScrapingDog API
+- **146 swatchUrl mappings** applied to options-data.ts (all visual subcategories covered)
+- Swatch images in `/public/swatches/{appliances,backsplash,cabinets,countertops,electrical,faucets,flooring,sinks}/`
 - Code reviewed — all critical/medium issues fixed
 - `npm run build` passes clean
 - Stone Martin logo saved as `public/logo.svg`
@@ -83,16 +90,14 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 
 ## What's Next
 1. **Polish pass** — mobile responsiveness, room strip auto-scroll, transitions
-2. **Swatch images** — scrape SM website for real product thumbnails (Stream C)
-3. **Image generation testing** — try different models, tune prompt quality
-4. **Pre-generation** — cache popular combos for instant demo wow factor
-5. **GuidedNudge** — first-visit overlay pointing to pre-cached countertop upgrade
-6. **Deploy** — push to Vercel
+2. **Image generation testing** — try different models, tune prompt quality
+3. **Pre-generation** — cache popular combos for instant demo wow factor
+4. **GuidedNudge** — first-visit overlay pointing to pre-cached countertop upgrade
+5. **Deploy** — push to Vercel
 
 ## Blockers
 - Need `.env.local` with real keys (OPENAI_API_KEY, Supabase vars)
 - Supabase project needs `generated_images` table + public `kitchen-images` bucket
-- Swatch scraping needs ScrapingDog/Apify execution
 
 ## Open Questions
 1. Contact info for CTA: What email/phone for the "Let's talk" screen?
