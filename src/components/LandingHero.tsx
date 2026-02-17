@@ -1,6 +1,18 @@
 "use client";
 
-export function LandingHero({ onStart }: { onStart: () => void }) {
+interface LandingHeroProps {
+  onStart: () => void;
+  buyerName?: string;
+  planName?: string;
+  community?: string;
+}
+
+export function LandingHero({
+  onStart,
+  buyerName,
+  planName = "Kinkade",
+  community = "McClain Landing Phase 7",
+}: LandingHeroProps) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6">
       <div className="max-w-2xl text-center">
@@ -8,14 +20,14 @@ export function LandingHero({ onStart }: { onStart: () => void }) {
           <h2 className="text-sm font-semibold tracking-widest uppercase text-[var(--color-accent)] mb-4">
             Stone Martin Builders
           </h2>
-          <h1 className="text-4xl md:text-5xl font-bold leading-tight text-[var(--color-navy)] mb-6">
-            Your buyers choose $40K+ in upgrades from a{" "}
-            <span className="text-[var(--color-accent)]">printed sheet.</span>
+          <h1 className="text-4xl md:text-5xl font-bold leading-tight text-[var(--color-navy)] mb-4">
+            {buyerName
+              ? <>{buyerName}&rsquo;s <span className="text-[var(--color-accent)]">Upgrade Selections</span></>
+              : <>Your <span className="text-[var(--color-accent)]">Upgrade Selections</span></>
+            }
           </h1>
-          <p className="text-lg text-gray-600 leading-relaxed">
-            No visuals. No price feedback. No upsell intelligence.
-            <br />
-            What if they could <em>see</em> their choices come to life?
+          <p className="text-lg text-gray-500">
+            {planName} Plan &mdash; {community}
           </p>
         </div>
 
@@ -23,7 +35,7 @@ export function LandingHero({ onStart }: { onStart: () => void }) {
           onClick={onStart}
           className="inline-flex items-center gap-2 px-8 py-4 bg-[var(--color-navy)] text-white text-lg font-semibold hover:bg-[#243358] transition-all duration-150 shadow-lg hover:shadow-xl active:scale-[0.98] cursor-pointer"
         >
-          See It In Action
+          Choose Your Upgrades
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-5 w-5"
@@ -39,7 +51,7 @@ export function LandingHero({ onStart }: { onStart: () => void }) {
         </button>
 
         <p className="mt-6 text-sm text-gray-400">
-          Real Kinkade plan pricing &bull; AI-powered kitchen visualization
+          Real pricing &bull; AI-powered kitchen visualization
         </p>
       </div>
     </div>

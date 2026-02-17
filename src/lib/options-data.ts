@@ -361,6 +361,8 @@ export const categories: Category[] = [
         name: "Electrical Outlets Standard Height",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "outlets-std-no-upgrade", name: "No Upgrade Wanted", price: 0 },
           { id: "outlets-std-add", name: "Add Standard Height Electrical Outlets", price: 250 },
@@ -371,6 +373,8 @@ export const categories: Category[] = [
         name: "Electrical Outlets Raised Height",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "outlets-raised-no-upgrade", name: "No Upgrade Wanted", price: 0 },
           { id: "outlets-raised-add", name: "Add Raised Height Electrical Outlets", price: 350 },
@@ -381,6 +385,8 @@ export const categories: Category[] = [
         name: "Dedicated Garage Fridge Outlet",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        maxQuantity: 1,
         options: [
           { id: "garage-fridge-outlet-no", name: "No Upgrade Wanted", price: 0 },
           { id: "garage-fridge-outlet-add", name: "Add Dedicated Garage Fridge Outlet", price: 500 },
@@ -391,6 +397,8 @@ export const categories: Category[] = [
         name: "Outdoor Eave Lighting",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        maxQuantity: 1,
         options: [
           { id: "eave-lighting-no", name: "No Upgrade Wanted", price: 0 },
           { id: "eave-lighting-add", name: "Add Outdoor Eave Lighting", price: 1000 },
@@ -441,6 +449,9 @@ export const categories: Category[] = [
         name: "Can Lights in Primary",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "set of 4",
+        maxQuantity: 3,
         options: [
           { id: "cans-primary-no", name: "No Upgrade Wanted", price: 0 },
           { id: "cans-primary-add", name: "Add 4 Cans in Primary", price: 900 },
@@ -451,6 +462,9 @@ export const categories: Category[] = [
         name: "Can Lights in Additional Room",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "set of 4",
+        maxQuantity: 3,
         options: [
           { id: "cans-additional-no", name: "No Upgrade Wanted", price: 0 },
           { id: "cans-additional-add", name: "Add 4 Cans in Bedroom Bonus or Loft", price: 900 },
@@ -492,6 +506,8 @@ export const categories: Category[] = [
         name: "Great Room AV Point",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        maxQuantity: 1,
         options: [
           { id: "av-point-no", name: "No Upgrade Wanted", price: 0 },
           { id: "av-point-add", name: "Add AV Point", price: 700 },
@@ -502,6 +518,8 @@ export const categories: Category[] = [
         name: "Cable Outlet Interior Standard Height",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "cable-std-no", name: "No Upgrade Wanted", price: 0 },
           { id: "cable-std-add", name: "Add a Cable Outlet", price: 150 },
@@ -512,6 +530,8 @@ export const categories: Category[] = [
         name: "Cable Outlet Interior Raised",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "cable-raised-no", name: "No Upgrade Wanted", price: 0 },
           { id: "cable-raised-add", name: "Add a Cable Outlet", price: 250 },
@@ -522,6 +542,8 @@ export const categories: Category[] = [
         name: "Cable and Electrical Outlet Interior Raised",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "cable-elec-int-no", name: "No Upgrade Wanted", price: 0 },
           { id: "cable-elec-int-add", name: "Add Raised Cable/Elec Outlets", price: 400 },
@@ -532,6 +554,8 @@ export const categories: Category[] = [
         name: "Cable and Electrical Outlet Exterior Raised",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "cable-elec-ext-no", name: "No Upgrade Wanted", price: 0 },
           { id: "cable-elec-ext-add", name: "Add Outlets", price: 400 },
@@ -542,6 +566,8 @@ export const categories: Category[] = [
         name: "Data and Electrical Outlet Interior Raised",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "data-elec-int-no", name: "No Upgrade Wanted", price: 0 },
           { id: "data-elec-int-add", name: "Add Outlets", price: 500 },
@@ -552,6 +578,8 @@ export const categories: Category[] = [
         name: "Data and Electrical Outlet Exterior Raised",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "data-elec-ext-no", name: "No Upgrade Wanted", price: 0 },
           { id: "data-elec-ext-add", name: "Add Outlets", price: 500 },
@@ -562,6 +590,9 @@ export const categories: Category[] = [
         name: "Add 220V Outlet",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
+        maxQuantity: 3,
         options: [
           { id: "220v-no", name: "No Upgrade Wanted", price: 0 },
           { id: "220v-add", name: "Add 220V Outlet", price: 600 },
@@ -572,6 +603,8 @@ export const categories: Category[] = [
         name: "Garage Utility Lights",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        maxQuantity: 1,
         options: [
           { id: "garage-lights-no", name: "No Upgrade Wanted", price: 0 },
           { id: "garage-lights-add", name: "Add Garage Utility Lights", price: 500 },
@@ -582,6 +615,8 @@ export const categories: Category[] = [
         name: "Data Standard Height Outlet",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "data-std-no", name: "No Upgrade Wanted", price: 0 },
           { id: "data-std-add", name: "Add Standard Height Data Outlet", price: 250 },
@@ -592,6 +627,8 @@ export const categories: Category[] = [
         name: "Data Raised Height Outlet",
         categoryId: "electrical",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "outlet",
         options: [
           { id: "data-raised-no", name: "No Upgrade Wanted", price: 0 },
           { id: "data-raised-add", name: "Add Raised Data Outlet", price: 350 },
@@ -612,6 +649,9 @@ export const categories: Category[] = [
         name: "Additional Concrete",
         categoryId: "ext-finishes",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "sq ft",
+        maxQuantity: 500,
         options: [
           { id: "concrete-no", name: "No Upgrade Wanted", price: 0 },
           { id: "concrete-add", name: "Additional Concrete Paving", price: 8 },
@@ -922,6 +962,9 @@ export const categories: Category[] = [
         name: "Additional ADT Deadbolt",
         categoryId: "hardware",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "lock",
+        maxQuantity: 5,
         options: [
           { id: "adt-deadbolt-no", name: "No Upgrade Wanted", price: 0 },
           { id: "adt-deadbolt-add", name: "Add ADT Deadbolt", price: 350 },
@@ -1054,6 +1097,9 @@ export const categories: Category[] = [
         name: "Additional ADT Keypad",
         categoryId: "low-voltage",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "keypad",
+        maxQuantity: 3,
         options: [
           { id: "adt-keypad-no", name: "No Upgrade Wanted", price: 0 },
           { id: "adt-keypad-add", name: "Add Additional Keypad", price: 400 },
@@ -1064,6 +1110,9 @@ export const categories: Category[] = [
         name: "Additional 5 Deako Switches",
         categoryId: "low-voltage",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "pack",
+        maxQuantity: 5,
         options: [
           { id: "deako-5-no", name: "No Upgrade Wanted", price: 0 },
           { id: "deako-5-add", name: "Add 5 Pack of Switches", price: 425 },
@@ -1074,6 +1123,9 @@ export const categories: Category[] = [
         name: "Additional 15 Deako Switches",
         categoryId: "low-voltage",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "pack",
+        maxQuantity: 3,
         options: [
           { id: "deako-15-no", name: "No Upgrade Wanted", price: 0 },
           { id: "deako-15-add", name: "Add 15 Pack of Switches", price: 1250 },
@@ -1084,6 +1136,9 @@ export const categories: Category[] = [
         name: "Additional 30 Deako Switches",
         categoryId: "low-voltage",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "pack",
+        maxQuantity: 2,
         options: [
           { id: "deako-30-no", name: "No Upgrade Wanted", price: 0 },
           { id: "deako-30-add", name: "Add 30 Pack of Switches", price: 2350 },
@@ -1094,6 +1149,9 @@ export const categories: Category[] = [
         name: "Smart Plugs 5 Pack",
         categoryId: "low-voltage",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "pack",
+        maxQuantity: 5,
         options: [
           { id: "smart-plugs-5-no", name: "No Upgrade Wanted", price: 0 },
           { id: "smart-plugs-5-add", name: "Add Deako 5 Pack Smart Plugs", price: 200 },
@@ -1104,6 +1162,9 @@ export const categories: Category[] = [
         name: "Smart Plugs 10 Pack",
         categoryId: "low-voltage",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "pack",
+        maxQuantity: 3,
         options: [
           { id: "smart-plugs-10-no", name: "No Upgrade Wanted", price: 0 },
           { id: "smart-plugs-10-add", name: "Add Deako 10 Pack Smart Plugs", price: 400 },
@@ -1290,6 +1351,9 @@ export const categories: Category[] = [
         name: "Toilet Seat Upgrade",
         categoryId: "plumbing",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "seat",
+        maxQuantity: 3,
         options: [
           { id: "toilet-seat-no", name: "No Upgrade Wanted", price: 0 },
           { id: "toilet-seat-soft-close", name: "Upgrade to Soft Close Toilet Seats", price: 250 },
@@ -1310,6 +1374,9 @@ export const categories: Category[] = [
         name: "Hose Bib",
         categoryId: "plumbing",
         isVisual: false,
+        isAdditive: true,
+        unitLabel: "bib",
+        maxQuantity: 3,
         options: [
           { id: "hose-bib-no", name: "No Upgrade Wanted", price: 0 },
           { id: "hose-bib-add", name: "Add Additional Hose Bib", price: 250 },

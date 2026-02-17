@@ -1,16 +1,15 @@
 "use client";
 
-import { useReducer, useCallback, useMemo, useState } from "react";
+import { useReducer, useCallback, useMemo, useState, useEffect, useRef } from "react";
 import type { SelectionState, SelectionAction, SubCategory } from "@/types";
 import { categories, getDefaultSelections, getVisualSubCategoryIds } from "@/lib/options-data";
 import { calculateTotal } from "@/lib/pricing";
-import { rooms, getOrphanSubCategoryIds } from "@/lib/room-config";
-import { RoomStrip } from "./RoomStrip";
-import { RoomHero } from "./RoomHero";
-import { RoomSection } from "./RoomSection";
+import { steps } from "@/lib/step-config";
+import { StepNav } from "./StepNav";
+import { StepHero } from "./StepHero";
+import { StepContent } from "./StepContent";
 import { PriceTracker } from "./PriceTracker";
 import { GenerateButton } from "./GenerateButton";
-import { CategoryAccordion } from "./CategoryAccordion";
 
 const visualSubCategoryIds = getVisualSubCategoryIds();
 
@@ -21,18 +20,6 @@ for (const cat of categories) {
     subCategoryMap.set(sub.id, sub);
   }
 }
-
-// Get all subCategory IDs for orphan detection
-const allSubCategoryIds = Array.from(subCategoryMap.keys());
-const orphanIds = getOrphanSubCategoryIds(allSubCategoryIds);
-
-// Group orphan subcategories by their parent category
-const orphanCategories = categories
-  .map((cat) => ({
-    ...cat,
-    subCategories: cat.subCategories.filter((sub) => orphanIds.includes(sub.id)),
-  }))
-  .filter((cat) => cat.subCategories.length > 0);
 
 function reducer(state: SelectionState, action: SelectionAction): SelectionState {
   switch (action.type) {
@@ -48,6 +35,21 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
         visualSelectionsChangedSinceLastGenerate: isVisualChange
           ? true
           : state.visualSelectionsChangedSinceLastGenerate,
+      };
+    }
+    case "SET_QUANTITY": {
+      const newQuantities = { ...state.quantities, [action.subCategoryId]: action.quantity };
+      const newSelections = {
+        ...state.selections,
+        [action.subCategoryId]: action.quantity > 0 ? action.addOptionId : action.noUpgradeOptionId,
+      };
+      return { ...state, selections: newSelections, quantities: newQuantities };
+    }
+    case "LOAD_SELECTIONS": {
+      return {
+        ...state,
+        selections: { ...state.selections, ...action.selections },
+        quantities: { ...action.quantities },
       };
     }
     case "START_GENERATING":
@@ -70,6 +72,7 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
 function getInitialState(): SelectionState {
   return {
     selections: getDefaultSelections(),
+    quantities: {},
     generatedImageUrl: null,
     isGenerating: false,
     hasEverGenerated: false,
@@ -78,43 +81,99 @@ function getInitialState(): SelectionState {
   };
 }
 
-function getCategoryTotal(
-  subCategories: SubCategory[],
-  selections: Record<string, string>
-): number {
-  let total = 0;
-  for (const sub of subCategories) {
-    const selectedId = selections[sub.id];
-    if (selectedId) {
+// Check if a step has any non-zero-price selections
+function stepHasUpgrades(
+  step: typeof steps[number],
+  selections: Record<string, string>,
+  quantities: Record<string, number>
+): boolean {
+  for (const section of step.sections) {
+    for (const subId of section.subCategoryIds) {
+      const sub = subCategoryMap.get(subId);
+      if (!sub) continue;
+      const selectedId = selections[subId];
+      if (!selectedId) continue;
       const option = sub.options.find((o) => o.id === selectedId);
-      if (option) total += option.price;
+      if (option && option.price > 0) {
+        const qty = sub.isAdditive ? (quantities[subId] || 0) : 1;
+        if (qty > 0) return true;
+      }
     }
   }
-  return total;
+  return false;
 }
 
-export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
+export function UpgradePicker({ onFinish, buyerId }: { onFinish: () => void; buyerId?: string }) {
   const [state, dispatch] = useReducer(reducer, null, getInitialState);
-  const [activeRoomId, setActiveRoomId] = useState(rooms[0].id);
-  const [showOtherUpgrades, setShowOtherUpgrades] = useState(false);
+  const [activeStepId, setActiveStepId] = useState(steps[0].id);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasLoadedRef = useRef(false);
 
-  const activeRoom = rooms.find((r) => r.id === activeRoomId) || rooms[0];
+  // Load selections from API on mount
+  useEffect(() => {
+    if (!buyerId) return;
+    fetch(`/api/selections/${buyerId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Object.keys(data.selections).length > 0) {
+          dispatch({
+            type: "LOAD_SELECTIONS",
+            selections: data.selections,
+            quantities: data.quantities ?? {},
+          });
+        }
+        hasLoadedRef.current = true;
+      })
+      .catch(() => {
+        hasLoadedRef.current = true;
+      });
+  }, [buyerId]);
+
+  // Auto-save selections (debounced 1s)
+  useEffect(() => {
+    if (!buyerId || !hasLoadedRef.current) return;
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
+      fetch(`/api/selections/${buyerId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selections: state.selections,
+          quantities: state.quantities,
+        }),
+      }).catch(() => {});
+    }, 1000);
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [buyerId, state.selections, state.quantities]);
+
+  const activeStep = steps.find((s) => s.id === activeStepId) || steps[0];
+  const activeStepIndex = steps.findIndex((s) => s.id === activeStepId);
 
   const total = useMemo(
-    () => calculateTotal(state.selections),
-    [state.selections]
+    () => calculateTotal(state.selections, state.quantities),
+    [state.selections, state.quantities]
   );
 
-  // Get subcategories for active room
-  const roomSubCategories = useMemo(() => {
-    return activeRoom.subCategoryIds
-      .map((id) => subCategoryMap.get(id))
-      .filter((sub): sub is SubCategory => sub !== undefined);
-  }, [activeRoomId]);
+  const completionMap = useMemo(() => {
+    const map: Record<string, boolean> = {};
+    for (const step of steps) {
+      map[step.id] = stepHasUpgrades(step, state.selections, state.quantities);
+    }
+    return map;
+  }, [state.selections, state.quantities]);
 
   const handleSelect = useCallback(
     (subCategoryId: string, optionId: string) => {
       dispatch({ type: "SELECT_OPTION", subCategoryId, optionId });
+    },
+    []
+  );
+
+  const handleSetQuantity = useCallback(
+    (subCategoryId: string, quantity: number, addOptionId: string, noUpgradeOptionId: string) => {
+      dispatch({ type: "SET_QUANTITY", subCategoryId, quantity, addOptionId, noUpgradeOptionId });
     },
     []
   );
@@ -147,13 +206,12 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
     }
   }, [state.selections, state.isGenerating]);
 
-  const orphanTotal = useMemo(() => {
-    let t = 0;
-    for (const cat of orphanCategories) {
-      t += getCategoryTotal(cat.subCategories, state.selections);
+  const handleContinue = useCallback(() => {
+    if (activeStepIndex < steps.length - 1) {
+      setActiveStepId(steps[activeStepIndex + 1].id);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    return t;
-  }, [state.selections]);
+  }, [activeStepIndex]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -179,27 +237,28 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
           </button>
         </div>
 
-        {/* Room strip inside header for sticky behavior */}
+        {/* Step nav inside header for sticky behavior */}
         <div className="max-w-4xl mx-auto px-4 pb-2">
-          <RoomStrip
-            rooms={rooms}
-            activeRoomId={activeRoomId}
-            onSelectRoom={setActiveRoomId}
+          <StepNav
+            steps={steps}
+            activeStepId={activeStepId}
+            completionMap={completionMap}
+            onSelectStep={setActiveStepId}
           />
         </div>
       </header>
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 py-5 pb-20">
-        {/* Room Hero Image */}
-        <RoomHero
-          room={activeRoom}
-          generatedImageUrl={activeRoom.id === "kitchen-close" ? state.generatedImageUrl : null}
-          isGenerating={activeRoom.id === "kitchen-close" ? state.isGenerating : false}
+        {/* Step Hero Image */}
+        <StepHero
+          step={activeStep}
+          generatedImageUrl={activeStep.showGenerateButton ? state.generatedImageUrl : null}
+          isGenerating={activeStep.showGenerateButton ? state.isGenerating : false}
         />
 
-        {/* Generate button — only on kitchen view */}
-        {activeRoom.id === "kitchen-close" && (
+        {/* Generate button — only on steps with showGenerateButton */}
+        {activeStep.showGenerateButton && (
           <div className="mt-4">
             <GenerateButton
               onClick={handleGenerate}
@@ -214,62 +273,24 @@ export function UpgradePicker({ onFinish }: { onFinish: () => void }) {
           </div>
         )}
 
-        {/* Room-specific upgrade options */}
-        <RoomSection
-          subCategories={roomSubCategories}
+        {/* Step-specific upgrade options */}
+        <StepContent
+          step={activeStep}
+          subCategoryMap={subCategoryMap}
           selections={state.selections}
+          quantities={state.quantities}
           onSelect={handleSelect}
+          onSetQuantity={handleSetQuantity}
         />
 
-        {/* Other Upgrades (orphan categories) */}
-        {orphanCategories.length > 0 && (
-          <div className="mt-10">
-            <button
-              onClick={() => setShowOtherUpgrades(!showOtherUpgrades)}
-              className="w-full flex items-center justify-between py-3 px-4 bg-white border border-gray-200 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold text-[var(--color-navy)]">
-                  Other Upgrades
-                </span>
-                <span className="text-[10px] text-gray-400">
-                  Electrical, security, doors & more
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                {orphanTotal > 0 && (
-                  <span className="text-xs font-medium text-[var(--color-accent)]">
-                    +${orphanTotal.toLocaleString()}
-                  </span>
-                )}
-                <svg
-                  className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${showOtherUpgrades ? "rotate-180" : ""}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </button>
-
-            <div className="accordion-content" data-open={showOtherUpgrades}>
-              <div>
-                <div className="mt-2 space-y-2">
-                  {orphanCategories.map((category) => (
-                    <CategoryAccordion
-                      key={category.id}
-                      category={category}
-                      selections={state.selections}
-                      onSelect={handleSelect}
-                      categoryTotal={getCategoryTotal(category.subCategories, state.selections)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Continue button */}
+        {activeStepIndex < steps.length - 1 && (
+          <button
+            onClick={handleContinue}
+            className="w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+          >
+            Continue to {steps[activeStepIndex + 1].name} &rarr;
+          </button>
         )}
       </div>
 
