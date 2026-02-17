@@ -11,7 +11,7 @@ Browser (Next.js client)
   │     └── Visual change detection (did a visual sub-category change?)
   ├── Kitchen Viewer
   │     └── Calls POST /api/generate when user clicks "Visualize"
-  └── Closing CTA (static)
+  └── Upgrade Summary (room images + upgrade table + PDF download)
 
 Server (Next.js API route)
   └── POST /api/generate
@@ -60,7 +60,7 @@ Option data is static TypeScript. Selections state is client-side React. Supabas
 ## Component Architecture
 
 ```
-page.tsx (flow state: "landing" | "picker" | "cta")
+page.tsx (flow state: "landing" | "picker" | "summary")
 ├── LandingHero
 ├── UpgradePicker (main container — step-based wizard with two-column layout)
 │   ├── Header (sticky: logo + StepNav)
@@ -83,7 +83,7 @@ page.tsx (flow state: "landing" | "picker" | "cta")
 │   │   ├── Continue button
 │   │   └── PriceTracker (sticky bottom bar)
 │   └── PriceTracker (mobile-only sticky bottom bar)
-└── ClosingCTA
+└── UpgradeSummary (room images grid, upgrade table, PDF via window.print)
 ```
 
 ### Step-Based Wizard Layout
@@ -187,7 +187,7 @@ src/
 │   ├── CompactOptionList.tsx    # Tight single-line rows for non-visual options
 │   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
 │   ├── GenerateButton.tsx
-│   └── ClosingCTA.tsx
+│   └── UpgradeSummary (room images grid, upgrade table, PDF via window.print).tsx
 ├── lib/
 │   ├── options-data.ts      # All Kinkade plan options + SM website image URLs
 │   ├── step-config.ts       # Step→subcategory mapping for wizard layout

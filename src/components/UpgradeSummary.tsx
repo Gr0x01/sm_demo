@@ -6,6 +6,18 @@ import { calculateTotal, formatPrice } from "@/lib/pricing";
 import { steps } from "@/lib/step-config";
 import type { SubCategory } from "@/types";
 
+// Steps that have hero images to display
+const roomImages: { stepId: string; label: string; src: string }[] = steps
+  .filter((s) => {
+    const img = Array.isArray(s.heroImage) ? s.heroImage[0] : s.heroImage;
+    return img && img.length > 0;
+  })
+  .map((s) => ({
+    stepId: s.id,
+    label: s.name,
+    src: Array.isArray(s.heroImage) ? s.heroImage[0] : s.heroImage,
+  }));
+
 interface UpgradeSummaryProps {
   selections: Record<string, string>;
   quantities: Record<string, number>;
@@ -124,24 +136,36 @@ export function UpgradeSummary({
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8">
-        {/* Generated Image */}
-        {generatedImageUrl && (
-          <div className="mb-8">
-            <img
-              src={generatedImageUrl}
-              alt="Your kitchen visualization"
-              className="w-full object-cover border border-gray-200"
-            />
-            <p className="text-[10px] text-gray-400 mt-1">
-              AI-generated visualization based on your selections
-            </p>
-          </div>
-        )}
+        {/* Room Images */}
+        <div className="grid grid-cols-2 gap-2 mb-8">
+          {roomImages.map((room) => {
+            // Replace kitchen base image with generated image if available
+            const isKitchen = room.stepId === "design-your-kitchen";
+            const imgSrc = isKitchen && generatedImageUrl ? generatedImageUrl : room.src;
+            const isGenerated = isKitchen && !!generatedImageUrl;
 
-        {/* Upgrade List */}
-        {upgradeGroups.length > 0 ? (
-          <div className="space-y-6">
-            {upgradeGroups.map((group) => (
+            return (
+              <div key={room.stepId} className="relative overflow-hidden">
+                <img
+                  src={imgSrc}
+                  alt={room.label}
+                  className="w-full aspect-[16/10] object-cover"
+                />
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
+                  <span className="text-[10px] font-medium text-white/90">
+                    {room.label}
+                    {isGenerated && " — AI Generated"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Upgrade List — always show table structure */}
+        <div className="space-y-6">
+          {upgradeGroups.length > 0 ? (
+            upgradeGroups.map((group) => (
               <div key={group.title}>
                 <h2 className="text-xs font-semibold tracking-widest uppercase text-[var(--color-accent)] mb-3">
                   {group.title}
@@ -174,26 +198,23 @@ export function UpgradeSummary({
                   ))}
                 </div>
               </div>
-            ))}
-
-            {/* Total */}
-            <div className="flex items-center justify-between px-4 py-4 border-t-2 border-[var(--color-navy)]">
-              <span className="text-base font-bold text-[var(--color-navy)]">
-                Total Upgrades
-              </span>
-              <span className="text-base font-bold text-[var(--color-navy)]">
-                {formatPrice(total)}
-              </span>
+            ))
+          ) : (
+            <div className="border border-gray-200 px-4 py-6 text-center text-sm text-gray-400">
+              No paid upgrades — all selections are the included options.
             </div>
+          )}
+
+          {/* Total */}
+          <div className="flex items-center justify-between px-4 py-4 border-t-2 border-[var(--color-navy)]">
+            <span className="text-base font-bold text-[var(--color-navy)]">
+              Total Upgrades
+            </span>
+            <span className="text-base font-bold text-[var(--color-navy)]">
+              {total === 0 ? "$0" : formatPrice(total)}
+            </span>
           </div>
-        ) : (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-lg font-medium">No paid upgrades selected</p>
-            <p className="text-sm mt-1">
-              All selections are currently the included options.
-            </p>
-          </div>
-        )}
+        </div>
       </div>
     </div>
   );

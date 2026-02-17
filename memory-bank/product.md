@@ -20,7 +20,11 @@ This is NOT just a visualization tool — it's an **upgrade selection tool** tha
 11. Section quick-nav in sidebar highlights active section as user scrolls
 12. Price total updates live in sidebar as selections change
 13. Mobile: single column, hero on top, sticky price tracker at bottom
-14. After engaging, click "Finish" → CTA: "Want this for your buyers? Let's talk."
+14. After engaging, click "Finish" → Upgrade Summary screen:
+    - Room images grid (base photos + AI-generated image replaces kitchen if generated)
+    - Paid upgrades table grouped by step (only non-$0 selections)
+    - Running total
+    - "Download PDF" button (window.print()) + "Back to Selections" button
 ```
 
 ## Data Schema

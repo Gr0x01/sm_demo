@@ -12,8 +12,8 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - [x] Create folder structure per architecture.md
 - [x] Define TypeScript types (Category, SubCategory, Option)
 - [x] Landing page with hook + "See It In Action" button
-- [x] Page flow state (landing → picker → cta)
-- [x] Closing CTA
+- [x] Page flow state (landing → picker → summary)
+- [x] Upgrade Summary screen (replaced ClosingCTA with buyer-facing summary)
 
 ### Stream B: Full Options Data (from Kinkade PDF) — DONE
 - [x] Transcribe ALL categories/subcategories/options from Kinkade PDF
