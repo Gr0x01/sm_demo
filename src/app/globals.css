@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+:root {
+  --color-navy: #1a2744;
+  --color-gold: #c5943a;
+  --color-gold-light: #d4a94e;
+  --color-warm-white: #faf8f5;
+  --color-warm-gray: #f0ece6;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  color: var(--color-navy);
+  background: white;
+}
+
+/* Hide scrollbar for room strip */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

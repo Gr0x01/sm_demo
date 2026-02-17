@@ -1,0 +1,1600 @@
+import type { Category } from "@/types";
+
+export const categories: Category[] = [
+  // ============================================================
+  // APPLIANCES
+  // ============================================================
+  {
+    id: "appliances",
+    name: "Appliances",
+    subCategories: [
+      {
+        id: "dishwasher",
+        name: "Dishwasher",
+        categoryId: "appliances",
+        isVisual: true,
+        options: [
+          { id: "dishwasher-ge-included", name: "GE Included Style", price: 0, promptDescriptor: "standard GE dishwasher with smooth front panel" },
+          { id: "dishwasher-ge-stainless-interior", name: "GE Stainless Interior", price: 500, promptDescriptor: "GE dishwasher with stainless steel interior and clean front panel" },
+        ],
+      },
+      {
+        id: "refrigerator",
+        name: "Refrigerator",
+        categoryId: "appliances",
+        isVisual: true,
+        options: [
+          { id: "refrigerator-none", name: "No Refrigerator", price: 0, promptDescriptor: "empty refrigerator alcove" },
+          { id: "refrigerator-ge-side-by-side", name: "GE Side by Side", price: 1800, promptDescriptor: "GE stainless steel side-by-side refrigerator" },
+          { id: "refrigerator-ge-french-door", name: "GE French Door", price: 3000, promptDescriptor: "GE stainless steel French door refrigerator", nudge: "Most requested appliance upgrade" },
+          { id: "refrigerator-ge-french-door-drawer", name: "GE French Door with Drawer", price: 3500, promptDescriptor: "GE stainless steel French door refrigerator with bottom freezer drawer" },
+        ],
+      },
+      {
+        id: "range",
+        name: "Range",
+        categoryId: "appliances",
+        isVisual: true,
+        options: [
+          { id: "range-ge-included-freestanding", name: "GE Included Gas Freestanding Range", price: 0, promptDescriptor: "standard GE gas freestanding range with front controls" },
+          { id: "range-ge-gas-slide-in", name: "GE Gas Slide In Range", price: 500, promptDescriptor: "GE stainless steel gas slide-in range with seamless cooktop", nudge: "Most popular cooking upgrade" },
+          { id: "range-ge-gas-slide-in-convection", name: "GE Gas Slide In Convection Range", price: 800, promptDescriptor: "GE stainless steel gas slide-in convection range with professional styling" },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // CABINETS
+  // ============================================================
+  {
+    id: "cabinets",
+    name: "Cabinets",
+    subCategories: [
+      {
+        id: "cabinet-style-whole-house",
+        name: "Cabinet Style Whole House",
+        categoryId: "cabinets",
+        isVisual: true,
+        options: [
+          { id: "cabinet-style-fairmont", name: "Fairmont", price: 0, promptDescriptor: "Fairmont style traditional raised panel cabinet doors with elegant detailing" },
+          { id: "cabinet-style-meridian", name: "Meridian", price: 500, promptDescriptor: "Meridian style transitional cabinet doors with clean lines and subtle raised panel" },
+          { id: "cabinet-style-oxford", name: "Oxford", price: 900, promptDescriptor: "Oxford style shaker cabinet doors with clean lines and recessed center panel", nudge: "Chosen by 3 out of 4 buyers" },
+        ],
+      },
+      {
+        id: "kitchen-cabinet-color",
+        name: "Kitchen Cabinet Color",
+        categoryId: "cabinets",
+        isVisual: true,
+        options: [
+          { id: "kitchen-cab-color-driftwood", name: "Driftwood Stain", price: 0, promptDescriptor: "light Driftwood stained wood" },
+          { id: "kitchen-cab-color-cappucino", name: "Cappucino Stain", price: 150, promptDescriptor: "warm medium-brown Cappucino stained wood" },
+          { id: "kitchen-cab-color-sahara", name: "Sahara Stain", price: 150, promptDescriptor: "sandy warm-toned Sahara stained wood" },
+          { id: "kitchen-cab-color-fog", name: "Fog Paint", price: 250, promptDescriptor: "soft gray Fog painted" },
+          { id: "kitchen-cab-color-onyx", name: "Onyx Paint", price: 250, promptDescriptor: "deep black Onyx painted" },
+          { id: "kitchen-cab-color-white", name: "White Paint", price: 250, promptDescriptor: "crisp White painted", nudge: "Most popular cabinet color" },
+          { id: "kitchen-cab-color-buttercream", name: "Buttercream Paint", price: 250, promptDescriptor: "soft warm Buttercream painted" },
+          { id: "kitchen-cab-color-willow", name: "Willow Paint", price: 250, promptDescriptor: "muted sage green Willow painted" },
+          { id: "kitchen-cab-color-admiral-blue", name: "Admiral Blue Paint", price: 250, promptDescriptor: "rich navy Admiral Blue painted" },
+          { id: "kitchen-cab-color-saddle", name: "Saddle Paint", price: 250, promptDescriptor: "warm brown Saddle painted" },
+          { id: "kitchen-cab-color-pacific-sand", name: "Pacific Sand Paint", price: 250, promptDescriptor: "warm beige Pacific Sand painted" },
+          { id: "kitchen-cab-color-blue-smoke", name: "Blue Smoke Paint", price: 250, promptDescriptor: "soft blue-gray Blue Smoke painted" },
+        ],
+      },
+      {
+        id: "kitchen-island-cabinet-color",
+        name: "Kitchen Island Cabinet Color",
+        categoryId: "cabinets",
+        isVisual: true,
+        options: [
+          { id: "island-color-match", name: "Match to Main Kitchen Cabinet Color", price: 0, promptDescriptor: "matching the main kitchen cabinet color" },
+          { id: "island-color-driftwood", name: "Driftwood Stain", price: 0, promptDescriptor: "light Driftwood stained wood kitchen island" },
+          { id: "island-color-cappucino", name: "Cappucino Stain", price: 100, promptDescriptor: "warm medium-brown Cappucino stained wood kitchen island" },
+          { id: "island-color-sahara", name: "Sahara Stain", price: 100, promptDescriptor: "sandy warm-toned Sahara stained wood kitchen island" },
+          { id: "island-color-white", name: "White Paint", price: 200, promptDescriptor: "crisp White painted kitchen island" },
+          { id: "island-color-buttercream", name: "Buttercream Paint", price: 200, promptDescriptor: "soft warm Buttercream painted kitchen island" },
+          { id: "island-color-willow", name: "Willow Paint", price: 200, promptDescriptor: "muted sage green Willow painted kitchen island" },
+          { id: "island-color-admiral-blue", name: "Admiral Blue", price: 200, promptDescriptor: "rich navy Admiral Blue painted kitchen island" },
+          { id: "island-color-saddle", name: "Saddle Paint", price: 200, promptDescriptor: "warm brown Saddle painted kitchen island" },
+          { id: "island-color-pacific-sand", name: "Pacific Sand Paint", price: 200, promptDescriptor: "warm beige Pacific Sand painted kitchen island" },
+          { id: "island-color-blue-smoke", name: "Blue Smoke Paint", price: 200, promptDescriptor: "soft blue-gray Blue Smoke painted kitchen island" },
+          { id: "island-color-fog", name: "Fog Paint", price: 200, promptDescriptor: "soft gray Fog painted kitchen island" },
+          { id: "island-color-onyx", name: "Onyx Paint", price: 200, promptDescriptor: "deep black Onyx painted kitchen island" },
+        ],
+      },
+      {
+        id: "kitchen-cabinet-hardware",
+        name: "Kitchen Cabinet Hardware",
+        categoryId: "cabinets",
+        isVisual: true,
+        options: [
+          { id: "hw-seaver-pull-knob-bronze", name: "Seaver Pull Knob Combo - Bronze", price: 0, promptDescriptor: "Seaver style bronze pull and knob cabinet hardware" },
+          { id: "hw-seaver-pull-knob-satin-nickel", name: "Seaver Pull Knob Combo - Satin Nickel", price: 0, promptDescriptor: "Seaver style satin nickel pull and knob cabinet hardware" },
+          { id: "hw-sedona-pull-knob-black", name: "Sedona Pull Knob Combo - Black", price: 100, promptDescriptor: "Sedona style matte black pull and knob cabinet hardware" },
+          { id: "hw-sedona-pull-knob-satin-bronze", name: "Sedona Pull Knob Combo - Satin Bronze", price: 100, promptDescriptor: "Sedona style satin bronze pull and knob cabinet hardware" },
+          { id: "hw-sedona-pull-knob-satin-nickel", name: "Sedona Pull Knob Combo - Satin Nickel", price: 100, promptDescriptor: "Sedona style satin nickel pull and knob cabinet hardware" },
+          { id: "hw-naples-pull-knob-brushed-gold", name: "Naples Pull Knob Combo - Brushed Gold", price: 150, promptDescriptor: "Naples style brushed gold pull and knob cabinet hardware" },
+          { id: "hw-naples-pull-knob-black", name: "Naples Pull Knob Combo - Black", price: 150, promptDescriptor: "Naples style matte black pull and knob cabinet hardware" },
+          { id: "hw-naples-pull-knob-satin-nickel", name: "Naples Pull Knob Combo - Satin Nickel", price: 150, promptDescriptor: "Naples style satin nickel pull and knob cabinet hardware" },
+          { id: "hw-sedona-all-pulls-satin-nickel", name: "Sedona All Pulls - Satin Nickel", price: 200, promptDescriptor: "Sedona style all-pull satin nickel cabinet hardware" },
+          { id: "hw-sedona-all-pulls-black", name: "Sedona All Pulls - Black", price: 200, promptDescriptor: "Sedona style all-pull matte black cabinet hardware", nudge: "Modern minimalist choice" },
+          { id: "hw-sedona-all-pulls-satin-bronze", name: "Sedona All Pulls - Satin Bronze", price: 200, promptDescriptor: "Sedona style all-pull satin bronze cabinet hardware" },
+          { id: "hw-dominique-all-pulls-satin-bronze", name: "Dominique All Pulls - Satin Bronze", price: 250, promptDescriptor: "Dominique style all-pull satin bronze cabinet hardware" },
+          { id: "hw-dominique-all-pulls-satin-nickel", name: "Dominique All Pulls - Satin Nickel", price: 250, promptDescriptor: "Dominique style all-pull satin nickel cabinet hardware" },
+          { id: "hw-dominique-all-pulls-black", name: "Dominique All Pulls - Black", price: 250, promptDescriptor: "Dominique style all-pull matte black cabinet hardware" },
+          { id: "hw-dominique-all-pulls-orb", name: "Dominique All Pulls - Oil Rubbed Bronze", price: 250, promptDescriptor: "Dominique style all-pull oil rubbed bronze cabinet hardware" },
+          { id: "hw-key-grande-all-pulls-black", name: "Key Grande All Pulls - Black", price: 300, promptDescriptor: "Key Grande style all-pull matte black cabinet hardware" },
+          { id: "hw-key-grande-all-pulls-satin-nickel", name: "Key Grande All Pulls - Satin Nickel", price: 300, promptDescriptor: "Key Grande style all-pull satin nickel cabinet hardware" },
+          { id: "hw-key-grande-all-pulls-brushed-gold", name: "Key Grande All Pulls - Brushed Gold", price: 300, promptDescriptor: "Key Grande style all-pull brushed gold cabinet hardware" },
+          { id: "hw-stanton-all-pulls-brushed-gold", name: "Stanton All Pulls - Brushed Gold", price: 300, promptDescriptor: "Stanton style all-pull brushed gold cabinet hardware" },
+          { id: "hw-stanton-all-pulls-black", name: "Stanton All Pulls - Black", price: 300, promptDescriptor: "Stanton style all-pull matte black cabinet hardware" },
+          { id: "hw-stanton-all-pulls-satin-nickel", name: "Stanton All Pulls - Satin Nickel", price: 300, promptDescriptor: "Stanton style all-pull satin nickel cabinet hardware" },
+          { id: "hw-dominique-all-pulls-brushed-gold", name: "Dominique All Pulls - Brushed Gold", price: 300, promptDescriptor: "Dominique style all-pull brushed gold cabinet hardware" },
+        ],
+      },
+      {
+        id: "bathroom-cabinet-hardware",
+        name: "Bathroom Cabinet Hardware",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "bath-hw-seaver-bronze", name: "Seaver Pull Knob Combo - Bronze", price: 0 },
+          { id: "bath-hw-seaver-satin-nickel", name: "Seaver Pull Knob Combo - Satin Nickel", price: 0 },
+          { id: "bath-hw-sedona-black", name: "Sedona Pull Knob Combo - Black", price: 100 },
+          { id: "bath-hw-sedona-satin-bronze", name: "Sedona Pull Knob Combo - Satin Bronze", price: 100 },
+          { id: "bath-hw-sedona-satin-nickel", name: "Sedona Pull Knob Combo - Satin Nickel", price: 100 },
+          { id: "bath-hw-naples-brushed-gold", name: "Naples Pull Knob Combo - Brushed Gold", price: 150 },
+          { id: "bath-hw-naples-black", name: "Naples Pull Knob Combo - Black", price: 150 },
+          { id: "bath-hw-naples-satin-nickel", name: "Naples Pull Knob Combo - Satin Nickel", price: 150 },
+          { id: "bath-hw-sedona-pulls-satin-nickel", name: "Sedona All Pulls - Satin Nickel", price: 200 },
+          { id: "bath-hw-sedona-pulls-black", name: "Sedona All Pulls - Black", price: 200 },
+          { id: "bath-hw-sedona-pulls-satin-bronze", name: "Sedona All Pulls - Satin Bronze", price: 200 },
+          { id: "bath-hw-dominique-satin-bronze", name: "Dominique All Pulls - Satin Bronze", price: 250 },
+          { id: "bath-hw-dominique-satin-nickel", name: "Dominique All Pulls - Satin Nickel", price: 250 },
+          { id: "bath-hw-dominique-black", name: "Dominique All Pulls - Black", price: 250 },
+          { id: "bath-hw-dominique-orb", name: "Dominique All Pulls - Oil Rubbed Bronze", price: 250 },
+          { id: "bath-hw-dominique-brushed-gold", name: "Dominique All Pulls - Brushed Gold", price: 250 },
+          { id: "bath-hw-key-grande-black", name: "Key Grande All Pulls - Black", price: 300 },
+          { id: "bath-hw-key-grande-satin-nickel", name: "Key Grande All Pulls - Satin Nickel", price: 300 },
+          { id: "bath-hw-key-grande-brushed-gold", name: "Key Grande All Pulls - Brushed Gold", price: 300 },
+          { id: "bath-hw-stanton-brushed-gold", name: "Stanton All Pulls - Brushed Gold", price: 300 },
+          { id: "bath-hw-stanton-black", name: "Stanton All Pulls - Black", price: 300 },
+          { id: "bath-hw-stanton-satin-nickel", name: "Stanton All Pulls - Satin Nickel", price: 300 },
+        ],
+      },
+      {
+        id: "trash-can-cabinet",
+        name: "Trash Can Cabinet",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "trash-can-no-upgrade", name: "No Upgrade Wanted", price: 0 },
+          { id: "trash-can-add", name: "Add Trash Can Cabinet", price: 1100 },
+        ],
+      },
+      {
+        id: "light-rail",
+        name: "Upgrade to Light Rail",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "light-rail-no-upgrade", name: "No Upgrade Wanted", price: 0 },
+          { id: "light-rail-add", name: "Add Light Rail", price: 1200 },
+        ],
+      },
+      {
+        id: "glass-cabinet-door",
+        name: "Glass Cabinet Door",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "glass-door-no-upgrade", name: "No Upgrade Wanted", price: 0 },
+          { id: "glass-door-upgrade", name: "Upgrade Wanted", price: 1500 },
+        ],
+      },
+      {
+        id: "primary-bath-vanity",
+        name: "Primary Bath Vanity",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "primary-vanity-no-upgrade", name: "No Upgrade Wanted", price: 0 },
+          { id: "primary-vanity-upgrade", name: "Upgrade to Primary Bath Vanity", price: 2000 },
+        ],
+      },
+      {
+        id: "primary-bath-cabinet-color",
+        name: "Primary Bath Cabinet Color",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "primary-bath-cab-driftwood", name: "Driftwood Stain", price: 0 },
+          { id: "primary-bath-cab-cappucino", name: "Cappucino Stain", price: 100 },
+          { id: "primary-bath-cab-sahara", name: "Sahara Stain", price: 100 },
+          { id: "primary-bath-cab-fog", name: "Fog Paint", price: 150 },
+          { id: "primary-bath-cab-onyx", name: "Onyx Paint", price: 150 },
+          { id: "primary-bath-cab-white", name: "White Paint", price: 150 },
+          { id: "primary-bath-cab-buttercream", name: "Buttercream Paint", price: 150 },
+          { id: "primary-bath-cab-willow", name: "Willow Paint", price: 150 },
+          { id: "primary-bath-cab-admiral-blue", name: "Admiral Blue Paint", price: 150 },
+          { id: "primary-bath-cab-saddle", name: "Saddle Paint", price: 150 },
+          { id: "primary-bath-cab-pacific-sand", name: "Pacific Sand Paint", price: 150 },
+          { id: "primary-bath-cab-blue-smoke", name: "Blue Smoke Paint", price: 150 },
+        ],
+      },
+      {
+        id: "secondary-bath-cabinet-color",
+        name: "Secondary Bath Cabinet Color",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "secondary-bath-cab-driftwood", name: "Driftwood Stain", price: 0 },
+          { id: "secondary-bath-cab-cappucino", name: "Cappucino Stain", price: 100 },
+          { id: "secondary-bath-cab-sahara", name: "Sahara Stain", price: 100 },
+          { id: "secondary-bath-cab-fog", name: "Fog Paint", price: 150 },
+          { id: "secondary-bath-cab-onyx", name: "Onyx Paint", price: 150 },
+          { id: "secondary-bath-cab-white", name: "White Paint", price: 150 },
+          { id: "secondary-bath-cab-buttercream", name: "Buttercream Paint", price: 150 },
+          { id: "secondary-bath-cab-willow", name: "Willow Paint", price: 150 },
+          { id: "secondary-bath-cab-admiral-blue", name: "Admiral Blue Paint", price: 150 },
+          { id: "secondary-bath-cab-saddle", name: "Saddle Paint", price: 150 },
+          { id: "secondary-bath-cab-pacific-sand", name: "Pacific Sand Paint", price: 150 },
+          { id: "secondary-bath-cab-blue-smoke", name: "Blue Smoke Paint", price: 150 },
+        ],
+      },
+      {
+        id: "laundry-room-cabinets",
+        name: "Laundry Room Cabinets",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "laundry-no-cabinets", name: "No Cabinets in Laundry Room", price: 0 },
+          { id: "laundry-driftwood", name: "Add Driftwood Stain Cabinets", price: 2200 },
+          { id: "laundry-cappucino", name: "Add Cappucino Stain Cabinets", price: 2300 },
+          { id: "laundry-sahara", name: "Add Sahara Stain Cabinets", price: 2300 },
+          { id: "laundry-fog", name: "Add Fog Paint Cabinets", price: 2300 },
+          { id: "laundry-onyx", name: "Add Onyx Paint Cabinets", price: 2300 },
+          { id: "laundry-white", name: "Add White Paint Cabinets", price: 2300 },
+          { id: "laundry-buttercream", name: "Add Buttercream Paint Cabinets", price: 2300 },
+          { id: "laundry-willow", name: "Add Willow Paint Cabinets", price: 2300 },
+          { id: "laundry-admiral-blue", name: "Add Admiral Blue Paint Cabinets", price: 2300 },
+          { id: "laundry-saddle", name: "Add Saddle Paint Cabinets", price: 2300 },
+          { id: "laundry-pacific-sand", name: "Add Pacific Sand Paint Cabinets", price: 2300 },
+          { id: "laundry-blue-smoke", name: "Add Blue Smoke Paint Cabinets", price: 2300 },
+        ],
+      },
+      {
+        id: "powder-room-vanity",
+        name: "Powder Room Vanity",
+        categoryId: "cabinets",
+        isVisual: false,
+        options: [
+          { id: "powder-pedestal", name: "Pedestal Sink", price: 0 },
+          { id: "powder-driftwood", name: "Add Driftwood Stain Vanity Cabinet", price: 1600 },
+          { id: "powder-fog", name: "Add Fog Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-blue-smoke", name: "Add Blue Smoke Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-pacific-sand", name: "Add Pacific Sand Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-saddle", name: "Add Saddle Paint Vanity Cabinets", price: 1800 },
+          { id: "powder-admiral-blue", name: "Add Admiral Blue Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-willow", name: "Add Willow Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-buttercream", name: "Add Buttercream Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-white", name: "Add White Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-onyx", name: "Add Onyx Paint Vanity Cabinet", price: 1800 },
+          { id: "powder-sahara", name: "Add Sahara Stain Vanity Cabinet", price: 1800 },
+          { id: "powder-cappucino", name: "Add Cappucino Stain Vanity Cabinet", price: 1800 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // COUNTERTOPS
+  // ============================================================
+  {
+    id: "countertops",
+    name: "Countertops",
+    subCategories: [
+      {
+        id: "counter-top",
+        name: "Counter Top",
+        categoryId: "countertops",
+        isVisual: true,
+        options: [
+          { id: "ct-granite-steel-grey", name: "Granite - Steel Grey", price: 0, promptDescriptor: "Steel Grey granite countertop with dark charcoal tones and subtle crystalline flecks" },
+          { id: "ct-granite-dallas-white", name: "Granite - Dallas White", price: 0, promptDescriptor: "Dallas White granite countertop with soft gray and white veining on a creamy base" },
+          { id: "ct-granite-luna-pearl", name: "Granite - Luna Pearl", price: 350, promptDescriptor: "Luna Pearl granite countertop with silver, gray, and white speckled pattern" },
+          { id: "ct-granite-leathered-steel-grey", name: "Granite - Leathered Finish Steel Grey", price: 600, promptDescriptor: "Steel Grey granite countertop with textured leathered finish and dark charcoal tones" },
+          { id: "ct-granite-colonial-white", name: "Granite - Colonial White", price: 750, promptDescriptor: "Colonial White granite countertop with soft white base and light gray mineral deposits" },
+          { id: "ct-granite-oyster-white", name: "Granite - Oyster White", price: 750, promptDescriptor: "Oyster White granite countertop with warm white base and subtle veining" },
+          { id: "ct-granite-fantasy-brown", name: "Granite - Fantasy Brown", price: 1050, promptDescriptor: "Fantasy Brown granite countertop with flowing brown, gray, and white veining" },
+          { id: "ct-quartz-lace-white", name: "Quartz - Lace White", price: 1100, promptDescriptor: "Lace White quartz countertop with clean white surface and minimal pattern" },
+          { id: "ct-quartz-bianco-carrara", name: "Quartz - Bianco Carrara", price: 1400, promptDescriptor: "Bianco Carrara quartz countertop with classic white marble look and soft gray veining" },
+          { id: "ct-quartz-carrara-mist", name: "Quartz - Carrara Mist", price: 1400, promptDescriptor: "Carrara Mist quartz countertop with white base and delicate gray marble veining" },
+          { id: "ct-quartz-pure-white", name: "Quartz - Pure White", price: 1550, promptDescriptor: "Pure White quartz countertop with pristine solid white surface" },
+          { id: "ct-quartz-calacatta-duolina", name: "Quartz - Calacatta Duolina", price: 1550, promptDescriptor: "Calacatta Duolina quartz countertop with bold gray veining on bright white base", nudge: "Best value quartz upgrade" },
+          { id: "ct-granite-leathered-fantasy-brown", name: "Granite - Leathered Finish Fantasy Brown", price: 1550, promptDescriptor: "Fantasy Brown granite with textured leathered finish and flowing brown and gray veining" },
+          { id: "ct-quartz-calacatta-idillio", name: "Quartz - Calacatta Idillio", price: 2100, promptDescriptor: "Calacatta Idillio quartz countertop with dramatic warm-toned veining on white base" },
+          { id: "ct-quartz-calacatta-lavasa", name: "Quartz - Calacatta Lavasa", price: 2400, promptDescriptor: "Calacatta Lavasa quartz countertop with striking gray and gold veining on white base" },
+          { id: "ct-quartz-calacatta-venice", name: "Quartz - Calacatta Venice", price: 2450, promptDescriptor: "Calacatta Venice quartz countertop with dramatic gray and gold veining on a bright white base", nudge: "Most popular countertop upgrade" },
+        ],
+      },
+      {
+        id: "countertop-edge",
+        name: "Countertop Edge",
+        categoryId: "countertops",
+        isVisual: true,
+        options: [
+          { id: "edge-no-upgrade", name: "No Upgrade Wanted", price: 0, promptDescriptor: "standard straight edge countertop profile" },
+          { id: "edge-ogee", name: "Ogee Edge", price: 350, promptDescriptor: "elegant ogee edge profile on countertop with S-shaped curve", nudge: "Elegant finishing touch" },
+          { id: "edge-bullnose", name: "Bullnose Edge", price: 350, promptDescriptor: "rounded bullnose edge profile on countertop" },
+        ],
+      },
+      {
+        id: "kitchen-sink",
+        name: "Kitchen Sink",
+        categoryId: "countertops",
+        isVisual: true,
+        options: [
+          { id: "sink-high-divide-60-40", name: "High Divide 60/40 Stainless Undermount Sink", price: 0, promptDescriptor: "stainless steel undermount 60/40 double bowl kitchen sink with high divider" },
+          { id: "sink-high-divide-50-50", name: "High Divide 50/50 Stainless Undermount Sink", price: 100, promptDescriptor: "stainless steel undermount 50/50 double bowl kitchen sink with high divider" },
+          { id: "sink-single-bowl-stainless", name: "Single Bowl Stainless Undermount Sink", price: 650, promptDescriptor: "large single bowl stainless steel undermount kitchen sink" },
+          { id: "sink-stainless-farmhouse", name: "Stainless Steel Farmhouse Sink", price: 750, promptDescriptor: "stainless steel farmhouse apron-front kitchen sink", nudge: "Trending in new construction" },
+          { id: "sink-egranite-white", name: "Single eGranite White", price: 850, promptDescriptor: "white composite eGranite single bowl undermount kitchen sink" },
+          { id: "sink-egranite-anthracite", name: "Single eGranite Anthracite", price: 850, promptDescriptor: "dark anthracite composite eGranite single bowl undermount kitchen sink" },
+          { id: "sink-egranite-truffle", name: "Single eGranite Truffle", price: 850, promptDescriptor: "warm truffle brown composite eGranite single bowl undermount kitchen sink" },
+          { id: "sink-fireclay-farmhouse", name: "Fireclay Smooth Front Farmhouse Sink", price: 1395, promptDescriptor: "white fireclay smooth front farmhouse apron kitchen sink" },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // ELECTRICAL
+  // ============================================================
+  {
+    id: "electrical",
+    name: "Electrical",
+    subCategories: [
+      {
+        id: "electrical-outlets-standard",
+        name: "Electrical Outlets Standard Height",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "outlets-std-no-upgrade", name: "No Upgrade Wanted", price: 0 },
+          { id: "outlets-std-add", name: "Add Standard Height Electrical Outlets", price: 250 },
+        ],
+      },
+      {
+        id: "electrical-outlets-raised",
+        name: "Electrical Outlets Raised Height",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "outlets-raised-no-upgrade", name: "No Upgrade Wanted", price: 0 },
+          { id: "outlets-raised-add", name: "Add Raised Height Electrical Outlets", price: 350 },
+        ],
+      },
+      {
+        id: "dedicated-garage-fridge-outlet",
+        name: "Dedicated Garage Fridge Outlet",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "garage-fridge-outlet-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "garage-fridge-outlet-add", name: "Add Dedicated Garage Fridge Outlet", price: 500 },
+        ],
+      },
+      {
+        id: "outdoor-eave-lighting",
+        name: "Outdoor Eave Lighting",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "eave-lighting-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "eave-lighting-add", name: "Add Outdoor Eave Lighting", price: 1000 },
+        ],
+      },
+      {
+        id: "under-cabinet-lighting",
+        name: "Under Cabinet Lighting",
+        categoryId: "electrical",
+        isVisual: true,
+        options: [
+          { id: "under-cab-light-no", name: "No Upgrade Wanted", price: 0, promptDescriptor: "no under-cabinet lighting" },
+          { id: "under-cab-light-add", name: "Upgrade to Under Cabinet Lighting", price: 1000, promptDescriptor: "warm LED under-cabinet strip lighting illuminating the countertops", nudge: "Best value — transforms the kitchen feel" },
+        ],
+      },
+      {
+        id: "lighting",
+        name: "Lighting Package",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "lighting-satin-nickel-wh", name: "Included Satin Nickel Whole House", price: 0 },
+          { id: "lighting-orb-wh", name: "Included Oil Rubbed Bronze Whole House", price: 0 },
+          { id: "lighting-orb-combo", name: "Included Oil Rubbed Bronze Combo", price: 0 },
+          { id: "lighting-black-wh", name: "Included Black Whole House", price: 0 },
+          { id: "lighting-black-combo", name: "Included Black Combo", price: 0 },
+          { id: "lighting-brushed-gold-wh", name: "Included Brushed Gold Whole House", price: 0 },
+          { id: "lighting-brushed-gold-combo", name: "Included Brushed Gold Combo", price: 0 },
+          { id: "lighting-designer-brushed-gold-wh", name: "Designer Brushed Gold Whole House", price: 595 },
+          { id: "lighting-designer-brushed-gold-combo", name: "Designer Brushed Gold Combo", price: 595 },
+          { id: "lighting-black-wh-2", name: "Black Whole House", price: 690 },
+          { id: "lighting-black-combo-2", name: "Black Combo", price: 690 },
+          { id: "lighting-satin-nickel-wh-2", name: "Satin Nickel Whole House", price: 690 },
+          { id: "lighting-satin-bronze-wh", name: "Satin Bronze Whole House", price: 690 },
+          { id: "lighting-satin-bronze-combo", name: "Satin Bronze Combo", price: 690 },
+          { id: "lighting-orb-wh-2", name: "Oil Rubbed Bronze Whole House", price: 690 },
+          { id: "lighting-orb-combo-2", name: "Oil Rubbed Bronze Combo", price: 690 },
+          { id: "lighting-designer-black-wh", name: "Designer Black Whole House", price: 740 },
+          { id: "lighting-designer-black-combo", name: "Designer Black Combo", price: 740 },
+          { id: "lighting-designer-silver-wh", name: "Designer Silver Whole House", price: 825 },
+          { id: "lighting-designer-orb-wh", name: "Designer Oil Rubbed Bronze Whole House", price: 895 },
+          { id: "lighting-designer-satin-bronze-wh", name: "Designer Satin Bronze Whole House", price: 1100 },
+          { id: "lighting-designer-satin-bronze-combo", name: "Designer Satin Bronze Combo", price: 1100 },
+        ],
+      },
+      {
+        id: "can-lights-primary",
+        name: "Can Lights in Primary",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "cans-primary-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "cans-primary-add", name: "Add 4 Cans in Primary", price: 900 },
+        ],
+      },
+      {
+        id: "can-lights-additional",
+        name: "Can Lights in Additional Room",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "cans-additional-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "cans-additional-add", name: "Add 4 Cans in Bedroom Bonus or Loft", price: 900 },
+        ],
+      },
+      {
+        id: "great-room-fan",
+        name: "Great Room Fan Color",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "gr-fan-brushed-nickel", name: "Single Light Brushed Nickel", price: 0 },
+          { id: "gr-fan-white", name: "Single Light White", price: 140 },
+          { id: "gr-fan-bronze", name: "Single Light Bronze", price: 140 },
+          { id: "gr-fan-black", name: "Single Light Black", price: 140 },
+          { id: "gr-fan-brushed-gold", name: "Single Light Brushed Gold", price: 140 },
+          { id: "gr-fan-4light-gold", name: "Four Light Gold", price: 250 },
+          { id: "gr-fan-4light-bronze", name: "Four Light Bronze", price: 250 },
+          { id: "gr-fan-4light-black", name: "Four Light Black", price: 250 },
+          { id: "gr-fan-4light-brushed-nickel", name: "Four Light Brushed Nickel", price: 250 },
+          { id: "gr-fan-4light-white", name: "Four Light White", price: 250 },
+        ],
+      },
+      {
+        id: "bedroom-fan",
+        name: "Bedroom Fan Color",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "bed-fan-brushed-nickel", name: "Brushed Nickel", price: 0 },
+          { id: "bed-fan-white", name: "White", price: 140 },
+          { id: "bed-fan-bronze", name: "Bronze", price: 175 },
+          { id: "bed-fan-black", name: "Black", price: 200 },
+          { id: "bed-fan-brushed-gold", name: "Brushed Gold", price: 225 },
+        ],
+      },
+      {
+        id: "great-room-av-point",
+        name: "Great Room AV Point",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "av-point-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "av-point-add", name: "Add AV Point", price: 700 },
+        ],
+      },
+      {
+        id: "cable-outlet-standard",
+        name: "Cable Outlet Interior Standard Height",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "cable-std-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "cable-std-add", name: "Add a Cable Outlet", price: 150 },
+        ],
+      },
+      {
+        id: "cable-outlet-raised",
+        name: "Cable Outlet Interior Raised",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "cable-raised-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "cable-raised-add", name: "Add a Cable Outlet", price: 250 },
+        ],
+      },
+      {
+        id: "cable-elec-interior-raised",
+        name: "Cable and Electrical Outlet Interior Raised",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "cable-elec-int-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "cable-elec-int-add", name: "Add Raised Cable/Elec Outlets", price: 400 },
+        ],
+      },
+      {
+        id: "cable-elec-exterior-raised",
+        name: "Cable and Electrical Outlet Exterior Raised",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "cable-elec-ext-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "cable-elec-ext-add", name: "Add Outlets", price: 400 },
+        ],
+      },
+      {
+        id: "data-elec-interior-raised",
+        name: "Data and Electrical Outlet Interior Raised",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "data-elec-int-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "data-elec-int-add", name: "Add Outlets", price: 500 },
+        ],
+      },
+      {
+        id: "data-elec-exterior-raised",
+        name: "Data and Electrical Outlet Exterior Raised",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "data-elec-ext-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "data-elec-ext-add", name: "Add Outlets", price: 500 },
+        ],
+      },
+      {
+        id: "add-220v-outlet",
+        name: "Add 220V Outlet",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "220v-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "220v-add", name: "Add 220V Outlet", price: 600 },
+        ],
+      },
+      {
+        id: "garage-utility-lights",
+        name: "Garage Utility Lights",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "garage-lights-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "garage-lights-add", name: "Add Garage Utility Lights", price: 500 },
+        ],
+      },
+      {
+        id: "data-standard-outlet",
+        name: "Data Standard Height Outlet",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "data-std-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "data-std-add", name: "Add Standard Height Data Outlet", price: 250 },
+        ],
+      },
+      {
+        id: "data-raised-outlet",
+        name: "Data Raised Height Outlet",
+        categoryId: "electrical",
+        isVisual: false,
+        options: [
+          { id: "data-raised-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "data-raised-add", name: "Add Raised Data Outlet", price: 350 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // EXT FINISHES
+  // ============================================================
+  {
+    id: "ext-finishes",
+    name: "Ext Finishes",
+    subCategories: [
+      {
+        id: "additional-concrete",
+        name: "Additional Concrete",
+        categoryId: "ext-finishes",
+        isVisual: false,
+        options: [
+          { id: "concrete-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "concrete-add", name: "Additional Concrete Paving", price: 8 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // FLOORING
+  // ============================================================
+  {
+    id: "flooring",
+    name: "Flooring",
+    subCategories: [
+      {
+        id: "backsplash",
+        name: "Backsplash",
+        categoryId: "flooring",
+        isVisual: true,
+        options: [
+          { id: "bs-baker-4x16-white-gloss", name: "Baker Blvd 4x16 - White Gloss - 3rd Stagger Lay", price: 0, promptDescriptor: "white glossy 4x16 subway tile backsplash in staggered layout" },
+          { id: "bs-baker-4x16-taupe", name: "Baker Blvd 4x16 - Taupe - 3rd Stagger Lay", price: 150, promptDescriptor: "warm taupe 4x16 subway tile backsplash in staggered layout" },
+          { id: "bs-baker-4x16-warm-grey", name: "Baker Blvd 4x16 - Warm Grey - 3rd Stagger Lay", price: 150, promptDescriptor: "warm grey 4x16 subway tile backsplash in staggered layout" },
+          { id: "bs-baker-4x16-glacier", name: "Baker Blvd 4x16 - Glacier - 3rd Stagger Lay", price: 150, promptDescriptor: "cool glacier white 4x16 subway tile backsplash in staggered layout" },
+          { id: "bs-baker-4x16-carbon", name: "Baker Blvd 4x16 - Carbon - 3rd Stagger Lay", price: 150, promptDescriptor: "dark carbon 4x16 subway tile backsplash in staggered layout" },
+          { id: "bs-baker-4x12-bev-white", name: "Baker Blvd 4x12 Beveled - White Gloss - 3rd Stagger Lay", price: 175, promptDescriptor: "white glossy beveled 4x12 subway tile backsplash in staggered layout" },
+          { id: "bs-vesper-eminent", name: "Vesper 6x6 - Eminent - Straight Lay", price: 250, promptDescriptor: "Vesper 6x6 square tile in Eminent color with straight lay pattern" },
+          { id: "bs-vesper-awaken", name: "Vesper 6x6 - Awaken - Straight Lay", price: 250, promptDescriptor: "Vesper 6x6 square tile in Awaken color with straight lay pattern" },
+          { id: "bs-vesper-callisto", name: "Vesper 6x6 - Callisto - Straight Lay", price: 250, promptDescriptor: "Vesper 6x6 square tile in Callisto color with straight lay pattern" },
+          { id: "bs-vesper-alba", name: "Vesper 6x6 - Alba - Straight Lay", price: 250, promptDescriptor: "Vesper 6x6 square tile in Alba color with straight lay pattern" },
+          { id: "bs-mythology-santorini", name: "Mythology 4x12 - Santorini - 3rd Stagger Lay", price: 325, promptDescriptor: "Mythology 4x12 tile in Santorini blue-white with staggered layout" },
+          { id: "bs-naive-white", name: "Naive 3x12 - White - 3rd Stagger Horizontal Lay", price: 350, promptDescriptor: "handmade-look Naive 3x12 white tile with wavy texture in horizontal stagger" },
+          { id: "bs-naive-pearl", name: "Naive 3x12 - Pearl - 3rd Stagger Horizontal Lay", price: 350, promptDescriptor: "handmade-look Naive 3x12 pearl tile with wavy texture in horizontal stagger" },
+          { id: "bs-naive-mint", name: "Naive 3x12 - Mint - 3rd Stagger Horizontal Lay", price: 350, promptDescriptor: "handmade-look Naive 3x12 mint green tile with wavy texture in horizontal stagger" },
+          { id: "bs-baker-picket-taupe-h", name: "Baker Blvd Picket Gloss - Taupe - Horizontal Lay", price: 375, promptDescriptor: "taupe glossy picket-shaped tile backsplash in horizontal layout" },
+          { id: "bs-baker-picket-warm-grey-h", name: "Baker Blvd Picket Gloss - Warm Grey - Horizontal Lay", price: 375, promptDescriptor: "warm grey glossy picket-shaped tile backsplash in horizontal layout" },
+          { id: "bs-baker-picket-white-h", name: "Baker Blvd Picket Gloss - White - Horizontal Lay", price: 375, promptDescriptor: "white glossy picket-shaped tile backsplash in horizontal layout" },
+          { id: "bs-baker-picket-taupe-v", name: "Baker Blvd Picket Gloss - Taupe - Vertical Lay", price: 375, promptDescriptor: "taupe glossy picket-shaped tile backsplash in vertical layout" },
+          { id: "bs-baker-picket-warm-grey-v", name: "Baker Blvd Picket Gloss - Warm Grey - Vertical Lay", price: 375, promptDescriptor: "warm grey glossy picket-shaped tile backsplash in vertical layout" },
+          { id: "bs-baker-picket-white-v", name: "Baker Blvd Picket Gloss - White - Vertical Lay", price: 375, promptDescriptor: "white glossy picket-shaped tile backsplash in vertical layout" },
+          { id: "bs-gateway-picket-robins-egg", name: "Gateway 3x12 Picket - Robins Egg - Horizontal Lay", price: 375, promptDescriptor: "robin's egg blue 3x12 picket tile backsplash in horizontal layout" },
+          { id: "bs-gateway-picket-graywash", name: "Gateway 3x12 Picket - Graywash - Horizontal Lay", price: 375, promptDescriptor: "graywash 3x12 picket tile backsplash in horizontal layout" },
+          { id: "bs-gateway-picket-cream", name: "Gateway 3x12 Picket - Cream - Horizontal Lay", price: 375, promptDescriptor: "cream 3x12 picket tile backsplash in horizontal layout" },
+          { id: "bs-gateway-picket-white", name: "Gateway 3x12 Picket - White - Horizontal Lay", price: 375, promptDescriptor: "white 3x12 picket tile backsplash in horizontal layout" },
+          { id: "bs-baker-4x12-bev-herringbone", name: "Baker Blvd 4x12 Beveled - White Gloss - Herringbone Lay", price: 400, promptDescriptor: "white glossy beveled 4x12 tile in herringbone pattern backsplash" },
+          { id: "bs-baker-herringbone-carbon", name: "Baker Blvd Herringbone Matte Mosaic - Carbon", price: 425, promptDescriptor: "dark carbon matte herringbone mosaic tile backsplash" },
+          { id: "bs-baker-herringbone-taupe", name: "Baker Blvd Herringbone Matte Mosaic - Taupe", price: 425, promptDescriptor: "warm taupe matte herringbone mosaic tile backsplash" },
+          { id: "bs-baker-herringbone-warm-grey", name: "Baker Blvd Herringbone Matte Mosaic - Warm Grey", price: 425, promptDescriptor: "warm grey matte herringbone mosaic tile backsplash" },
+          { id: "bs-baker-herringbone-glacier", name: "Baker Blvd Herringbone Matte Mosaic - Glacier", price: 425, promptDescriptor: "glacier white matte herringbone mosaic tile backsplash" },
+          { id: "bs-baker-herringbone-sage", name: "Baker Blvd Herringbone Matte Mosaic - Sage", price: 425, promptDescriptor: "soft sage green matte herringbone mosaic tile backsplash" },
+          { id: "bs-baker-herringbone-white", name: "Baker Blvd Herringbone Matte Mosaic - White", price: 425, promptDescriptor: "white matte herringbone mosaic tile backsplash", nudge: "Interior designer favorite" },
+        ],
+      },
+      {
+        id: "main-area-flooring-type",
+        name: "Main Area Flooring Type",
+        categoryId: "flooring",
+        isVisual: false,
+        options: [
+          { id: "flooring-type-7-lvp-standard", name: "7 Inch LVP Standard Areas", price: 0 },
+          { id: "flooring-type-7-lvp-primary", name: "7 Inch LVP in Primary + Standard Areas", price: 1475 },
+          { id: "flooring-type-9-lvp-standard", name: "9 Inch LVP Standard Areas", price: 2095 },
+          { id: "flooring-type-5-hardwood-standard", name: "5 Inch Hardwood Standard Areas", price: 3350 },
+          { id: "flooring-type-9-lvp-primary", name: "9 Inch LVP in Primary + Standard Areas", price: 3980 },
+          { id: "flooring-type-5-hardwood-primary", name: "5 Inch Hardwood in Primary + Standard Areas", price: 4955 },
+          { id: "flooring-type-7-hardwood-standard", name: "7 Inch Hardwood Standard Areas", price: 5495 },
+          { id: "flooring-type-7-lvp-whole", name: "7 Inch LVP in Whole House", price: 5515 },
+          { id: "flooring-type-7-hardwood-primary", name: "7 Inch Hardwood in Primary + Standard Areas", price: 7410 },
+          { id: "flooring-type-9-lvp-whole", name: "9 Inch LVP in Whole House", price: 8690 },
+          { id: "flooring-type-5-hardwood-whole", name: "5 Inch Hardwood in Whole House", price: 10210 },
+          { id: "flooring-type-7-hardwood-whole", name: "7 Inch Hardwood in Whole House", price: 13695 },
+        ],
+      },
+      {
+        id: "main-area-flooring-color",
+        name: "Main Area Flooring Color",
+        categoryId: "flooring",
+        isVisual: true,
+        options: [
+          { id: "floor-color-polaris-toasted-taupe", name: "7\" LVP - Polaris Plus - Toasted Taupe", price: 0, promptDescriptor: "warm toasted taupe luxury vinyl plank flooring" },
+          { id: "floor-color-polaris-wild-dunes", name: "7\" LVP - Polaris Plus - Wild Dunes", price: 0, promptDescriptor: "light sandy Wild Dunes luxury vinyl plank flooring" },
+          { id: "floor-color-polaris-cinnamon-walnut", name: "7\" LVP - Polaris Plus - Cinnamon Walnut", price: 0, promptDescriptor: "rich cinnamon walnut luxury vinyl plank flooring" },
+          { id: "floor-color-polaris-marina", name: "7\" LVP - Polaris Plus - Marina", price: 0, promptDescriptor: "cool gray Marina luxury vinyl plank flooring" },
+          { id: "floor-color-polaris-sea-glass", name: "7\" LVP - Polaris Plus - Sea Glass", price: 0, promptDescriptor: "light greige Sea Glass luxury vinyl plank flooring" },
+          { id: "floor-color-homestead-cabriole-brown", name: "9\" LVP - Homestead - Cabriole Brown", price: 0, promptDescriptor: "wide-plank Cabriole Brown luxury vinyl plank flooring" },
+          { id: "floor-color-homestead-lounge-greige", name: "9\" LVP - Homestead - Lounge Greige", price: 0, promptDescriptor: "wide-plank Lounge Greige luxury vinyl plank flooring" },
+          { id: "floor-color-homestead-shell-taupe", name: "9\" LVP - Homestead - Shell Taupe", price: 0, promptDescriptor: "wide-plank Shell Taupe luxury vinyl plank flooring" },
+          { id: "floor-color-homestead-wingback-brown", name: "9\" LVP - Homestead - Wingback Brown", price: 0, promptDescriptor: "wide-plank Wingback Brown luxury vinyl plank flooring" },
+          { id: "floor-color-mariner-harbor", name: "7\" Hardwood - Mariner Oak - Harbor", price: 0, promptDescriptor: "7-inch Harbor oak hardwood flooring with warm brown tones", nudge: "Premium feel underfoot" },
+          { id: "floor-color-mariner-voyage", name: "7\" Hardwood - Mariner Oak - Voyage", price: 0, promptDescriptor: "7-inch Voyage oak hardwood flooring with medium brown tones" },
+          { id: "floor-color-mariner-port", name: "7\" Hardwood - Mariner Oak - Port", price: 0, promptDescriptor: "7-inch Port oak hardwood flooring with deep brown tones" },
+          { id: "floor-color-delray-lowtide", name: "5\" Hardwood - Delray - Lowtide", price: 0, promptDescriptor: "5-inch Lowtide hardwood flooring with light natural tones" },
+          { id: "floor-color-delray-windsurf", name: "5\" Hardwood - Delray - Windsurf", price: 0, promptDescriptor: "5-inch Windsurf hardwood flooring with medium warm tones" },
+          { id: "floor-color-delray-bayfront", name: "5\" Hardwood - Delray - Bayfront", price: 0, promptDescriptor: "5-inch Bayfront hardwood flooring with rich brown tones" },
+          { id: "floor-color-delray-crescent-beach", name: "5\" Hardwood - Delray - Crescent Beach", price: 0, promptDescriptor: "5-inch Crescent Beach hardwood flooring with warm golden tones" },
+        ],
+      },
+      {
+        id: "carpet-color",
+        name: "Carpet Color",
+        categoryId: "flooring",
+        isVisual: false,
+        options: [
+          { id: "carpet-soft-taupe", name: "Graceful Finesse - Soft Taupe", price: 0 },
+          { id: "carpet-none", name: "No Carpet in House", price: 0 },
+          { id: "carpet-ecru", name: "Graceful Finesse - Ecru", price: 0 },
+          { id: "carpet-whisper", name: "Graceful Finesse - Whisper", price: 0 },
+          { id: "carpet-concrete", name: "Graceful Finesse - Concrete", price: 0 },
+          { id: "carpet-gifted-art-sculpture", name: "Gifted Art - Sculpture (1 Story)", price: 900 },
+          { id: "carpet-gifted-blend-sculpture", name: "Gifted Blend - Sculpture (1 Story)", price: 900 },
+          { id: "carpet-gifted-art-almond-silk", name: "Gifted Art - Almond Silk (1 Story)", price: 900 },
+          { id: "carpet-gifted-art-river-birch", name: "Gifted Art - River Birch (1 Story)", price: 900 },
+          { id: "carpet-gifted-art-subtle-clay", name: "Gifted Art - Subtle Clay (1 Story)", price: 900 },
+          { id: "carpet-gifted-blend-river-birch", name: "Gifted Blend - River Birch (1 Story)", price: 900 },
+          { id: "carpet-gifted-blend-subtle-clay", name: "Gifted Blend - Subtle Clay (1 Story)", price: 900 },
+          { id: "carpet-gifted-blend-almond-silk", name: "Gifted Blend - Almond Silk (1 Story)", price: 900 },
+        ],
+      },
+      {
+        id: "primary-shower",
+        name: "Primary Shower",
+        categoryId: "flooring",
+        isVisual: false,
+        options: [
+          { id: "pri-shower-omega-bone-square", name: "Omega 13x13 - Bone - Khaki Outline Square Floor", price: 0 },
+          { id: "pri-shower-omega-silver-square", name: "Omega 13x13 - Silver - Concrete Outline Square Floor", price: 0 },
+          { id: "pri-shower-omega-grey-square", name: "Omega 13x13 - Grey - Taupe Outline Square Floor", price: 0 },
+          { id: "pri-shower-omega-bone-penny", name: "Omega 13x13 - Bone - Khaki Outline Penny Floor", price: 750 },
+          { id: "pri-shower-omega-silver-penny", name: "Omega 13x13 - Silver - Concrete Outline Penny Floor", price: 750 },
+          { id: "pri-shower-omega-grey-penny", name: "Omega 13x13 - Grey - Taupe Outline Penny Floor", price: 750 },
+          { id: "pri-shower-infinity-v-calacatta", name: "Infinity 12x24 - Vertical Lay - Calacatta", price: 1250 },
+          { id: "pri-shower-infinity-v-marquant", name: "Infinity 12x24 - Vertical Lay - Marquant", price: 1250 },
+          { id: "pri-shower-infinity-h-calacatta", name: "Infinity 12x24 - Horizontal Lay - Calacatta", price: 1250 },
+          { id: "pri-shower-infinity-h-marquant", name: "Infinity 12x24 - Horizontal Lay - Marquant", price: 1250 },
+          { id: "pri-shower-sphinx-h-grey", name: "Sphinx 12x24 - Horizontal Lay - Grey", price: 1400 },
+          { id: "pri-shower-sphinx-h-white", name: "Sphinx 12x24 - Horizontal Lay - White", price: 1400 },
+          { id: "pri-shower-sphinx-v-cream", name: "Sphinx 12x24 - Vertical Lay - Cream", price: 1400 },
+          { id: "pri-shower-sphinx-v-grey", name: "Sphinx 12x24 - Vertical Lay - Grey", price: 1400 },
+          { id: "pri-shower-sphinx-v-white", name: "Sphinx 12x24 - Vertical Lay - White", price: 1400 },
+          { id: "pri-shower-sphinx-h-cream", name: "Sphinx 12x24 - Horizontal Lay - Cream", price: 1400 },
+          { id: "pri-shower-onyx-h-white", name: "Onyx 12x24 Matte - Horizontal Lay - White", price: 1600 },
+          { id: "pri-shower-onyx-h-ivory", name: "Onyx 12x24 Matte - Horizontal Lay - Ivory", price: 1600 },
+          { id: "pri-shower-onyx-h-dark-grey", name: "Onyx 12x24 Matte - Horizontal Lay - Dark Grey", price: 1600 },
+          { id: "pri-shower-onyx-v-dark-grey", name: "Onyx 12x24 Matte - Vertical Lay - Dark Grey", price: 1600 },
+          { id: "pri-shower-onyx-v-ivory", name: "Onyx 12x24 Matte - Vertical Lay - Ivory", price: 1600 },
+          { id: "pri-shower-onyx-v-white", name: "Onyx 12x24 Matte - Vertical Lay - White", price: 1600 },
+          { id: "pri-shower-baker-h-white-hex", name: "Baker Blvd 4x16 Matte - Horiz Lay - White - Hex Floor", price: 1750 },
+          { id: "pri-shower-baker-h-carbon-hex", name: "Baker Blvd 4x16 Matte - Horiz Lay - Carbon - Hex Floor", price: 1750 },
+          { id: "pri-shower-baker-h-white-penny", name: "Baker Blvd 4x16 Matte - Horiz Lay - White - Penny Floor", price: 1750 },
+          { id: "pri-shower-baker-h-carbon-penny", name: "Baker Blvd 4x16 Matte - Horiz Lay - Carbon - Penny Floor", price: 1750 },
+          { id: "pri-shower-naive-v-white", name: "Naive 3x12 - Vertical Lay - White - Penny Floor", price: 1900 },
+          { id: "pri-shower-naive-v-pearl", name: "Naive 3x12 - Vertical Lay - Pearl - Penny Floor", price: 1900 },
+          { id: "pri-shower-naive-v-mint", name: "Naive 3x12 - Vertical Lay - Mint - Penny Floor", price: 1900 },
+        ],
+      },
+      {
+        id: "floor-tile-color",
+        name: "Floor Tile Color",
+        categoryId: "flooring",
+        isVisual: false,
+        options: [
+          { id: "floor-tile-omega-bone", name: "Omega 13x13 - Bone", price: 0 },
+          { id: "floor-tile-omega-silver", name: "Omega 13x13 - Silver", price: 0 },
+          { id: "floor-tile-omega-grey", name: "Omega 13x13 - Grey", price: 0 },
+          { id: "floor-tile-infinity-calacatta", name: "Infinity 12x24 - Calacatta", price: 1300 },
+          { id: "floor-tile-infinity-marquant", name: "Infinity 12x24 - Marquant", price: 1300 },
+          { id: "floor-tile-sphinx-white", name: "Sphinx 12x24 - White", price: 1500 },
+          { id: "floor-tile-sphinx-grey", name: "Sphinx 12x24 - Grey", price: 1500 },
+          { id: "floor-tile-sphinx-cream", name: "Sphinx 12x24 - Cream", price: 1500 },
+          { id: "floor-tile-onyx-white", name: "Onyx 12x24 Matte - White", price: 2000 },
+          { id: "floor-tile-onyx-ivory", name: "Onyx 12x24 Matte - Ivory", price: 2000 },
+          { id: "floor-tile-onyx-dark-grey", name: "Onyx 12x24 Matte - Dark Grey", price: 2000 },
+        ],
+      },
+      {
+        id: "secondary-shower",
+        name: "Secondary Shower Style Tile",
+        categoryId: "flooring",
+        isVisual: false,
+        options: [
+          { id: "sec-shower-omega-bone", name: "Omega 13x13 - Straight Lay - Bone", price: 0 },
+          { id: "sec-shower-omega-silver", name: "Omega 13x13 - Straight Lay - Silver", price: 0 },
+          { id: "sec-shower-omega-grey", name: "Omega 13x13 - Straight Lay - Grey", price: 0 },
+          { id: "sec-shower-infinity-h-calacatta", name: "Infinity 12x24 - Horizontal Lay - Calacatta", price: 1300 },
+          { id: "sec-shower-infinity-h-marquant", name: "Infinity 12x24 - Horizontal Lay - Marquant", price: 1300 },
+          { id: "sec-shower-infinity-v-calacatta", name: "Infinity 12x24 - Vertical Lay - Calacatta", price: 1300 },
+          { id: "sec-shower-infinity-v-marquant", name: "Infinity 12x24 - Vertical Lay - Marquant", price: 1300 },
+          { id: "sec-shower-sphinx-v-cream", name: "Sphinx 12x24 - Vertical Lay - Cream", price: 1400 },
+          { id: "sec-shower-sphinx-v-grey", name: "Sphinx 12x24 - Vertical Lay - Grey", price: 1400 },
+          { id: "sec-shower-sphinx-v-white", name: "Sphinx 12x24 - Vertical Lay - White", price: 1400 },
+          { id: "sec-shower-sphinx-h-cream", name: "Sphinx 12x24 - Horizontal Lay - Cream", price: 1400 },
+          { id: "sec-shower-sphinx-h-white", name: "Sphinx 12x24 - Horizontal Lay - White", price: 1400 },
+          { id: "sec-shower-sphinx-h-grey", name: "Sphinx 12x24 - Horizontal Lay - Grey", price: 1400 },
+          { id: "sec-shower-onyx-h-white", name: "Onyx 12x24 Matte - Horizontal Lay - White", price: 1500 },
+          { id: "sec-shower-onyx-h-ivory", name: "Onyx 12x24 Matte - Horizontal Lay - Ivory", price: 1500 },
+          { id: "sec-shower-onyx-h-dark-grey", name: "Onyx 12x24 Matte - Horizontal Lay - Dark Grey", price: 1500 },
+          { id: "sec-shower-onyx-v-dark-grey", name: "Onyx 12x24 Matte - Vertical Lay - Dark Grey", price: 1500 },
+          { id: "sec-shower-onyx-v-ivory", name: "Onyx 12x24 Matte - Vertical Lay - Ivory", price: 1500 },
+          { id: "sec-shower-onyx-v-white", name: "Onyx 12x24 Matte - Vertical Lay - White", price: 1500 },
+          { id: "sec-shower-baker-h-white", name: "Baker Blvd 4x16 Gloss - Horizontal Lay - White", price: 1700 },
+        ],
+      },
+      {
+        id: "fireplace-tile-surround",
+        name: "Fireplace Tile Surround",
+        categoryId: "flooring",
+        isVisual: false,
+        options: [
+          { id: "fp-tile-marvel-calacatta", name: "Marvel 4x12 - Calacatta", price: 0 },
+          { id: "fp-tile-marvel-statuario", name: "Marvel 4x12 - Statuario", price: 0 },
+          { id: "fp-tile-marvel-zebrino", name: "Marvel 4x12 - Zebrino", price: 0 },
+          { id: "fp-tile-marvel-allure", name: "Marvel 4x12 - Allure", price: 0 },
+          { id: "fp-tile-marvel-stella", name: "Marvel 4x12 - Stella", price: 0 },
+          { id: "fp-tile-skyline-sunset", name: "Skyline 4x8 - Sunset Street", price: 150 },
+          { id: "fp-tile-skyline-highrise", name: "Skyline 4x8 - Highrise Grey", price: 150 },
+          { id: "fp-tile-skyline-brick-lane", name: "Skyline 4x8 - Brick Lane", price: 150 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // HARDWARE
+  // ============================================================
+  {
+    id: "hardware",
+    name: "Hardware",
+    subCategories: [
+      {
+        id: "door-hardware",
+        name: "Door Hardware",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "door-hw-miraloma-sn", name: "Miraloma Park Knob - Satin Nickel", price: 0 },
+          { id: "door-hw-union-square-sn", name: "Union Square Knob - Satin Nickel", price: 50 },
+          { id: "door-hw-miraloma-black", name: "Miraloma Park Knob - Black", price: 100 },
+          { id: "door-hw-union-square-black", name: "Union Square Knob - Black", price: 150 },
+          { id: "door-hw-lombard-sn", name: "Lombard Lever - Satin Nickel", price: 200 },
+          { id: "door-hw-lombard-orb", name: "Lombard Lever - Oil Rubbed Bronze", price: 250 },
+          { id: "door-hw-lombard-black", name: "Lombard Lever - Black", price: 250 },
+          { id: "door-hw-sea-cliff-sn", name: "Sea Cliff Lever - Satin Nickel", price: 250 },
+          { id: "door-hw-sea-cliff-orb", name: "Sea Cliff Lever - Oil Rubbed Bronze", price: 250 },
+          { id: "door-hw-sea-cliff-black", name: "Sea Cliff Lever - Black", price: 250 },
+          { id: "door-hw-tiburon-sn", name: "Tiburon Lever - Satin Nickel", price: 650 },
+          { id: "door-hw-tiburon-orb", name: "Tiburon Lever - Oil Rubbed Bronze", price: 650 },
+          { id: "door-hw-tiburon-black", name: "Tiburon Lever - Black", price: 650 },
+          { id: "door-hw-tiburon-brass", name: "Tiburon Lever - Satin Brass", price: 650 },
+        ],
+      },
+      {
+        id: "bath-hardware",
+        name: "Bath Hardware",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "bath-hw-miraloma-sn", name: "Miraloma Park - Satin Nickel", price: 0 },
+          { id: "bath-hw-miraloma-orb", name: "Miraloma Park - Oil Rubbed Bronze", price: 150 },
+          { id: "bath-hw-miraloma-black", name: "Miraloma Park - Black", price: 250 },
+          { id: "bath-hw-park-presidio-sn", name: "Park Presidio - Satin Nickel", price: 500 },
+          { id: "bath-hw-tiburon-sn", name: "Tiburon - Satin Nickel", price: 500 },
+          { id: "bath-hw-tiburon-orb", name: "Tiburon - Oil Rubbed Bronze", price: 600 },
+          { id: "bath-hw-tiburon-black", name: "Tiburon - Black", price: 600 },
+          { id: "bath-hw-tiburon-brass", name: "Tiburon - Satin Brass", price: 600 },
+          { id: "bath-hw-park-presidio-orb", name: "Park Presidio - Oil Rubbed Bronze", price: 600 },
+          { id: "bath-hw-park-presidio-black", name: "Park Presidio - Black", price: 600 },
+          { id: "bath-hw-park-presidio-brass", name: "Park Presidio - Satin Brass", price: 600 },
+        ],
+      },
+      {
+        id: "blinds",
+        name: "Blinds",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "blinds-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "blinds-add", name: "Add Blinds Throughout House", price: 1300 },
+        ],
+      },
+      {
+        id: "address-style",
+        name: "Address Style",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "address-5inch", name: "5 Inch Address Numbers", price: 0 },
+          { id: "address-plaque", name: "Address Plaque", price: 150 },
+          { id: "address-modern", name: "Modern Numbers", price: 400 },
+          { id: "address-stone", name: "Address Stone", price: 350 },
+        ],
+      },
+      {
+        id: "front-door-handle",
+        name: "Front Door Handle Style",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "front-handle-match", name: "Match Interior Doorknob Style", price: 0 },
+          { id: "front-handle-kellington-sn", name: "Kellington - Satin Nickel", price: 285 },
+          { id: "front-handle-ocean-beach-sn", name: "Ocean Beach - Satin Nickel", price: 300 },
+          { id: "front-handle-kellington-black", name: "Kellington - Powder Coated Black", price: 315 },
+          { id: "front-handle-kellington-bronze", name: "Kellington - Tuscany Bronze", price: 315 },
+        ],
+      },
+      {
+        id: "adt-deadbolt",
+        name: "Additional ADT Deadbolt",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "adt-deadbolt-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "adt-deadbolt-add", name: "Add ADT Deadbolt", price: 350 },
+        ],
+      },
+      {
+        id: "primary-bath-mirrors",
+        name: "Primary Bath Mirrors",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "pri-mirror-49-gunmetal", name: "Style 49 Gunmetal Nickel", price: 0 },
+          { id: "pri-mirror-49-orb", name: "Style 49 Oil Rubbed Bronze", price: 0 },
+          { id: "pri-mirror-897-sn", name: "Style 897 Satin Nickel", price: 50 },
+          { id: "pri-mirror-897-white", name: "Style 897 White", price: 50 },
+          { id: "pri-mirror-897-black", name: "Style 897 Black", price: 75 },
+          { id: "pri-mirror-897-wood", name: "Style 897 Wood", price: 75 },
+          { id: "pri-mirror-241-black", name: "Style 241 Black", price: 175 },
+          { id: "pri-mirror-241-silver", name: "Style 241 Silver", price: 175 },
+          { id: "pri-mirror-241-gold", name: "Style 241 Gold", price: 175 },
+          { id: "pri-mirror-fc30-gold", name: "Style FC30 Round Gold", price: 300 },
+          { id: "pri-mirror-fc30-black", name: "Style FC30 Round Black", price: 300 },
+          { id: "pri-mirror-fc30-bn", name: "Style FC30 Round Brushed Nickel", price: 300 },
+          { id: "pri-mirror-fr2436-black", name: "Style FR2436 Radius Black", price: 350 },
+          { id: "pri-mirror-fr2436-bn", name: "Style FR2436 Radius Brushed Nickel", price: 350 },
+          { id: "pri-mirror-fr2436-gold", name: "Style FR2436 Radius Gold", price: 350 },
+          { id: "pri-mirror-fa2638-black", name: "Style FA2638 Arched Black", price: 400 },
+          { id: "pri-mirror-fa2638-bn", name: "Style FA2638 Arched Brushed Nickel", price: 400 },
+          { id: "pri-mirror-fa2638-gold", name: "Style FA2638 Arched Gold", price: 400 },
+        ],
+      },
+      {
+        id: "secondary-bath-mirrors",
+        name: "Secondary Bath Mirrors",
+        categoryId: "hardware",
+        isVisual: false,
+        options: [
+          { id: "sec-mirror-49-gunmetal", name: "Style 49 Gunmetal Nickel", price: 0 },
+          { id: "sec-mirror-49-orb", name: "Style 49 Oil Rubbed Bronze", price: 0 },
+          { id: "sec-mirror-897-sn", name: "Style 897 Satin Nickel", price: 75 },
+          { id: "sec-mirror-897-white", name: "Style 897 White", price: 75 },
+          { id: "sec-mirror-897-black", name: "Style 897 Black", price: 150 },
+          { id: "sec-mirror-897-wood", name: "Style 897 Wood", price: 150 },
+          { id: "sec-mirror-241-black", name: "Style 241 Black", price: 225 },
+          { id: "sec-mirror-241-silver", name: "Style 241 Silver", price: 225 },
+          { id: "sec-mirror-241-gold", name: "Style 241 Gold", price: 225 },
+          { id: "sec-mirror-fc30-gold", name: "Style FC30 Round Gold", price: 600 },
+          { id: "sec-mirror-fc30-black", name: "Style FC30 Round Black", price: 600 },
+          { id: "sec-mirror-fc30-bn", name: "Style FC30 Round Brushed Nickel", price: 600 },
+          { id: "sec-mirror-fr2436-black", name: "Style FR2436 Radius Black", price: 650 },
+          { id: "sec-mirror-fr2436-bn", name: "Style FR2436 Radius Brushed Nickel", price: 650 },
+          { id: "sec-mirror-fr2436-gold", name: "Style FR2436 Radius Gold", price: 650 },
+          { id: "sec-mirror-fa2638-black", name: "Style FA2638 Arched Black", price: 700 },
+          { id: "sec-mirror-fa2638-bn", name: "Style FA2638 Arched Brushed Nickel", price: 700 },
+          { id: "sec-mirror-fa2638-gold", name: "Style FA2638 Arched Gold", price: 700 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // HVAC
+  // ============================================================
+  {
+    id: "hvac",
+    name: "HVAC",
+    subCategories: [
+      {
+        id: "clean-air-upgrade",
+        name: "Clean Air Upgrade",
+        categoryId: "hvac",
+        isVisual: false,
+        options: [
+          { id: "clean-air-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "clean-air-add", name: "Add Clean Air Upgrade", price: 1500 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // INSULATION
+  // ============================================================
+  {
+    id: "insulation",
+    name: "Insulation",
+    subCategories: [
+      {
+        id: "spray-foam",
+        name: "Spray Foam",
+        categoryId: "insulation",
+        isVisual: false,
+        options: [
+          { id: "spray-foam-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "spray-foam-add", name: "Upgrade to Spray Foam Insulation", price: 8000 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // LOW VOLTAGE
+  // ============================================================
+  {
+    id: "low-voltage",
+    name: "Low Voltage",
+    subCategories: [
+      {
+        id: "adt-security",
+        name: "ADT Security",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "adt-security-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "adt-security-add", name: "Add ADT Security Package Safe Streets", price: 1550 },
+        ],
+      },
+      {
+        id: "adt-contract",
+        name: "ADT Contract",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "adt-contract-yes", name: "Currently in ADT Contract - Yes", price: 0 },
+          { id: "adt-contract-no", name: "Currently in ADT Contract - No", price: 0 },
+        ],
+      },
+      {
+        id: "adt-keypad",
+        name: "Additional ADT Keypad",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "adt-keypad-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "adt-keypad-add", name: "Add Additional Keypad", price: 400 },
+        ],
+      },
+      {
+        id: "deako-5-switches",
+        name: "Additional 5 Deako Switches",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "deako-5-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "deako-5-add", name: "Add 5 Pack of Switches", price: 425 },
+        ],
+      },
+      {
+        id: "deako-15-switches",
+        name: "Additional 15 Deako Switches",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "deako-15-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "deako-15-add", name: "Add 15 Pack of Switches", price: 1250 },
+        ],
+      },
+      {
+        id: "deako-30-switches",
+        name: "Additional 30 Deako Switches",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "deako-30-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "deako-30-add", name: "Add 30 Pack of Switches", price: 2350 },
+        ],
+      },
+      {
+        id: "smart-plugs-5",
+        name: "Smart Plugs 5 Pack",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "smart-plugs-5-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "smart-plugs-5-add", name: "Add Deako 5 Pack Smart Plugs", price: 200 },
+        ],
+      },
+      {
+        id: "smart-plugs-10",
+        name: "Smart Plugs 10 Pack",
+        categoryId: "low-voltage",
+        isVisual: false,
+        options: [
+          { id: "smart-plugs-10-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "smart-plugs-10-add", name: "Add Deako 10 Pack Smart Plugs", price: 400 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // PAINT
+  // ============================================================
+  {
+    id: "paint",
+    name: "Paint",
+    subCategories: [
+      {
+        id: "door-casing-color",
+        name: "Door and Door Casing Color",
+        categoryId: "paint",
+        isVisual: false,
+        options: [
+          { id: "door-color-match-trim", name: "Match Trim Paint Color", price: 0 },
+          { id: "door-color-in-the-shadows", name: "In the Shadows", price: 2500 },
+          { id: "door-color-rabbits-ear", name: "Rabbits Ear", price: 2500 },
+          { id: "door-color-hurricane-haze", name: "Hurricane Haze", price: 2500 },
+          { id: "door-color-dark-woods", name: "Dark Woods", price: 2500 },
+          { id: "door-color-knights-armor", name: "Knights Armor", price: 2500 },
+        ],
+      },
+      {
+        id: "ceiling-paint",
+        name: "Ceiling Paint Color",
+        categoryId: "paint",
+        isVisual: false,
+        options: [
+          { id: "ceiling-cold-foam", name: "Cold Foam", price: 0 },
+          { id: "ceiling-delicate-white", name: "Delicate White", price: 0 },
+          { id: "ceiling-in-the-cloud", name: "In the Cloud", price: 0 },
+          { id: "ceiling-commercial-white", name: "Commercial White", price: 0 },
+        ],
+      },
+      {
+        id: "common-wall-paint",
+        name: "Common Wall Paint Color",
+        categoryId: "paint",
+        isVisual: false,
+        options: [
+          { id: "wall-whiskers", name: "Whiskers", price: 0 },
+          { id: "wall-delicate-white", name: "Delicate White", price: 0 },
+          { id: "wall-hurricane-haze", name: "Hurricane Haze", price: 0 },
+          { id: "wall-willow-springs", name: "Willow Springs", price: 0 },
+          { id: "wall-fog", name: "Fog", price: 0 },
+          { id: "wall-shark", name: "Shark", price: 0 },
+          { id: "wall-focus", name: "Focus", price: 0 },
+          { id: "wall-cold-foam", name: "Cold Foam", price: 0 },
+          { id: "wall-commercial-white", name: "Commercial White", price: 0 },
+          { id: "wall-in-the-cloud", name: "In the Cloud", price: 0 },
+          { id: "wall-rabbits-ear", name: "Rabbits Ear", price: 0 },
+          { id: "wall-maiden-mist", name: "Maiden Mist", price: 0 },
+          { id: "wall-crushed-silk", name: "Crushed Silk", price: 0 },
+        ],
+      },
+      {
+        id: "trim-paint",
+        name: "Trim Paint Color",
+        categoryId: "paint",
+        isVisual: false,
+        options: [
+          { id: "trim-cold-foam", name: "Cold Foam", price: 0 },
+          { id: "trim-in-the-cloud", name: "In the Cloud", price: 0 },
+          { id: "trim-delicate-white", name: "Delicate White", price: 0 },
+          { id: "trim-commercial-white", name: "Commercial White", price: 0 },
+        ],
+      },
+      {
+        id: "accent-color",
+        name: "Accent Color (Dining Room and Primary Bedroom & Bath)",
+        categoryId: "paint",
+        isVisual: false,
+        options: [
+          { id: "accent-shark", name: "Shark", price: 0 },
+          { id: "accent-focus", name: "Focus", price: 0 },
+          { id: "accent-delicate-white", name: "Delicate White", price: 0 },
+          { id: "accent-fog", name: "Fog", price: 0 },
+          { id: "accent-whiskers", name: "Whiskers", price: 0 },
+          { id: "accent-hurricane-haze", name: "Hurricane Haze", price: 0 },
+          { id: "accent-willow-springs", name: "Willow Springs", price: 0 },
+          { id: "accent-cold-foam", name: "Cold Foam", price: 0 },
+          { id: "accent-commercial-white", name: "Commercial White", price: 0 },
+          { id: "accent-in-the-cloud", name: "In the Cloud", price: 0 },
+          { id: "accent-rabbits-ear", name: "Rabbits Ear", price: 0 },
+          { id: "accent-maiden-mist", name: "Maiden Mist", price: 0 },
+          { id: "accent-crushed-silk", name: "Crushed Silk", price: 0 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // PLUMBING
+  // ============================================================
+  {
+    id: "plumbing",
+    name: "Plumbing",
+    subCategories: [
+      {
+        id: "kitchen-faucet",
+        name: "Kitchen Faucet",
+        categoryId: "plumbing",
+        isVisual: true,
+        options: [
+          { id: "faucet-pfirst-ss", name: "Pfirst Pull Down - Stainless Steel", price: 0, promptDescriptor: "Pfirst stainless steel pull-down kitchen faucet" },
+          { id: "faucet-pfirst-tb", name: "Pfirst Pull Down - Tuscan Bronze", price: 200, promptDescriptor: "Pfirst Tuscan bronze pull-down kitchen faucet" },
+          { id: "faucet-pfirst-black", name: "Pfirst Pull Down - Matte Black", price: 250, promptDescriptor: "Pfirst matte black pull-down kitchen faucet" },
+          { id: "faucet-colfax-ss", name: "Colfax - Stainless Steel", price: 300, promptDescriptor: "Colfax stainless steel pull-down kitchen faucet with modern styling" },
+          { id: "faucet-pfirst-modern-ss", name: "Pfirst Modern - Stainless Steel", price: 300, promptDescriptor: "Pfirst Modern stainless steel kitchen faucet with sleek design" },
+          { id: "faucet-colfax-tb", name: "Colfax - Tuscan Bronze", price: 325, promptDescriptor: "Colfax Tuscan bronze pull-down kitchen faucet" },
+          { id: "faucet-colfax-black", name: "Colfax - Matte Black", price: 350, promptDescriptor: "Colfax matte black pull-down kitchen faucet" },
+          { id: "faucet-stellen-ss", name: "Stellen - Stainless Steel", price: 350, promptDescriptor: "Stellen stainless steel pull-down kitchen faucet with spring spout" },
+          { id: "faucet-pfirst-modern-black", name: "Pfirst Modern - Matte Black", price: 350, promptDescriptor: "Pfirst Modern matte black kitchen faucet" },
+          { id: "faucet-montay-ss", name: "Montay - Stainless Steel", price: 375, promptDescriptor: "Montay stainless steel pull-down kitchen faucet" },
+          { id: "faucet-stellen-black", name: "Stellen - Matte Black", price: 375, promptDescriptor: "Stellen matte black pull-down kitchen faucet with spring spout" },
+          { id: "faucet-colfax-gold", name: "Colfax - Brushed Gold", price: 375, promptDescriptor: "Colfax brushed gold pull-down kitchen faucet" },
+          { id: "faucet-pfirst-modern-gold", name: "Pfirst Modern - Brushed Gold", price: 375, promptDescriptor: "Pfirst Modern brushed gold kitchen faucet" },
+          { id: "faucet-stellen-gold", name: "Stellen - Brushed Gold", price: 400, promptDescriptor: "Stellen brushed gold pull-down kitchen faucet with spring spout" },
+          { id: "faucet-montay-black", name: "Montay - Matte Black", price: 400, promptDescriptor: "Montay matte black pull-down kitchen faucet" },
+          { id: "faucet-montay-gold", name: "Montay - Brushed Gold", price: 425, promptDescriptor: "Montay brushed gold pull-down kitchen faucet" },
+          { id: "faucet-brislin-ss", name: "Brislin Culinary - Stainless Steel", price: 450, promptDescriptor: "Brislin Culinary professional-style stainless steel kitchen faucet with coil spring", nudge: "Professional-grade upgrade" },
+          { id: "faucet-brislin-black", name: "Brislin Culinary - Matte Black", price: 475, promptDescriptor: "Brislin Culinary professional-style matte black kitchen faucet with coil spring" },
+        ],
+      },
+      {
+        id: "bath-faucets",
+        name: "Bath Faucets",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "bath-faucet-weller-bn", name: "Weller - Brushed Nickel", price: 0 },
+          { id: "bath-faucet-weller-tb", name: "Weller - Tuscan Bronze", price: 650 },
+          { id: "bath-faucet-weller-black", name: "Weller - Matte Black", price: 750 },
+          { id: "bath-faucet-holliston-bn", name: "Holliston - Brushed Nickel", price: 1015 },
+          { id: "bath-faucet-holliston-black", name: "Holliston - Matte Black", price: 1140 },
+          { id: "bath-faucet-holliston-gold", name: "Holliston - Brushed Gold", price: 1390 },
+        ],
+      },
+      {
+        id: "rain-head",
+        name: "Rain Head",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "rain-head-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "rain-head-bn", name: "Add Brushed Nickel in Primary Shower", price: 650 },
+          { id: "rain-head-tb", name: "Add Tuscan Bronze in Primary Shower", price: 700 },
+          { id: "rain-head-black", name: "Add Matte Black in Primary Shower", price: 750 },
+          { id: "rain-head-gold", name: "Add Brushed Gold in Primary Shower", price: 800 },
+        ],
+      },
+      {
+        id: "wall-mount-hand-shower",
+        name: "Wall Mount Hand Shower",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "hand-shower-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "hand-shower-bn", name: "Add Brushed Nickel in Primary Shower", price: 1000 },
+          { id: "hand-shower-tb", name: "Add Tuscan Bronze in Primary Shower", price: 1050 },
+          { id: "hand-shower-black", name: "Add Matte Black in Primary Shower", price: 1100 },
+          { id: "hand-shower-gold", name: "Add Brushed Gold in Primary Shower", price: 1150 },
+        ],
+      },
+      {
+        id: "toilet-upgrade",
+        name: "Toilet Upgrade",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "toilet-standard", name: "Standard Height Toilet", price: 0 },
+          { id: "toilet-comfort", name: "Upgrade to Comfort Height Toilets", price: 600 },
+        ],
+      },
+      {
+        id: "toilet-seat",
+        name: "Toilet Seat Upgrade",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "toilet-seat-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "toilet-seat-soft-close", name: "Upgrade to Soft Close Toilet Seats", price: 250 },
+        ],
+      },
+      {
+        id: "utility-sink",
+        name: "Utility Sink",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "utility-sink-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "utility-sink-add", name: "Add Utility Sink", price: 1250 },
+        ],
+      },
+      {
+        id: "hose-bib",
+        name: "Hose Bib",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "hose-bib-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "hose-bib-add", name: "Add Additional Hose Bib", price: 250 },
+        ],
+      },
+      {
+        id: "gas-stub",
+        name: "Gas Stub on Patio",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "gas-stub-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "gas-stub-add", name: "Add Gas Stub on Patio", price: 700 },
+        ],
+      },
+      {
+        id: "primary-shower-entry",
+        name: "Primary Shower Entry",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "shower-entry-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "shower-entry-zero-no-glass", name: "Zero Entry No Glass Door", price: 4500 },
+          { id: "shower-entry-zero-glass", name: "Zero Entry With Glass Door", price: 5000 },
+        ],
+      },
+      {
+        id: "secondary-bath-walk-in",
+        name: "Secondary Bath Walk In Shower",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "sec-bath-tub-combo", name: "Fiberglass Tub Shower Combo (No Walk In)", price: 0 },
+          { id: "sec-bath-walk-in", name: "Fiberglass Walk In Shower (No Tile, No Tub)", price: 500 },
+        ],
+      },
+      {
+        id: "secondary-bath-steel-tub",
+        name: "Secondary Bath Steel Tub",
+        categoryId: "plumbing",
+        isVisual: false,
+        options: [
+          { id: "sec-tub-fiberglass", name: "Fiberglass Tub Shower Combo", price: 0 },
+          { id: "sec-tub-steel", name: "Steel Tub with Tiled Walls", price: 975 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // SIDING
+  // ============================================================
+  {
+    id: "siding",
+    name: "Siding",
+    subCategories: [
+      {
+        id: "shutter-style",
+        name: "Shutter Style",
+        categoryId: "siding",
+        isVisual: false,
+        options: [
+          { id: "shutter-2bar", name: "Two Bar Board & Batten", price: 0 },
+          { id: "shutter-3bar", name: "Three Bar Board and Batten", price: 100 },
+          { id: "shutter-3panel", name: "Three Panel Recessed", price: 150 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // TRIM
+  // ============================================================
+  {
+    id: "trim",
+    name: "Trim",
+    subCategories: [
+      {
+        id: "fireplace-mantel",
+        name: "Fireplace Mantel",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "mantel-newport", name: "Newport", price: 0 },
+          { id: "mantel-regency", name: "Regency", price: 0 },
+          { id: "mantel-fairfax", name: "Fairfax", price: 125 },
+          { id: "mantel-peyton", name: "Peyton", price: 150 },
+          { id: "mantel-jefferson", name: "Jefferson", price: 200 },
+        ],
+      },
+      {
+        id: "fireplace-mantel-accent",
+        name: "Fireplace Mantel Accent",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "fp-accent-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "fp-accent-add", name: "Add Fireplace Accent", price: 150 },
+          { id: "fp-accent-shiplap", name: "Add Shiplap Mantel", price: 500 },
+        ],
+      },
+      {
+        id: "fireplace-hearth",
+        name: "Fireplace Hearth",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "hearth-wood", name: "Wood Fireplace Hearth", price: 0 },
+          { id: "hearth-mountain-brook", name: "Brick Mountain Brook - Ivory", price: 600 },
+          { id: "hearth-rockwell", name: "Brick Rockwell - Grey", price: 600 },
+          { id: "hearth-painted-delicate-white", name: "Brick Painted Delicate White", price: 900 },
+          { id: "hearth-painted-commercial-white", name: "Brick Painted Commercial White", price: 900 },
+          { id: "hearth-magnolia", name: "Brick Magnolia - Ivory", price: 900 },
+          { id: "hearth-brookhaven", name: "Brick Brookhaven - Ivory", price: 900 },
+          { id: "hearth-arctic-mist", name: "Brick Arctic Mist - Ivory", price: 900 },
+        ],
+      },
+      {
+        id: "interior-door-style",
+        name: "Interior Door Style",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "door-carrara", name: "Carrara Whole House", price: 0 },
+          { id: "door-cheyenne", name: "Cheyenne Whole House", price: 250 },
+          { id: "door-riverchase", name: "Riverchase Whole House", price: 275 },
+        ],
+      },
+      {
+        id: "baseboard",
+        name: "Baseboard Options",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "baseboard-5inch", name: "5 Inch Included Style Base Throughout Home", price: 0 },
+          { id: "baseboard-craftsman", name: "1x6 Craftsman Base Throughout Home", price: 350 },
+          { id: "baseboard-7inch", name: "7 Inch Base Throughout Home", price: 600 },
+        ],
+      },
+      {
+        id: "wainscoting",
+        name: "Wainscoting",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "wainscoting-included", name: "Included 36\" Style Wainscoting No Shadow Boxes", price: 0 },
+          { id: "wainscoting-traditional", name: "36\" Traditional Style with Shadow Boxes", price: 900 },
+          { id: "wainscoting-tall-shaker", name: "Tall Shaker Style Wainscoting", price: 1200 },
+        ],
+      },
+      {
+        id: "crown-options",
+        name: "Crown Options",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "crown-included", name: "5 Inch Included Style Crown in Included Areas", price: 0 },
+          { id: "crown-all-flat-ceiling", name: "Add 5 Inch Crown to All Flat Ceiling Rooms", price: 1000 },
+          { id: "crown-cove-included", name: "Swap Crown with 5 Inch Cove in Included Areas", price: 1500 },
+          { id: "crown-cove-all", name: "Swap Crown with 5 Inch Cove in All Areas", price: 3000 },
+        ],
+      },
+      {
+        id: "door-window-casing",
+        name: "Door and Window Casing",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "casing-481", name: "481 Style Door and Window Casing", price: 0 },
+          { id: "casing-craftsman", name: "Craftsman Style Door and Window Casing", price: 2500 },
+        ],
+      },
+      {
+        id: "pantry-shelving",
+        name: "Pantry Shelving",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "pantry-wire", name: "Included Wire Shelving", price: 0 },
+          { id: "pantry-wood", name: "Add Wood Shelving", price: 1000 },
+        ],
+      },
+      {
+        id: "primary-closet-shelving",
+        name: "Primary Closet Shelving",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "closet-wire", name: "Included Wire Shelving", price: 0 },
+          { id: "closet-wood", name: "Add Wood Shelving", price: 2900 },
+        ],
+      },
+      {
+        id: "bonus-room-stair-treads",
+        name: "Bonus Room Stair Treads",
+        categoryId: "trim",
+        isVisual: false,
+        options: [
+          { id: "stair-carpet", name: "Carpet Stair Treads", price: 0 },
+          { id: "stair-hardwood", name: "Upgrade to Hardwood Stair Treads", price: 1300 },
+        ],
+      },
+    ],
+  },
+
+  // ============================================================
+  // WINDOWS/EXT DOORS
+  // ============================================================
+  {
+    id: "windows-ext-doors",
+    name: "Windows/Ext Doors",
+    subCategories: [
+      {
+        id: "window-screens",
+        name: "Window Screens",
+        categoryId: "windows-ext-doors",
+        isVisual: false,
+        options: [
+          { id: "screens-no", name: "No Window Screens", price: 0 },
+          { id: "screens-add", name: "Add Window Screens", price: 600 },
+        ],
+      },
+      {
+        id: "front-door",
+        name: "Front Door",
+        categoryId: "windows-ext-doors",
+        isVisual: false,
+        options: [
+          { id: "front-door-georgia", name: "Standard Georgia Fiberglass", price: 0 },
+          { id: "front-door-oklahoma", name: "Upgrade to Oklahoma Fiberglass", price: 200 },
+          { id: "front-door-kentucky", name: "Upgrade to Kentucky Fiberglass", price: 350 },
+          { id: "front-door-texas", name: "Upgrade to Texas Fiberglass", price: 375 },
+          { id: "front-door-virginia", name: "Upgrade to Virginia Fiberglass", price: 400 },
+        ],
+      },
+      {
+        id: "rear-door",
+        name: "Rear Door",
+        categoryId: "windows-ext-doors",
+        isVisual: false,
+        options: [
+          { id: "rear-door-standard", name: "Standard Full Light Steel Door", price: 0 },
+          { id: "rear-door-blind-glass", name: "Upgrade to Blind in Glass 4\" Jamb", price: 550 },
+        ],
+      },
+      {
+        id: "garage-door-keypad",
+        name: "Garage Door Keypad",
+        categoryId: "windows-ext-doors",
+        isVisual: false,
+        options: [
+          { id: "garage-keypad-no", name: "No Upgrade Wanted", price: 0 },
+          { id: "garage-keypad-add", name: "Add Garage Door Keypad", price: 300 },
+        ],
+      },
+    ],
+  },
+];
+
+// ============================================================
+// Helper functions
+// ============================================================
+
+export function getDefaultSelections(): Record<string, string> {
+  const selections: Record<string, string> = {};
+  for (const category of categories) {
+    for (const sub of category.subCategories) {
+      // Pick first $0 option as default
+      const defaultOption = sub.options.find((o) => o.price === 0);
+      if (defaultOption) {
+        selections[sub.id] = defaultOption.id;
+      }
+    }
+  }
+  return selections;
+}
+
+export function getVisualSubCategoryIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const category of categories) {
+    for (const sub of category.subCategories) {
+      if (sub.isVisual) {
+        ids.add(sub.id);
+      }
+    }
+  }
+  return ids;
+}
