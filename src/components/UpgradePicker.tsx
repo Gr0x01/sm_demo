@@ -363,6 +363,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
 
             {/* Step-specific upgrade options */}
             <StepContent
+              key={activeStepId}
               step={activeStep}
               subCategoryMap={subCategoryMap}
               selections={state.selections}
