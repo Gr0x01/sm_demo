@@ -9,15 +9,18 @@ This is NOT just a visualization tool — it's an **upgrade selection tool** tha
 ```
 1. Land on page → see hook: "Your buyers choose $40K in upgrades from a printed sheet"
 2. Click "See It In Action"
-3. See room tour: 6 real Kinkade photos as thumbnails, kitchen shown first
-4. Each room shows a gorgeous hero photo + contextual upgrade options below
-5. Visual options (cabinet colors, countertops, backsplash) shown as tappable swatch grids
-6. Non-visual options shown as compact radio lists
-7. Price tracker updates in real time across all rooms
-8. On kitchen view: "Visualize My Kitchen" button generates AI image
-9. Browse rooms by tapping photo thumbnails (sticky in header)
-10. "Other Upgrades" section (collapsed) for electrical, security, etc.
-11. After engaging, click "Finish" → CTA: "Want this for your buyers? Let's talk."
+3. 5-step wizard with sticky header (logo + step nav circles)
+4. Desktop: two-column layout — sticky sidebar (AI image, generate, section nav, total, continue) + scrollable options
+5. Step 1 "Set Your Style": cabinets, flooring, paint, trim, fireplace, lighting
+6. Step 2 "Design Your Kitchen": countertops, backsplash, kitchen cabinets, sink, faucet, appliances
+7. Step 3 "Primary Bath": vanity, mirrors, tile, shower, fixtures
+8. Step 4 "Secondary Spaces": secondary bath, laundry, powder room, closets
+9. Step 5 "Finishing Touches": electrical, hardware, smart home, plumbing, HVAC, exterior
+10. Steps 1-4: "Visualize My Kitchen" button generates AI image from visual selections
+11. Section quick-nav in sidebar highlights active section as user scrolls
+12. Price total updates live in sidebar as selections change
+13. Mobile: single column, hero on top, sticky price tracker at bottom
+14. After engaging, click "Finish" → CTA: "Want this for your buyers? Let's talk."
 ```
 
 ## Data Schema

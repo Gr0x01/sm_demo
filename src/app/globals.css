@@ -25,6 +25,20 @@ body {
   overflow: hidden;
 }
 
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  img {
+    break-inside: avoid;
+  }
+}
+
 /* Hide scrollbar for room strip */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

@@ -30,8 +30,15 @@ export function StepContent({
 
         if (subCategories.length === 0) return null;
 
+        const sectionId = `section-${section.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+
         return (
-          <div key={section.title}>
+          <div
+            key={section.title}
+            id={sectionId}
+            data-section-title={section.title}
+            style={{ scrollMarginTop: "var(--header-height, 120px)" }}
+          >
             <div className="flex items-center gap-3 mb-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-[var(--color-navy)]">
                 {section.title}

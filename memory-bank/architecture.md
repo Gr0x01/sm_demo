@@ -62,41 +62,58 @@ Option data is static TypeScript. Selections state is client-side React. Supabas
 ```
 page.tsx (flow state: "landing" | "picker" | "cta")
 ├── LandingHero
-├── UpgradePicker (main container — room-based visual layout)
-│   ├── Header (sticky: logo + RoomStrip)
-│   │   └── RoomStrip (horizontal photo thumbnails — 6 rooms)
-│   ├── RoomHero (full-width room photo, shows AI-generated image for kitchen)
-│   ├── RoomSection (contextual upgrades for active room)
-│   │   ├── SwatchGrid (grid of tappable visual swatches — colors, materials)
-│   │   └── CompactOptionList (tight rows for non-visual/binary options)
-│   ├── "Other Upgrades" collapsible section (orphan categories)
-│   │   └── CategoryAccordion → SubCategoryGroup → OptionCard
-│   ├── GenerateButton (kitchen view only)
-│   └── PriceTracker (sticky bottom bar)
+├── UpgradePicker (main container — step-based wizard with two-column layout)
+│   ├── Header (sticky: logo + StepNav)
+│   │   └── StepNav (step circles with connector lines, 5 steps)
+│   ├── Two-Column Layout (desktop lg+)
+│   │   ├── SidebarPanel (sticky left, 340px)
+│   │   │   ├── StepHero (compact 4:3 room photo, AI-generated image overlay)
+│   │   │   ├── GenerateButton (steps 1-4)
+│   │   │   ├── Section quick-nav (IntersectionObserver-tracked active section)
+│   │   │   ├── Running total
+│   │   │   └── Continue button
+│   │   └── Right Column (flex-1, scrollable)
+│   │       └── StepContent (sections → RoomSection per subcategory)
+│   │           ├── SwatchGrid (visual swatch grids)
+│   │           └── CompactOptionList (non-visual option rows)
+│   ├── Mobile Fallback (<lg)
+│   │   ├── StepHero (full-width)
+│   │   ├── GenerateButton
+│   │   ├── StepContent
+│   │   ├── Continue button
+│   │   └── PriceTracker (sticky bottom bar)
+│   └── PriceTracker (mobile-only sticky bottom bar)
 └── ClosingCTA
 ```
 
-### Room-Based Layout
+### Step-Based Wizard Layout
 
-The UI is organized as a "room tour" — 6 real Kinkade plan photos, each mapped to relevant upgrade subcategories via `room-config.ts`. Subcategories not tied to any room go into the collapsible "Other Upgrades" section.
+The UI is organized as a 5-step wizard. Each step groups related upgrade subcategories into themed sections via `step-config.ts`.
 
-| Room | Photo | Key Upgrades |
-|------|-------|-------------|
-| Your Kitchen | kitchen-close.webp | Cabinets, countertops, backsplash, sink, faucet, appliances |
-| Kitchen to Great Room | kitchen-greatroom.webp | Flooring, under-cabinet lighting, great room fan |
-| Great Room & Living | greatroom-wide.webp | Paint (wall, accent, ceiling, trim), fireplace, lighting, trim |
-| Primary Bath | primary-bath-vanity.webp | Bath cabinet color, vanity, faucets, hardware, mirrors, floor tile |
-| Primary Shower | primary-bath-shower.webp | Shower tile, rain head, hand shower, shower entry |
-| Bath & Closet | bath-closet.webp | Secondary bath, secondary shower, closet/pantry shelving |
+| Step | Name | Hero Photo | Key Upgrades | AI Generate? |
+|------|------|-----------|-------------|-------------|
+| 1 | Set Your Style | greatroom-wide.webp | Cabinets, flooring, paint, trim, fireplace, lighting | Yes |
+| 2 | Design Your Kitchen | kitchen-close.webp | Countertops, backsplash, kitchen cabinets, sink, faucet, appliances | Yes |
+| 3 | Primary Bath | primary-bath-vanity.webp | Vanity, cabinet color, mirrors, tile, shower, fixtures | Yes |
+| 4 | Secondary Spaces | bath-closet.webp | Secondary bath, laundry, powder room, closets | Yes |
+| 5 | Finishing Touches | (none) | Electrical, hardware, smart home, plumbing, HVAC, exterior | No |
+
+### Two-Column Sidebar Layout
+
+- **Desktop (lg+)**: Sticky left sidebar (340px) with AI image, generate button, section quick-nav, total, and continue. Scrollable right column for options.
+- **Mobile (<lg)**: Single column — hero image on top, options below, sticky PriceTracker at bottom.
+- **Section quick-nav**: Click → `scrollIntoView()`. Active section tracked via `IntersectionObserver`.
+- Header measures its own height via `ResizeObserver` and sets `--header-height` CSS var for scroll-margin-top offsets.
 
 ## State Management
 
-Single `useReducer` or `useState` in UpgradePicker.
+Single `useReducer` in UpgradePicker.
 
 State shape:
 ```typescript
 {
   selections: Record<subCategoryId, optionId>,  // current picks
+  quantities: Record<subCategoryId, number>,     // for additive options
   generatedImageUrl: string | null,
   isGenerating: boolean,
   hasEverGenerated: boolean,
@@ -107,10 +124,11 @@ State shape:
 
 - Default selections: all $0 (included) options pre-selected
 - Price computed as derived state: `sum of price for each selected option`
+- Selections auto-saved to Supabase per buyerId (debounced 1s)
 
 ## AI Image Generation Pipeline
 
-1. User clicks "Visualize My Kitchen"
+1. User clicks "Visualize My Kitchen" (available on steps 1-4)
 2. Client sends POST to `/api/generate` with only the visual sub-category selections
 3. Server looks up each selected option's `promptDescriptor`
 4. Server constructs a composite prompt with layout-anchoring:
@@ -131,7 +149,7 @@ State shape:
    ```
 5. Call `experimental_generateImage` (Vercel AI SDK) with gpt-image-1
 6. Return image URL to client (from cache or freshly generated)
-7. Client displays in KitchenViewer
+7. Client displays in StepHero
 
 **Image approach**: Text-to-image (not image editing). Simpler, more reliable for the demo. The prompt needs to be rich enough to produce a consistent, plausible kitchen. Each option's `promptDescriptor` is a human-written phrase tuned for AI generation quality.
 
@@ -154,24 +172,25 @@ src/
 │   ├── page.tsx
 │   ├── layout.tsx
 │   ├── globals.css
-│   └── api/generate/route.ts
+│   └── api/
+│       ├── generate/route.ts
+│       └── selections/[buyerId]/route.ts
 ├── components/
 │   ├── LandingHero.tsx
-│   ├── UpgradePicker.tsx        # Main container — room-based layout
-│   ├── RoomStrip.tsx            # Horizontal room photo thumbnails
-│   ├── RoomHero.tsx             # Full-width active room photo
+│   ├── UpgradePicker.tsx        # Main container — step wizard + two-column layout
+│   ├── SidebarPanel.tsx         # Sticky sidebar: image, generate, nav, total, continue
+│   ├── StepNav.tsx              # Step circles with connector lines
+│   ├── StepHero.tsx             # Room photo with AI overlay, compact mode for sidebar
+│   ├── StepContent.tsx          # Sections with section IDs for IntersectionObserver
 │   ├── RoomSection.tsx          # Renders SwatchGrid or CompactOptionList per subcategory
 │   ├── SwatchGrid.tsx           # Grid of tappable visual swatches
 │   ├── CompactOptionList.tsx    # Tight single-line rows for non-visual options
-│   ├── CategoryAccordion.tsx    # Used for "Other Upgrades" collapsed section
-│   ├── SubCategoryGroup.tsx     # Legacy — used inside CategoryAccordion
-│   ├── OptionCard.tsx           # Legacy — used inside SubCategoryGroup
-│   ├── PriceTracker.tsx
+│   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
 │   ├── GenerateButton.tsx
 │   └── ClosingCTA.tsx
 ├── lib/
 │   ├── options-data.ts      # All Kinkade plan options + SM website image URLs
-│   ├── room-config.ts       # Room→subcategory mapping for visual tour layout
+│   ├── step-config.ts       # Step→subcategory mapping for wizard layout
 │   ├── pricing.ts           # Price calculation
 │   ├── generate.ts          # Prompt construction
 │   └── supabase.ts          # Supabase client + cache helpers
@@ -187,7 +206,15 @@ public/
 │   ├── primary-bath-vanity.webp
 │   ├── primary-bath-shower.webp
 │   └── bath-closet.webp
-└── swatches/                # Swatch images (to be populated)
+└── swatches/                # 166 scraped swatch images
+    ├── appliances/
+    ├── backsplash/
+    ├── cabinets/
+    ├── countertops/
+    ├── electrical/
+    ├── faucets/
+    ├── flooring/
+    └── sinks/
 ```
 
 ## Analytics

@@ -15,55 +15,67 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
   return (
     <div className="py-2">
       {/* Desktop: full rail with labels */}
-      <div className="hidden sm:flex items-center justify-center gap-0">
-        {steps.map((step, i) => {
-          const isActive = step.id === activeStepId;
-          const isComplete = completionMap[step.id] && !isActive;
+      <div className="hidden sm:block">
+        {/* Circles + connector lines */}
+        <div className="flex items-center justify-center">
+          {steps.map((step, i) => {
+            const isActive = step.id === activeStepId;
+            const isComplete = completionMap[step.id] && !isActive;
 
-          return (
-            <div key={step.id} className="flex items-center">
-              {/* Connector line (before each step except first) */}
-              {i > 0 && (
-                <div
-                  className={`w-10 h-0.5 ${
-                    isComplete || isActive ? "bg-[var(--color-navy)]" : "bg-gray-200"
-                  }`}
-                />
-              )}
-
-              {/* Step circle + label */}
-              <button
-                onClick={() => onSelectStep(step.id)}
-                className="flex flex-col items-center gap-1 cursor-pointer group"
-              >
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-150 ${
-                    isActive
-                      ? "bg-[var(--color-navy)] text-white shadow-md"
-                      : isComplete
-                      ? "bg-green-500 text-white"
-                      : "border-2 border-gray-300 text-gray-400 group-hover:border-gray-400 group-hover:text-gray-500"
-                  }`}
+            return (
+              <div key={step.id} className="flex items-center">
+                {i > 0 && (
+                  <div
+                    className={`w-12 h-0.5 ${
+                      isComplete || isActive ? "bg-[var(--color-navy)]" : "bg-gray-200"
+                    }`}
+                  />
+                )}
+                <button
+                  onClick={() => onSelectStep(step.id)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-150 cursor-pointer group shrink-0"
                 >
-                  {isComplete ? (
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  ) : (
-                    step.number
-                  )}
-                </div>
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                      isActive
+                        ? "bg-[var(--color-navy)] text-white shadow-md"
+                        : isComplete
+                        ? "bg-green-500 text-white"
+                        : "border-2 border-gray-300 text-gray-400 group-hover:border-gray-400 group-hover:text-gray-500"
+                    }`}
+                  >
+                    {isComplete ? (
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      step.number
+                    )}
+                  </div>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+        {/* Labels row */}
+        <div className="flex items-start justify-center mt-1">
+          {steps.map((step, i) => {
+            const isActive = step.id === activeStepId;
+            return (
+              <div key={step.id} className="flex items-center">
+                {i > 0 && <div className="w-12 shrink-0" />}
                 <span
-                  className={`text-[10px] font-medium leading-tight text-center max-w-[5rem] ${
+                  className={`w-8 text-[10px] font-medium leading-tight text-center shrink-0 ${
                     isActive ? "text-[var(--color-navy)]" : "text-gray-400"
                   }`}
+                  style={{ width: "5rem", margin: "0 -1.25rem" }}
                 >
                   {step.name}
                 </span>
-              </button>
-            </div>
-          );
-        })}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Mobile: compact nav with dots + label */}

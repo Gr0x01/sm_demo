@@ -84,3 +84,19 @@
 ## D20: Stone Martin logo uses currentColor
 **Context**: The SM logo SVG uses `fill="currentColor"`, which means it inherits the text color of its container.
 **Decision**: Keep this behavior — it adapts naturally to the navy header without needing separate light/dark variants.
+
+## D21: Step-based wizard replaces room-based tour
+**Context**: The room-based tour (6 photos, RoomStrip) was replaced with a 5-step wizard that groups subcategories into logical themes (style, kitchen, bath, secondary, finishing). This gives a clearer progression and works better with the sidebar layout.
+**Decision**: 5 steps in `step-config.ts`. StepNav replaces RoomStrip. All subcategories mapped to steps (no "Other Upgrades" overflow).
+
+## D22: Two-column sidebar layout
+**Context**: Single-column layout put the image at top, options in a huge scrollable middle, and total/continue at the bottom. Users couldn't see visual feedback while making selections.
+**Decision**: Desktop (lg+) gets a sticky left sidebar (340px) with AI image, generate button, section quick-nav (IntersectionObserver), total, and continue button. Right column scrolls with options. Mobile (<lg) falls back to single column with hero on top and sticky PriceTracker at bottom.
+
+## D23: AI generation on all visual steps (1-4), not just kitchen
+**Context**: AI generation was kitchen-only (step 2). But users pick flooring, cabinets, and paint on step 1 that also affect the kitchen visualization.
+**Decision**: Enable `showGenerateButton: true` on steps 1-4. All feed the same kitchen generation endpoint — visual subcategories from any step contribute to the prompt. Step 5 (electrical/exterior) has no visual generation.
+
+## D24: No border-radius in UI
+**Context**: The design uses sharp corners throughout for a clean, architectural feel.
+**Decision**: No `rounded`, `rounded-lg`, etc. on any elements. Sharp corners everywhere.

@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { LandingHero } from "@/components/LandingHero";
 import { UpgradePicker } from "@/components/UpgradePicker";
-import { ClosingCTA } from "@/components/ClosingCTA";
+import { UpgradeSummary } from "@/components/UpgradeSummary";
 
-type PageState = "landing" | "picker" | "cta";
+type PageState = "landing" | "picker" | "summary";
 
 const BUYER_ID = "may-baten";
 
@@ -15,9 +15,16 @@ interface BuyerData {
   community: string;
 }
 
+interface SummaryData {
+  selections: Record<string, string>;
+  quantities: Record<string, number>;
+  generatedImageUrl: string | null;
+}
+
 export default function Home() {
   const [page, setPage] = useState<PageState>("landing");
   const [buyer, setBuyer] = useState<BuyerData | null>(null);
+  const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
 
   useEffect(() => {
     fetch(`/api/selections/${BUYER_ID}`)
@@ -45,13 +52,25 @@ export default function Home() {
     );
   }
 
-  if (page === "cta") {
-    return <ClosingCTA onBack={() => setPage("picker")} />;
+  if (page === "summary" && summaryData) {
+    return (
+      <UpgradeSummary
+        selections={summaryData.selections}
+        quantities={summaryData.quantities}
+        generatedImageUrl={summaryData.generatedImageUrl}
+        planName={buyer?.planName ?? "Kinkade Plan"}
+        community={buyer?.community ?? "McClain Landing Phase 7"}
+        onBack={() => setPage("picker")}
+      />
+    );
   }
 
   return (
     <UpgradePicker
-      onFinish={() => setPage("cta")}
+      onFinish={(data) => {
+        setSummaryData(data);
+        setPage("summary");
+      }}
       buyerId={BUYER_ID}
     />
   );

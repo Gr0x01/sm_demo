@@ -10,6 +10,7 @@ import { StepHero } from "./StepHero";
 import { StepContent } from "./StepContent";
 import { PriceTracker } from "./PriceTracker";
 import { GenerateButton } from "./GenerateButton";
+import { SidebarPanel } from "./SidebarPanel";
 
 const visualSubCategoryIds = getVisualSubCategoryIds();
 
@@ -103,11 +104,34 @@ function stepHasUpgrades(
   return false;
 }
 
-export function UpgradePicker({ onFinish, buyerId }: { onFinish: () => void; buyerId?: string }) {
+export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrl: string | null }) => void; buyerId?: string }) {
   const [state, dispatch] = useReducer(reducer, null, getInitialState);
   const [activeStepId, setActiveStepId] = useState(steps[0].id);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedRef = useRef(false);
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(120);
+
+  // Measure header height dynamically
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+
+    const ro = new ResizeObserver(() => {
+      if (el) setHeaderHeight(el.offsetHeight);
+    });
+    ro.observe(el);
+
+    // Initial measurement
+    setHeaderHeight(el.offsetHeight);
+
+    return () => ro.disconnect();
+  }, []);
+
+  // Set CSS variable for scroll-margin-top
+  useEffect(() => {
+    document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
+  }, [headerHeight]);
 
   // Load selections from API on mount
   useEffect(() => {
@@ -213,11 +237,17 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: () => void; buy
     }
   }, [activeStepIndex]);
 
+  const isLastStep = activeStepIndex >= steps.length - 1;
+  const nextStepName = isLastStep ? "" : steps[activeStepIndex + 1].name;
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 py-2.5 flex items-center justify-between">
+      <header
+        ref={headerRef}
+        className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.svg" alt="Stone Martin Builders" className="h-5 text-[var(--color-navy)]" />
             <div>
@@ -230,7 +260,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: () => void; buy
             </div>
           </div>
           <button
-            onClick={onFinish}
+            onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrl: state.generatedImageUrl })}
             className="text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors cursor-pointer"
           >
             Finish &rarr;
@@ -238,7 +268,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: () => void; buy
         </div>
 
         {/* Step nav inside header for sticky behavior */}
-        <div className="max-w-4xl mx-auto px-4 pb-2">
+        <div className="max-w-7xl mx-auto px-4 pb-2">
           <StepNav
             steps={steps}
             activeStepId={activeStepId}
@@ -248,54 +278,78 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: () => void; buy
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-5 pb-20">
-        {/* Step Hero Image */}
-        <StepHero
-          step={activeStep}
-          generatedImageUrl={activeStep.showGenerateButton ? state.generatedImageUrl : null}
-          isGenerating={activeStep.showGenerateButton ? state.isGenerating : false}
-        />
-
-        {/* Generate button — only on steps with showGenerateButton */}
-        {activeStep.showGenerateButton && (
-          <div className="mt-4">
-            <GenerateButton
-              onClick={handleGenerate}
+      {/* Two-column layout */}
+      <div className="max-w-7xl mx-auto px-4 py-5">
+        <div className="flex gap-8">
+          {/* Left Sidebar — desktop only */}
+          <div className="hidden lg:block">
+            <SidebarPanel
+              step={activeStep}
+              generatedImageUrl={state.generatedImageUrl}
               isGenerating={state.isGenerating}
+              error={state.error}
+              onGenerate={handleGenerate}
               hasChanges={state.visualSelectionsChangedSinceLastGenerate}
+              total={total}
+              onContinue={handleContinue}
+              isLastStep={isLastStep}
+              nextStepName={nextStepName}
+              headerHeight={headerHeight}
             />
-            {state.error && (
-              <div className="mt-3 bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                {state.error}
-              </div>
+          </div>
+
+          {/* Right Column — scrollable options */}
+          <div className="flex-1 min-w-0 pb-20 lg:pb-5">
+            {/* Mobile-only: Hero image + generate button */}
+            <div className="lg:hidden">
+              <StepHero
+                step={activeStep}
+                generatedImageUrl={activeStep.showGenerateButton ? state.generatedImageUrl : null}
+                isGenerating={activeStep.showGenerateButton ? state.isGenerating : false}
+              />
+              {activeStep.showGenerateButton && (
+                <div className="mt-4">
+                  <GenerateButton
+                    onClick={handleGenerate}
+                    isGenerating={state.isGenerating}
+                    hasChanges={state.visualSelectionsChangedSinceLastGenerate}
+                  />
+                  {state.error && (
+                    <div className="mt-3 bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                      {state.error}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Step-specific upgrade options */}
+            <StepContent
+              step={activeStep}
+              subCategoryMap={subCategoryMap}
+              selections={state.selections}
+              quantities={state.quantities}
+              onSelect={handleSelect}
+              onSetQuantity={handleSetQuantity}
+            />
+
+            {/* Mobile-only: Continue button */}
+            {!isLastStep && (
+              <button
+                onClick={handleContinue}
+                className="lg:hidden w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+              >
+                Continue to {nextStepName} &rarr;
+              </button>
             )}
           </div>
-        )}
-
-        {/* Step-specific upgrade options */}
-        <StepContent
-          step={activeStep}
-          subCategoryMap={subCategoryMap}
-          selections={state.selections}
-          quantities={state.quantities}
-          onSelect={handleSelect}
-          onSetQuantity={handleSetQuantity}
-        />
-
-        {/* Continue button */}
-        {activeStepIndex < steps.length - 1 && (
-          <button
-            onClick={handleContinue}
-            className="w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
-          >
-            Continue to {steps[activeStepIndex + 1].name} &rarr;
-          </button>
-        )}
+        </div>
       </div>
 
-      {/* Sticky Price Tracker */}
-      <PriceTracker total={total} />
+      {/* Sticky Price Tracker — mobile only */}
+      <div className="lg:hidden">
+        <PriceTracker total={total} />
+      </div>
     </div>
   );
 }

@@ -22,7 +22,7 @@ export const steps: StepConfig[] = [
     subtitle: "Whole-home vibe — cabinets, flooring, paint & trim",
     heroImage: "/rooms/greatroom-wide.webp",
     heroVariant: "compact",
-    showGenerateButton: false,
+    showGenerateButton: true,
     sections: [
       {
         title: "Cabinets",
@@ -123,9 +123,9 @@ export const steps: StepConfig[] = [
     number: 3,
     name: "Primary Bath",
     subtitle: "Vanity, tile, shower & fixtures",
-    heroImage: ["/rooms/primary-bath-vanity.webp", "/rooms/primary-bath-shower.webp"],
-    heroVariant: "split",
-    showGenerateButton: false,
+    heroImage: "/rooms/primary-bath-vanity.webp",
+    heroVariant: "full",
+    showGenerateButton: true,
     sections: [
       {
         title: "Vanity & Cabinets",
@@ -164,8 +164,8 @@ export const steps: StepConfig[] = [
     name: "Secondary Spaces",
     subtitle: "Secondary bath, laundry, powder room & closets",
     heroImage: "/rooms/bath-closet.webp",
-    heroVariant: "compact",
-    showGenerateButton: false,
+    heroVariant: "full",
+    showGenerateButton: true,
     sections: [
       {
         title: "Secondary Bath",

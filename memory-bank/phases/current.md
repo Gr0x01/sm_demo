@@ -23,7 +23,7 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - [x] Social proof nudges on ~15 high-value options
 - [x] Default selections (all $0 "included" options)
 
-### Stream C: Swatch Image Scraping ✅
+### Stream C: Swatch Image Scraping — DONE
 - [x] Scraped stonemartinbuilders.com/media/ using ScrapingDog API (JS rendering)
 - [x] Downloaded 166 swatch images across 8 categories
 - [x] Cabinet styles (3), cabinet colors (12), cabinet hardware (22)
@@ -35,22 +35,26 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - Note: Delray hardwood (3 colors) + Crescent Beach not on SM site — no swatches
 - Note: Mythology Santorini backsplash — no exact image, used closest match
 
-### Stream D: Upgrade Picker UI — DONE (room-based redesign)
-- [x] **Room-based visual tour layout** (replaced category accordion approach — see D18)
-- [x] RoomStrip (horizontal room photo thumbnails, sticky in header)
-- [x] RoomHero (full-width room photo for active room)
+### Stream D: Upgrade Picker UI — DONE (step-based wizard + two-column sidebar)
+- [x] **Step-based wizard** (5 steps replacing room-based tour — see D21)
+- [x] StepNav (step circles + connector lines in header)
+- [x] StepHero (room photo with AI generation overlay, compact mode for sidebar)
+- [x] StepContent (sections with SwatchGrid/CompactOptionList per subcategory)
 - [x] SwatchGrid (tappable visual swatch grids for colors/materials)
 - [x] CompactOptionList (tight rows for non-visual options)
-- [x] RoomSection (decides SwatchGrid vs CompactOptionList per subcategory)
-- [x] Room→subcategory mapping via room-config.ts (6 rooms, 49 subcategories)
-- [x] "Other Upgrades" collapsible section for non-room categories (~51 subcategories)
-- [x] PriceTracker sticky bar (sums ALL selections, real-time, centered max-w-4xl)
+- [x] Step→subcategory mapping via step-config.ts (5 steps, all subcategories)
+- [x] PriceTracker sticky bar (mobile only in two-column layout)
 - [x] Default selections pre-loaded
 - [x] Visual change detection
-- [x] GenerateButton (enabled when visual selections changed, kitchen view only)
+- [x] GenerateButton (enabled when visual selections changed)
 - [x] Stone Martin logo in header
 - [x] Code reviewed — all bugs and issues fixed
-- [ ] Polish: transitions, mobile responsiveness, room strip scroll behavior
+- [x] **Two-column sidebar layout** (see D22)
+- [x] SidebarPanel with sticky image, generate button, section nav, total, continue
+- [x] IntersectionObserver-based active section tracking
+- [x] AI generation enabled on steps 1-4 (not just kitchen)
+- [x] Mobile fallback: single column with hero on top, sticky PriceTracker
+- [ ] Polish: transitions, mobile responsiveness
 - [ ] GuidedNudge overlay ("Try upgrading the countertop")
 
 ### Stream E: AI Image Pipeline — DONE
@@ -58,7 +62,7 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - [x] Prompt construction from promptDescriptors (with layout-anchoring)
 - [x] Vercel AI SDK integration (gpt-image-1, pinned version)
 - [x] Supabase cache (SHA-256 hash → lookup → upsert)
-- [x] RoomHero shows generated image (kitchen view only)
+- [x] StepHero shows generated image (all visual steps)
 - [x] Input validation, rate limiting, double-click guard
 - [x] Error state with user-facing message
 - [x] Base64 fallback on upload failure
@@ -74,22 +78,25 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 
 ## What's Done
 - Full scaffold: Next.js 16.1.6, Tailwind v4, TypeScript, App Router
-- **Room-based visual tour UI** with 6 real Kinkade plan photos
-- New components: RoomStrip, RoomHero, RoomSection, SwatchGrid, CompactOptionList
-- Room config mapping 49 subcategories to 6 rooms; ~51 orphans in "Other Upgrades"
-- Deleted dead components: KitchenViewer.tsx, OptionsPanel.tsx
+- **Step-based wizard UI** with 5 steps covering all upgrade categories
+- **Two-column sidebar layout** — sticky left sidebar (image + generate + section nav + total) + scrollable right options column
+- Components: StepNav, StepHero, StepContent, SidebarPanel, SwatchGrid, CompactOptionList, GenerateButton, PriceTracker
+- Step config mapping all subcategories to 5 themed steps via step-config.ts
+- AI generation enabled on steps 1-4 (all feed same kitchen generation endpoint)
+- Section quick-nav in sidebar with IntersectionObserver-based highlighting
+- Responsive: two-column on lg+, single-column with sticky PriceTracker on mobile
 - Full options data from Kinkade PDF (all 15 categories)
 - Image generation pipeline with cache, validation, rate limiting
 - **166 swatch images scraped** from stonemartinbuilders.com via ScrapingDog API
 - **146 swatchUrl mappings** applied to options-data.ts (all visual subcategories covered)
 - Swatch images in `/public/swatches/{appliances,backsplash,cabinets,countertops,electrical,faucets,flooring,sinks}/`
-- Code reviewed — all critical/medium issues fixed
 - `npm run build` passes clean
 - Stone Martin logo saved as `public/logo.svg`
 - 6 room photos in `public/rooms/`
+- Supabase selection persistence (auto-save per buyerId)
 
 ## What's Next
-1. **Polish pass** — mobile responsiveness, room strip auto-scroll, transitions
+1. **Polish pass** — mobile responsiveness, transitions
 2. **Image generation testing** — try different models, tune prompt quality
 3. **Pre-generation** — cache popular combos for instant demo wow factor
 4. **GuidedNudge** — first-visit overlay pointing to pre-cached countertop upgrade
@@ -102,4 +109,3 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 ## Open Questions
 1. Contact info for CTA: What email/phone for the "Let's talk" screen?
 2. Which image generator performs best for kitchen interiors? (Test gpt-image-1, Gemini, etc.)
-3. Should other rooms (bath, great room) also get AI visualization? Currently kitchen-only.
