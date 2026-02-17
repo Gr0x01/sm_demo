@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { openai } from "@ai-sdk/openai";
-import { experimental_generateImage as generateImage } from "ai";
-import { buildPrompt, hashSelections } from "@/lib/generate";
+import { google } from "@ai-sdk/google";
+import { generateText } from "ai";
+import { buildEditPrompt, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getVisualSubCategoryIds } from "@/lib/options-data";
+import { readFile } from "fs/promises";
+import path from "path";
 
 export const maxDuration = 60;
 
@@ -13,13 +15,30 @@ const lastRequestTime = { value: 0 };
 // Double-click guard: track in-progress generation hashes
 const inProgressHashes = new Set<string>();
 
+// Allowed hero images (prevent path traversal)
+const ALLOWED_HERO_IMAGES = new Set([
+  "/rooms/greatroom-wide.webp",
+  "/rooms/kitchen-close.webp",
+  "/rooms/kitchen-greatroom.webp",
+  "/rooms/primary-bath-vanity.webp",
+  "/rooms/primary-bath-shower.webp",
+  "/rooms/bath-closet.webp",
+]);
+
 export async function POST(request: Request) {
   try {
-    const { selections } = await request.json();
+    const { selections, heroImage } = await request.json();
 
     if (!selections || typeof selections !== "object") {
       return NextResponse.json(
         { error: "Invalid selections" },
+        { status: 400 }
+      );
+    }
+
+    if (!heroImage || !ALLOWED_HERO_IMAGES.has(heroImage)) {
+      return NextResponse.json(
+        { error: "Invalid or missing heroImage" },
         { status: 400 }
       );
     }
@@ -78,34 +97,66 @@ export async function POST(request: Request) {
         });
       }
 
-      // Generate image
-      const prompt = buildPrompt(selections);
+      // Read the base room image from public/
+      const imagePath = path.join(process.cwd(), "public", heroImage);
+      const imageBuffer = await readFile(imagePath);
+      const ext = path.extname(heroImage).slice(1); // "webp"
+      const mimeType = ext === "webp" ? "image/webp" : `image/${ext}`;
 
-      const result = await generateImage({
-        model: openai.image("gpt-image-1"),
-        prompt,
-        size: "1536x1024",
+      // Build edit-style prompt
+      const prompt = buildEditPrompt(selections);
+
+      const result = await generateText({
+        model: google("gemini-2.5-flash-preview-04-17"),
         providerOptions: {
-          openai: { quality: "high" },
+          google: { responseModalities: ["TEXT", "IMAGE"] },
         },
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image",
+                image: imageBuffer,
+                mediaType: mimeType,
+              },
+              {
+                type: "text",
+                text: prompt,
+              },
+            ],
+          },
+        ],
       });
 
-      const imageData = result.image;
-      const imagePath = `${selectionsHash}.png`;
+      const imageFile = result.files?.find((f) =>
+        f.mediaType?.startsWith("image/")
+      );
+
+      if (!imageFile) {
+        return NextResponse.json(
+          { error: "No image was generated" },
+          { status: 500 }
+        );
+      }
+
+      const outputExt = imageFile.mediaType?.split("/")[1] || "png";
+      const outputPath = `${selectionsHash}.${outputExt}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("kitchen-images")
-        .upload(imagePath, Buffer.from(imageData.uint8Array), {
-          contentType: "image/png",
+        .upload(outputPath, Buffer.from(imageFile.uint8Array), {
+          contentType: imageFile.mediaType || "image/png",
           upsert: true,
         });
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
         // Still return the image as base64 if upload fails
+        const base64 = Buffer.from(imageFile.uint8Array).toString("base64");
         return NextResponse.json({
-          imageUrl: `data:image/png;base64,${imageData.base64}`,
+          imageUrl: `data:${imageFile.mediaType || "image/png"};base64,${base64}`,
           cacheHit: false,
         });
       }
@@ -114,7 +165,7 @@ export async function POST(request: Request) {
       await supabase.from("generated_images").upsert({
         selections_hash: selectionsHash,
         selections_json: selections,
-        image_path: imagePath,
+        image_path: outputPath,
         prompt,
       }, { onConflict: 'selections_hash' });
 
@@ -122,7 +173,7 @@ export async function POST(request: Request) {
         data: { publicUrl },
       } = supabase.storage
         .from("kitchen-images")
-        .getPublicUrl(imagePath);
+        .getPublicUrl(outputPath);
 
       return NextResponse.json({
         imageUrl: publicUrl,
