@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { SubCategory, Option } from "@/types";
 import { formatPrice } from "@/lib/pricing";
 import { ImageLightbox } from "./ImageLightbox";
@@ -104,17 +104,15 @@ export function SwatchGrid({ subCategory, selectedOptionId, onSelect }: SwatchGr
                   )}
                 </div>
 
-                {/* Label — only show for options without a visual swatch */}
-                {!hasVisual && (
-                  <div className="w-full px-1.5 py-1.5 text-center">
-                    <p className="text-[11px] font-medium text-[var(--color-navy)] leading-tight truncate">
-                      {getShortName(option.name)}
-                    </p>
-                    <p className={`text-[10px] mt-0.5 ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
-                      {formatPrice(option.price)}
-                    </p>
-                  </div>
-                )}
+                {/* Label — name + price beneath every swatch */}
+                <div className="w-full px-1.5 py-1.5 text-center">
+                  <p className="text-[11px] font-medium text-[var(--color-navy)] leading-tight truncate">
+                    {getShortName(option.name)}
+                  </p>
+                  <p className={`text-[10px] mt-0.5 ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
+                    {formatPrice(option.price)}
+                  </p>
+                </div>
               </button>
             );
           })}
