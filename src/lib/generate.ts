@@ -83,6 +83,14 @@ export interface SwatchImage {
   mediaType: string;
 }
 
+/** Scene descriptions keyed by hero image filename — tells the model what rooms/areas are in the photo. */
+const SCENE_DESCRIPTIONS: Record<string, string> = {
+  "greatroom-wide.webp": "This photo shows an open-concept great room and kitchen in a new-construction home. The kitchen is in the background with an island, and the great room is in the foreground with hardwood/LVP flooring throughout.",
+  "kitchen-close.webp": "This photo shows a kitchen in a new-construction home. There is a large island in the foreground, wall cabinets and countertops along the back wall, and appliances. The floor is hardwood/LVP.",
+  "primary-bath-vanity.webp": "This photo shows a primary bathroom in a new-construction home. There is a double vanity with mirrors on the left, tile flooring in the bathroom, and a walk-in shower with tile walls on the right.",
+  "primary-bedroom.webp": "This photo shows a primary bedroom in a new-construction home. It has LVP/hardwood flooring, a tray ceiling with crown molding, a ceiling fan, white painted walls, white trim and baseboard, and a doorway on the left showing a peek into the en-suite bathroom.",
+};
+
 /** Spatial hints telling the model WHERE in the photo each subcategory appears. */
 const SPATIAL_HINTS: Record<string, string> = {
   // Kitchen
@@ -99,7 +107,7 @@ const SPATIAL_HINTS: Record<string, string> = {
   "range": "range/stovetop in its cutout along the wall",
   // Great room / whole-house
   "cabinet-style-whole-house": "cabinet door style on ALL cabinets (shaker, flat, raised panel, etc.)",
-  "main-area-flooring-color": "all visible floor area (LVP/hardwood planks)",
+  "main-area-flooring-color": "LVP/hardwood plank flooring in non-bathroom areas (closets, bedrooms, hallways) — NOT on bathroom floors which have tile",
   "common-wall-paint": "all wall surfaces",
   "ceiling-paint": "ceiling",
   "trim-paint": "trim and molding along walls",
@@ -114,7 +122,7 @@ const SPATIAL_HINTS: Record<string, string> = {
   "primary-bath-cabinet-color": "vanity cabinet color",
   "bathroom-cabinet-hardware": "vanity cabinet hardware (pulls and knobs)",
   "primary-bath-mirrors": "mirrors above the vanity",
-  "floor-tile-color": "large format tile on the bathroom floor AND shower walls (same tile covers both surfaces)",
+  "floor-tile-color": "large format tile on the bathroom floor AND shower walls ONLY (same tile covers both surfaces) — do NOT tile the closet or bedroom, those have LVP/hardwood flooring",
   "primary-shower": "small mosaic tile on the SHOWER FLOOR ONLY (the small square or penny tiles on the ground inside the shower enclosure)",
   "primary-shower-entry": "shower entry/door (glass panel separating shower from bathroom)",
   "bath-faucets": "faucets on the vanity",
@@ -124,6 +132,10 @@ const SPATIAL_HINTS: Record<string, string> = {
   "secondary-bath-mirrors": "mirror above vanity",
   "secondary-shower": "shower tile",
   "primary-closet-shelving": "closet shelving system",
+  "crown-options": "crown molding where walls meet ceiling",
+  "bedroom-fan": "ceiling fan in the bedroom",
+  "door-hardware": "door knobs/levers on interior doors",
+  "under-cabinet-lighting": "LED strip lighting underneath upper cabinets, illuminating the countertop",
 };
 
 function findOption(
@@ -148,6 +160,7 @@ function findOption(
  */
 export async function buildEditPrompt(
   visualSelections: Record<string, string>,
+  heroImage?: string,
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const swatchLabels: string[] = [];
   const textOnlyLabels: string[] = [];
@@ -209,13 +222,18 @@ export async function buildEditPrompt(
     upgradeList += "\n" + textOnlyLabels.map((l, i) => `${offset + i + 1}. ${l}`).join("\n");
   }
 
-  const prompt = `Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:
+  const heroFilename = heroImage ? path.basename(heroImage) : "";
+  const sceneDesc = SCENE_DESCRIPTIONS[heroFilename] || "";
+  const sceneBlock = sceneDesc ? `SCENE: ${sceneDesc}\n\n` : "";
+
+  const prompt = `${sceneBlock}Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:
 
 ${upgradeList}
 
 RULES:
 - Each numbered item has a swatch image. Match that swatch's color, pattern, and texture EXACTLY on the specified surface.
-- The "→ apply to" text tells you WHERE in the photo to apply each swatch.
+- The "→ apply to" text tells you WHERE in the photo to apply each swatch. ONLY apply materials to the specified areas.
+- Different rooms have different flooring. Tile stays in bathrooms. LVP/hardwood stays in closets, bedrooms, and hallways. Do NOT extend one flooring material into another room.
 - Do NOT add, remove, or move any object. Same number of cabinets, drawers, doors, appliances, fixtures.
 - Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
 - Keep the exact camera angle, perspective, lighting, and room layout.

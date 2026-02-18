@@ -24,6 +24,7 @@ const ALLOWED_HERO_IMAGES = new Set([
   "/rooms/primary-bath-vanity.webp",
   "/rooms/primary-bath-shower.webp",
   "/rooms/bath-closet.webp",
+  "/rooms/primary-bedroom.webp",
 ]);
 
 export async function POST(request: Request) {
@@ -107,7 +108,7 @@ export async function POST(request: Request) {
       const heroFilename = path.basename(heroImage);
 
       // Build edit-style prompt + load swatch images (all selections with swatches)
-      const { prompt, swatches } = await buildEditPrompt(selections);
+      const { prompt, swatches } = await buildEditPrompt(selections, heroImage);
 
       let outputBuffer: Buffer;
 

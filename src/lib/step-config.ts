@@ -114,6 +114,11 @@ export const steps: StepConfig[] = [
       "main-area-flooring-color",
       "common-wall-paint",
       "ceiling-paint",
+      "trim-paint",
+      "baseboard",
+      "door-casing-color",
+      "interior-door-style",
+      "lighting",
     ],
     photoBaseline: {
       "backsplash": "bs-baker-herringbone-warm-grey",
@@ -168,6 +173,10 @@ export const steps: StepConfig[] = [
     alsoIncludeIds: [
       "common-wall-paint",
       "ceiling-paint",
+      "trim-paint",
+      "baseboard",
+      "door-casing-color",
+      "door-hardware",
       "cabinet-style-whole-house",
     ],
     sections: [
@@ -206,21 +215,21 @@ export const steps: StepConfig[] = [
     id: "secondary-spaces",
     number: 4,
     name: "Secondary Spaces",
-    subtitle: "Secondary bath, laundry, powder room & closets",
-    heroImage: "/rooms/bath-closet.webp",
+    subtitle: "Bedroom, bath, laundry & powder room",
+    heroImage: "/rooms/primary-bedroom.webp",
     heroVariant: "full",
     showGenerateButton: true,
     alsoIncludeIds: [
       "common-wall-paint",
       "ceiling-paint",
-      "cabinet-style-whole-house",
+      "trim-paint",
+      "baseboard",
+      "door-casing-color",
+      "crown-options",
       "main-area-flooring-color",
+      "bedroom-fan",
+      "door-hardware",
     ],
-    photoBaseline: {
-      "cabinet-style-whole-house": "cabinet-style-oxford",
-      "secondary-bath-cabinet-color": "secondary-bath-cab-white",
-      "secondary-bath-mirrors": "sec-mirror-49-orb",
-    },
     sections: [
       {
         title: "Secondary Bath",
