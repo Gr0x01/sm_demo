@@ -180,7 +180,7 @@ function GeneratingOverlay({ stepId }: { stepId: string }) {
         {label}
       </p>
       <p className="text-xs text-gray-400 mt-1">
-        This takes 10-30 seconds
+        This usually takes about a minute
       </p>
     </div>
   );
