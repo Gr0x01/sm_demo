@@ -433,6 +433,16 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
     return currentSnapshot !== lastSnapshot;
   }, [activeStep, state.selections, state.generatedWithSelections]);
 
+  // Preload all generated images so step switching is instant
+  useEffect(() => {
+    for (const url of Object.values(state.generatedImageUrls)) {
+      if (url) {
+        const img = new Image();
+        img.src = url;
+      }
+    }
+  }, [state.generatedImageUrls]);
+
   const activeGeneratedImageUrl = state.generatedImageUrls[activeStep.id] ?? null;
   const activeBaseImageUrl =
     typeof activeStep.heroImage === "string"

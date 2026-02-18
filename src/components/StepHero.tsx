@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import type { StepConfig } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
@@ -22,8 +22,32 @@ interface StepHeroProps {
 export function StepHero({ step, generatedImageUrl, isGenerating, compact }: StepHeroProps) {
   const [showZoom, setShowZoom] = useState(false);
 
+  // Track which URL was present when we entered this step (no animation needed for it)
+  const initialUrlRef = useRef<string | null>(generatedImageUrl);
+  // URL that was freshly generated while on this step — gets the reveal animation
+  const [revealingUrl, setRevealingUrl] = useState<string | null>(null);
+
+  // Reset when step changes
+  useEffect(() => {
+    initialUrlRef.current = generatedImageUrl;
+    setRevealingUrl(null);
+  }, [step.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Detect fresh generation: URL appeared while we were on this step
+  useEffect(() => {
+    if (generatedImageUrl && generatedImageUrl !== initialUrlRef.current) {
+      setRevealingUrl(generatedImageUrl);
+    }
+  }, [generatedImageUrl]);
+
+  // If generated image existed when we arrived, use it as primary src (no animation)
+  const hasPreExistingImage = generatedImageUrl && generatedImageUrl === initialUrlRef.current;
+  // The primary image to render
+  const baseImage = typeof step.heroImage === "string" ? step.heroImage : step.heroImage?.[0];
+  const primarySrc = hasPreExistingImage ? generatedImageUrl : baseImage;
+
   // The image to show in the lightbox — generated takes priority over room photo
-  const displayedImageUrl = generatedImageUrl || (typeof step.heroImage === "string" ? step.heroImage : step.heroImage?.[0]);
+  const displayedImageUrl = generatedImageUrl || baseImage;
 
   if (step.heroVariant === "none") {
     if (compact) return null;
@@ -38,6 +62,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
   // Split variant in compact mode (sidebar)
   if (step.heroVariant === "split" && Array.isArray(step.heroImage)) {
     if (compact) {
+      const splitPrimary = hasPreExistingImage ? generatedImageUrl : step.heroImage[0];
       return (
         <>
           <div
@@ -46,14 +71,14 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
           >
             {isGenerating && <GeneratingOverlay stepId={step.id} />}
             <img
-              src={step.heroImage[0]}
+              src={splitPrimary}
               alt={step.name}
               className="w-full h-full object-cover"
             />
-            {generatedImageUrl && (
+            {revealingUrl && (
               <img
-                key={generatedImageUrl}
-                src={generatedImageUrl}
+                key={revealingUrl}
+                src={revealingUrl}
                 alt={`${step.name} — AI Generated`}
                 className="absolute inset-0 w-full h-full object-cover animate-image-reveal"
               />
@@ -91,8 +116,6 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
   }
 
   // "full" variant (and compact variant when compact prop is true)
-  const img = typeof step.heroImage === "string" ? step.heroImage : step.heroImage[0];
-
   if (compact) {
     return (
       <>
@@ -102,14 +125,14 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
         >
           {isGenerating && <GeneratingOverlay stepId={step.id} />}
           <img
-            src={img}
+            src={primarySrc}
             alt={step.name}
             className="w-full h-full object-cover"
           />
-          {generatedImageUrl && (
+          {revealingUrl && (
             <img
-              key={generatedImageUrl}
-              src={generatedImageUrl}
+              key={revealingUrl}
+              src={revealingUrl}
               alt={`${step.name} — AI Generated`}
               className="absolute inset-0 w-full h-full object-cover animate-image-reveal"
             />
@@ -135,14 +158,14 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
       >
         {isGenerating && <GeneratingOverlay stepId={step.id} />}
         <img
-          src={img}
+          src={primarySrc}
           alt={step.name}
           className="w-full h-full object-cover"
         />
-        {generatedImageUrl && (
+        {revealingUrl && (
           <img
-            key={generatedImageUrl}
-            src={generatedImageUrl}
+            key={revealingUrl}
+            src={revealingUrl}
             alt={`${step.name} — AI Generated`}
             className="absolute inset-0 w-full h-full object-cover animate-image-reveal"
           />
