@@ -21,7 +21,7 @@ const roomImages: { stepId: string; label: string; src: string }[] = steps
 interface UpgradeSummaryProps {
   selections: Record<string, string>;
   quantities: Record<string, number>;
-  generatedImageUrl: string | null;
+  generatedImageUrls: Record<string, string>;
   planName: string;
   community: string;
   onBack: () => void;
@@ -51,7 +51,7 @@ interface UpgradeGroup {
 export function UpgradeSummary({
   selections,
   quantities,
-  generatedImageUrl,
+  generatedImageUrls,
   planName,
   community,
   onBack,
@@ -139,10 +139,10 @@ export function UpgradeSummary({
         {/* Room Images */}
         <div className="grid grid-cols-2 gap-2 mb-8">
           {roomImages.map((room) => {
-            // Replace kitchen base image with generated image if available
-            const isKitchen = room.stepId === "design-your-kitchen";
-            const imgSrc = isKitchen && generatedImageUrl ? generatedImageUrl : room.src;
-            const isGenerated = isKitchen && !!generatedImageUrl;
+            // Replace base image with generated image if available for this step
+            const generatedUrl = generatedImageUrls[room.stepId];
+            const imgSrc = generatedUrl || room.src;
+            const isGenerated = !!generatedUrl;
 
             return (
               <div key={room.stepId} className="relative overflow-hidden">

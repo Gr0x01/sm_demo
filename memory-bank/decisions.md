@@ -97,11 +97,28 @@
 **Context**: AI generation was kitchen-only (step 2). But users pick flooring, cabinets, and paint on step 1 that also affect the kitchen visualization.
 **Decision**: Enable `showGenerateButton: true` on steps 1-4. All feed the same kitchen generation endpoint — visual subcategories from any step contribute to the prompt. Step 5 (electrical/exterior) has no visual generation.
 
-## D25: Gemini 3 Pro Image (Nano Banana Pro) for generation
-**Context**: Originally used gpt-image-1 (OpenAI) for text-to-image. Switched to Gemini for multimodal input (base room photo + swatch images + text prompt). Preview model `gemini-2.5-flash-preview-04-17` expired (Feb 2026). Tried `gemini-2.5-flash-image` but quality wasn't good enough.
-**Decision**: Use `gemini-3-pro-image-preview` (Nano Banana Pro) via `@ai-sdk/google`. Uses `generateText` with `responseModalities: ["TEXT", "IMAGE"]`. Higher fidelity, better reasoning for complex prompts. ~$0.24/image.
-**Trade-off**: Higher cost per image vs. Flash, but significantly better quality for interior design visualization with complex material descriptions.
+## D25: OpenAI gpt-image-1.5 for generation (via images.edit)
+**Context**: Originally used gpt-image-1 (OpenAI) for text-to-image. Switched to Gemini for multimodal input. Tried Gemini 3 Pro Image Preview ("Nano Banana Pro") — it worked but had issues: inconsistent output format (PNG vs JPEG randomly), perspective shifts (generated new compositions instead of editing), and Supabase upload failures when it returned large PNGs.
+**Decision**: Use OpenAI `gpt-image-1.5` via the dedicated `images.edit` endpoint. Sends room photo + swatch images as an array of files. 1536x1024, quality "high". Uses the `openai` SDK directly (not Vercel AI SDK — it doesn't wrap the edit endpoint).
+**Trade-off**: OpenAI API key required + higher cost than Gemini, but dramatically better: dedicated edit API preserves perspective, consistent PNG output, better instruction following, spatial placement works with prompt hints.
+
+## D26: Per-step generated images (not shared)
+**Context**: Originally had a single `generatedImageUrl` in state — generating on any step overwrote the image from other steps.
+**Decision**: Changed to `generatedImageUrls: Record<stepId, string>`. Each step's generation is stored independently. Cache restoration on refresh checks each step's selections separately via `/api/generate/check`.
+
+## D27: highImpactIds for swatch image budgeting
+**Context**: Step 1 has ~20 visual subcategories. Sending all swatch images to the AI caused Gemini 500 errors (too many images). But being too conservative (4-5 swatches) left out important visible elements like hardware, lighting, trim.
+**Decision**: Each step in `step-config.ts` has a `highImpactIds` array listing subcategories that get swatch images sent to the AI (9-13 per step). Others are described in text only. Curated based on what's actually visible in each room photo — e.g., step 1 (greatroom) skips carpet (not visible in photo) but includes wainscoting, baseboard, lighting, fan.
 
 ## D24: No border-radius in UI
 **Context**: The design uses sharp corners throughout for a clean, architectural feel.
 **Decision**: No `rounded`, `rounded-lg`, etc. on any elements. Sharp corners everywhere.
+
+## D28: input_fidelity "high" + surgical prompt for image preservation
+**Context**: gpt-image-1.5 was losing details like cabinet pulls, flattening shaker panel door geometry, and adding extra cabinets. Long preservation lists in the prompt paradoxically drew the model's attention to those elements.
+**Decision**: (1) Added `input_fidelity: "high"` to the images.edit call — OpenAI's dedicated parameter for preserving input details. (2) Rewrote prompt to "surgical precision" pattern: short, direct, "change ONLY these surfaces" framing with explicit count constraints instead of long enumeration. (3) Added one targeted line for cabinet door geometry preservation.
+**Trade-off**: ~$0.04-0.06 extra per request. Worth it for demo quality.
+
+## D29: GPT-5.2 via Responses API as test path
+**Context**: gpt-image-1.5 is "almost good" but not production-quality. Tested GPT-5.2 (reasoning model) via Responses API with image_generation tool for better instruction following.
+**Decision**: Added `&model=gpt-5.2` URL param to toggle. GPT-5.2 produces better detail preservation. For demo, 1.5 is sufficient. Production would need per-surface masking, multi-pass inpainting, or a fine-tuned model. Cache hash includes model name to avoid collisions between models.

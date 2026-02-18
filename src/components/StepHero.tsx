@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { StepConfig } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
+import { LogoLoader } from "./LogoLoader";
 
 interface StepHeroProps {
   step: StepConfig;
@@ -166,7 +167,7 @@ function ZoomHint() {
 function GeneratingOverlay() {
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm overlay-enter">
-      <div className="w-12 h-12 border-4 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin mb-4" />
+      <LogoLoader className="w-16 h-auto text-[var(--color-navy)] mb-4" />
       <p className="text-sm font-medium text-[var(--color-navy)]">
         Generating your kitchen...
       </p>

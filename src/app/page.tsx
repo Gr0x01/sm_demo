@@ -27,7 +27,7 @@ interface BuyerData {
 interface SummaryData {
   selections: Record<string, string>;
   quantities: Record<string, number>;
-  generatedImageUrl: string | null;
+  generatedImageUrls: Record<string, string>;
 }
 
 export default function Home() {
@@ -92,7 +92,7 @@ export default function Home() {
         <UpgradeSummary
           selections={summaryData.selections}
           quantities={summaryData.quantities}
-          generatedImageUrl={summaryData.generatedImageUrl}
+          generatedImageUrls={summaryData.generatedImageUrls}
           planName={buyer?.planName ?? "Kinkade Plan"}
           community={buyer?.community ?? "McClain Landing Phase 7"}
           onBack={() => setPage("picker")}

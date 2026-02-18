@@ -190,6 +190,11 @@ export default function AdminPage() {
                       </p>
                       <p className="text-xs text-neutral-400 mt-1">
                         {formatDate(image.created_at)}
+                        {image.selections_json._model && (
+                          <span className="ml-2 text-amber-400 font-mono">
+                            [{image.selections_json._model}]
+                          </span>
+                        )}
                       </p>
                     </div>
                     <button

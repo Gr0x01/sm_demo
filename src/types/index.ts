@@ -28,7 +28,7 @@ export interface Category {
 export interface SelectionState {
   selections: Record<string, string>; // subCategoryId → optionId
   quantities: Record<string, number>; // subCategoryId → quantity (additive items only)
-  generatedImageUrl: string | null;
+  generatedImageUrls: Record<string, string>; // stepId → imageUrl
   isGenerating: boolean;
   hasEverGenerated: boolean;
   visualSelectionsChangedSinceLastGenerate: boolean;
@@ -40,5 +40,5 @@ export type SelectionAction =
   | { type: "SET_QUANTITY"; subCategoryId: string; quantity: number; addOptionId: string; noUpgradeOptionId: string }
   | { type: "LOAD_SELECTIONS"; selections: Record<string, string>; quantities: Record<string, number> }
   | { type: "START_GENERATING" }
-  | { type: "GENERATION_COMPLETE"; imageUrl: string }
+  | { type: "GENERATION_COMPLETE"; stepId: string; imageUrl: string }
   | { type: "GENERATION_ERROR"; error: string };

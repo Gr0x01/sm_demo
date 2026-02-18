@@ -61,7 +61,7 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
       return {
         ...state,
         isGenerating: false,
-        generatedImageUrl: action.imageUrl,
+        generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
         hasEverGenerated: true,
         visualSelectionsChangedSinceLastGenerate: false,
       };
@@ -76,7 +76,7 @@ function getInitialState(): SelectionState {
   return {
     selections: getDefaultSelections(),
     quantities: {},
-    generatedImageUrl: null,
+    generatedImageUrls: {},
     isGenerating: false,
     hasEverGenerated: false,
     visualSelectionsChangedSinceLastGenerate: true,
@@ -106,7 +106,7 @@ function stepHasUpgrades(
   return false;
 }
 
-export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrl: string | null }) => void; buyerId?: string }) {
+export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrls: Record<string, string> }) => void; buyerId?: string }) {
   const [state, dispatch] = useReducer(reducer, null, getInitialState);
   const [activeStepId, setActiveStepIdRaw] = useState(() => {
     if (typeof window === "undefined") return steps[0].id;
@@ -191,21 +191,32 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
             quantities: data.quantities ?? {},
           });
 
-          // Check if there's a cached generated image for these selections
-          try {
-            const checkRes = await fetch("/api/generate/check", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ selections: data.selections }),
-            });
-            if (checkRes.ok) {
-              const { imageUrl } = await checkRes.json();
-              if (imageUrl) {
-                dispatch({ type: "GENERATION_COMPLETE", imageUrl });
+          // Check for cached generated images per step
+          for (const step of steps) {
+            if (!step.showGenerateButton) continue;
+            const stepSubIds = new Set(step.sections.flatMap((s) => s.subCategoryIds));
+            const stepSelections: Record<string, string> = {};
+            for (const [k, v] of Object.entries(data.selections)) {
+              if (visualSubCategoryIds.has(k) && stepSubIds.has(k)) {
+                stepSelections[k] = v as string;
               }
             }
-          } catch {
-            // Non-critical — just won't show cached image
+            if (Object.keys(stepSelections).length === 0) continue;
+            try {
+              const checkRes = await fetch("/api/generate/check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ selections: stepSelections }),
+              });
+              if (checkRes.ok) {
+                const { imageUrl } = await checkRes.json();
+                if (imageUrl) {
+                  dispatch({ type: "GENERATION_COMPLETE", stepId: step.id, imageUrl });
+                }
+              }
+            } catch {
+              // Non-critical
+            }
           }
         }
         hasLoadedRef.current = true;
@@ -309,16 +320,22 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
     }
 
     try {
+      const modelParam = new URLSearchParams(window.location.search).get("model");
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selections: visualSelections, heroImage: activeStep.heroImage, highImpactIds: activeStep.highImpactIds }),
+        body: JSON.stringify({
+          selections: visualSelections,
+          heroImage: activeStep.heroImage,
+          highImpactIds: activeStep.highImpactIds,
+          ...(modelParam ? { model: modelParam } : {}),
+        }),
       });
 
       if (!res.ok) throw new Error("Generation failed");
 
       const data = await res.json();
-      dispatch({ type: "GENERATION_COMPLETE", imageUrl: data.imageUrl });
+      dispatch({ type: "GENERATION_COMPLETE", stepId: activeStep.id, imageUrl: data.imageUrl });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       dispatch({ type: "GENERATION_ERROR", error: message });
@@ -368,7 +385,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
 
           {/* Finish — right */}
           <button
-            onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrl: state.generatedImageUrl })}
+            onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
             className="text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors cursor-pointer shrink-0"
           >
             Finish &rarr;
@@ -383,7 +400,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           <div className="hidden lg:block">
             <SidebarPanel
               step={activeStep}
-              generatedImageUrl={state.generatedImageUrl}
+              generatedImageUrl={state.generatedImageUrls[activeStep.id] ?? null}
               isGenerating={state.isGenerating}
               error={state.error}
               onGenerate={handleGenerate}
@@ -402,7 +419,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
             <div key={activeStepId} className="lg:hidden animate-fade-slide-in">
               <StepHero
                 step={activeStep}
-                generatedImageUrl={activeStep.showGenerateButton ? state.generatedImageUrl : null}
+                generatedImageUrl={activeStep.showGenerateButton ? state.generatedImageUrls[activeStep.id] ?? null : null}
                 isGenerating={activeStep.showGenerateButton ? state.isGenerating : false}
               />
               {activeStep.showGenerateButton && (

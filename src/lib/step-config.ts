@@ -112,6 +112,8 @@ export const steps: StepConfig[] = [
       "kitchen-cabinet-hardware",
       "kitchen-sink",
       "kitchen-faucet",
+      "dishwasher",
+      "refrigerator",
       "range",
       "under-cabinet-lighting",
       "light-rail",

@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
-import { google } from "@ai-sdk/google";
-import { generateText } from "ai";
+import OpenAI, { toFile } from "openai";
 import { buildEditPrompt, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getVisualSubCategoryIds } from "@/lib/options-data";
 import { readFile } from "fs/promises";
 import path from "path";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
+
+const openai = new OpenAI();
 
 // Simple rate limiting (demo — global, not per-IP)
 const lastRequestTime = { value: 0 };
@@ -27,7 +28,7 @@ const ALLOWED_HERO_IMAGES = new Set([
 
 export async function POST(request: Request) {
   try {
-    const { selections, heroImage, highImpactIds } = await request.json();
+    const { selections, heroImage, highImpactIds, model } = await request.json();
 
     if (!selections || typeof selections !== "object") {
       return NextResponse.json(
@@ -63,7 +64,8 @@ export async function POST(request: Request) {
     }
     lastRequestTime.value = now;
 
-    const selectionsHash = hashSelections(selections);
+    const modelName = model === "gpt-5.2" ? "gpt-5.2" : "gpt-image-1.5";
+    const selectionsHash = hashSelections({ ...selections, _model: modelName });
 
     // Double-click guard — skip if this exact hash is already being generated
     if (inProgressHashes.has(selectionsHash)) {
@@ -100,78 +102,126 @@ export async function POST(request: Request) {
       // Read the base room image from public/
       const imagePath = path.join(process.cwd(), "public", heroImage);
       const imageBuffer = await readFile(imagePath);
-      const ext = path.extname(heroImage).slice(1); // "webp"
-      const mimeType = ext === "webp" ? "image/webp" : `image/${ext}`;
+      const heroExt = path.extname(heroImage).slice(1).toLowerCase();
+      const heroMime = heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`;
+      const heroFilename = path.basename(heroImage);
 
       // Build edit-style prompt + load swatch images
       const { prompt, swatches } = await buildEditPrompt(selections, highImpactIds);
 
-      // Assemble multimodal message: base room photo + swatch images + text prompt
-      const contentParts: Array<
-        | { type: "image"; image: Buffer; mediaType: string }
-        | { type: "text"; text: string }
-      > = [
-        { type: "image", image: imageBuffer, mediaType: mimeType },
+      // Assemble input images: base room photo first, then swatches
+      const inputImages = [
+        await toFile(imageBuffer, heroFilename, { type: heroMime }),
+        ...await Promise.all(
+          swatches.map((s) => {
+            const ext = s.mediaType.split("/")[1] || "png";
+            const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
+            return toFile(s.buffer, filename, { type: s.mediaType });
+          })
+        ),
       ];
 
-      // Add each swatch image with a label
-      for (const swatch of swatches) {
-        contentParts.push({ type: "text", text: `[Swatch: ${swatch.label}]` });
-        contentParts.push({ type: "image", image: swatch.buffer, mediaType: swatch.mediaType });
-      }
+      // Model selection: pass "model": "gpt-5.2" in request body to test Responses API path
+      const useGpt5 = model === "gpt-5.2";
 
-      // Add the main prompt last
-      contentParts.push({ type: "text", text: prompt });
+      let outputBuffer: Buffer;
 
-      const result = await generateText({
-        model: google("gemini-3-pro-image-preview"),
-        providerOptions: {
-          google: { responseModalities: ["TEXT", "IMAGE"] },
-        },
-        messages: [{ role: "user", content: contentParts }],
-      });
+      if (useGpt5) {
+        // --- GPT-5.2 via Responses API ---
+        const heroBase64 = imageBuffer.toString("base64");
+        const heroDataUrl = `data:${heroMime};base64,${heroBase64}`;
 
-      const imageFile = result.files?.find((f) =>
-        f.mediaType?.startsWith("image/")
-      );
+        // Build input content: room photo + swatch images + text prompt
+        const contentItems = [
+          { type: "input_image" as const, detail: "high" as const, image_url: heroDataUrl },
+          ...swatches.map((s) => ({
+            type: "input_image" as const,
+            detail: "high" as const,
+            image_url: `data:${s.mediaType};base64,${s.buffer.toString("base64")}`,
+          })),
+          { type: "input_text" as const, text: prompt },
+        ];
 
-      if (!imageFile) {
-        return NextResponse.json(
-          { error: "No image was generated" },
-          { status: 500 }
+        console.log(`[generate] Sending ${1 + swatches.length} images + prompt to gpt-5.2 via Responses API`);
+
+        const response = await openai.responses.create({
+          model: "gpt-5.2",
+          input: [{ role: "user", content: contentItems }],
+          tools: [{ type: "image_generation", quality: "high", size: "1536x1024" }],
+        });
+
+        // Extract generated image from response output
+        const imageOutput = response.output.find(
+          (o) => o.type === "image_generation_call"
         );
-      }
 
-      const outputExt = imageFile.mediaType?.split("/")[1] || "png";
-      const outputPath = `${selectionsHash}.${outputExt}`;
+        if (!imageOutput || !("result" in imageOutput) || !imageOutput.result) {
+          console.error("[generate] GPT-5.2 response output:", JSON.stringify(response.output, null, 2));
+          return NextResponse.json(
+            { error: "GPT-5.2 did not generate an image" },
+            { status: 500 }
+          );
+        }
+
+        outputBuffer = Buffer.from(imageOutput.result as string, "base64");
+      } else {
+        // --- gpt-image-1.5 via Images Edit API ---
+        console.log(`[generate] Sending ${inputImages.length} images (1 room + ${swatches.length} swatches) to gpt-image-1.5`);
+
+        const result = await openai.images.edit({
+          model: "gpt-image-1.5",
+          image: inputImages,
+          prompt,
+          quality: "high",
+          size: "1536x1024",
+          input_fidelity: "high",
+        });
+
+        const imageData = result.data?.[0];
+        if (!imageData?.b64_json) {
+          return NextResponse.json(
+            { error: "No image was generated" },
+            { status: 500 }
+          );
+        }
+
+        outputBuffer = Buffer.from(imageData.b64_json, "base64");
+      }
+      const outputPath = `${selectionsHash}.png`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
         .from("kitchen-images")
-        .upload(outputPath, Buffer.from(imageFile.uint8Array), {
-          contentType: imageFile.mediaType || "image/png",
+        .upload(outputPath, outputBuffer, {
+          contentType: "image/png",
           upsert: true,
         });
 
       if (uploadError) {
+        const fileSize = outputBuffer.length;
         console.error("Upload error:", uploadError);
+        console.error(`[generate] Upload details: path=${outputPath}, size=${fileSize} bytes (${(fileSize / 1024 / 1024).toFixed(2)} MB)`);
         console.warn("[generate] Storage upload failed — returning base64 fallback. This image will NOT appear in admin cache.");
-        // Still return the image as base64 if upload fails
-        const base64 = Buffer.from(imageFile.uint8Array).toString("base64");
         return NextResponse.json({
-          imageUrl: `data:${imageFile.mediaType || "image/png"};base64,${base64}`,
+          imageUrl: `data:image/png;base64,${outputBuffer.toString("base64")}`,
           cacheHit: false,
           warning: "Image was not cached due to storage upload failure",
         });
       }
 
       // Cache the result (upsert to handle race conditions)
-      await supabase.from("generated_images").upsert({
+      const { error: upsertError } = await supabase.from("generated_images").upsert({
         selections_hash: selectionsHash,
-        selections_json: selections,
+        selections_json: { ...selections, _model: modelName },
         image_path: outputPath,
         prompt,
       }, { onConflict: 'selections_hash' });
+
+      if (upsertError) {
+        console.error("[generate] DB upsert failed:", upsertError);
+      } else {
+        console.log(`[generate] Cached (${modelName}): ${selectionsHash} → ${outputPath}`);
+      }
 
       const {
         data: { publicUrl },

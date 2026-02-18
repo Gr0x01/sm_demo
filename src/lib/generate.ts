@@ -167,17 +167,15 @@ export async function buildEditPrompt(
     upgradeList += "\n" + textOnlyLabels.map((l, i) => `${offset + i + 1}. ${l}`).join("\n");
   }
 
-  const prompt = `This is a photo of a room in a new-construction home. The swatch/sample images above show the exact materials and colors for the key upgrades. Edit the room photo to apply these upgrades:
+  const prompt = `This is a photo of a room in a new-construction home. A homebuyer is choosing upgrade finishes. Edit the photo to change ONLY these surfaces:
 
 ${upgradeList}
 
-CRITICAL RULES:
-- This is an IMAGE EDITING task. You MUST modify the provided room photo — do NOT generate a new image from scratch.
-- Keep the EXACT same camera angle, perspective, room layout, architectural features, and composition as the input photo.
-- For items with swatch images, match the colors and textures EXACTLY. Use the visual appearance of each swatch as the ground truth.
-- For items without swatch images, use your best interpretation of the name.
-- The result should look like a real interior design photo — photorealistic, well-lit, no people.
-- Do NOT change the room shape, ceiling, windows, or camera position.`;
+For items with swatch images, match the swatch color and texture exactly.
+
+Do NOT add, remove, or reposition anything. The number of cabinets, drawers, appliances, fixtures, and hardware must stay exactly the same. Preserve cabinet door style and panel details (shaker recessed panels, trim profiles) — do not flatten or simplify door geometry. Keep the exact camera angle, lighting, and room layout. The refrigerator stays in its alcove; the range stays in its cutout.
+
+Photorealistic result with accurate shadows and reflections.`;
 
   return { prompt, swatches };
 }

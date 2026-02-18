@@ -61,13 +61,22 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 
 ### Stream E: AI Image Pipeline — DONE
 - [x] POST /api/generate route
-- [x] Prompt construction from promptDescriptors (with layout-anchoring)
-- [x] Vercel AI SDK integration (gpt-image-1, pinned version)
+- [x] Prompt construction from swatch images + text descriptions
+- [x] OpenAI gpt-image-1.5 via images.edit endpoint (room photo + swatches)
+- [x] highImpactIds per step — controls which swatches send images vs text-only
+- [x] Spatial placement hints in prompt (fridge in alcove, range in cutout, etc.)
+- [x] Perspective-locking prompt rules (edit, don't regenerate)
 - [x] Supabase cache (SHA-256 hash → lookup → upsert)
+- [x] Per-step generated images (each step stores independently, not shared)
+- [x] Per-step cache restoration on page refresh
 - [x] StepHero shows generated image (all visual steps)
 - [x] Input validation, rate limiting, double-click guard
 - [x] Error state with user-facing message
-- [x] Base64 fallback on upload failure
+- [x] Base64 fallback on upload failure (with logging)
+- [x] `input_fidelity: "high"` for better base image preservation
+- [x] "Surgical precision" prompt pattern — concise, "change ONLY" framing, count constraints
+- [x] GPT-5.2 test path via Responses API (`&model=gpt-5.2` URL param)
+- [x] Model name in cache hash + admin page display
 
 ### Stream F: Pre-generation + Polish — NOT STARTED
 - [ ] Pick ~6 key combos for the walk-through
@@ -97,15 +106,14 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - 6 room photos in `public/rooms/`
 - Supabase selection persistence (auto-save per buyerId)
 - **URL-based navigation** — page state (`?page=`) and step state (`?step=`) synced to URL via `history.pushState`, refresh and back/forward work correctly
-- **Cached image restoration** — `/api/generate/check` endpoint checks Supabase cache by selections hash; picker restores generated image on mount after loading saved selections
+- **Cached image restoration** — `/api/generate/check` endpoint checks Supabase cache per-step; picker restores generated images on mount
 - **Admin page** (`/admin`) — view/delete all cached generated images, no auth
 
 ## What's Next
 1. **Polish pass** — mobile responsiveness, transitions
-2. **Image generation testing** — try different models, tune prompt quality
-3. **Pre-generation** — cache popular combos for instant demo wow factor
-4. **GuidedNudge** — first-visit overlay pointing to pre-cached countertop upgrade
-5. **Deploy** — push to Vercel
+2. **Pre-generation** — cache popular combos for instant demo wow factor
+3. **GuidedNudge** — first-visit overlay pointing to pre-cached countertop upgrade
+4. **Deploy** — push to Vercel
 
 ## Blockers
 - Need `.env.local` with real keys (OPENAI_API_KEY, Supabase vars)
@@ -113,4 +121,6 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 
 ## Open Questions
 1. Contact info for CTA: What email/phone for the "Let's talk" screen?
-2. Which image generator performs best for kitchen interiors? (Test gpt-image-1, Gemini, etc.)
+
+## Resolved Questions
+- **Best image model**: gpt-image-1.5 with `input_fidelity: "high"` is best for demo. GPT-5.2 via Responses API is slightly better but 1.5 is sufficient. Production would need per-surface masking.

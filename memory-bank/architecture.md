@@ -15,15 +15,15 @@ Browser (Next.js client)
 
 Server (Next.js API route)
   └── POST /api/generate
-        ├── Receives: selections (visual sub-categories only)
+        ├── Receives: selections (visual sub-categories only) + heroImage + highImpactIds
         ├── Hashes visual selections → check Supabase cache
         ├── Cache HIT → return cached image URL instantly
         ├── Cache MISS:
-        │     ├── Build prompt from promptDescriptors
-        │     ├── Call gemini-3-pro-image-preview via Vercel AI SDK
+        │     ├── Build prompt + load swatch images (high-impact get images, others text-only)
+        │     ├── Call OpenAI images.edit (gpt-image-1.5) with room photo + swatch images
         │     ├── Store result in Supabase (image in Storage, metadata in table)
         │     └── Return image URL
-        └── Returns: image URL + prompt used + cache_hit boolean
+        └── Returns: image URL + cache_hit boolean
 
 Supabase
   ├── Table: generated_images
@@ -42,12 +42,13 @@ Option data is static TypeScript. Selections state is client-side React. Supabas
 ## Cache Flow
 
 1. User clicks "Visualize"
-2. Client sends visual selections to `/api/generate`
-3. Server creates deterministic hash of visual selections (sorted keys + option IDs → SHA-256)
+2. Client sends step's visual selections to `/api/generate`
+3. Server creates deterministic hash of visual selections (sorted keys + option IDs → SHA-256, truncated to 16 hex)
 4. Query Supabase: `SELECT image_path FROM generated_images WHERE selections_hash = ?`
 5. If found → return Supabase Storage public URL (instant, ~200ms)
-6. If not found → generate via gemini-3-pro-image-preview (10-30s) → upload to Storage → upsert cache row → return URL
+6. If not found → generate via gpt-image-1.5 (30-45s) → upload PNG to Storage → upsert cache row → return URL
 7. Client receives image URL either way
+8. On page refresh: `/api/generate/check` checks cache per-step (each step's visual selections hashed independently)
 
 ## Pre-generation Strategy
 
@@ -114,7 +115,7 @@ State shape:
 {
   selections: Record<subCategoryId, optionId>,  // current picks
   quantities: Record<subCategoryId, number>,     // for additive options
-  generatedImageUrl: string | null,
+  generatedImageUrls: Record<stepId, string>,    // per-step generated image URLs
   isGenerating: boolean,
   hasEverGenerated: boolean,
   visualSelectionsChangedSinceLastGenerate: boolean,
@@ -128,32 +129,26 @@ State shape:
 
 ## AI Image Generation Pipeline
 
-1. User clicks "Visualize My Kitchen" (available on steps 1-4)
-2. Client sends POST to `/api/generate` with only the visual sub-category selections
-3. Server looks up each selected option's `promptDescriptor`
-4. Server constructs a composite prompt with layout-anchoring:
-   ```
-   A photorealistic interior photograph of a modern new-construction kitchen,
-   shot from the living room looking toward the kitchen.
-   The kitchen has an L-shaped layout with a center island, featuring:
-   - {countertop promptDescriptor}
-   - {cabinet style promptDescriptor} cabinets in {cabinet color promptDescriptor}
-   - {backsplash promptDescriptor}
-   - {flooring promptDescriptor}
-   - {hardware finish promptDescriptor} cabinet hardware
-   - {sink promptDescriptor}
-   - {faucet promptDescriptor}
-   - {appliance descriptions}
-   Professional interior design photography, eye-level camera angle.
-   Natural lighting from windows. High-end new construction. No people.
-   ```
-5. Call `generateText` (Vercel AI SDK) with `gemini-3-pro-image-preview` (responseModalities: ["TEXT", "IMAGE"])
-6. Return image URL to client (from cache or freshly generated)
-7. Client displays in StepHero
+1. User clicks "Visualize" (available on steps 1-4, each step generates independently)
+2. Client sends POST to `/api/generate` with step's visual selections + heroImage + highImpactIds
+3. Server builds edit prompt + loads swatch images for high-impact selections (others described in text only)
+4. Server calls OpenAI `images.edit` with `gpt-image-1.5`:
+   - Input: room photo + swatch images (array of files)
+   - Prompt includes upgrade list + spatial placement rules + perspective-locking
+   - Output: 1536x1024 PNG, quality "high"
+5. Upload to Supabase Storage, upsert cache row
+6. Return image URL to client
+7. Client displays in StepHero (per-step, not shared)
 
-**Image approach**: Multimodal image editing via Gemini 2.5 Flash Image. Sends the base room photo + swatch reference images + text prompt as a single multimodal message. Uses `generateText` with `responseModalities: ["TEXT", "IMAGE"]` to get an edited image back. Each option's `promptDescriptor` is a human-written phrase tuned for AI generation quality.
+**Image approach**: OpenAI image editing via `images.edit` endpoint. Sends base room photo + high-impact swatch images as an array of files. The `highImpactIds` config in `step-config.ts` controls which selections send swatch images (9-13 per step) vs text-only descriptions. This keeps image count reasonable while still covering everything visible in the photo.
 
-**Model history**: Started with gpt-image-1 (OpenAI), switched to Gemini for multimodal input (base photo + swatches). Preview model `gemini-2.5-flash-preview-04-17` expired; now using stable `gemini-3-pro-image-preview`.
+**Prompt strategy**: "Surgical precision" pattern — lead with "change ONLY these surfaces", followed by upgrade list, then constraints ("do NOT add, remove, or reposition anything"). Explicit count constraint for cabinets/drawers/hardware to prevent hallucination. Preserves cabinet door style (shaker panels). Concise prompt to avoid drawing model attention to elements it shouldn't touch.
+
+**`input_fidelity: "high"`**: Added to the `images.edit` call to maximize preservation of base image details (hardware, pulls, fixtures). Default is "low". Costs ~$0.04-0.06 extra per request.
+
+**GPT-5.2 test path**: Add `&model=gpt-5.2` to URL to use GPT-5.2 via Responses API instead of gpt-image-1.5. Uses `image_generation` tool. Better detail preservation but different API pattern. Cache hash includes model name to prevent collisions. Admin page shows model tag on cached images.
+
+**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format, Supabase upload failures with large PNGs) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (current — best quality for demo). GPT-5.2 via Responses API tested — better detail preservation but 1.5 is good enough for demo. Production would need per-surface masking and multi-pass inpainting.
 
 ## Swatch Images
 
