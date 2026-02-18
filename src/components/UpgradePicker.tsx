@@ -123,16 +123,24 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
         quantities: { ...action.quantities },
       };
     }
-    case "START_GENERATING":
-      return { ...state, generatingStepId: action.stepId, error: null };
-    case "GENERATION_COMPLETE":
+    case "START_GENERATING": {
+      const next = new Set(state.generatingStepIds);
+      next.add(action.stepId);
+      const nextErrors = { ...state.errors };
+      delete nextErrors[action.stepId];
+      return { ...state, generatingStepIds: next, errors: nextErrors };
+    }
+    case "GENERATION_COMPLETE": {
+      const next = new Set(state.generatingStepIds);
+      next.delete(action.stepId);
       return {
         ...state,
-        generatingStepId: null,
+        generatingStepIds: next,
         generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
         hasEverGenerated: true,
         generatedWithSelections: { ...state.generatedWithSelections, [action.stepId]: action.selectionsSnapshot },
       };
+    }
     case "CLEAR_SELECTIONS":
       return {
         ...state,
@@ -140,8 +148,11 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
         quantities: {},
         generatedWithSelections: {},
       };
-    case "GENERATION_ERROR":
-      return { ...state, generatingStepId: null, error: action.error };
+    case "GENERATION_ERROR": {
+      const next = new Set(state.generatingStepIds);
+      next.delete(action.stepId);
+      return { ...state, generatingStepIds: next, errors: { ...state.errors, [action.stepId]: action.error } };
+    }
     default:
       return state;
   }
@@ -152,10 +163,10 @@ function getInitialState(): SelectionState {
     selections: getDefaultSelections(),
     quantities: {},
     generatedImageUrls: {},
-    generatingStepId: null,
+    generatingStepIds: new Set<string>(),
     hasEverGenerated: false,
     generatedWithSelections: {},
-    error: null,
+    errors: {},
   };
 }
 
@@ -382,7 +393,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
   );
 
   const handleGenerate = useCallback(async () => {
-    if (state.generatingStepId) return;
+    if (state.generatingStepIds.has(activeStep.id)) return;
     dispatch({ type: "START_GENERATING", stepId: activeStep.id });
 
     const visualSelections = getStepVisualSelections(activeStep, state.selections);
@@ -406,9 +417,9 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
       dispatch({ type: "GENERATION_COMPLETE", stepId: activeStep.id, imageUrl: data.imageUrl, selectionsSnapshot });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
-      dispatch({ type: "GENERATION_ERROR", error: message });
+      dispatch({ type: "GENERATION_ERROR", stepId: activeStep.id, error: message });
     }
-  }, [state.selections, state.generatingStepId, activeStep]);
+  }, [state.selections, state.generatingStepIds, activeStep]);
 
   const handleClearSelections = useCallback(() => {
     dispatch({ type: "CLEAR_SELECTIONS" });
@@ -423,7 +434,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
 
   const isLastStep = activeStepIndex >= steps.length - 1;
   const nextStepName = isLastStep ? "" : steps[activeStepIndex + 1].name;
-  const isGeneratingThisStep = state.generatingStepId === activeStep.id;
+  const isGeneratingThisStep = state.generatingStepIds.has(activeStep.id);
   const activeStepHasChanges = useMemo(() => {
     if (!activeStep.showGenerateButton) return false;
     const currentSnapshot = stableStringify(
@@ -522,7 +533,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               step={activeStep}
               generatedImageUrl={state.generatedImageUrls[activeStep.id] ?? null}
               isGenerating={isGeneratingThisStep}
-              error={state.error}
+              error={state.errors[activeStep.id] ?? null}
               onGenerate={handleGenerate}
               hasChanges={activeStepHasChanges}
               total={total}
@@ -569,7 +580,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           hasChanges={activeStepHasChanges}
           stepId={activeStep.id}
           showGenerateButton={!!activeStep.showGenerateButton}
-          error={state.error}
+          error={state.errors[activeStep.id] ?? null}
           hasGeneratedPreview={!!activeGeneratedImageUrl}
           previewImageUrl={activePreviewImageUrl}
           previewTitle={activeStep.name}

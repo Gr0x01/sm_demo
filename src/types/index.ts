@@ -29,10 +29,10 @@ export interface SelectionState {
   selections: Record<string, string>; // subCategoryId → optionId
   quantities: Record<string, number>; // subCategoryId → quantity (additive items only)
   generatedImageUrls: Record<string, string>; // stepId → imageUrl
-  generatingStepId: string | null; // which step is currently generating (null = idle)
+  generatingStepIds: Set<string>; // steps currently generating
   hasEverGenerated: boolean;
   generatedWithSelections: Record<string, string>; // stepId → JSON snapshot of visual selections at generation time
-  error: string | null;
+  errors: Record<string, string>; // stepId → error message
 }
 
 export type SelectionAction =
@@ -41,5 +41,5 @@ export type SelectionAction =
   | { type: "LOAD_SELECTIONS"; selections: Record<string, string>; quantities: Record<string, number> }
   | { type: "START_GENERATING"; stepId: string }
   | { type: "GENERATION_COMPLETE"; stepId: string; imageUrl: string; selectionsSnapshot: string }
-  | { type: "GENERATION_ERROR"; error: string }
+  | { type: "GENERATION_ERROR"; stepId: string; error: string }
   | { type: "CLEAR_SELECTIONS" };
