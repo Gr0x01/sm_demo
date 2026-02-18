@@ -199,6 +199,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           });
 
           // Check for cached generated images per step
+          const modelParam = new URLSearchParams(window.location.search).get("model");
           for (const step of steps) {
             if (!step.showGenerateButton) continue;
             const stepSubIds = new Set(step.sections.flatMap((s) => s.subCategoryIds));
@@ -213,7 +214,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               const checkRes = await fetch("/api/generate/check", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ selections: stepSelections }),
+                body: JSON.stringify({ selections: stepSelections, ...(modelParam ? { model: modelParam } : {}) }),
               });
               if (checkRes.ok) {
                 const { imageUrl } = await checkRes.json();

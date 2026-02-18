@@ -5,7 +5,7 @@ import { getVisualSubCategoryIds } from "@/lib/options-data";
 
 export async function POST(request: Request) {
   try {
-    const { selections } = await request.json();
+    const { selections, model } = await request.json();
 
     if (!selections || typeof selections !== "object") {
       return NextResponse.json({ imageUrl: null });
@@ -22,7 +22,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ imageUrl: null });
     }
 
-    const selectionsHash = hashSelections(visualSelections);
+    // Include model in hash to match /api/generate
+    const modelName = model === "gpt-5.2" ? "gpt-5.2" : "gpt-image-1.5";
+    const selectionsHash = hashSelections({ ...visualSelections, _model: modelName });
     const supabase = getServiceClient();
 
     const { data: cached } = await supabase
