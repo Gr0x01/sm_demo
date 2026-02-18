@@ -284,7 +284,11 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           for (const step of steps) {
             if (!step.showGenerateButton) continue;
             const stepSelections = getStepVisualSelections(step, mergedSelections);
-            if (Object.keys(stepSelections).length === 0) continue;
+            console.log(`[cache-check] Step "${step.id}": ${Object.keys(stepSelections).length} visual selections`, stepSelections);
+            if (Object.keys(stepSelections).length === 0) {
+              console.log(`[cache-check] Step "${step.id}": SKIPPED (no selections differ from baseline)`);
+              continue;
+            }
             try {
               const checkRes = await fetch("/api/generate/check", {
                 method: "POST",
@@ -293,6 +297,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               });
               if (checkRes.ok) {
                 const { imageUrl } = await checkRes.json();
+                console.log(`[cache-check] Step "${step.id}": ${imageUrl ? "HIT" : "MISS"}`);
                 if (imageUrl) {
                   dispatch({
                     type: "GENERATION_COMPLETE",
