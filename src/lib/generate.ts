@@ -83,6 +83,49 @@ export interface SwatchImage {
   mediaType: string;
 }
 
+/** Spatial hints telling the model WHERE in the photo each subcategory appears. */
+const SPATIAL_HINTS: Record<string, string> = {
+  // Kitchen
+  "kitchen-cabinet-color": "wall cabinets (upper cabinets mounted on walls)",
+  "kitchen-island-cabinet-color": "island base cabinets (large freestanding island in foreground)",
+  "kitchen-cabinet-hardware": "cabinet knobs and pulls on all cabinets",
+  "counter-top": "all countertop surfaces (island and perimeter)",
+  "countertop-edge": "edge profile of all countertops",
+  "backsplash": "tile backsplash between upper cabinets and countertop on the walls",
+  "kitchen-sink": "sink basin set into the island countertop",
+  "kitchen-faucet": "faucet rising from the island countertop near the sink",
+  "dishwasher": "dishwasher panel (left side of island or near sink)",
+  "refrigerator": "refrigerator in its built-in alcove",
+  "range": "range/stovetop in its cutout along the wall",
+  // Great room / whole-house
+  "cabinet-style-whole-house": "cabinet door style on ALL cabinets (shaker, flat, raised panel, etc.)",
+  "main-area-flooring-color": "all visible floor area (LVP/hardwood planks)",
+  "common-wall-paint": "all wall surfaces",
+  "ceiling-paint": "ceiling",
+  "trim-paint": "trim and molding along walls",
+  "door-casing-color": "door frames and casings",
+  "baseboard": "baseboard molding along the floor line",
+  "wainscoting": "wainscoting panels on lower walls",
+  "interior-door-style": "interior doors (panel style)",
+  "lighting": "light fixtures (chandelier, pendants)",
+  "great-room-fan": "ceiling fan in the great room",
+  // Primary bath
+  "primary-bath-vanity": "bathroom vanity cabinet (below the mirrors)",
+  "primary-bath-cabinet-color": "vanity cabinet color",
+  "bathroom-cabinet-hardware": "vanity cabinet hardware (pulls and knobs)",
+  "primary-bath-mirrors": "mirrors above the vanity",
+  "floor-tile-color": "large format tile on the bathroom floor AND shower walls (same tile covers both surfaces)",
+  "primary-shower": "small mosaic tile on the SHOWER FLOOR ONLY (the small square or penny tiles on the ground inside the shower enclosure)",
+  "primary-shower-entry": "shower entry/door (glass panel separating shower from bathroom)",
+  "bath-faucets": "faucets on the vanity",
+  "bath-hardware": "towel rings, toilet paper holders, and bath accessories on walls",
+  // Secondary spaces
+  "secondary-bath-cabinet-color": "vanity cabinet color",
+  "secondary-bath-mirrors": "mirror above vanity",
+  "secondary-shower": "shower tile",
+  "primary-closet-shelving": "closet shelving system",
+};
+
 function findOption(
   subCategoryId: string,
   optionId: string
@@ -99,29 +142,28 @@ function findOption(
 }
 
 /**
- * Build the edit prompt text and collect swatch images for high-impact visual selections.
- * High-impact selections get swatch images sent to the AI; others are described in text only.
+ * Build the edit prompt text and collect swatch images for ALL visual selections.
+ * Every selection with a swatchUrl sends its image to the AI.
  * Returns { prompt, swatches } — the route assembles these into the multimodal message.
  */
 export async function buildEditPrompt(
   visualSelections: Record<string, string>,
-  highImpactIds?: string[]
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const swatchLabels: string[] = [];
   const textOnlyLabels: string[] = [];
   const swatches: SwatchImage[] = [];
-  const highImpactSet = highImpactIds ? new Set(highImpactIds) : null;
 
   for (const [subId, optId] of Object.entries(visualSelections)) {
     const found = findOption(subId, optId);
     if (!found) continue;
 
     const { option, subCategory } = found;
-    const label = `${subCategory.name}: ${option.name}`;
-    const isHighImpact = !highImpactSet || highImpactSet.has(subId);
+    const hint = SPATIAL_HINTS[subId];
+    const label = hint
+      ? `${subCategory.name}: ${option.name} → apply to ${hint}`
+      : `${subCategory.name}: ${option.name}`;
 
-    if (isHighImpact && option.swatchUrl) {
-      // High-impact: load swatch image for the AI
+    if (option.swatchUrl) {
       const ext = path.extname(option.swatchUrl).slice(1).toLowerCase();
 
       try {
@@ -147,7 +189,7 @@ export async function buildEditPrompt(
         textOnlyLabels.push(label);
       }
     } else {
-      // Text-only: describe by name, no image sent
+      // No swatch image available — describe by name
       textOnlyLabels.push(label);
     }
   }
@@ -167,15 +209,17 @@ export async function buildEditPrompt(
     upgradeList += "\n" + textOnlyLabels.map((l, i) => `${offset + i + 1}. ${l}`).join("\n");
   }
 
-  const prompt = `This is a photo of a room in a new-construction home. A homebuyer is choosing upgrade finishes. Edit the photo to change ONLY these surfaces:
+  const prompt = `Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:
 
 ${upgradeList}
 
-For items with swatch images, match the swatch color and texture exactly.
-
-Do NOT add, remove, or reposition anything. The number of cabinets, drawers, appliances, fixtures, and hardware must stay exactly the same. Preserve cabinet door style and panel details (shaker recessed panels, trim profiles) — do not flatten or simplify door geometry. Keep the exact camera angle, lighting, and room layout. The refrigerator stays in its alcove; the range stays in its cutout.
-
-Photorealistic result with accurate shadows and reflections.`;
+RULES:
+- Each numbered item has a swatch image. Match that swatch's color, pattern, and texture EXACTLY on the specified surface.
+- The "→ apply to" text tells you WHERE in the photo to apply each swatch.
+- Do NOT add, remove, or move any object. Same number of cabinets, drawers, doors, appliances, fixtures.
+- Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
+- Keep the exact camera angle, perspective, lighting, and room layout.
+- Photorealistic result with accurate shadows and reflections.`;
 
   return { prompt, swatches };
 }

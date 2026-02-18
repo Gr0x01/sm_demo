@@ -28,7 +28,7 @@ const ALLOWED_HERO_IMAGES = new Set([
 
 export async function POST(request: Request) {
   try {
-    const { selections, heroImage, highImpactIds, model } = await request.json();
+    const { selections, heroImage, model } = await request.json();
 
     if (!selections || typeof selections !== "object") {
       return NextResponse.json(
@@ -106,32 +106,16 @@ export async function POST(request: Request) {
       const heroMime = heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`;
       const heroFilename = path.basename(heroImage);
 
-      // Build edit-style prompt + load swatch images
-      const { prompt, swatches } = await buildEditPrompt(selections, highImpactIds);
-
-      // Assemble input images: base room photo first, then swatches
-      const inputImages = [
-        await toFile(imageBuffer, heroFilename, { type: heroMime }),
-        ...await Promise.all(
-          swatches.map((s) => {
-            const ext = s.mediaType.split("/")[1] || "png";
-            const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-            return toFile(s.buffer, filename, { type: s.mediaType });
-          })
-        ),
-      ];
-
-      // Model selection: pass "model": "gpt-5.2" in request body to test Responses API path
-      const useGpt5 = model === "gpt-5.2";
+      // Build edit-style prompt + load swatch images (all selections with swatches)
+      const { prompt, swatches } = await buildEditPrompt(selections);
 
       let outputBuffer: Buffer;
 
-      if (useGpt5) {
+      if (model === "gpt-5.2") {
         // --- GPT-5.2 via Responses API ---
         const heroBase64 = imageBuffer.toString("base64");
         const heroDataUrl = `data:${heroMime};base64,${heroBase64}`;
 
-        // Build input content: room photo + swatch images + text prompt
         const contentItems = [
           { type: "input_image" as const, detail: "high" as const, image_url: heroDataUrl },
           ...swatches.map((s) => ({
@@ -150,7 +134,6 @@ export async function POST(request: Request) {
           tools: [{ type: "image_generation", quality: "high", size: "1536x1024" }],
         });
 
-        // Extract generated image from response output
         const imageOutput = response.output.find(
           (o) => o.type === "image_generation_call"
         );
@@ -165,7 +148,18 @@ export async function POST(request: Request) {
 
         outputBuffer = Buffer.from(imageOutput.result as string, "base64");
       } else {
-        // --- gpt-image-1.5 via Images Edit API ---
+        // --- gpt-image-1.5 via Images Edit API (all swatches included) ---
+        const inputImages = [
+          await toFile(imageBuffer, heroFilename, { type: heroMime }),
+          ...await Promise.all(
+            swatches.map((s) => {
+              const ext = s.mediaType.split("/")[1] || "png";
+              const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
+              return toFile(s.buffer, filename, { type: s.mediaType });
+            })
+          ),
+        ];
+
         console.log(`[generate] Sending ${inputImages.length} images (1 room + ${swatches.length} swatches) to gpt-image-1.5`);
 
         const result = await openai.images.edit({
@@ -187,6 +181,7 @@ export async function POST(request: Request) {
 
         outputBuffer = Buffer.from(imageData.b64_json, "base64");
       }
+
       const outputPath = `${selectionsHash}.png`;
 
       // Upload to Supabase Storage

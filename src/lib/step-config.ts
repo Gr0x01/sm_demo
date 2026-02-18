@@ -12,8 +12,10 @@ export interface StepConfig {
   heroVariant: "full" | "compact" | "split" | "none";
   showGenerateButton: boolean;
   sections: StepSection[];
-  /** Subcategory IDs that dominate the room photo — only these send swatch images to the AI. Others are described in text only. */
-  highImpactIds?: string[];
+  /** Subcategory IDs from other steps that are visible in this step's hero photo */
+  alsoIncludeIds?: string[];
+  /** What's actually shown in the hero photo — selections matching these are NOT sent to the AI */
+  photoBaseline?: Record<string, string>;
 }
 
 export const steps: StepConfig[] = [
@@ -25,21 +27,25 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/greatroom-wide.webp",
     heroVariant: "compact",
     showGenerateButton: true,
-    highImpactIds: [
-      "cabinet-style-whole-house",
-      "main-area-flooring-color",
-      "common-wall-paint",
-      "ceiling-paint",
-      "trim-paint",
-      "door-casing-color",
-      "baseboard",
-      "wainscoting",
-      "interior-door-style",
-      "fireplace-tile-surround",
-      "lighting",
-      "great-room-fan",
-      "can-lights-primary",
+    alsoIncludeIds: [
+      "kitchen-cabinet-color",
+      "kitchen-island-cabinet-color",
+      "kitchen-cabinet-hardware",
+      "kitchen-sink",
+      "kitchen-faucet",
+      "counter-top",
+      "backsplash",
     ],
+    photoBaseline: {
+      "backsplash": "bs-baker-herringbone-warm-grey",
+      "kitchen-faucet": "faucet-pfirst-tb",
+      "kitchen-island-cabinet-color": "island-color-cappucino",
+      "kitchen-cabinet-color": "kitchen-cab-color-white",
+      "kitchen-cabinet-hardware": "hw-seaver-pull-knob-bronze",
+      "lighting": "lighting-orb-wh",
+      "kitchen-sink": "sink-egranite-white",
+      "counter-top": "ct-quartz-lace-white",
+    },
     sections: [
       {
         title: "Cabinets",
@@ -103,21 +109,22 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/kitchen-close.webp",
     heroVariant: "full",
     showGenerateButton: true,
-    highImpactIds: [
-      "counter-top",
-      "countertop-edge",
-      "backsplash",
-      "kitchen-cabinet-color",
-      "kitchen-island-cabinet-color",
-      "kitchen-cabinet-hardware",
-      "kitchen-sink",
-      "kitchen-faucet",
-      "dishwasher",
-      "refrigerator",
-      "range",
-      "under-cabinet-lighting",
-      "light-rail",
+    alsoIncludeIds: [
+      "cabinet-style-whole-house",
+      "main-area-flooring-color",
+      "common-wall-paint",
+      "ceiling-paint",
     ],
+    photoBaseline: {
+      "backsplash": "bs-baker-herringbone-warm-grey",
+      "kitchen-faucet": "faucet-pfirst-tb",
+      "kitchen-island-cabinet-color": "island-color-cappucino",
+      "kitchen-cabinet-color": "kitchen-cab-color-white",
+      "kitchen-cabinet-hardware": "hw-seaver-pull-knob-bronze",
+      "lighting": "lighting-orb-wh",
+      "kitchen-sink": "sink-egranite-white",
+      "counter-top": "ct-quartz-lace-white",
+    },
     sections: [
       {
         title: "Surfaces",
@@ -158,16 +165,10 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/primary-bath-vanity.webp",
     heroVariant: "full",
     showGenerateButton: true,
-    highImpactIds: [
-      "primary-bath-vanity",
-      "primary-bath-cabinet-color",
-      "bathroom-cabinet-hardware",
-      "primary-bath-mirrors",
-      "floor-tile-color",
-      "primary-shower",
-      "primary-shower-entry",
-      "bath-faucets",
-      "bath-hardware",
+    alsoIncludeIds: [
+      "common-wall-paint",
+      "ceiling-paint",
+      "cabinet-style-whole-house",
     ],
     sections: [
       {
@@ -209,12 +210,17 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/bath-closet.webp",
     heroVariant: "full",
     showGenerateButton: true,
-    highImpactIds: [
-      "secondary-bath-cabinet-color",
-      "secondary-bath-mirrors",
-      "secondary-shower",
-      "primary-closet-shelving",
+    alsoIncludeIds: [
+      "common-wall-paint",
+      "ceiling-paint",
+      "cabinet-style-whole-house",
+      "main-area-flooring-color",
     ],
+    photoBaseline: {
+      "cabinet-style-whole-house": "cabinet-style-oxford",
+      "secondary-bath-cabinet-color": "secondary-bath-cab-white",
+      "secondary-bath-mirrors": "sec-mirror-49-orb",
+    },
     sections: [
       {
         title: "Secondary Bath",

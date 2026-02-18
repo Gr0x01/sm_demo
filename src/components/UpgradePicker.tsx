@@ -24,6 +24,72 @@ for (const cat of categories) {
   }
 }
 
+const defaultSelections = getDefaultSelections();
+
+const SKIP_FOR_GENERATION = new Set([
+  "fireplace-mantel",
+  "fireplace-mantel-accent",
+  "fireplace-hearth",
+  "fireplace-tile-surround",
+  "under-cabinet-lighting",
+  "carpet-color",
+  "bedroom-fan",
+  "door-window-casing",
+  "crown-options",
+]);
+
+/** Subcategories where we can't identify the photo baseline — always send whatever's selected */
+const ALWAYS_SEND = new Set([
+  // Paint & flooring — all options are free, can't tell what's in the photo
+  "accent-color",
+  "common-wall-paint",
+  "ceiling-paint",
+  "trim-paint",
+  "door-casing-color",
+  "main-area-flooring-color",
+  // Bath — mostly base/bone colored, multiple free options
+  "primary-bath-cabinet-color",
+  "bathroom-cabinet-hardware",
+  "primary-bath-mirrors",
+  "floor-tile-color",
+  "primary-shower",
+  "primary-shower-entry",
+  "bath-faucets",
+  "bath-hardware",
+  "secondary-bath-cabinet-color",
+  "secondary-bath-mirrors",
+  "secondary-shower",
+]);
+
+/** Extract the visual selections relevant to a step's generation (shared by generate + cache check). */
+function getStepVisualSelections(
+  step: (typeof steps)[number],
+  allSelections: Record<string, string>
+): Record<string, string> {
+  const stepSubCategoryIds = new Set([
+    ...step.sections.flatMap((sec) => sec.subCategoryIds),
+    ...(step.alsoIncludeIds ?? []),
+  ]);
+  const baseline = step.photoBaseline ?? {};
+  const defaults = getDefaultSelections();
+  const result: Record<string, string> = {};
+  for (const [subId, optId] of Object.entries(allSelections)) {
+    // Skip if it matches what's already in the photo (photoBaseline) or the $0 default
+    // Always send paint/flooring since we can't identify what's in the photo
+    const baselineId = baseline[subId] ?? defaults[subId];
+    const alwaysSend = ALWAYS_SEND.has(subId);
+    if (
+      visualSubCategoryIds.has(subId) &&
+      stepSubCategoryIds.has(subId) &&
+      !SKIP_FOR_GENERATION.has(subId) &&
+      (alwaysSend || optId !== baselineId)
+    ) {
+      result[subId] = optId;
+    }
+  }
+  return result;
+}
+
 function reducer(state: SelectionState, action: SelectionAction): SelectionState {
   switch (action.type) {
     case "SELECT_OPTION": {
@@ -31,14 +97,7 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
         ...state.selections,
         [action.subCategoryId]: action.optionId,
       };
-      const isVisualChange = visualSubCategoryIds.has(action.subCategoryId);
-      return {
-        ...state,
-        selections: newSelections,
-        visualSelectionsChangedSinceLastGenerate: isVisualChange
-          ? true
-          : state.visualSelectionsChangedSinceLastGenerate,
-      };
+      return { ...state, selections: newSelections };
     }
     case "SET_QUANTITY": {
       const newQuantities = { ...state.quantities, [action.subCategoryId]: action.quantity };
@@ -56,24 +115,24 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
       };
     }
     case "START_GENERATING":
-      return { ...state, isGenerating: true, error: null };
+      return { ...state, generatingStepId: action.stepId, error: null };
     case "GENERATION_COMPLETE":
       return {
         ...state,
-        isGenerating: false,
+        generatingStepId: null,
         generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
         hasEverGenerated: true,
-        visualSelectionsChangedSinceLastGenerate: false,
+        generatedWithSelections: { ...state.generatedWithSelections, [action.stepId]: action.selectionsSnapshot },
       };
     case "CLEAR_SELECTIONS":
       return {
         ...state,
         selections: getDefaultSelections(),
         quantities: {},
-        visualSelectionsChangedSinceLastGenerate: true,
+        generatedWithSelections: {},
       };
     case "GENERATION_ERROR":
-      return { ...state, isGenerating: false, error: action.error };
+      return { ...state, generatingStepId: null, error: action.error };
     default:
       return state;
   }
@@ -84,9 +143,9 @@ function getInitialState(): SelectionState {
     selections: getDefaultSelections(),
     quantities: {},
     generatedImageUrls: {},
-    isGenerating: false,
+    generatingStepId: null,
     hasEverGenerated: false,
-    visualSelectionsChangedSinceLastGenerate: true,
+    generatedWithSelections: {},
     error: null,
   };
 }
@@ -202,13 +261,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           const modelParam = new URLSearchParams(window.location.search).get("model");
           for (const step of steps) {
             if (!step.showGenerateButton) continue;
-            const stepSubIds = new Set(step.sections.flatMap((s) => s.subCategoryIds));
-            const stepSelections: Record<string, string> = {};
-            for (const [k, v] of Object.entries(data.selections)) {
-              if (visualSubCategoryIds.has(k) && stepSubIds.has(k)) {
-                stepSelections[k] = v as string;
-              }
-            }
+            const stepSelections = getStepVisualSelections(step, data.selections);
             if (Object.keys(stepSelections).length === 0) continue;
             try {
               const checkRes = await fetch("/api/generate/check", {
@@ -219,7 +272,12 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               if (checkRes.ok) {
                 const { imageUrl } = await checkRes.json();
                 if (imageUrl) {
-                  dispatch({ type: "GENERATION_COMPLETE", stepId: step.id, imageUrl });
+                  dispatch({
+                    type: "GENERATION_COMPLETE",
+                    stepId: step.id,
+                    imageUrl,
+                    selectionsSnapshot: JSON.stringify(stepSelections),
+                  });
                 }
               }
             } catch {
@@ -313,19 +371,11 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
   );
 
   const handleGenerate = useCallback(async () => {
-    if (state.isGenerating) return;
-    dispatch({ type: "START_GENERATING" });
+    if (state.generatingStepId) return;
+    dispatch({ type: "START_GENERATING", stepId: activeStep.id });
 
-    // Only send visual selections relevant to the current step's room image
-    const stepSubCategoryIds = new Set(
-      activeStep.sections.flatMap((sec) => sec.subCategoryIds)
-    );
-    const visualSelections: Record<string, string> = {};
-    for (const [subId, optId] of Object.entries(state.selections)) {
-      if (visualSubCategoryIds.has(subId) && stepSubCategoryIds.has(subId)) {
-        visualSelections[subId] = optId;
-      }
-    }
+    const visualSelections = getStepVisualSelections(activeStep, state.selections);
+    const selectionsSnapshot = JSON.stringify(visualSelections);
 
     try {
       const modelParam = new URLSearchParams(window.location.search).get("model");
@@ -335,7 +385,6 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
         body: JSON.stringify({
           selections: visualSelections,
           heroImage: activeStep.heroImage,
-          highImpactIds: activeStep.highImpactIds,
           ...(modelParam ? { model: modelParam } : {}),
         }),
       });
@@ -343,12 +392,12 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
       if (!res.ok) throw new Error("Generation failed");
 
       const data = await res.json();
-      dispatch({ type: "GENERATION_COMPLETE", stepId: activeStep.id, imageUrl: data.imageUrl });
+      dispatch({ type: "GENERATION_COMPLETE", stepId: activeStep.id, imageUrl: data.imageUrl, selectionsSnapshot });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       dispatch({ type: "GENERATION_ERROR", error: message });
     }
-  }, [state.selections, state.isGenerating]);
+  }, [state.selections, state.generatingStepId, activeStep]);
 
   const handleClearSelections = useCallback(() => {
     dispatch({ type: "CLEAR_SELECTIONS" });
@@ -363,6 +412,16 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
 
   const isLastStep = activeStepIndex >= steps.length - 1;
   const nextStepName = isLastStep ? "" : steps[activeStepIndex + 1].name;
+  const isGeneratingThisStep = state.generatingStepId === activeStep.id;
+  const activeStepHasChanges = useMemo(() => {
+    if (!activeStep.showGenerateButton) return false;
+    const currentSnapshot = JSON.stringify(
+      getStepVisualSelections(activeStep, state.selections)
+    );
+    const lastSnapshot = state.generatedWithSelections[activeStep.id];
+    return currentSnapshot !== lastSnapshot;
+  }, [activeStep, state.selections, state.generatedWithSelections]);
+
   const activeGeneratedImageUrl = state.generatedImageUrls[activeStep.id] ?? null;
   const activeBaseImageUrl =
     typeof activeStep.heroImage === "string"
@@ -441,10 +500,10 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
             <SidebarPanel
               step={activeStep}
               generatedImageUrl={state.generatedImageUrls[activeStep.id] ?? null}
-              isGenerating={state.isGenerating}
+              isGenerating={isGeneratingThisStep}
               error={state.error}
               onGenerate={handleGenerate}
-              hasChanges={state.visualSelectionsChangedSinceLastGenerate}
+              hasChanges={activeStepHasChanges}
               total={total}
               onContinue={handleContinue}
               onClearSelections={handleClearSelections}
@@ -485,8 +544,8 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
         <PriceTracker
           total={total}
           onGenerate={handleGenerate}
-          isGenerating={state.isGenerating}
-          hasChanges={state.visualSelectionsChangedSinceLastGenerate}
+          isGenerating={isGeneratingThisStep}
+          hasChanges={activeStepHasChanges}
           stepId={activeStep.id}
           showGenerateButton={!!activeStep.showGenerateButton}
           error={state.error}
