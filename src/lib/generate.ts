@@ -88,7 +88,7 @@ const SCENE_DESCRIPTIONS: Record<string, string> = {
   "greatroom-wide.webp": "This photo shows an open-concept great room and kitchen in a new-construction home. The kitchen is in the background with an island, and the great room is in the foreground with hardwood/LVP flooring throughout.",
   "kitchen-close.webp": "This photo shows a kitchen in a new-construction home. There is a large island in the foreground, wall cabinets and countertops along the back wall, and appliances. The floor is hardwood/LVP.",
   "primary-bath-vanity.webp": "This photo shows a primary bathroom in a new-construction home. There is a double vanity with mirrors on the left, tile flooring in the bathroom, and a walk-in shower with tile walls on the right.",
-  "primary-bedroom.webp": "This photo shows a primary bedroom in a new-construction home. It has LVP/hardwood flooring, a tray ceiling with crown molding, a ceiling fan, white painted walls, white trim and baseboard, and a doorway on the left showing a peek into the en-suite bathroom.",
+  "primary-bedroom.webp": "This photo shows a primary bedroom in a new-construction home. It has CARPET flooring (replace the wood floor in the photo with carpet), a tray ceiling with crown molding, a ceiling fan, white painted walls, white trim and baseboard, and a doorway on the left showing a peek into the en-suite bathroom.",
 };
 
 /** Spatial hints telling the model WHERE in the photo each subcategory appears. */
@@ -134,6 +134,7 @@ const SPATIAL_HINTS: Record<string, string> = {
   "primary-closet-shelving": "closet shelving system",
   "crown-options": "crown molding where walls meet ceiling",
   "bedroom-fan": "ceiling fan in the bedroom",
+  "carpet-color": "carpet flooring covering the entire bedroom floor",
   "door-hardware": "door knobs/levers on interior doors",
   "under-cabinet-lighting": "LED strip lighting underneath upper cabinets, illuminating the countertop",
 };

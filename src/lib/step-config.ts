@@ -226,7 +226,7 @@ export const steps: StepConfig[] = [
       "baseboard",
       "door-casing-color",
       "crown-options",
-      "main-area-flooring-color",
+      "carpet-color",
       "bedroom-fan",
       "door-hardware",
     ],
