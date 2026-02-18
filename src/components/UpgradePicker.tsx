@@ -13,6 +13,8 @@ import { SidebarPanel } from "./SidebarPanel";
 import { SyncModal } from "./SyncModal";
 import { getSyncPartner } from "@/lib/sync-pairs";
 import { ChevronRight } from "lucide-react";
+import { CONTRACT_LOCKED_IDS } from "@/lib/contract-phase";
+import type { ContractPhase } from "@/lib/contract-phase";
 
 const visualSubCategoryIds = getVisualSubCategoryIds();
 
@@ -192,7 +194,7 @@ function stepHasUpgrades(
   return false;
 }
 
-export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrls: Record<string, string> }) => void; buyerId?: string }) {
+export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome }: { onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrls: Record<string, string> }) => void; buyerId?: string; contractPhase: ContractPhase; onNavigateHome: () => void }) {
   const [state, dispatch] = useReducer(reducer, null, getInitialState);
   const [activeStepId, setActiveStepIdRaw] = useState(() => {
     if (typeof window === "undefined") return steps[0].id;
@@ -235,6 +237,10 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
   const hasLoadedRef = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(120);
+  const lockedSubCategoryIds = useMemo(
+    () => (contractPhase === "post-contract" ? CONTRACT_LOCKED_IDS : new Set<string>()),
+    [contractPhase]
+  );
   const [syncPrompt, setSyncPrompt] = useState<{
     sourceSubId: string;
     targetSubId: string;
@@ -493,10 +499,13 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
         className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200"
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[72px] sm:min-h-[64px] flex items-center gap-2 sm:gap-4">
-          {/* Logo — left */}
-          <div className="flex items-center gap-2 sm:gap-3 w-16 sm:w-auto shrink-0">
+          {/* Logo — left, links back to landing */}
+          <button
+            onClick={onNavigateHome}
+            className="flex items-center gap-2 sm:gap-3 w-16 sm:w-auto shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
+          >
             <img src="/logo.svg" alt="Stone Martin Builders" className="h-6 sm:h-5 text-[var(--color-navy)]" />
-            <div className="hidden sm:block">
+            <div className="hidden sm:block text-left">
               <h1 className="text-sm font-bold text-[var(--color-navy)]">
                 Kinkade Plan
               </h1>
@@ -504,7 +513,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
                 McClain Landing Phase 7
               </p>
             </div>
-          </div>
+          </button>
 
           {/* Step nav — center */}
           <div className="flex-1 min-w-0 flex items-center justify-center">
@@ -547,6 +556,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               isLastStep={isLastStep}
               nextStepName={nextStepName}
               headerHeight={headerHeight}
+              lockedSubCategoryIds={lockedSubCategoryIds}
             />
           </div>
 
@@ -561,6 +571,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               quantities={state.quantities}
               onSelect={handleSelect}
               onSetQuantity={handleSetQuantity}
+              lockedSubCategoryIds={lockedSubCategoryIds}
             />
 
             {/* Mobile-only: Continue button */}

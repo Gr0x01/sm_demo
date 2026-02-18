@@ -51,6 +51,7 @@ interface SidebarPanelProps {
   isLastStep: boolean;
   nextStepName: string;
   headerHeight: number;
+  lockedSubCategoryIds?: Set<string>;
 }
 
 export function SidebarPanel({
@@ -66,6 +67,7 @@ export function SidebarPanel({
   isLastStep,
   nextStepName,
   headerHeight,
+  lockedSubCategoryIds,
 }: SidebarPanelProps) {
   const [activeSectionTitle, setActiveSectionTitle] = useState<string>(
     step.sections[0]?.title ?? ""

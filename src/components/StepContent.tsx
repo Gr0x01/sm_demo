@@ -11,6 +11,7 @@ interface StepContentProps {
   quantities: Record<string, number>;
   onSelect: (subCategoryId: string, optionId: string) => void;
   onSetQuantity: (subCategoryId: string, quantity: number, addOptionId: string, noUpgradeOptionId: string) => void;
+  lockedSubCategoryIds?: Set<string>;
 }
 
 export function StepContent({
@@ -20,6 +21,7 @@ export function StepContent({
   quantities,
   onSelect,
   onSetQuantity,
+  lockedSubCategoryIds,
 }: StepContentProps) {
   return (
     <div className="space-y-8 mt-5 animate-fade-slide-in">
@@ -51,6 +53,7 @@ export function StepContent({
               quantities={quantities}
               onSelect={onSelect}
               onSetQuantity={onSetQuantity}
+              lockedSubCategoryIds={lockedSubCategoryIds}
             />
           </div>
         );

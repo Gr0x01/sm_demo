@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { LandingHero } from "@/components/LandingHero";
 import { UpgradePicker } from "@/components/UpgradePicker";
 import { UpgradeSummary } from "@/components/UpgradeSummary";
+import type { ContractPhase } from "@/lib/contract-phase";
 
 type PageState = "landing" | "picker" | "summary";
 
@@ -34,6 +35,7 @@ export default function Home() {
   const [page, setPageState] = useState<PageState>(getPageFromUrl);
   const [buyer, setBuyer] = useState<BuyerData | null>(null);
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
+  const [contractPhase, setContractPhase] = useState<ContractPhase>("pre-contract");
 
   // Navigate to a page and push a history entry
   const setPage = useCallback((newPage: PageState) => {
@@ -77,7 +79,10 @@ export default function Home() {
     return (
       <div key="landing" className="animate-fade-in">
         <LandingHero
-          onStart={() => setPage("picker")}
+          onStart={(phase) => {
+            setContractPhase(phase);
+            setPage("picker");
+          }}
           buyerName={buyer?.buyerName}
           planName={buyer?.planName}
           community={buyer?.community}
@@ -109,6 +114,8 @@ export default function Home() {
           setPage("summary");
         }}
         buyerId={BUYER_ID}
+        contractPhase={contractPhase}
+        onNavigateHome={() => setPage("landing")}
       />
     </div>
   );
