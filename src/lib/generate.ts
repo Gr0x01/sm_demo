@@ -32,46 +32,43 @@ function findOption(
 export async function buildEditPrompt(
   visualSelections: Record<string, string>
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
-  const descriptors: string[] = [];
+  const labels: string[] = [];
   const swatches: SwatchImage[] = [];
 
   for (const [subId, optId] of Object.entries(visualSelections)) {
     const found = findOption(subId, optId);
-    if (!found?.option.promptDescriptor) continue;
+    if (!found) continue;
 
     const { option, subCategory } = found;
     const label = subCategory.name;
-    const desc = option.swatchColor
-      ? `${option.promptDescriptor} (exact color: ${option.swatchColor})`
-      : option.promptDescriptor;
-    descriptors.push(`${label}: ${desc}`);
 
-    // Load swatch image if available
+    // Load swatch image — this is the primary source of truth for the AI
     if (option.swatchUrl) {
       try {
         const swatchPath = path.join(process.cwd(), "public", option.swatchUrl);
         const buffer = await readFile(swatchPath);
         const ext = path.extname(option.swatchUrl).slice(1).toLowerCase();
         const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-        swatches.push({ label, buffer, mediaType });
+        swatches.push({ label: `${label}: ${option.name}`, buffer, mediaType });
+        labels.push(`${label}: ${option.name}`);
       } catch {
-        // Swatch file missing — skip, text descriptor still sent
+        // Swatch file missing — skip this selection
       }
     }
   }
 
-  if (descriptors.length === 0) {
+  if (swatches.length === 0) {
     return {
       prompt: "This is a photo of a room in a new-construction home. Return this image unchanged.",
       swatches: [],
     };
   }
 
-  const prompt = `This is a photo of a room in a new-construction home. The swatch/sample images that follow show the exact materials the buyer selected. Edit the room photo to apply these upgrades, keeping the same camera angle, room layout, and lighting:
+  const prompt = `This is a photo of a room in a new-construction home. The swatch/sample images above show the exact materials and colors the buyer selected. Edit the room photo to apply these upgrades:
 
-${descriptors.map((d, i) => `${i + 1}. ${d}`).join("\n")}
+${labels.map((l, i) => `${i + 1}. ${l}`).join("\n")}
 
-Keep the exact same perspective, room shape, and composition. Only change the materials, colors, and fixtures listed above. Match the colors and textures from the swatch images precisely. The result should look like a real interior design photo — photorealistic, well-lit, no people.`;
+IMPORTANT: Match the colors and textures from the swatch images EXACTLY. Do not interpret the names — use the visual appearance of each swatch as the ground truth. Keep the exact same perspective, room shape, and composition. The result should look like a real interior design photo — photorealistic, well-lit, no people.`;
 
   return { prompt, swatches };
 }
