@@ -90,6 +90,15 @@ function getStepVisualSelections(
   return result;
 }
 
+/** Deterministic JSON string — sorted keys so key insertion order doesn't affect comparison. */
+function stableStringify(obj: Record<string, string>): string {
+  const sorted: Record<string, string> = {};
+  for (const key of Object.keys(obj).sort()) {
+    sorted[key] = obj[key];
+  }
+  return JSON.stringify(sorted);
+}
+
 function reducer(state: SelectionState, action: SelectionAction): SelectionState {
   switch (action.type) {
     case "SELECT_OPTION": {
@@ -258,10 +267,12 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           });
 
           // Check for cached generated images per step
+          // Use merged selections (defaults + loaded) so snapshots match the comparison source
+          const mergedSelections = { ...getDefaultSelections(), ...data.selections };
           const modelParam = new URLSearchParams(window.location.search).get("model");
           for (const step of steps) {
             if (!step.showGenerateButton) continue;
-            const stepSelections = getStepVisualSelections(step, data.selections);
+            const stepSelections = getStepVisualSelections(step, mergedSelections);
             if (Object.keys(stepSelections).length === 0) continue;
             try {
               const checkRes = await fetch("/api/generate/check", {
@@ -276,7 +287,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
                     type: "GENERATION_COMPLETE",
                     stepId: step.id,
                     imageUrl,
-                    selectionsSnapshot: JSON.stringify(stepSelections),
+                    selectionsSnapshot: stableStringify(stepSelections),
                   });
                 }
               }
@@ -375,7 +386,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
     dispatch({ type: "START_GENERATING", stepId: activeStep.id });
 
     const visualSelections = getStepVisualSelections(activeStep, state.selections);
-    const selectionsSnapshot = JSON.stringify(visualSelections);
+    const selectionsSnapshot = stableStringify(visualSelections);
 
     try {
       const modelParam = new URLSearchParams(window.location.search).get("model");
@@ -415,7 +426,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
   const isGeneratingThisStep = state.generatingStepId === activeStep.id;
   const activeStepHasChanges = useMemo(() => {
     if (!activeStep.showGenerateButton) return false;
-    const currentSnapshot = JSON.stringify(
+    const currentSnapshot = stableStringify(
       getStepVisualSelections(activeStep, state.selections)
     );
     const lastSnapshot = state.generatedWithSelections[activeStep.id];
