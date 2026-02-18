@@ -557,6 +557,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
               nextStepName={nextStepName}
               headerHeight={headerHeight}
               lockedSubCategoryIds={lockedSubCategoryIds}
+              onFinish={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
             />
           </div>
 

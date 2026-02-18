@@ -52,6 +52,7 @@ interface SidebarPanelProps {
   nextStepName: string;
   headerHeight: number;
   lockedSubCategoryIds?: Set<string>;
+  onFinish: () => void;
 }
 
 export function SidebarPanel({
@@ -68,6 +69,7 @@ export function SidebarPanel({
   nextStepName,
   headerHeight,
   lockedSubCategoryIds,
+  onFinish,
 }: SidebarPanelProps) {
   const [activeSectionTitle, setActiveSectionTitle] = useState<string>(
     step.sections[0]?.title ?? ""
@@ -221,7 +223,14 @@ export function SidebarPanel({
       {/* Action buttons */}
       <div className="flex gap-2">
         <ClearButton onClear={onClearSelections} />
-        {!isLastStep && (
+        {isLastStep ? (
+          <button
+            onClick={onFinish}
+            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+          >
+            Finish &rarr;
+          </button>
+        ) : (
           <button
             onClick={onContinue}
             className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
