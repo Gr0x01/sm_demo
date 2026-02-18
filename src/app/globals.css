@@ -87,25 +87,6 @@ body {
   animation: fadeIn 200ms ease-out both;
 }
 
-/* Logo loader — sequential shape fill */
-@keyframes logoShapePulse {
-  0%, 10%  { opacity: 0.15; }
-  20%, 40% { opacity: 1; }
-  60%, 100% { opacity: 0.15; }
-}
-.logo-loader-shape {
-  opacity: 0.15;
-}
-.logo-loader-shape-1 {
-  animation: logoShapePulse 1.8s ease-in-out infinite;
-}
-.logo-loader-shape-2 {
-  animation: logoShapePulse 1.8s ease-in-out 0.3s infinite;
-}
-.logo-loader-shape-3 {
-  animation: logoShapePulse 1.8s ease-in-out 0.6s infinite;
-}
-
 /* Hide scrollbar for room strip */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

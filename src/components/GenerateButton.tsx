@@ -1,7 +1,5 @@
 "use client";
 
-import { LogoLoader } from "./LogoLoader";
-
 interface GenerateButtonProps {
   onClick: () => void;
   isGenerating: boolean;
@@ -37,16 +35,7 @@ export function GenerateButton({
           : "bg-[var(--color-navy)] text-white hover:bg-[#243a5e] shadow-md hover:shadow-lg active:scale-[0.98]"
       }`}
     >
-      {isGenerating ? (
-        <span className="flex items-center justify-center gap-2">
-          <LogoLoader className="h-4 w-auto" />
-          {labels.generating}
-        </span>
-      ) : hasChanges ? (
-        labels.action
-      ) : (
-        "Up to Date"
-      )}
+      {isGenerating ? labels.generating : hasChanges ? labels.action : "Up to Date"}
     </button>
   );
 }

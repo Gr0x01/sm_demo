@@ -5,6 +5,13 @@ import type { StepConfig } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
 
+const overlayLabels: Record<string, string> = {
+  "set-your-style": "Visualizing Your Style...",
+  "design-your-kitchen": "Visualizing Your Kitchen...",
+  "primary-bath": "Visualizing Your Bathroom...",
+  "secondary-spaces": "Visualizing Your Spaces...",
+};
+
 interface StepHeroProps {
   step: StepConfig;
   generatedImageUrl: string | null;
@@ -37,7 +44,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
             className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100 cursor-pointer group"
             onClick={() => !isGenerating && setShowZoom(true)}
           >
-            {isGenerating && <GeneratingOverlay />}
+            {isGenerating && <GeneratingOverlay stepId={step.id} />}
             <img
               src={step.heroImage[0]}
               alt={step.name}
@@ -93,7 +100,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
           className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100 cursor-pointer group"
           onClick={() => !isGenerating && setShowZoom(true)}
         >
-          {isGenerating && <GeneratingOverlay />}
+          {isGenerating && <GeneratingOverlay stepId={step.id} />}
           <img
             src={img}
             alt={step.name}
@@ -126,7 +133,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
         className="relative w-full aspect-[16/9] max-h-[45vh] overflow-hidden bg-gray-100 cursor-pointer group"
         onClick={() => !isGenerating && setShowZoom(true)}
       >
-        {isGenerating && <GeneratingOverlay />}
+        {isGenerating && <GeneratingOverlay stepId={step.id} />}
         <img
           src={img}
           alt={step.name}
@@ -164,12 +171,13 @@ function ZoomHint() {
   );
 }
 
-function GeneratingOverlay() {
+function GeneratingOverlay({ stepId }: { stepId: string }) {
+  const label = overlayLabels[stepId] ?? "Visualizing...";
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm overlay-enter">
       <LogoLoader className="w-16 h-auto text-[var(--color-navy)] mb-4" />
       <p className="text-sm font-medium text-[var(--color-navy)]">
-        Generating your kitchen...
+        {label}
       </p>
       <p className="text-xs text-gray-400 mt-1">
         This takes 10-30 seconds
