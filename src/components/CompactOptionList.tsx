@@ -12,7 +12,7 @@ interface CompactOptionListProps {
 export function CompactOptionList({ subCategory, selectedOptionId, onSelect }: CompactOptionListProps) {
   return (
     <div className="mb-4 last:mb-0">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 px-0.5">
+      <h4 className="text-sm font-semibold text-gray-600 mb-2 px-0.5">
         {subCategory.name}
       </h4>
       <div className="space-y-1">
@@ -22,7 +22,7 @@ export function CompactOptionList({ subCategory, selectedOptionId, onSelect }: C
             <button
               key={option.id}
               onClick={() => onSelect(option.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 border transition-all duration-150 cursor-pointer text-left ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 border transition-all duration-150 cursor-pointer text-left ${
                 isSelected
                   ? "border-[var(--color-accent)] bg-blue-50/50"
                   : "border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white active:scale-[0.99]"

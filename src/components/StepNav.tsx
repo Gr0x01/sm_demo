@@ -10,8 +10,6 @@ interface StepNavProps {
 }
 
 export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: StepNavProps) {
-  const activeStep = steps.find((s) => s.id === activeStepId);
-
   return (
     <div className="py-2">
       {/* Desktop: full rail with labels */}
@@ -79,9 +77,9 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
         </div>
       </div>
 
-      {/* Mobile: compact nav with dots + label */}
+      {/* Mobile: compact nav with dots */}
       <div className="sm:hidden">
-        <div className="flex items-center justify-center gap-2 mb-1">
+        <div className="flex items-center justify-center gap-2">
           {steps.map((step) => {
             const isActive = step.id === activeStepId;
             const isComplete = completionMap[step.id] && !isActive;
@@ -113,11 +111,6 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
             );
           })}
         </div>
-        {activeStep && (
-          <p className="text-center text-[11px] text-gray-500 transition-opacity duration-200">
-            Step {activeStep.number} of {steps.length} — {activeStep.name}
-          </p>
-        )}
       </div>
     </div>
   );

@@ -33,7 +33,7 @@ export function SwatchGrid({ subCategory, selectedOptionId, onSelect }: SwatchGr
   return (
     <>
       <div className="mb-5 last:mb-0">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2.5 px-0.5">
+        <h4 className="text-sm font-semibold text-gray-600 mb-2.5 px-0.5">
           {subCategory.name}
         </h4>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">

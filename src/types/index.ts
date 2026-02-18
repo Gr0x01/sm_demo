@@ -41,4 +41,5 @@ export type SelectionAction =
   | { type: "LOAD_SELECTIONS"; selections: Record<string, string>; quantities: Record<string, number> }
   | { type: "START_GENERATING" }
   | { type: "GENERATION_COMPLETE"; stepId: string; imageUrl: string }
-  | { type: "GENERATION_ERROR"; error: string };
+  | { type: "GENERATION_ERROR"; error: string }
+  | { type: "CLEAR_SELECTIONS" };

@@ -9,10 +9,10 @@ import { StepNav } from "./StepNav";
 import { StepHero } from "./StepHero";
 import { StepContent } from "./StepContent";
 import { PriceTracker } from "./PriceTracker";
-import { GenerateButton } from "./GenerateButton";
 import { SidebarPanel } from "./SidebarPanel";
 import { SyncModal } from "./SyncModal";
 import { getSyncPartner } from "@/lib/sync-pairs";
+import { ChevronRight } from "lucide-react";
 
 const visualSubCategoryIds = getVisualSubCategoryIds();
 
@@ -64,6 +64,13 @@ function reducer(state: SelectionState, action: SelectionAction): SelectionState
         generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
         hasEverGenerated: true,
         visualSelectionsChangedSinceLastGenerate: false,
+      };
+    case "CLEAR_SELECTIONS":
+      return {
+        ...state,
+        selections: getDefaultSelections(),
+        quantities: {},
+        visualSelectionsChangedSinceLastGenerate: true,
       };
     case "GENERATION_ERROR":
       return { ...state, isGenerating: false, error: action.error };
@@ -342,6 +349,10 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
     }
   }, [state.selections, state.isGenerating]);
 
+  const handleClearSelections = useCallback(() => {
+    dispatch({ type: "CLEAR_SELECTIONS" });
+  }, []);
+
   const handleContinue = useCallback(() => {
     if (activeStepIndex < steps.length - 1) {
       setActiveStepId(steps[activeStepIndex + 1].id);
@@ -351,6 +362,31 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
 
   const isLastStep = activeStepIndex >= steps.length - 1;
   const nextStepName = isLastStep ? "" : steps[activeStepIndex + 1].name;
+  const activeGeneratedImageUrl = state.generatedImageUrls[activeStep.id] ?? null;
+  const activeBaseImageUrl =
+    typeof activeStep.heroImage === "string"
+      ? activeStep.heroImage
+      : Array.isArray(activeStep.heroImage)
+      ? activeStep.heroImage[0]
+      : null;
+  const activePreviewImageUrl = activeGeneratedImageUrl ?? activeBaseImageUrl;
+  const activeSelectionSummary = useMemo(() => {
+    const summary: string[] = [];
+    for (const section of activeStep.sections) {
+      for (const subId of section.subCategoryIds) {
+        const sub = subCategoryMap.get(subId);
+        if (!sub) continue;
+        const selectedId = state.selections[subId];
+        if (!selectedId) continue;
+        const selectedOption = sub.options.find((o) => o.id === selectedId);
+        if (!selectedOption) continue;
+        if (selectedOption.name.toLowerCase().includes("no upgrade wanted")) continue;
+        summary.push(`${sub.name}: ${selectedOption.name}`);
+        if (summary.length >= 3) return summary;
+      }
+    }
+    return summary;
+  }, [activeStep, state.selections]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -359,11 +395,11 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
         ref={headerRef}
         className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200"
       >
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[72px] sm:min-h-[64px] flex items-center gap-2 sm:gap-4">
           {/* Logo — left */}
-          <div className="flex items-center gap-3 shrink-0">
-            <img src="/logo.svg" alt="Stone Martin Builders" className="h-5 text-[var(--color-navy)]" />
-            <div>
+          <div className="flex items-center gap-2 sm:gap-3 w-16 sm:w-auto shrink-0">
+            <img src="/logo.svg" alt="Stone Martin Builders" className="h-6 sm:h-5 text-[var(--color-navy)]" />
+            <div className="hidden sm:block">
               <h1 className="text-sm font-bold text-[var(--color-navy)]">
                 Kinkade Plan
               </h1>
@@ -374,7 +410,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           </div>
 
           {/* Step nav — center */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0 flex items-center justify-center">
             <StepNav
               steps={steps}
               activeStepId={activeStepId}
@@ -384,12 +420,15 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
           </div>
 
           {/* Finish — right */}
-          <button
-            onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
-            className="text-xs font-medium text-[var(--color-accent)] hover:text-[var(--color-accent-light)] transition-colors cursor-pointer shrink-0"
-          >
-            Finish &rarr;
-          </button>
+          <div className="w-auto shrink-0 flex justify-end">
+            <button
+              onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
+              className="inline-flex items-center gap-1.5 px-1 py-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+            >
+              Finish
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -407,6 +446,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
               hasChanges={state.visualSelectionsChangedSinceLastGenerate}
               total={total}
               onContinue={handleContinue}
+              onClearSelections={handleClearSelections}
               isLastStep={isLastStep}
               nextStepName={nextStepName}
               headerHeight={headerHeight}
@@ -415,30 +455,6 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
 
           {/* Right Column — scrollable options */}
           <div className="flex-1 min-w-0 pb-20 lg:pb-5">
-            {/* Mobile-only: Hero image + generate button */}
-            <div key={activeStepId} className="lg:hidden animate-fade-slide-in">
-              <StepHero
-                step={activeStep}
-                generatedImageUrl={activeStep.showGenerateButton ? state.generatedImageUrls[activeStep.id] ?? null : null}
-                isGenerating={activeStep.showGenerateButton ? state.isGenerating : false}
-              />
-              {activeStep.showGenerateButton && (
-                <div className="mt-4">
-                  <GenerateButton
-                    onClick={handleGenerate}
-                    isGenerating={state.isGenerating}
-                    hasChanges={state.visualSelectionsChangedSinceLastGenerate}
-                    stepId={activeStep.id}
-                  />
-                  {state.error && (
-                    <div className="mt-3 bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-                      {state.error}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
             {/* Step-specific upgrade options */}
             <StepContent
               key={activeStepId}
@@ -465,7 +481,19 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
 
       {/* Sticky Price Tracker — mobile only */}
       <div className="lg:hidden">
-        <PriceTracker total={total} />
+        <PriceTracker
+          total={total}
+          onGenerate={handleGenerate}
+          isGenerating={state.isGenerating}
+          hasChanges={state.visualSelectionsChangedSinceLastGenerate}
+          stepId={activeStep.id}
+          showGenerateButton={!!activeStep.showGenerateButton}
+          error={state.error}
+          hasGeneratedPreview={!!activeGeneratedImageUrl}
+          previewImageUrl={activePreviewImageUrl}
+          previewTitle={activeStep.name}
+          previewSummary={activeSelectionSummary}
+        />
       </div>
 
       {/* Sync hardware modal */}

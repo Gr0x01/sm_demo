@@ -14,6 +14,7 @@ interface SidebarPanelProps {
   hasChanges: boolean;
   total: number;
   onContinue: () => void;
+  onClearSelections: () => void;
   isLastStep: boolean;
   nextStepName: string;
   headerHeight: number;
@@ -28,6 +29,7 @@ export function SidebarPanel({
   hasChanges,
   total,
   onContinue,
+  onClearSelections,
   isLastStep,
   nextStepName,
   headerHeight,
@@ -181,15 +183,23 @@ export function SidebarPanel({
         </div>
       </div>
 
-      {/* Continue button */}
-      {!isLastStep && (
+      {/* Action buttons */}
+      <div className="flex gap-2">
         <button
-          onClick={onContinue}
-          className="w-full py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+          onClick={onClearSelections}
+          className="py-3 px-4 border border-gray-300 text-gray-500 font-semibold text-sm hover:border-gray-400 hover:text-gray-700 transition-colors duration-150 cursor-pointer active:scale-[0.98]"
         >
-          Continue to {nextStepName} &rarr;
+          Clear Options
         </button>
-      )}
+        {!isLastStep && (
+          <button
+            onClick={onContinue}
+            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+          >
+            Continue to {nextStepName} &rarr;
+          </button>
+        )}
+      </div>
     </div>
   );
 }
