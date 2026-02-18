@@ -472,7 +472,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
                 onClick={handleContinue}
                 className="lg:hidden w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
               >
-                Continue to {nextStepName} &rarr;
+                Next Step &rarr;
               </button>
             )}
           </div>

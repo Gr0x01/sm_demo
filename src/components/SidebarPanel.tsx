@@ -5,6 +5,39 @@ import type { StepConfig } from "@/lib/step-config";
 import { StepHero } from "./StepHero";
 import { GenerateButton } from "./GenerateButton";
 
+function ClearButton({ onClear }: { onClear: () => void }) {
+  const [confirming, setConfirming] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClick = () => {
+    if (confirming) {
+      if (timerRef.current) clearTimeout(timerRef.current);
+      setConfirming(false);
+      onClear();
+    } else {
+      setConfirming(true);
+      timerRef.current = setTimeout(() => setConfirming(false), 3000);
+    }
+  };
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  return (
+    <button
+      onClick={handleClick}
+      className={`py-3 px-4 border font-semibold text-sm transition-colors duration-150 cursor-pointer active:scale-[0.98] ${
+        confirming
+          ? "border-red-400 text-red-600 hover:border-red-500 hover:text-red-700"
+          : "border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-700"
+      }`}
+    >
+      {confirming ? "Are you sure?" : "Clear"}
+    </button>
+  );
+}
+
 interface SidebarPanelProps {
   step: StepConfig;
   generatedImageUrl: string | null;
@@ -185,18 +218,13 @@ export function SidebarPanel({
 
       {/* Action buttons */}
       <div className="flex gap-2">
-        <button
-          onClick={onClearSelections}
-          className="py-3 px-4 border border-gray-300 text-gray-500 font-semibold text-sm hover:border-gray-400 hover:text-gray-700 transition-colors duration-150 cursor-pointer active:scale-[0.98]"
-        >
-          Clear Options
-        </button>
+        <ClearButton onClear={onClearSelections} />
         {!isLastStep && (
           <button
             onClick={onContinue}
             className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
           >
-            Continue to {nextStepName} &rarr;
+            Next Step &rarr;
           </button>
         )}
       </div>
