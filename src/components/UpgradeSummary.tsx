@@ -151,12 +151,6 @@ export function UpgradeSummary({
                   alt={room.label}
                   className="w-full aspect-[16/10] object-cover"
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
-                  <span className="text-[10px] font-medium text-white/90">
-                    {room.label}
-                    {isGenerated && " — AI Generated"}
-                  </span>
-                </div>
               </div>
             );
           })}

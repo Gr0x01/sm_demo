@@ -104,15 +104,17 @@ export function SwatchGrid({ subCategory, selectedOptionId, onSelect }: SwatchGr
                   )}
                 </div>
 
-                {/* Label */}
-                <div className="w-full px-1.5 py-1.5 text-center">
-                  <p className="text-[11px] font-medium text-[var(--color-navy)] leading-tight truncate">
-                    {getShortName(option.name)}
-                  </p>
-                  <p className={`text-[10px] mt-0.5 ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
-                    {formatPrice(option.price)}
-                  </p>
-                </div>
+                {/* Label — only show for options without a visual swatch */}
+                {!hasVisual && (
+                  <div className="w-full px-1.5 py-1.5 text-center">
+                    <p className="text-[11px] font-medium text-[var(--color-navy)] leading-tight truncate">
+                      {getShortName(option.name)}
+                    </p>
+                    <p className={`text-[10px] mt-0.5 ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
+                      {formatPrice(option.price)}
+                    </p>
+                  </div>
+                )}
               </button>
             );
           })}
@@ -125,8 +127,6 @@ export function SwatchGrid({ subCategory, selectedOptionId, onSelect }: SwatchGr
           src={zoomedOption.swatchUrl || undefined}
           color={zoomedOption.swatchColor || undefined}
           alt={zoomedOption.name}
-          title={zoomedOption.name}
-          subtitle={formatPrice(zoomedOption.price)}
           onClose={() => setZoomedOption(null)}
         />
       )}

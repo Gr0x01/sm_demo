@@ -54,6 +54,8 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - [x] IntersectionObserver-based active section tracking
 - [x] AI generation enabled on steps 1-4 (not just kitchen)
 - [x] Mobile fallback: single column with hero on top, sticky PriceTracker
+- [x] **URL-based navigation** — page & step state synced to URL search params (`?page=picker&step=design-your-kitchen`), refresh preserves state, browser back/forward works
+- [x] **Cached image restoration on refresh** — `/api/generate/check` endpoint looks up cached image by selections hash; picker loads it on mount after restoring selections
 - [ ] Polish: transitions, mobile responsiveness
 - [ ] GuidedNudge overlay ("Try upgrading the countertop")
 
@@ -94,6 +96,8 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - Stone Martin logo saved as `public/logo.svg`
 - 6 room photos in `public/rooms/`
 - Supabase selection persistence (auto-save per buyerId)
+- **URL-based navigation** — page state (`?page=`) and step state (`?step=`) synced to URL via `history.pushState`, refresh and back/forward work correctly
+- **Cached image restoration** — `/api/generate/check` endpoint checks Supabase cache by selections hash; picker restores generated image on mount after loading saved selections
 - **Admin page** (`/admin`) — view/delete all cached generated images, no auth
 
 ## What's Next

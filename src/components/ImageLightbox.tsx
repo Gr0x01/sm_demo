@@ -7,12 +7,10 @@ interface ImageLightboxProps {
   src?: string;
   color?: string;
   alt: string;
-  title?: string;
-  subtitle?: string;
   onClose: () => void;
 }
 
-export function ImageLightbox({ src, color, alt, title, subtitle, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ src, color, alt, onClose }: ImageLightboxProps) {
   const [visible, setVisible] = useState(false);
 
   // Animate in on mount
@@ -79,17 +77,6 @@ export function ImageLightbox({ src, color, alt, title, subtitle, onClose }: Ima
           ) : null}
         </div>
 
-        {/* Caption */}
-        {(title || subtitle) && (
-          <div className="w-full mt-3 bg-white/95 backdrop-blur px-4 py-3 shadow-lg text-center">
-            {title && (
-              <p className="text-sm font-semibold text-[var(--color-navy)]">{title}</p>
-            )}
-            {subtitle && (
-              <p className="text-xs mt-1 text-gray-500">{subtitle}</p>
-            )}
-          </div>
-        )}
       </div>
     </div>,
     document.body

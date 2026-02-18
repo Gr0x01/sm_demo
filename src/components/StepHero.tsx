@@ -50,18 +50,12 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
                 className="absolute inset-0 w-full h-full object-cover animate-image-reveal"
               />
             )}
-            {!generatedImageUrl && !isGenerating && (
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
-                <p className="text-white text-sm font-bold">{step.name}</p>
-              </div>
-            )}
             <ZoomHint />
           </div>
           {showZoom && displayedImageUrl && (
             <ImageLightbox
               src={displayedImageUrl}
               alt={generatedImageUrl ? `${step.name} — AI Generated` : step.name}
-              title={generatedImageUrl ? `${step.name} — AI Generated` : step.name}
               onClose={() => setShowZoom(false)}
             />
           )}
@@ -73,11 +67,6 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
         {step.heroImage.map((img, i) => (
           <div key={i} className="relative aspect-[4/3] overflow-hidden bg-gray-100">
             <img src={img} alt="" className="w-full h-full object-cover" />
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-4 py-3">
-              <p className="text-white text-sm font-semibold">
-                {i === 0 ? "Vanity" : "Shower"}
-              </p>
-            </div>
           </div>
         ))}
       </div>
@@ -89,10 +78,6 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
     return (
       <div className="relative w-full aspect-[21/9] max-h-[28vh] overflow-hidden bg-gray-100">
         <img src={img} alt={step.name} className="w-full h-full object-cover" />
-        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-5 py-3">
-          <p className="text-white text-lg font-bold">{step.name}</p>
-          <p className="text-white/70 text-xs">{step.subtitle}</p>
-        </div>
       </div>
     );
   }
@@ -121,18 +106,12 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
               className="absolute inset-0 w-full h-full object-cover animate-image-reveal"
             />
           )}
-          {!generatedImageUrl && !isGenerating && (
-            <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2">
-              <p className="text-white text-sm font-bold">{step.name}</p>
-            </div>
-          )}
           <ZoomHint />
         </div>
         {showZoom && displayedImageUrl && (
           <ImageLightbox
             src={displayedImageUrl}
             alt={generatedImageUrl ? `${step.name} — AI Generated` : step.name}
-            title={generatedImageUrl ? `${step.name} — AI Generated` : step.name}
             onClose={() => setShowZoom(false)}
           />
         )}
@@ -160,19 +139,12 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
             className="absolute inset-0 w-full h-full object-cover animate-image-reveal"
           />
         )}
-        {!generatedImageUrl && !isGenerating && (
-          <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent px-5 py-4">
-            <p className="text-white text-lg font-bold">{step.name}</p>
-            <p className="text-white/70 text-sm">{step.subtitle}</p>
-          </div>
-        )}
         <ZoomHint />
       </div>
       {showZoom && displayedImageUrl && (
         <ImageLightbox
           src={displayedImageUrl}
           alt={generatedImageUrl ? `${step.name} — AI Generated` : step.name}
-          title={generatedImageUrl ? `${step.name} — AI Generated` : step.name}
           onClose={() => setShowZoom(false)}
         />
       )}

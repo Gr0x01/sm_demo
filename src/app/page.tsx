@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { LandingHero } from "@/components/LandingHero";
 import { UpgradePicker } from "@/components/UpgradePicker";
 import { UpgradeSummary } from "@/components/UpgradeSummary";
@@ -8,6 +8,15 @@ import { UpgradeSummary } from "@/components/UpgradeSummary";
 type PageState = "landing" | "picker" | "summary";
 
 const BUYER_ID = "may-baten";
+const VALID_PAGES: PageState[] = ["landing", "picker", "summary"];
+
+function getPageFromUrl(): PageState {
+  if (typeof window === "undefined") return "landing";
+  const params = new URLSearchParams(window.location.search);
+  const p = params.get("page");
+  if (p && VALID_PAGES.includes(p as PageState)) return p as PageState;
+  return "landing";
+}
 
 interface BuyerData {
   buyerName: string;
@@ -22,9 +31,32 @@ interface SummaryData {
 }
 
 export default function Home() {
-  const [page, setPage] = useState<PageState>("landing");
+  const [page, setPageState] = useState<PageState>(getPageFromUrl);
   const [buyer, setBuyer] = useState<BuyerData | null>(null);
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
+
+  // Navigate to a page and push a history entry
+  const setPage = useCallback((newPage: PageState) => {
+    setPageState(newPage);
+    const url = new URL(window.location.href);
+    if (newPage === "landing") {
+      url.searchParams.delete("page");
+      url.searchParams.delete("step");
+    } else {
+      url.searchParams.set("page", newPage);
+      if (newPage !== "picker") url.searchParams.delete("step");
+    }
+    window.history.pushState({}, "", url.toString());
+  }, []);
+
+  // Listen for back/forward navigation
+  useEffect(() => {
+    const onPopState = () => {
+      setPageState(getPageFromUrl());
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
 
   useEffect(() => {
     fetch(`/api/selections/${BUYER_ID}`)

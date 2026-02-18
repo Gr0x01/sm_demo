@@ -108,7 +108,43 @@ function stepHasUpgrades(
 
 export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrl: string | null }) => void; buyerId?: string }) {
   const [state, dispatch] = useReducer(reducer, null, getInitialState);
-  const [activeStepId, setActiveStepId] = useState(steps[0].id);
+  const [activeStepId, setActiveStepIdRaw] = useState(() => {
+    if (typeof window === "undefined") return steps[0].id;
+    const params = new URLSearchParams(window.location.search);
+    const s = params.get("step");
+    if (s && steps.some((step) => step.id === s)) return s;
+    return steps[0].id;
+  });
+
+  // Wrap setActiveStepId to also update the URL
+  const setActiveStepId = useCallback((stepId: string) => {
+    setActiveStepIdRaw(stepId);
+    const url = new URL(window.location.href);
+    url.searchParams.set("step", stepId);
+    window.history.pushState({}, "", url.toString());
+  }, []);
+
+  // Ensure step param is in URL on mount (replaceState, no extra history entry)
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (!url.searchParams.get("step")) {
+      url.searchParams.set("step", activeStepId);
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for back/forward to update step
+  useEffect(() => {
+    const onPopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const s = params.get("step");
+      if (s && steps.some((step) => step.id === s)) {
+        setActiveStepIdRaw(s);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedRef = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -142,18 +178,35 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
     document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
   }, [headerHeight]);
 
-  // Load selections from API on mount
+  // Load selections from API on mount, then check for cached generated image
   useEffect(() => {
     if (!buyerId) return;
     fetch(`/api/selections/${buyerId}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+      .then(async (data) => {
         if (data && Object.keys(data.selections).length > 0) {
           dispatch({
             type: "LOAD_SELECTIONS",
             selections: data.selections,
             quantities: data.quantities ?? {},
           });
+
+          // Check if there's a cached generated image for these selections
+          try {
+            const checkRes = await fetch("/api/generate/check", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ selections: data.selections }),
+            });
+            if (checkRes.ok) {
+              const { imageUrl } = await checkRes.json();
+              if (imageUrl) {
+                dispatch({ type: "GENERATION_COMPLETE", imageUrl });
+              }
+            }
+          } catch {
+            // Non-critical — just won't show cached image
+          }
         }
         hasLoadedRef.current = true;
       })
