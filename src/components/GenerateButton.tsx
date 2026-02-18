@@ -4,14 +4,26 @@ interface GenerateButtonProps {
   onClick: () => void;
   isGenerating: boolean;
   hasChanges: boolean;
+  stepId?: string;
 }
+
+const stepLabels: Record<string, { action: string; generating: string }> = {
+  "set-your-style": { action: "Visualize My Style", generating: "Visualizing Your Style..." },
+  "design-your-kitchen": { action: "Visualize My Kitchen", generating: "Visualizing Your Kitchen..." },
+  "primary-bath": { action: "Visualize My Bathroom", generating: "Visualizing Your Bathroom..." },
+  "secondary-spaces": { action: "Visualize My Spaces", generating: "Visualizing Your Spaces..." },
+};
 
 export function GenerateButton({
   onClick,
   isGenerating,
   hasChanges,
+  stepId,
 }: GenerateButtonProps) {
   const disabled = isGenerating || !hasChanges;
+  const labels = stepId && stepLabels[stepId]
+    ? stepLabels[stepId]
+    : { action: "Visualize My Room", generating: "Visualizing..." };
 
   return (
     <button
@@ -45,10 +57,10 @@ export function GenerateButton({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          Generating Your Kitchen...
+          {labels.generating}
         </span>
       ) : hasChanges ? (
-        "Visualize My Kitchen"
+        labels.action
       ) : (
         "Up to Date"
       )}

@@ -12,6 +12,8 @@ export interface StepConfig {
   heroVariant: "full" | "compact" | "split" | "none";
   showGenerateButton: boolean;
   sections: StepSection[];
+  /** Subcategory IDs that dominate the room photo — only these send swatch images to the AI. Others are described in text only. */
+  highImpactIds?: string[];
 }
 
 export const steps: StepConfig[] = [
@@ -23,6 +25,21 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/greatroom-wide.webp",
     heroVariant: "compact",
     showGenerateButton: true,
+    highImpactIds: [
+      "cabinet-style-whole-house",
+      "main-area-flooring-color",
+      "common-wall-paint",
+      "ceiling-paint",
+      "trim-paint",
+      "door-casing-color",
+      "baseboard",
+      "wainscoting",
+      "interior-door-style",
+      "fireplace-tile-surround",
+      "lighting",
+      "great-room-fan",
+      "can-lights-primary",
+    ],
     sections: [
       {
         title: "Cabinets",
@@ -86,6 +103,19 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/kitchen-close.webp",
     heroVariant: "full",
     showGenerateButton: true,
+    highImpactIds: [
+      "counter-top",
+      "countertop-edge",
+      "backsplash",
+      "kitchen-cabinet-color",
+      "kitchen-island-cabinet-color",
+      "kitchen-cabinet-hardware",
+      "kitchen-sink",
+      "kitchen-faucet",
+      "range",
+      "under-cabinet-lighting",
+      "light-rail",
+    ],
     sections: [
       {
         title: "Surfaces",
@@ -126,6 +156,17 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/primary-bath-vanity.webp",
     heroVariant: "full",
     showGenerateButton: true,
+    highImpactIds: [
+      "primary-bath-vanity",
+      "primary-bath-cabinet-color",
+      "bathroom-cabinet-hardware",
+      "primary-bath-mirrors",
+      "floor-tile-color",
+      "primary-shower",
+      "primary-shower-entry",
+      "bath-faucets",
+      "bath-hardware",
+    ],
     sections: [
       {
         title: "Vanity & Cabinets",
@@ -166,6 +207,12 @@ export const steps: StepConfig[] = [
     heroImage: "/rooms/bath-closet.webp",
     heroVariant: "full",
     showGenerateButton: true,
+    highImpactIds: [
+      "secondary-bath-cabinet-color",
+      "secondary-bath-mirrors",
+      "secondary-shower",
+      "primary-closet-shelving",
+    ],
     sections: [
       {
         title: "Secondary Bath",

@@ -201,19 +201,28 @@ export default function AdminPage() {
                     </button>
                   </div>
 
-                  {/* Collapsible selections */}
+                  {/* Collapsible details */}
                   <button
                     onClick={() =>
                       setExpandedHash(isExpanded ? null : image.selections_hash)
                     }
                     className="text-xs text-neutral-400 hover:text-neutral-200 transition-colors w-full text-left"
                   >
-                    {isExpanded ? "▾ Hide selections" : "▸ Show selections"}
+                    {isExpanded ? "▾ Hide details" : "▸ Show details"}
                   </button>
 
                   {isExpanded && (
-                    <div className="border-t border-neutral-800 pt-3">
-                      {renderSelections(image.selections_json)}
+                    <div className="border-t border-neutral-800 pt-3 space-y-3">
+                      <div>
+                        <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Selections</p>
+                        {renderSelections(image.selections_json)}
+                      </div>
+                      {image.prompt && (
+                        <div>
+                          <p className="text-xs text-neutral-500 uppercase tracking-wider mb-1">Prompt</p>
+                          <p className="text-xs text-neutral-300 whitespace-pre-wrap leading-relaxed">{image.prompt}</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

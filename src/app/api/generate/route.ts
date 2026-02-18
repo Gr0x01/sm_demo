@@ -27,7 +27,7 @@ const ALLOWED_HERO_IMAGES = new Set([
 
 export async function POST(request: Request) {
   try {
-    const { selections, heroImage } = await request.json();
+    const { selections, heroImage, highImpactIds } = await request.json();
 
     if (!selections || typeof selections !== "object") {
       return NextResponse.json(
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
       const mimeType = ext === "webp" ? "image/webp" : `image/${ext}`;
 
       // Build edit-style prompt + load swatch images
-      const { prompt, swatches } = await buildEditPrompt(selections);
+      const { prompt, swatches } = await buildEditPrompt(selections, highImpactIds);
 
       // Assemble multimodal message: base room photo + swatch images + text prompt
       const contentParts: Array<
@@ -155,11 +155,13 @@ export async function POST(request: Request) {
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
+        console.warn("[generate] Storage upload failed — returning base64 fallback. This image will NOT appear in admin cache.");
         // Still return the image as base64 if upload fails
         const base64 = Buffer.from(imageFile.uint8Array).toString("base64");
         return NextResponse.json({
           imageUrl: `data:${imageFile.mediaType || "image/png"};base64,${base64}`,
           cacheHit: false,
+          warning: "Image was not cached due to storage upload failure",
         });
       }
 

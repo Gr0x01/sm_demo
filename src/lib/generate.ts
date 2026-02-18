@@ -99,63 +99,85 @@ function findOption(
 }
 
 /**
- * Build the edit prompt text and collect swatch images for all visual selections.
+ * Build the edit prompt text and collect swatch images for high-impact visual selections.
+ * High-impact selections get swatch images sent to the AI; others are described in text only.
  * Returns { prompt, swatches } — the route assembles these into the multimodal message.
  */
 export async function buildEditPrompt(
-  visualSelections: Record<string, string>
+  visualSelections: Record<string, string>,
+  highImpactIds?: string[]
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
-  const labels: string[] = [];
+  const swatchLabels: string[] = [];
+  const textOnlyLabels: string[] = [];
   const swatches: SwatchImage[] = [];
+  const highImpactSet = highImpactIds ? new Set(highImpactIds) : null;
 
   for (const [subId, optId] of Object.entries(visualSelections)) {
     const found = findOption(subId, optId);
     if (!found) continue;
 
     const { option, subCategory } = found;
-    const label = subCategory.name;
+    const label = `${subCategory.name}: ${option.name}`;
+    const isHighImpact = !highImpactSet || highImpactSet.has(subId);
 
-    // Load swatch image — this is the primary source of truth for the AI
-    if (option.swatchUrl) {
+    if (isHighImpact && option.swatchUrl) {
+      // High-impact: load swatch image for the AI
       const ext = path.extname(option.swatchUrl).slice(1).toLowerCase();
 
       try {
         const swatchPath = path.join(process.cwd(), "public", option.swatchUrl);
 
         if (ext === "svg") {
-          // Convert SVG paint swatches to solid-color PNGs for the API
           const svgContent = await readFile(swatchPath, "utf-8");
           const hex = extractHexFromSvg(svgContent);
           if (hex) {
             const buffer = solidColorPng(hex);
-            swatches.push({ label: `${label}: ${option.name}`, buffer, mediaType: "image/png" });
-            labels.push(`${label}: ${option.name}`);
+            swatches.push({ label, buffer, mediaType: "image/png" });
+            swatchLabels.push(label);
           }
           continue;
         }
 
         const buffer = await readFile(swatchPath);
         const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-        swatches.push({ label: `${label}: ${option.name}`, buffer, mediaType });
-        labels.push(`${label}: ${option.name}`);
+        swatches.push({ label, buffer, mediaType });
+        swatchLabels.push(label);
       } catch {
-        // Swatch file missing — skip this selection
+        // Swatch file missing — fall back to text-only
+        textOnlyLabels.push(label);
       }
+    } else {
+      // Text-only: describe by name, no image sent
+      textOnlyLabels.push(label);
     }
   }
 
-  if (swatches.length === 0) {
+  const allLabels = [...swatchLabels, ...textOnlyLabels];
+
+  if (allLabels.length === 0) {
     return {
       prompt: "This is a photo of a room in a new-construction home. Return this image unchanged.",
       swatches: [],
     };
   }
 
-  const prompt = `This is a photo of a room in a new-construction home. The swatch/sample images above show the exact materials and colors the buyer selected. Edit the room photo to apply these upgrades:
+  let upgradeList = swatchLabels.map((l, i) => `${i + 1}. ${l} (see swatch image)`).join("\n");
+  if (textOnlyLabels.length > 0) {
+    const offset = swatchLabels.length;
+    upgradeList += "\n" + textOnlyLabels.map((l, i) => `${offset + i + 1}. ${l}`).join("\n");
+  }
 
-${labels.map((l, i) => `${i + 1}. ${l}`).join("\n")}
+  const prompt = `This is a photo of a room in a new-construction home. The swatch/sample images above show the exact materials and colors for the key upgrades. Edit the room photo to apply these upgrades:
 
-IMPORTANT: Match the colors and textures from the swatch images EXACTLY. Do not interpret the names — use the visual appearance of each swatch as the ground truth. Keep the exact same perspective, room shape, and composition. The result should look like a real interior design photo — photorealistic, well-lit, no people.`;
+${upgradeList}
+
+CRITICAL RULES:
+- This is an IMAGE EDITING task. You MUST modify the provided room photo — do NOT generate a new image from scratch.
+- Keep the EXACT same camera angle, perspective, room layout, architectural features, and composition as the input photo.
+- For items with swatch images, match the colors and textures EXACTLY. Use the visual appearance of each swatch as the ground truth.
+- For items without swatch images, use your best interpretation of the name.
+- The result should look like a real interior design photo — photorealistic, well-lit, no people.
+- Do NOT change the room shape, ceiling, windows, or camera position.`;
 
   return { prompt, swatches };
 }

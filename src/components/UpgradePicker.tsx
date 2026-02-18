@@ -312,7 +312,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ selections: visualSelections, heroImage: activeStep.heroImage }),
+        body: JSON.stringify({ selections: visualSelections, heroImage: activeStep.heroImage, highImpactIds: activeStep.highImpactIds }),
       });
 
       if (!res.ok) throw new Error("Generation failed");
@@ -411,6 +411,7 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
                     onClick={handleGenerate}
                     isGenerating={state.isGenerating}
                     hasChanges={state.visualSelectionsChangedSinceLastGenerate}
+                    stepId={activeStep.id}
                   />
                   {state.error && (
                     <div className="mt-3 bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
