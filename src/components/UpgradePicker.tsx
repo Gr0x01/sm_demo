@@ -244,9 +244,13 @@ export function UpgradePicker({ onFinish, buyerId }: { onFinish: (data: { select
     if (state.isGenerating) return;
     dispatch({ type: "START_GENERATING" });
 
+    // Only send visual selections relevant to the current step's room image
+    const stepSubCategoryIds = new Set(
+      activeStep.sections.flatMap((sec) => sec.subCategoryIds)
+    );
     const visualSelections: Record<string, string> = {};
     for (const [subId, optId] of Object.entries(state.selections)) {
-      if (visualSubCategoryIds.has(subId)) {
+      if (visualSubCategoryIds.has(subId) && stepSubCategoryIds.has(subId)) {
         visualSelections[subId] = optId;
       }
     }
