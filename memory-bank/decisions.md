@@ -97,6 +97,11 @@
 **Context**: AI generation was kitchen-only (step 2). But users pick flooring, cabinets, and paint on step 1 that also affect the kitchen visualization.
 **Decision**: Enable `showGenerateButton: true` on steps 1-4. All feed the same kitchen generation endpoint — visual subcategories from any step contribute to the prompt. Step 5 (electrical/exterior) has no visual generation.
 
+## D25: Gemini 3 Pro Image (Nano Banana Pro) for generation
+**Context**: Originally used gpt-image-1 (OpenAI) for text-to-image. Switched to Gemini for multimodal input (base room photo + swatch images + text prompt). Preview model `gemini-2.5-flash-preview-04-17` expired (Feb 2026). Tried `gemini-2.5-flash-image` but quality wasn't good enough.
+**Decision**: Use `gemini-3-pro-image-preview` (Nano Banana Pro) via `@ai-sdk/google`. Uses `generateText` with `responseModalities: ["TEXT", "IMAGE"]`. Higher fidelity, better reasoning for complex prompts. ~$0.24/image.
+**Trade-off**: Higher cost per image vs. Flash, but significantly better quality for interior design visualization with complex material descriptions.
+
 ## D24: No border-radius in UI
 **Context**: The design uses sharp corners throughout for a clean, architectural feel.
 **Decision**: No `rounded`, `rounded-lg`, etc. on any elements. Sharp corners everywhere.

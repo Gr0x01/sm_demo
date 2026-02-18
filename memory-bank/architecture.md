@@ -20,7 +20,7 @@ Server (Next.js API route)
         ├── Cache HIT → return cached image URL instantly
         ├── Cache MISS:
         │     ├── Build prompt from promptDescriptors
-        │     ├── Call gpt-image-1 via Vercel AI SDK
+        │     ├── Call gemini-3-pro-image-preview via Vercel AI SDK
         │     ├── Store result in Supabase (image in Storage, metadata in table)
         │     └── Return image URL
         └── Returns: image URL + prompt used + cache_hit boolean
@@ -46,7 +46,7 @@ Option data is static TypeScript. Selections state is client-side React. Supabas
 3. Server creates deterministic hash of visual selections (sorted keys + option IDs → SHA-256)
 4. Query Supabase: `SELECT image_path FROM generated_images WHERE selections_hash = ?`
 5. If found → return Supabase Storage public URL (instant, ~200ms)
-6. If not found → generate via gpt-image-1 (10-30s) → upload PNG to Storage → upsert cache row → return URL
+6. If not found → generate via gemini-3-pro-image-preview (10-30s) → upload to Storage → upsert cache row → return URL
 7. Client receives image URL either way
 
 ## Pre-generation Strategy
@@ -147,13 +147,13 @@ State shape:
    Professional interior design photography, eye-level camera angle.
    Natural lighting from windows. High-end new construction. No people.
    ```
-5. Call `experimental_generateImage` (Vercel AI SDK) with gpt-image-1
+5. Call `generateText` (Vercel AI SDK) with `gemini-3-pro-image-preview` (responseModalities: ["TEXT", "IMAGE"])
 6. Return image URL to client (from cache or freshly generated)
 7. Client displays in StepHero
 
-**Image approach**: Text-to-image (not image editing). Simpler, more reliable for the demo. The prompt needs to be rich enough to produce a consistent, plausible kitchen. Each option's `promptDescriptor` is a human-written phrase tuned for AI generation quality.
+**Image approach**: Multimodal image editing via Gemini 2.5 Flash Image. Sends the base room photo + swatch reference images + text prompt as a single multimodal message. Uses `generateText` with `responseModalities: ["TEXT", "IMAGE"]` to get an edited image back. Each option's `promptDescriptor` is a human-written phrase tuned for AI generation quality.
 
-**Future**: If base kitchen photos become available, can switch to image editing (send base photo + describe material swaps). The `isVisual` flag and `promptDescriptor` fields make this transition easy.
+**Model history**: Started with gpt-image-1 (OpenAI), switched to Gemini for multimodal input (base photo + swatches). Preview model `gemini-2.5-flash-preview-04-17` expired; now using stable `gemini-3-pro-image-preview`.
 
 ## Swatch Images
 
@@ -172,7 +172,9 @@ src/
 │   ├── page.tsx
 │   ├── layout.tsx
 │   ├── globals.css
+│   ├── admin/page.tsx              # Admin UI — view/delete cached generated images
 │   └── api/
+│       ├── admin/images/route.ts   # GET all cached images, DELETE single or all
 │       ├── generate/route.ts
 │       └── selections/[buyerId]/route.ts
 ├── components/
@@ -216,6 +218,13 @@ public/
     ├── flooring/
     └── sinks/
 ```
+
+## Admin Page
+
+`/admin` — no-auth admin page (demo only) for managing the generated image cache.
+- View all cached images with their selection combos, hashes, timestamps
+- Delete individual entries or all at once (removes both DB row + storage file)
+- API: `GET /api/admin/images` (list all), `DELETE /api/admin/images` (single or bulk)
 
 ## Analytics
 

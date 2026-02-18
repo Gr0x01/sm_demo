@@ -94,6 +94,7 @@ Build the real tool — not a pitch deck. Walk the agent through actual Kinkade 
 - Stone Martin logo saved as `public/logo.svg`
 - 6 room photos in `public/rooms/`
 - Supabase selection persistence (auto-save per buyerId)
+- **Admin page** (`/admin`) — view/delete all cached generated images, no auth
 
 ## What's Next
 1. **Polish pass** — mobile responsiveness, transitions

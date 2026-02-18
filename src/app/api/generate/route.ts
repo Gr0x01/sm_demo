@@ -124,7 +124,7 @@ export async function POST(request: Request) {
       contentParts.push({ type: "text", text: prompt });
 
       const result = await generateText({
-        model: google("gemini-2.5-flash-preview-04-17"),
+        model: google("gemini-3-pro-image-preview"),
         providerOptions: {
           google: { responseModalities: ["TEXT", "IMAGE"] },
         },
