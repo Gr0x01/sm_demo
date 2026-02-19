@@ -16,7 +16,15 @@ export function LandingHero({
   planName = "Kinkade",
   community = "McClain Landing Phase 7",
 }: LandingHeroProps) {
-  const [phase, setPhase] = useState<ContractPhase>("pre-contract");
+  const [phase, setPhaseRaw] = useState<ContractPhase>(() => {
+    if (typeof window === "undefined") return "pre-contract";
+    const saved = localStorage.getItem("contractPhase");
+    return saved === "post-contract" ? "post-contract" : "pre-contract";
+  });
+  const setPhase = (p: ContractPhase) => {
+    setPhaseRaw(p);
+    localStorage.setItem("contractPhase", p);
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-white px-6">
