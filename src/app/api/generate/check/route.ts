@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
-import { getVisualSubCategoryIds } from "@/lib/options-data";
+import { getVisualSubCategoryIdsFromDb } from "@/lib/db-queries";
+
+// Hardcoded org for SM demo — will be dynamic in Phase 2
+const SM_ORG_SLUG = "stone-martin";
 
 export async function POST(request: Request) {
   try {
@@ -11,8 +14,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ imageUrl: null });
     }
 
+    // Resolve org from DB
+    const supabase = getServiceClient();
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("slug", SM_ORG_SLUG)
+      .single();
+
+    if (!org) {
+      return NextResponse.json({ imageUrl: null });
+    }
+
     // Filter to only visual selections
-    const validIds = getVisualSubCategoryIds();
+    const validIds = await getVisualSubCategoryIdsFromDb(org.id);
     const visualSelections: Record<string, string> = {};
     for (const [k, v] of Object.entries(selections)) {
       if (validIds.has(k)) visualSelections[k] = v as string;
@@ -25,7 +40,6 @@ export async function POST(request: Request) {
     // Include model in hash to match /api/generate
     const modelName = model === "gpt-5.2" ? "gpt-5.2" : "gpt-image-1.5";
     const selectionsHash = hashSelections({ ...visualSelections, _model: modelName });
-    const supabase = getServiceClient();
 
     const { data: cached } = await supabase
       .from("generated_images")

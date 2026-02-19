@@ -1,8 +1,9 @@
-import { categories } from "./options-data";
+import type { Category } from "@/types";
 
 export function calculateTotal(
   selections: Record<string, string>,
-  quantities: Record<string, number> = {}
+  quantities: Record<string, number> = {},
+  categories: Category[]
 ): number {
   let total = 0;
   for (const category of categories) {

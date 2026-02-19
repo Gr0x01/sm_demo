@@ -2,7 +2,6 @@ import { createHash } from "crypto";
 import { deflateSync } from "zlib";
 import { readFile } from "fs/promises";
 import path from "path";
-import { categories } from "./options-data";
 import type { Option, SubCategory } from "@/types";
 
 /** Create a minimal 64x64 solid-color PNG from a hex string like "#D1CCC2". */
@@ -83,96 +82,31 @@ export interface SwatchImage {
   mediaType: string;
 }
 
-/** Scene descriptions keyed by hero image filename — tells the model what rooms/areas are in the photo. */
-const SCENE_DESCRIPTIONS: Record<string, string> = {
-  "greatroom-wide.webp": "This photo shows an open-concept great room and kitchen in a new-construction home. The kitchen is in the background with an island, and the great room is in the foreground with hardwood/LVP flooring throughout.",
-  "kitchen-close.webp": "This photo shows a kitchen in a new-construction home. There is a large island in the foreground, wall cabinets and countertops along the back wall, and appliances. The floor is hardwood/LVP.",
-  "primary-bath-vanity.webp": "This photo shows a primary bathroom in a new-construction home. There is a double vanity with mirrors on the left, tile flooring in the bathroom, and a walk-in shower with tile walls on the right.",
-  "primary-bedroom.webp": "This photo shows a primary bedroom in a new-construction home. It has CARPET flooring (replace the wood floor in the photo with carpet), a tray ceiling with crown molding, a ceiling fan, white painted walls, white trim and baseboard, and a doorway on the left showing a peek into the en-suite bathroom.",
-};
-
-/** Spatial hints telling the model WHERE in the photo each subcategory appears. */
-const SPATIAL_HINTS: Record<string, string> = {
-  // Kitchen
-  "kitchen-cabinet-color": "wall cabinets (upper cabinets mounted on walls)",
-  "kitchen-island-cabinet-color": "island base cabinets (large freestanding island in foreground)",
-  "kitchen-cabinet-hardware": "cabinet knobs and pulls on all cabinets",
-  "counter-top": "all countertop surfaces (island and perimeter)",
-  "countertop-edge": "edge profile of all countertops",
-  "backsplash": "tile backsplash between upper cabinets and countertop on the walls",
-  "kitchen-sink": "undermount sink basin in the island countertop — preserve the exact sink position and orientation from the original photo",
-  "kitchen-faucet": "faucet on the island countertop — the faucet spout arches AWAY from the camera toward the back wall/range side. Keep this exact orientation, do NOT flip it.",
-  "dishwasher": "dishwasher panel (left side of island or near sink)",
-  "refrigerator": "refrigerator in its built-in alcove",
-  "range": "range/stovetop along the back wall next to the microwave. NOTE: if the range is a 'slide-in' model, it has NO raised back panel — it sits flush with the countertop and the backsplash tile is visible behind it. Only freestanding ranges have the raised back panel with controls.",
-  // Great room / whole-house
-  "cabinet-style-whole-house": "cabinet door style on ALL cabinets (shaker, flat, raised panel, etc.)",
-  "main-area-flooring-color": "LVP/hardwood plank flooring in non-bathroom areas (closets, bedrooms, hallways) — NOT on bathroom floors which have tile",
-  "common-wall-paint": "all wall surfaces",
-  "ceiling-paint": "ceiling",
-  "trim-paint": "trim and molding along walls",
-  "door-casing-color": "door frames and casings",
-  "baseboard": "baseboard molding along the floor line",
-  "wainscoting": "wainscoting panels on lower walls",
-  "interior-door-style": "interior doors (panel style)",
-  "lighting": "light fixtures (chandelier, pendants)",
-  "great-room-fan": "ceiling fan in the great room",
-  // Primary bath
-  "primary-bath-vanity": "bathroom vanity cabinet (below the mirrors)",
-  "primary-bath-cabinet-color": "vanity cabinet color",
-  "bathroom-cabinet-hardware": "vanity cabinet hardware (pulls and knobs)",
-  "primary-bath-mirrors": "mirrors above the vanity",
-  "floor-tile-color": "large format tile on the bathroom floor AND shower walls ONLY (same tile covers both surfaces) — do NOT tile the closet or bedroom, those have LVP/hardwood flooring",
-  "primary-shower": "small mosaic tile on the SHOWER FLOOR ONLY (the small square or penny tiles on the ground inside the shower enclosure)",
-  "primary-shower-entry": "shower entry/door (glass panel separating shower from bathroom)",
-  "bath-faucets": "faucets on the vanity",
-  "bath-hardware": "towel rings, toilet paper holders, and bath accessories on walls",
-  // Secondary spaces
-  "secondary-bath-cabinet-color": "vanity cabinet color",
-  "secondary-bath-mirrors": "mirror above vanity",
-  "secondary-shower": "shower tile",
-  "primary-closet-shelving": "closet shelving system",
-  "crown-options": "crown molding where walls meet ceiling",
-  "bedroom-fan": "ceiling fan in the bedroom",
-  "carpet-color": "carpet flooring covering the entire bedroom floor",
-  "door-hardware": "door knobs/levers on interior doors",
-  "under-cabinet-lighting": "LED strip lighting underneath upper cabinets, illuminating the countertop",
-};
-
-function findOption(
-  subCategoryId: string,
-  optionId: string
-): { option: Option; subCategory: SubCategory } | null {
-  for (const category of categories) {
-    for (const sub of category.subCategories) {
-      if (sub.id === subCategoryId) {
-        const option = sub.options.find((o) => o.id === optionId);
-        if (option) return { option, subCategory: sub };
-      }
-    }
-  }
-  return null;
-}
-
 /**
  * Build the edit prompt text and collect swatch images for ALL visual selections.
  * Every selection with a swatchUrl sends its image to the AI.
  * Returns { prompt, swatches } — the route assembles these into the multimodal message.
+ *
+ * @param optionLookup Map of "subId:optId" → { option, subCategory }
+ * @param spatialHints Map of subcategoryId → spatial hint text
+ * @param sceneDescription Optional scene description for this step's hero image
  */
 export async function buildEditPrompt(
   visualSelections: Record<string, string>,
-  heroImage?: string,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  spatialHints: Record<string, string>,
+  sceneDescription?: string | null,
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const swatchLabels: string[] = [];
   const textOnlyLabels: string[] = [];
   const swatches: SwatchImage[] = [];
 
   for (const [subId, optId] of Object.entries(visualSelections)) {
-    const found = findOption(subId, optId);
+    const found = optionLookup.get(`${subId}:${optId}`);
     if (!found) continue;
 
     const { option, subCategory } = found;
-    const hint = SPATIAL_HINTS[subId];
+    const hint = spatialHints[subId];
     const label = hint
       ? `${subCategory.name}: ${option.name} → apply to ${hint}`
       : `${subCategory.name}: ${option.name}`;
@@ -223,9 +157,7 @@ export async function buildEditPrompt(
     upgradeList += "\n" + textOnlyLabels.map((l, i) => `${offset + i + 1}. ${l}`).join("\n");
   }
 
-  const heroFilename = heroImage ? path.basename(heroImage) : "";
-  const sceneDesc = SCENE_DESCRIPTIONS[heroFilename] || "";
-  const sceneBlock = sceneDesc ? `SCENE: ${sceneDesc}\n\n` : "";
+  const sceneBlock = sceneDescription ? `SCENE: ${sceneDescription}\n\n` : "";
 
   const prompt = `${sceneBlock}Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:
 

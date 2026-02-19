@@ -6,7 +6,7 @@ Production home builders lose millions in upgrade revenue because buyers can't s
 
 ## The Problem
 
-- Buyers choose $30-60K in home upgrades from **printed PDFs or physical sample boards**
+- Buyers choose $8-12K in home upgrades from **printed PDFs or physical sample boards** (AL/GA regional; coastal/luxury markets see $30-60K)
 - No visual context for how material combinations look together
 - No real-time price tracking as they select
 - Decision paralysis slows the sales cycle and reduces upgrade revenue
@@ -45,7 +45,7 @@ An interactive web-based upgrade picker with:
 - Even 10 clients at $1-2K/month = strong recurring revenue
 
 ### Key Stat
-**Zonda Envision reports buyers spend 35% more on upgrades when they can visualize their choices.** For a builder doing 500 homes/year with $30K average upgrades, a 10% increase alone = $1.5M additional revenue annually. The tool pays for itself 50-70x over.
+**Zonda Envision reports buyers spend 35% more on upgrades when they can visualize their choices.** In the AL/GA regional market, upgrades average $8-12K per home (not the $30-60K seen in coastal/luxury markets). Our first real test: a frugal investment-property buyer went from $5,500 → $6,400 (+$900, 16% lift) — and they were actively trying to minimize spend. For a builder doing 500 homes/year at $10K avg, even a conservative $900/sale lift = **$450K additional revenue annually**. The tool pays for itself 8x over.
 
 ## Competitive Landscape
 
@@ -65,15 +65,16 @@ We're the only product that combines:
 
 ## Business Model
 
-### Pricing — Per Floor Plan Model
+### Pricing — Two Tiers
 
-Pricing is per floor plan, which lets builders start small (one plan, one community) and expand as they see results. No big upfront commitment required.
+#### Tier 1: Production Builder (200+ homes/year)
+Per floor plan model. Builders start small and expand as they see results.
 
 | | Amount |
 |---|---|
 | **Onboarding fee** (one-time, per builder) | $5,000 - $10,000 |
 | **Per floor plan setup** | $3,000 - $5,000 |
-| **Monthly base** | $1,000/mo |
+| **Monthly base** | $500 - $1,000/mo |
 | **Monthly per floor plan** | $250/mo per active plan |
 
 **Onboarding covers** (builder-wide, one-time):
@@ -85,10 +86,10 @@ Pricing is per floor plan, which lets builders start small (one plan, one commun
 
 **Per floor plan covers**:
 - Room photography (or collection from builder's existing assets)
-- AI image pre-generation for common material combinations
+- AI image pre-generation (~5,000 images/plan for instant feel)
 - Floor plan-specific configuration and testing
 
-**Monthly base ($1K) covers**:
+**Monthly base ($500-1K, scales with volume) covers**:
 - 24/7 platform access for buyers and sales team
 - Customer support
 - Platform uptime and monitoring
@@ -99,9 +100,51 @@ Pricing is per floor plan, which lets builders start small (one plan, one commun
 - Image cache management and storage for that plan
 - Option/pricing updates as builder's catalog changes
 
+#### Tier 2: Small Builder (20-200 homes/year)
+Base + per plan. No big setup fee — the per-plan model from Tier 1 punishes small builders who have many plans relative to volume (e.g. Craftway: 8 plans, 50 homes/yr = only 3-6 homes per plan).
+
+| | Amount |
+|---|---|
+| **Setup fee** (one-time, all plans) | $3,000 - $5,000 |
+| **Monthly base** | $500/mo |
+| **Per plan/mo** | $50/mo per active plan |
+
+**Setup covers**:
+- Option/pricing transcription from builder's sheets
+- Swatch image sourcing
+- Room photography coordination ($500-1,000 for photographer)
+- AI image pre-generation for all plans
+- Configuration, branding, testing
+- ~20 hours of work total
+
+**Monthly base covers**:
+- Platform access, hosting, storage, infrastructure
+- Admin dashboard login for builder's team to make quick edits
+- Support (email, fix within a few days)
+
+**Per plan ($50/mo) covers**:
+- Image cache maintenance and storage for that plan
+- Option/pricing updates as builder's catalog changes
+- On-demand AI generation for buyer sessions on that plan
+
+**Why this tier exists**: A builder doing 50 homes/yr with 8 plans would pay $59K year one on Tier 1 pricing but only generate ~$45K in additional upgrade revenue. Doesn't pencil. Tier 2 at ~$15K year one gives them a 3x return.
+
+#### Pilot Program (First 1-2 builders)
+For early adopters / case study builders. Goal is proof, not revenue.
+
+| | Amount |
+|---|---|
+| **Setup fee** | **Waived** (we eat the ~$1-2K hard costs) |
+| **First 3 months** | **Free** |
+| **After 3 months** | Standard Tier 2: $500/mo base + $50/plan/mo |
+
+**The pitch**: "I'll set it up for free, you use it for 3 months, and if it's not working you walk away. No setup fee, no commitment. If your buyers are spending more on upgrades after 3 months, we start the monthly."
+
+**Why**: First non-SM builder is worth more as a case study than as revenue. After 3 months of buyers using the tool and seeing upgrade lift, they're not canceling. The data sells the ongoing subscription.
+
 ### Example Deals
 
-**Stone Martin (~15 floor plans, ~500 homes/year)**
+**Stone Martin (~15 floor plans, ~500 homes/year) — Tier 1**
 - Onboarding: $8K
 - 15 plans x $4K: $60K
 - **Total setup: $68K**
@@ -109,81 +152,114 @@ Pricing is per floor plan, which lets builders start small (one plan, one commun
 - **Year 1 total: $125K**
 - Upsell: every new plan/community = $3-5K setup + $250/mo
 
-**Small builder testing the waters (~3 floor plans, ~50 homes/year)**
+**Mid-size builder (~5 floor plans, ~150 homes/year) — Tier 1**
 - Onboarding: $5K
-- 3 plans x $3K: $9K
-- **Total setup: $14K**
-- Monthly: $1K base + 3 x $250 = $1,750/mo ($21K/yr)
-- **Year 1 total: $35K**
-- Low risk — start with your best-selling plans, expand if it works
+- 5 plans x $3K: $15K
+- **Total setup: $20K**
+- Monthly: $500 base + 5 x $250 = $1,750/mo ($21K/yr)
+- **Year 1 total: $41K**
 
-**"Just let me try one plan"** — the easiest yes a builder can give:
+**Craftway-sized builder (~8 plans, ~50 homes/year) — Tier 2**
+- Setup: $4K (includes photography coordination)
+- Monthly: $500 base + 8 x $50 = $900/mo ($10.8K/yr)
+- **Year 1 total: ~$14.8K**
+- Their upside at $1,200 lift, 75% adoption: $45K additional revenue
+- **ROI: ~3x**
+
+**Craftway as pilot (first builder) — Pilot Program**
+- Setup: **waived**
+- First 3 months: **free**
+- Months 4-12: $900/mo x 9 = $8.1K
+- **Year 1 total: ~$8.1K** (they pay), ~$1-2K (you eat in hard costs)
+- Their upside: $45K additional revenue
+- **ROI for them: ~5.5x** — easy yes
+
+**"Just let me try one plan" — Tier 1 entry**
 - Onboarding: $5K
 - 1 plan x $3K: $3K
 - **Total setup: $8K**
-- Monthly: $1K base + $250 = $1,250/mo ($15K/yr)
-- **Year 1 total: $23K**
+- Monthly: $500 base + $250 = $750/mo ($9K/yr)
+- **Year 1 total: $17K**
 - Proves the concept with minimal commitment
 
 ### Revenue Projections
 
+**2026 Goal: 2 builders, 2+ plans each**
+
 | Scenario | Year 1 Revenue | Year 2+ ARR |
 |---------|---------------|-------------|
-| 1 builder, 15 plans (Stone Martin) | $125K | $57K |
-| 3 builders, avg 5 plans each | $150-210K | $81-108K |
-| 5 builders, avg 5 plans each | $250-350K | $135-180K |
-| 10 builders, mix of sizes | $500-700K | $270-360K |
+| **2 builders, 2 plans each (2026 target)** | **$46-60K** | **$24K** |
+| 2 builders, 4 plans each | $62-80K | $36K |
+| 3 builders, avg 3 plans each | $75-105K | $41-54K |
+| 5 builders, avg 3 plans each | $125-175K | $68-90K |
 
 ### Builder ROI — Why the Tool Pays for Itself
 
 **Key stat**: Zonda Envision reports buyers spend **35% more on upgrades** when they can visualize their choices. Even at conservative estimates, the math is overwhelming.
 
-**Stone Martin (~500 homes/year, ~$30K avg upgrades)**
-Current upgrade revenue: ~$15M/year
+**Stone Martin (~500 homes/year, ~$10K avg upgrades)**
+Current upgrade revenue: ~$5M/year
 
-| Buyer Adoption | Upgrade Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
+*Regional context: In the AL/GA market, $42K in upgrades is considered extremely high. Most Stone Martin buyers spend $8-12K in upgrades. One frugal buyer (investment property, intentionally minimizing) went from $5,500 → $6,400 after using the tool — a $900 lift (16%) from someone actively trying NOT to spend more. Typical buyers spending $10K would likely see $1,200-1,500+ in lift since they're already willing to spend on their home.*
+
+| Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
 |---|---|---|---|---|---|
-| 50% | 5% | $375K | $57K | **$318K** | 6.6x |
-| 75% | 5% | $563K | $57K | **$506K** | 9.9x |
-| 75% | 10% | $1.13M | $57K | **$1.07M** | 20x |
-| 75% | 15% | $1.69M | $57K | **$1.63M** | 30x |
+| 50% | $900 (floor — frugal buyer) | $225K | $57K | **$168K** | 3.9x |
+| 50% | $1,200 (typical buyer) | $300K | $57K | **$243K** | 5.3x |
+| 75% | $1,200 (typical buyer) | $450K | $57K | **$393K** | 7.9x |
+| 75% | $1,500 (engaged buyer) | $563K | $57K | **$506K** | 9.9x |
 
-At 50% adoption and just 5% lift — the most skeptical scenario — the tool delivers a **6.6x return**.
+At 50% adoption with just the **observed floor lift** ($900, from a frugal investment-property buyer), the tool delivers a **3.9x return**. With typical buyers, **5-10x**.
 
-**Small builder (~50 homes/year, ~$20K avg upgrades)**
-Current upgrade revenue: ~$1M/year
+**Small AL/GA builder (~50 homes/year, ~$8K avg upgrades)**
+Current upgrade revenue: ~$400K/year
 
-| Buyer Adoption | Upgrade Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
+| Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
 |---|---|---|---|---|---|
-| 50% | 5% | $25K | $15K | **$10K** | 1.7x |
-| 75% | 5% | $37.5K | $15K | **$22.5K** | 2.5x |
-| 75% | 10% | $75K | $15K | **$60K** | 5x |
+| 50% | $900 (floor) | $22.5K | $9K | **$13.5K** | 2.5x |
+| 75% | $1,200 (typical) | $45K | $9K | **$36K** | 5x |
+| 75% | $1,500 (engaged) | $56K | $9K | **$47K** | 6.2x |
 
-Even the smallest builder in the most skeptical scenario nets a **~2x return**. The question is never "can we afford this?" — it's "does the tool actually move the needle?" That's what the demo proves.
+Even a small builder at conservative adoption clears a **2.5x return** using the floor lift number. At typical lift, **5x**. The question is never "can we afford this?" — it's "does the tool actually move the needle?" That's what the demo proves with real data.
 
 ### Handling Objections
-- **"That's a lot upfront"** — start with one floor plan for $8K + $1,250/mo. Prove the ROI, then expand.
+- **"That's a lot upfront"** — start with one floor plan for $8K + $750/mo. Prove the ROI, then expand.
 - **"Only some of my buyers would use this"** — tables above account for 50% adoption and the math still works
 - **"Why does a floor plan cost $3-5K?"** — photography, AI pre-generation of thousands of material combinations, configuration, and testing. Real work, real cost.
 - **"What am I paying monthly for?"** — $1K base is 24/7 access and support for your team and buyers. $250/plan covers AI generation and storage for that floor plan.
-- **"6x return at worst case"** — for a large builder, even at 50% adoption and 5% lift, it's a 6.6x return on annual cost
+- **"4x return at worst case"** — for a large builder, even at 50% adoption with the floor lift ($900/sale from a frugal buyer), it's a 3.9x return. With typical buyers, 5-10x.
 
 ### Cost Structure
 
-**Option A: API-based (low upfront)**
-- Image generation via OpenAI/Google API: ~$0.04-0.15/image
-- Supabase hosting: ~$25/mo
-- Vercel hosting: ~$20/mo
-- Margin: charge $0.25/image or bundle into monthly fee
+**Pre-generation is non-negotiable.** Each image takes ~60 seconds to generate. Buyers won't wait — the tool must feel instant. That means ~5,000 pre-cached images per plan.
 
-**Option B: Self-hosted GPU (scale play)**
+**The pre-cache math:**
+- 5,000 images x 60 sec = **83 hours of generation per plan**
+- 8 plans (Craftway-sized builder) = **667 hours** (~28 days 24/7)
+- At API pricing ($0.04-0.15/image): **$200-750 per plan, $1,600-6,000 for 8 plans**
+
+**Hard costs per builder onboarding:**
+
+| Item | API Pricing | GPU Pricing |
+|------|------------|-------------|
+| Your time (20 hrs) | — | — |
+| Photography | $500-1,000 | $500-1,000 |
+| Pre-generation (8 plans x 5K) | $1,600-6,000 | ~$40 |
+| Hosting/infra | ~$45/mo | ~$45/mo |
+| **Total hard costs** | **$2,100-7,000** | **$540-1,040** |
+
+**Option A: API-based**
+- Generation: ~$0.04-0.15/image
+- Works for first builder but margins are thin on Tier 2 deals
+- Rate limits and 60s generation time make batch pre-gen slow
+
+**Option B: Self-hosted GPU**
 - RTX PRO 6000 workstation: ~$10-13K one-time
 - Generation cost: ~$0.001/image (electricity only)
-- Break-even: ~50K images (~2-3 builders' worth)
-- Massive margin improvement at scale
-- Bonus: redundancy when APIs go down
+- No rate limits — can parallelize, run overnight batches
+- Break-even: basically one small builder onboarding in saved API costs
 
-**Recommended path**: Start with API (Option A), graduate to GPU (Option B) at 3+ clients.
+**Recommended path**: Get GPU before first non-SM builder onboarding. The pre-generation costs on API pricing eat most of the margin on Tier 2 deals. A $4K setup fee with $4-6K in API generation costs is underwater. With GPU, that same deal has $3K+ margin.
 
 ## Technical Architecture
 
@@ -228,25 +304,32 @@ Highlights:
 ## Go-to-Market
 
 ### Phase 1: Prove It (Now)
-- Complete Stone Martin demo
+- Stone Martin demo as proof-of-concept (SM is NOT a target customer — they use BuilderLinq for selections already)
 - Generate compelling before/after: PDF sheet vs. interactive tool with AI visualization
-- Collect data: time to select, average upgrade spend, buyer satisfaction
+- Real data point: frugal buyer $5,500 → $6,400 (+$900) after using the tool
 
-### Phase 2: Reference Customer (Q2 2026)
-- Deploy to Stone Martin for real buyer use
-- Measure upgrade revenue impact (even 5-10% increase is a powerful number)
+### Phase 2: First Paying Builder (Q2 2026)
+- Target builders still on PDFs/sample boards — Lowder, Goodwyn, Alexander Scott, Holland, etc.
+- Use SM demo to show what their tool would look like, then build theirs
+- Deploy with 2 floor plans, measure upgrade revenue impact
 - Get testimonial / case study
 
-### Phase 3: Outreach (Q3 2026)
-- Use Stone Martin case study to approach Adams Homes, DSLD, Smith Douglas
+### Phase 3: Second Builder (Q3-Q4 2026)
+- Use first builder's results to close a second builder with 2+ plans
 - Demo the actual tool (not a pitch deck) — show their competitor using it
-- Attend Southeast Building Conference (SEBC), International Builders' Show (IBS)
+- HBA events, local networking (Greater Montgomery HBA, GBAHB)
+- **2026 exit target: 2 builders, 2+ plans each = $46-60K Year 1**
 
-### Phase 4: Scale (Q4 2026+)
-- Onboard 3-5 builders
-- Purchase RTX PRO 6000 for self-hosted generation
-- Build admin dashboard for multi-tenant management
-- Consider fine-tuning image model on interior design photos (competitive moat)
+### Phase 1.5: GPU Investment (Before First Non-SM Builder)
+- Acquire self-hosted GPU (RTX PRO 6000 or equivalent, ~$10-13K)
+- Pre-generation on API is ~$4-6K per small builder and takes weeks of continuous generation
+- GPU drops that to ~$40 and enables overnight batch generation
+- **Must have before onboarding Tier 2 builders** — API margins don't work at that price point
+
+### Phase 4: Expand & Scale (2027)
+- Expand existing builders to more plans (natural upsell)
+- Onboard 3-5 total builders
+- Attend Southeast Building Conference (SEBC), International Builders' Show (IBS)
 
 ## Sales Approach
 
@@ -273,4 +356,4 @@ Not the nationals (D.R. Horton, Lennar) — they have enterprise solutions. Targ
 
 ## The Pitch (Alternate — For Decks/Written Materials)
 
-**"Your buyers choose $40K in upgrades from a printed sheet — we let them see exactly what their kitchen looks like before they sign, and builders using visualization sell 35% more upgrades."**
+**"Your buyers choose $8-12K in upgrades from a printed sheet — we let them see exactly what their kitchen looks like before they sign. In our first test, a buyer who was trying to spend as little as possible still added $900 more after seeing it visualized. Scale that across 500 homes and you're looking at half a million in additional revenue."**

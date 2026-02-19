@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
 import { buildEditPrompt, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
-import { getVisualSubCategoryIds } from "@/lib/options-data";
+import { getVisualSubCategoryIdsFromDb, getOptionLookup, getStepAiConfig } from "@/lib/db-queries";
 import { readFile } from "fs/promises";
 import path from "path";
 
@@ -27,9 +27,13 @@ const ALLOWED_HERO_IMAGES = new Set([
   "/rooms/primary-bedroom.webp",
 ]);
 
+// Hardcoded org/floorplan for SM demo — will be dynamic in Phase 2
+const SM_ORG_SLUG = "stone-martin";
+const SM_FLOORPLAN_SLUG = "kinkade";
+
 export async function POST(request: Request) {
   try {
-    const { selections, heroImage, model } = await request.json();
+    const { selections, heroImage, model, stepSlug } = await request.json();
 
     if (!selections || typeof selections !== "object") {
       return NextResponse.json(
@@ -45,8 +49,31 @@ export async function POST(request: Request) {
       );
     }
 
+    // Resolve org and floorplan from DB
+    const supabase = getServiceClient();
+    const { data: org } = await supabase
+      .from("organizations")
+      .select("id")
+      .eq("slug", SM_ORG_SLUG)
+      .single();
+
+    if (!org) {
+      return NextResponse.json({ error: "Organization not found" }, { status: 404 });
+    }
+
+    const { data: floorplan } = await supabase
+      .from("floorplans")
+      .select("id")
+      .eq("org_id", org.id)
+      .eq("slug", SM_FLOORPLAN_SLUG)
+      .single();
+
+    if (!floorplan) {
+      return NextResponse.json({ error: "Floorplan not found" }, { status: 404 });
+    }
+
     // Validate that all selection keys are known visual subcategory IDs
-    const validIds = getVisualSubCategoryIds();
+    const validIds = await getVisualSubCategoryIdsFromDb(org.id);
     const unknownKeys = Object.keys(selections).filter((k) => !validIds.has(k));
     if (unknownKeys.length > 0) {
       return NextResponse.json(
@@ -78,8 +105,6 @@ export async function POST(request: Request) {
     inProgressHashes.add(selectionsHash);
 
     try {
-      const supabase = getServiceClient();
-
       // Check cache
       const { data: cached } = await supabase
         .from("generated_images")
@@ -100,6 +125,23 @@ export async function POST(request: Request) {
         });
       }
 
+      // Fetch step AI config from DB
+      let spatialHints: Record<string, string> = {};
+      let sceneDescription: string | null = null;
+      let stepId: string | undefined;
+
+      if (stepSlug) {
+        const aiConfig = await getStepAiConfig(stepSlug, floorplan.id);
+        if (aiConfig) {
+          spatialHints = aiConfig.spatialHints;
+          sceneDescription = aiConfig.sceneDescription;
+          stepId = aiConfig.stepId;
+        }
+      }
+
+      // Build option lookup from DB
+      const optionLookup = await getOptionLookup(org.id);
+
       // Read the base room image from public/
       const imagePath = path.join(process.cwd(), "public", heroImage);
       const imageBuffer = await readFile(imagePath);
@@ -108,7 +150,12 @@ export async function POST(request: Request) {
       const heroFilename = path.basename(heroImage);
 
       // Build edit-style prompt + load swatch images (all selections with swatches)
-      const { prompt, swatches } = await buildEditPrompt(selections, heroImage);
+      const { prompt, swatches } = await buildEditPrompt(
+        selections,
+        optionLookup,
+        spatialHints,
+        sceneDescription,
+      );
 
       let outputBuffer: Buffer;
 
@@ -211,6 +258,8 @@ export async function POST(request: Request) {
         selections_json: { ...selections, _model: modelName },
         image_path: outputPath,
         prompt,
+        step_id: stepId ?? null,
+        model: modelName,
       }, { onConflict: 'selections_hash' });
 
       if (upsertError) {

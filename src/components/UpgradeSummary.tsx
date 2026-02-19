@@ -1,22 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { categories } from "@/lib/options-data";
 import { calculateTotal, formatPrice } from "@/lib/pricing";
-import { steps } from "@/lib/step-config";
-import type { SubCategory } from "@/types";
-
-// Steps that have hero images to display
-const roomImages: { stepId: string; label: string; src: string }[] = steps
-  .filter((s) => {
-    const img = Array.isArray(s.heroImage) ? s.heroImage[0] : s.heroImage;
-    return img && img.length > 0;
-  })
-  .map((s) => ({
-    stepId: s.id,
-    label: s.name,
-    src: Array.isArray(s.heroImage) ? s.heroImage[0] : s.heroImage,
-  }));
+import type { Category, SubCategory } from "@/types";
+import type { StepConfig } from "@/lib/step-config";
 
 interface UpgradeSummaryProps {
   selections: Record<string, string>;
@@ -24,15 +11,9 @@ interface UpgradeSummaryProps {
   generatedImageUrls: Record<string, string>;
   planName: string;
   community: string;
+  categories: Category[];
+  steps: StepConfig[];
   onBack: () => void;
-}
-
-// Build lookup maps
-const subCategoryMap = new Map<string, SubCategory>();
-for (const cat of categories) {
-  for (const sub of cat.subCategories) {
-    subCategoryMap.set(sub.id, sub);
-  }
 }
 
 interface UpgradeItem {
@@ -54,11 +35,39 @@ export function UpgradeSummary({
   generatedImageUrls,
   planName,
   community,
+  categories,
+  steps,
   onBack,
 }: UpgradeSummaryProps) {
+  // Steps that have hero images to display
+  const roomImages = useMemo(() =>
+    steps
+      .filter((s) => {
+        const img = Array.isArray(s.heroImage) ? s.heroImage[0] : s.heroImage;
+        return img && img.length > 0;
+      })
+      .map((s) => ({
+        stepId: s.id,
+        label: s.name,
+        src: Array.isArray(s.heroImage) ? s.heroImage[0] : s.heroImage,
+      })),
+    [steps]
+  );
+
+  // Build lookup map
+  const subCategoryMap = useMemo(() => {
+    const map = new Map<string, SubCategory>();
+    for (const cat of categories) {
+      for (const sub of cat.subCategories) {
+        map.set(sub.id, sub);
+      }
+    }
+    return map;
+  }, [categories]);
+
   const total = useMemo(
-    () => calculateTotal(selections, quantities),
-    [selections, quantities]
+    () => calculateTotal(selections, quantities, categories),
+    [selections, quantities, categories]
   );
 
   // Build grouped upgrade list from step config (only paid upgrades)
@@ -96,7 +105,7 @@ export function UpgradeSummary({
     }
 
     return groups;
-  }, [selections, quantities]);
+  }, [selections, quantities, steps, subCategoryMap]);
 
   return (
     <div className="min-h-screen bg-white print:bg-white">
@@ -139,10 +148,8 @@ export function UpgradeSummary({
         {/* Room Images */}
         <div className="grid grid-cols-2 gap-2 mb-8">
           {roomImages.map((room) => {
-            // Replace base image with generated image if available for this step
             const generatedUrl = generatedImageUrls[room.stepId];
             const imgSrc = generatedUrl || room.src;
-            const isGenerated = !!generatedUrl;
 
             return (
               <div key={room.stepId} className="relative overflow-hidden">
@@ -156,7 +163,7 @@ export function UpgradeSummary({
           })}
         </div>
 
-        {/* Upgrade List — always show table structure */}
+        {/* Upgrade List */}
         <div className="space-y-6">
           {upgradeGroups.length > 0 ? (
             upgradeGroups.map((group) => (

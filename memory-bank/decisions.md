@@ -122,3 +122,35 @@
 ## D29: GPT-5.2 via Responses API as test path
 **Context**: gpt-image-1.5 is "almost good" but not production-quality. Tested GPT-5.2 (reasoning model) via Responses API with image_generation tool for better instruction following.
 **Decision**: Added `&model=gpt-5.2` URL param to toggle. GPT-5.2 produces better detail preservation. For demo, 1.5 is sufficient. Production would need per-surface masking, multi-pass inpainting, or a fine-tuned model. Cache hash includes model name to avoid collisions between models.
+
+## D30: Product name — Finch
+**Context**: Needed a product name. "UpgradeVision" was a working title.
+**Decision**: Finch. Pending LLC registration. Short, memorable, not generic SaaS-sounding. Domain TBD (finchweb.io frontrunner).
+
+## D31: SM demo as sales tool, not the product
+**Context**: Stone Martin uses BuilderLinq — they're unlikely to become a paying customer. But the demo is the most persuasive sales tool we have.
+**Decision**: Keep SM demo alive and maintained. It's what we show every prospect. The product is Finch — multi-tenant, onboards multiple builders. SM demo is the proof-of-concept, not the product itself.
+
+## D32: Builder demos as the repeatable unit
+**Context**: Each builder prospect needs to see what Finch looks like with their floor plans and options.
+**Decision**: Build lighter demos for each prospect — same bones as SM (step wizard, swatch grids, AI viz, price tracking) but less exhaustive data entry. SM had 350+ options and 166 scraped swatches; a prospect demo might have 50-100 options for the key visual categories. Enough to demonstrate the wow factor.
+
+## D33: Brand subagents for Finch identity
+**Context**: Building a real product needs consistent brand voice, copy, growth strategy, and legal compliance.
+**Decision**: Added four specialized subagents: brand-guardian (visual identity and voice), copywriter (builder-facing copy), growth-hacker (acquisition and outreach), legal-compliance-checker (privacy, ToS, AI disclosure). These ensure consistency as we build marketing materials, landing page, and outreach.
+
+## D34: Single Supabase project for multi-tenant
+**Context**: Could use one Supabase project per builder or one shared project with RLS.
+**Decision**: Single Supabase project, row-level security with `org_id` on every table. Simpler ops, shared infrastructure, central admin can query across all orgs. Split later only if a builder needs data residency or generates enough traffic to need isolation. See `product-architecture.md` for full schema.
+
+## D35: Text PKs for categories/subcategories/options
+**Context**: Migrating from static TypeScript to Supabase. Existing code uses string IDs everywhere — in `buyer_selections.selections`, `generated_images.selections_hash`, URL params, `photoBaseline` references.
+**Decision**: Use text primary keys (the existing slug IDs) for categories, subcategories, and options tables. UUID PKs for organizations, floorplans, steps, step_sections, step_ai_config. Preserves all existing cache hashes and selection data without migration.
+
+## D36: Subdomain routing for production URLs
+**Context**: Builder demos need branded URLs. Options: path-based (`getfinch.app/stone-martin/kinkade`) vs subdomain (`stonemartin.getfinch.app/kinkade`).
+**Decision**: Subdomains. Cleaner for builders — feels like their own tool. Proxy layer maps subdomains to Next.js path routes internally. No Next.js middleware needed.
+
+## D37: Landing page copy — benefit-first, not personalized
+**Context**: Landing hero had buyer's name ("May Baten's Upgrade Selections"). Needed something generic and compelling for demo purposes.
+**Decision**: Heading: "See Your Kitchen Before You Choose". CTA: "Start the Demo". Benefit-first framing — emphasizes the AI visualization value prop. Brand guardian approved.

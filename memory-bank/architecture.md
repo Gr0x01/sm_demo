@@ -6,8 +6,9 @@
 Browser (Next.js client)
   ├── / — Finch landing page (static, server component)
   ├── /[orgSlug]/[floorplanSlug] — Upgrade Picker (per-builder demo)
-  │     ├── LandingHero → UpgradePicker → UpgradeSummary (client-side flow via ?page= params)
-  │     ├── Options data loaded from static TypeScript config (→ Supabase later)
+  │     ├── page.tsx — async server component, fetches all data from Supabase
+  │     ├── DemoPageClient.tsx — client wrapper (LandingHero → UpgradePicker → UpgradeSummary)
+  │     ├── All option/step/config data passed as props from server component
   │     ├── Price calculation (client-side, instant)
   │     └── Visual change detection (did a visual sub-category change?)
   ├── /admin — Admin dashboard (no-auth, demo only)
@@ -15,29 +16,28 @@ Browser (Next.js client)
 
 Server (Next.js API route)
   └── POST /api/generate
-        ├── Receives: selections (visual sub-categories only) + heroImage + highImpactIds
+        ├── Receives: selections + heroImage + highImpactIds + stepSlug
+        ├── Fetches spatial hints + scene description from Supabase (step_ai_config)
+        ├── Builds option lookup from Supabase (categories → subcategories → options)
         ├── Hashes visual selections → check Supabase cache
         ├── Cache HIT → return cached image URL instantly
         ├── Cache MISS:
         │     ├── Build prompt + load swatch images (high-impact get images, others text-only)
         │     ├── Call OpenAI images.edit (gpt-image-1.5) with room photo + swatch images
-        │     ├── Store result in Supabase (image in Storage, metadata in table)
+        │     ├── Store result in Supabase (image in Storage, metadata + step_id + model in table)
         │     └── Return image URL
         └── Returns: image URL + cache_hit boolean
 
 Supabase
-  ├── Table: generated_images
-  │     ├── id (uuid)
-  │     ├── selections_hash (text, unique) — deterministic hash of visual selections
-  │     ├── selections_json (jsonb) — the actual selections for debugging
-  │     ├── image_path (text) — path in Supabase Storage
-  │     ├── prompt (text) — the prompt used
-  │     └── created_at (timestamptz)
+  ├── Tables: organizations, floorplans, categories, subcategories, options,
+  │           steps, step_sections, step_ai_config (multi-tenant schema)
+  ├── Table: generated_images (cache — now includes step_id + model columns)
+  ├── Table: buyer_selections (per-buyer selection persistence)
   └── Storage bucket: kitchen-images
         └── {selections_hash}.png
 ```
 
-Option data is static TypeScript (will migrate to Supabase for multi-tenant). Selections state is client-side React. Supabase currently only for caching generated images.
+**Data flow**: All option/step/AI-config data lives in Supabase. The server component in `page.tsx` fetches via `src/lib/db-queries.ts` and passes to client components as props. API routes also fetch from DB. Static TypeScript files (`options-data.ts`, `step-config.ts`) remain as seed source but are no longer imported at runtime.
 
 ## URL & Multi-Tenant Strategy
 
@@ -47,13 +47,13 @@ Option data is static TypeScript (will migrate to Supabase for multi-tenant). Se
 - `/admin` → static route, not caught by dynamic segments
 - `/api/*` → static routes, unaffected
 
-**Production URLs** (future, via proxy):
+**Production URLs** (decided: subdomains):
 - `getfinch.app` → Finch landing page
 - `stonemartin.getfinch.app/kinkade` → builder demo
 - Proxy maps subdomains → path-based routes internally
 - No Next.js middleware — subdomain resolution at proxy layer
 
-**Buyer access model**: Open page, no auth required. Anonymous session via cookie. Buyer can save selections by entering name/email → creates persistent retrievable session. Builder sees all saved sessions in admin.
+**Buyer access model**: Open page, no auth required. Hardcoded buyer ID for demo. Selections persisted to `buyer_selections` table.
 
 ## Cache Flow
 
@@ -184,16 +184,19 @@ src/
 │   ├── layout.tsx                  # Root layout — Finch branding
 │   ├── globals.css
 │   ├── [orgSlug]/[floorplanSlug]/
-│   │   ├── page.tsx               # Demo picker (client component, LandingHero → picker → summary)
+│   │   ├── page.tsx               # Server component — fetches all data from Supabase
+│   │   ├── DemoPageClient.tsx     # Client wrapper (LandingHero → picker → summary)
 │   │   └── layout.tsx             # Demo layout — builder-specific metadata
 │   ├── admin/page.tsx              # Admin UI — view/delete cached generated images
 │   └── api/
 │       ├── admin/images/route.ts   # GET all cached images, DELETE single or all
-│       ├── generate/route.ts
+│       ├── generate/
+│       │   ├── route.ts            # POST — fetches AI config from DB, generates image
+│       │   └── check/route.ts      # POST — cache check, validates against DB
 │       └── selections/[buyerId]/route.ts
 ├── components/
 │   ├── LandingHero.tsx
-│   ├── UpgradePicker.tsx        # Main container — step wizard + two-column layout
+│   ├── UpgradePicker.tsx        # Main container — all data via props (no static imports)
 │   ├── SidebarPanel.tsx         # Sticky sidebar: image, generate, nav, total, continue
 │   ├── StepNav.tsx              # Step circles with connector lines
 │   ├── StepHero.tsx             # Room photo with AI overlay, compact mode for sidebar
@@ -203,15 +206,19 @@ src/
 │   ├── CompactOptionList.tsx    # Tight single-line rows for non-visual options
 │   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
 │   ├── GenerateButton.tsx
-│   └── UpgradeSummary (room images grid, upgrade table, PDF via window.print).tsx
+│   └── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
 ├── lib/
-│   ├── options-data.ts      # All Kinkade plan options + SM website image URLs
-│   ├── step-config.ts       # Step→subcategory mapping for wizard layout
-│   ├── pricing.ts           # Price calculation
-│   ├── generate.ts          # Prompt construction
+│   ├── db-queries.ts        # All Supabase queries — org, floorplan, categories, steps, AI config
+│   ├── options-data.ts      # Static seed source (no longer imported at runtime)
+│   ├── step-config.ts       # Static seed source (no longer imported at runtime)
+│   ├── pricing.ts           # Price calculation (accepts categories as param)
+│   ├── generate.ts          # Prompt construction (accepts optionLookup, spatialHints, sceneDescription)
 │   └── supabase.ts          # Supabase client + cache helpers
 └── types/
     └── index.ts
+
+scripts/
+└── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
 
 public/
 ├── logo.svg                 # Stone Martin Builders logo (currentColor fill)

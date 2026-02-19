@@ -5,14 +5,12 @@ import type { ContractPhase } from "@/lib/contract-phase";
 
 interface LandingHeroProps {
   onStart: (phase: ContractPhase) => void;
-  buyerName?: string;
   planName?: string;
   community?: string;
 }
 
 export function LandingHero({
   onStart,
-  buyerName,
   planName = "Kinkade",
   community = "McClain Landing Phase 7",
 }: LandingHeroProps) {
@@ -34,10 +32,7 @@ export function LandingHero({
             Stone Martin Builders
           </h2>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight text-[var(--color-navy)] mb-4">
-            {buyerName
-              ? <>{buyerName}&rsquo;s <span className="text-[var(--color-accent)]">Upgrade Selections</span></>
-              : <>Your <span className="text-[var(--color-accent)]">Upgrade Selections</span></>
-            }
+            See Your Kitchen <span className="text-[var(--color-accent)]">Before You Choose</span>
           </h1>
           <p className="text-lg text-gray-500">
             {planName} Plan &mdash; {community}
@@ -70,7 +65,7 @@ export function LandingHero({
             onClick={() => onStart(phase)}
             className="inline-flex items-center gap-2 px-8 py-4 bg-[var(--color-navy)] text-white text-lg font-semibold hover:bg-[#243358] transition-all duration-150 shadow-lg hover:shadow-xl active:scale-[0.98] cursor-pointer"
           >
-            Choose Your Upgrades
+            Start the Demo
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="h-5 w-5"

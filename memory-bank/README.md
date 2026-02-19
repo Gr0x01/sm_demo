@@ -1,44 +1,37 @@
-# Stone Martin Builders — Upgrade Picker + Kitchen Visualizer
+# Finch — AI-Powered Upgrade Visualization for Home Builders
 
-**Client**: Stone Martin Builders (Alabama)
-**Type**: Demo / Prototype — potential full product build
+**Product**: Finch — interactive upgrade picker with AI-generated room visualization
 **Developer**: Rashaad
+**Stage**: Pre-revenue. SM demo complete. Building product + landing page.
 
-## What This Does
+## What Finch Does
 
-Stone Martin Builders currently gives homebuyers a **printed PDF** of upgrade options (Kinkade plan, McClain Landing Phase 7). Buyers choose $40K+ in upgrades with no visual context, no pricing feedback, and no nudges toward high-value options.
+Home builders sell $8-12K in upgrades per home from printed PDFs. Buyers choose with no visual context. Finch replaces that with an interactive upgrade picker where buyers see AI-generated images of their selections in the actual floor plan. Builders sell more upgrades with less friction.
 
-This demo replaces that with an **interactive upgrade picker with AI kitchen visualization**: browse all upgrade categories, select options with real pricing, see social proof nudges, and generate AI images showing what the kitchen looks like with those choices.
+## Current State
 
-### The Problem
-- Buyers choose $40K+ in home upgrades from a printed PDF
-- No visual context for what combinations look like
-- No real-time price tracking as they select
-- No upsell intelligence or social proof
-- Decision paralysis → slower sales cycle, lower upgrade revenue
+### Stone Martin Demo (Complete — Keep Active)
+Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166 scraped swatch images, AI kitchen visualization. This is the proof-of-concept shown to every prospect. Lives in this repo.
 
-### The Solution
-- Interactive upgrade picker with ALL categories from the real pricing sheet
-- Real pricing data from the Kinkade plan PDF
-- AI-generated kitchen visualization for visual options
-- Social proof nudges ("Most popular", "73% of buyers choose this") to drive upsell
-- Real-time price tracker summing all selections
-- Swatch images sourced from stonemartinbuilders.com/media/ where available
+**SM is NOT a target customer** — they use BuilderLinq. The demo proves the concept to builders who don't have sophisticated tools.
+
+### Finch Product (Building Now)
+- Landing page at finchweb.io (or similar)
+- Multi-tenant architecture for onboarding multiple builders
+- Builder demos: lighter than SM (same bones, less exhaustive data entry)
+- See `product-architecture.md` for the multi-tenant plan
+- See `landing-page.md` for the marketing site design
+- See `VISION.md` for full business plan, pricing, GTM
 
 ## Tech Stack
 
 | Service | Purpose |
 |---------|---------|
 | **Next.js 16** | App framework |
-| **Vercel AI SDK** | Model-agnostic LLM/image calls |
-| **OpenAI (gpt-image-1)** | Image generation |
-| **Supabase** | Database (image cache) + Storage (generated images) |
+| **OpenAI (gpt-image-1.5)** | Image generation (via images.edit) |
+| **Supabase** | Database + Storage (image cache now, multi-tenant later) |
 | **Tailwind CSS v4** | Styling |
 | **Vercel** | Hosting |
-
-## Data Source
-
-All option names, categories, and prices come from the **real Stone Martin pricing PDF** — Kinkade plan, McClain Landing Phase 7 (valid through 2/12/2026). Swatch images come from `stonemartinbuilders.com/media/` for most visual options.
 
 ## Commands
 
@@ -50,7 +43,7 @@ npm run build        # production build
 ## Environment Variables
 
 ```
-OPENAI_API_KEY=              # For image generation (gpt-image-1)
+OPENAI_API_KEY=              # For image generation (gpt-image-1.5)
 NEXT_PUBLIC_SUPABASE_URL=    # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase anon key
 SUPABASE_SERVICE_ROLE_KEY=   # Supabase service role (server-side only)
@@ -61,6 +54,10 @@ SUPABASE_SERVICE_ROLE_KEY=   # Supabase service role (server-side only)
 | Doc | Read when... |
 |-----|------------|
 | `phases/current.md` | Starting work (ALWAYS) |
-| `product.md` | Building user-facing features |
-| `architecture.md` | Building backend/API/image pipeline |
+| `product.md` | Working on the SM demo or buyer-facing UI |
+| `architecture.md` | Working on SM demo backend/API/image pipeline |
+| `product-architecture.md` | Building multi-tenant product infrastructure |
+| `landing-page.md` | Building the marketing site |
+| `VISION.md` | Business strategy, pricing, GTM, competitive landscape |
 | `decisions.md` | Understanding "why" behind choices |
+| `research/` | Builder prospect lists for sales outreach |

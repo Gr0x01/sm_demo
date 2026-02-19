@@ -1,32 +1,17 @@
 "use client";
 
 import { useReducer, useCallback, useMemo, useState, useEffect, useRef } from "react";
-import type { SelectionState, SelectionAction, SubCategory } from "@/types";
-import { categories, getDefaultSelections, getVisualSubCategoryIds } from "@/lib/options-data";
+import type { SelectionState, SelectionAction, SubCategory, Category } from "@/types";
 import { calculateTotal } from "@/lib/pricing";
-import { steps } from "@/lib/step-config";
+import type { StepConfig } from "@/lib/step-config";
 import { StepNav } from "./StepNav";
 import { StepHero } from "./StepHero";
 import { StepContent } from "./StepContent";
 import { PriceTracker } from "./PriceTracker";
 import { SidebarPanel } from "./SidebarPanel";
 import { SyncModal } from "./SyncModal";
-import { getSyncPartner } from "@/lib/sync-pairs";
 import { ChevronRight } from "lucide-react";
-import { CONTRACT_LOCKED_IDS } from "@/lib/contract-phase";
 import type { ContractPhase } from "@/lib/contract-phase";
-
-const visualSubCategoryIds = getVisualSubCategoryIds();
-
-// Build a lookup: subCategoryId → SubCategory object
-const subCategoryMap = new Map<string, SubCategory>();
-for (const cat of categories) {
-  for (const sub of cat.subCategories) {
-    subCategoryMap.set(sub.id, sub);
-  }
-}
-
-const defaultSelections = getDefaultSelections();
 
 const SKIP_FOR_GENERATION = new Set([
   "fireplace-mantel",
@@ -65,33 +50,49 @@ const ALWAYS_SEND = new Set([
   "secondary-shower",
 ]);
 
-/** Extract the visual selections relevant to a step's generation (shared by generate + cache check). */
-function getStepVisualSelections(
-  step: (typeof steps)[number],
-  allSelections: Record<string, string>
-): Record<string, string> {
-  const stepSubCategoryIds = new Set([
-    ...step.sections.flatMap((sec) => sec.subCategoryIds),
-    ...(step.alsoIncludeIds ?? []),
-  ]);
-  const baseline = step.photoBaseline ?? {};
-  const defaults = getDefaultSelections();
-  const result: Record<string, string> = {};
-  for (const [subId, optId] of Object.entries(allSelections)) {
-    // Skip if it matches what's already in the photo (photoBaseline) or the $0 default
-    // Always send paint/flooring since we can't identify what's in the photo
-    const baselineId = baseline[subId] ?? defaults[subId];
-    const alwaysSend = ALWAYS_SEND.has(subId);
-    if (
-      visualSubCategoryIds.has(subId) &&
-      stepSubCategoryIds.has(subId) &&
-      !SKIP_FOR_GENERATION.has(subId) &&
-      (alwaysSend || optId !== baselineId)
-    ) {
-      result[subId] = optId;
+interface UpgradePickerProps {
+  onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrls: Record<string, string> }) => void;
+  buyerId?: string;
+  contractPhase: ContractPhase;
+  onNavigateHome: () => void;
+  categories: Category[];
+  steps: StepConfig[];
+  contractLockedIds: string[];
+  syncPairs: { a: string; b: string; label: string }[];
+}
+
+function getDefaultSelectionsFromCategories(categories: Category[]): Record<string, string> {
+  const selections: Record<string, string> = {};
+  for (const category of categories) {
+    for (const sub of category.subCategories) {
+      const defaultOption = sub.options.find((o) => o.price === 0);
+      if (defaultOption) {
+        selections[sub.id] = defaultOption.id;
+      }
     }
   }
-  return result;
+  return selections;
+}
+
+function getVisualSubCategoryIdsFromCategories(categories: Category[]): Set<string> {
+  const ids = new Set<string>();
+  for (const category of categories) {
+    for (const sub of category.subCategories) {
+      if (sub.isVisual) ids.add(sub.id);
+    }
+  }
+  return ids;
+}
+
+function getSyncPartnerFromPairs(
+  changedSubId: string,
+  syncPairs: { a: string; b: string; label: string }[]
+): { partnerSubId: string; label: string } | null {
+  for (const pair of syncPairs) {
+    if (pair.a === changedSubId) return { partnerSubId: pair.b, label: pair.label };
+    if (pair.b === changedSubId) return { partnerSubId: pair.a, label: pair.label };
+  }
+  return null;
 }
 
 /** Deterministic JSON string — sorted keys so key insertion order doesn't affect comparison. */
@@ -103,101 +104,136 @@ function stableStringify(obj: Record<string, string>): string {
   return JSON.stringify(sorted);
 }
 
-function reducer(state: SelectionState, action: SelectionAction): SelectionState {
-  switch (action.type) {
-    case "SELECT_OPTION": {
-      const newSelections = {
-        ...state.selections,
-        [action.subCategoryId]: action.optionId,
-      };
-      return { ...state, selections: newSelections };
-    }
-    case "SET_QUANTITY": {
-      const newQuantities = { ...state.quantities, [action.subCategoryId]: action.quantity };
-      const newSelections = {
-        ...state.selections,
-        [action.subCategoryId]: action.quantity > 0 ? action.addOptionId : action.noUpgradeOptionId,
-      };
-      return { ...state, selections: newSelections, quantities: newQuantities };
-    }
-    case "LOAD_SELECTIONS": {
-      return {
-        ...state,
-        selections: { ...state.selections, ...action.selections },
-        quantities: { ...action.quantities },
-      };
-    }
-    case "START_GENERATING": {
-      const next = new Set(state.generatingStepIds);
-      next.add(action.stepId);
-      const nextErrors = { ...state.errors };
-      delete nextErrors[action.stepId];
-      return { ...state, generatingStepIds: next, errors: nextErrors };
-    }
-    case "GENERATION_COMPLETE": {
-      const next = new Set(state.generatingStepIds);
-      next.delete(action.stepId);
-      return {
-        ...state,
-        generatingStepIds: next,
-        generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
-        hasEverGenerated: true,
-        generatedWithSelections: { ...state.generatedWithSelections, [action.stepId]: action.selectionsSnapshot },
-      };
-    }
-    case "CLEAR_SELECTIONS":
-      return {
-        ...state,
-        selections: getDefaultSelections(),
-        quantities: {},
-        generatedWithSelections: {},
-      };
-    case "GENERATION_ERROR": {
-      const next = new Set(state.generatingStepIds);
-      next.delete(action.stepId);
-      return { ...state, generatingStepIds: next, errors: { ...state.errors, [action.stepId]: action.error } };
-    }
-    default:
-      return state;
-  }
-}
+export function UpgradePicker({
+  onFinish,
+  buyerId,
+  contractPhase,
+  onNavigateHome,
+  categories,
+  steps,
+  contractLockedIds,
+  syncPairs,
+}: UpgradePickerProps) {
+  const visualSubCategoryIds = useMemo(
+    () => getVisualSubCategoryIdsFromCategories(categories),
+    [categories]
+  );
 
-function getInitialState(): SelectionState {
-  return {
-    selections: getDefaultSelections(),
+  const subCategoryMap = useMemo(() => {
+    const map = new Map<string, SubCategory>();
+    for (const cat of categories) {
+      for (const sub of cat.subCategories) {
+        map.set(sub.id, sub);
+      }
+    }
+    return map;
+  }, [categories]);
+
+  const defaultSelections = useMemo(
+    () => getDefaultSelectionsFromCategories(categories),
+    [categories]
+  );
+
+  const lockedSubCategoryIds = useMemo(
+    () => (contractPhase === "post-contract" ? new Set(contractLockedIds) : new Set<string>()),
+    [contractPhase, contractLockedIds]
+  );
+
+  /** Extract the visual selections relevant to a step's generation (shared by generate + cache check). */
+  const getStepVisualSelections = useCallback(
+    (step: StepConfig, allSelections: Record<string, string>): Record<string, string> => {
+      const stepSubCategoryIds = new Set([
+        ...step.sections.flatMap((sec) => sec.subCategoryIds),
+        ...(step.alsoIncludeIds ?? []),
+      ]);
+      const baseline = step.photoBaseline ?? {};
+      const result: Record<string, string> = {};
+      for (const [subId, optId] of Object.entries(allSelections)) {
+        const baselineId = baseline[subId] ?? defaultSelections[subId];
+        const alwaysSend = ALWAYS_SEND.has(subId);
+        if (
+          visualSubCategoryIds.has(subId) &&
+          stepSubCategoryIds.has(subId) &&
+          !SKIP_FOR_GENERATION.has(subId) &&
+          (alwaysSend || optId !== baselineId)
+        ) {
+          result[subId] = optId;
+        }
+      }
+      return result;
+    },
+    [visualSubCategoryIds, defaultSelections]
+  );
+
+  function reducer(state: SelectionState, action: SelectionAction): SelectionState {
+    switch (action.type) {
+      case "SELECT_OPTION": {
+        const newSelections = {
+          ...state.selections,
+          [action.subCategoryId]: action.optionId,
+        };
+        return { ...state, selections: newSelections };
+      }
+      case "SET_QUANTITY": {
+        const newQuantities = { ...state.quantities, [action.subCategoryId]: action.quantity };
+        const newSelections = {
+          ...state.selections,
+          [action.subCategoryId]: action.quantity > 0 ? action.addOptionId : action.noUpgradeOptionId,
+        };
+        return { ...state, selections: newSelections, quantities: newQuantities };
+      }
+      case "LOAD_SELECTIONS": {
+        return {
+          ...state,
+          selections: { ...state.selections, ...action.selections },
+          quantities: { ...action.quantities },
+        };
+      }
+      case "START_GENERATING": {
+        const next = new Set(state.generatingStepIds);
+        next.add(action.stepId);
+        const nextErrors = { ...state.errors };
+        delete nextErrors[action.stepId];
+        return { ...state, generatingStepIds: next, errors: nextErrors };
+      }
+      case "GENERATION_COMPLETE": {
+        const next = new Set(state.generatingStepIds);
+        next.delete(action.stepId);
+        return {
+          ...state,
+          generatingStepIds: next,
+          generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
+          hasEverGenerated: true,
+          generatedWithSelections: { ...state.generatedWithSelections, [action.stepId]: action.selectionsSnapshot },
+        };
+      }
+      case "CLEAR_SELECTIONS":
+        return {
+          ...state,
+          selections: defaultSelections,
+          quantities: {},
+          generatedWithSelections: {},
+        };
+      case "GENERATION_ERROR": {
+        const next = new Set(state.generatingStepIds);
+        next.delete(action.stepId);
+        return { ...state, generatingStepIds: next, errors: { ...state.errors, [action.stepId]: action.error } };
+      }
+      default:
+        return state;
+    }
+  }
+
+  const [state, dispatch] = useReducer(reducer, null, (): SelectionState => ({
+    selections: defaultSelections,
     quantities: {},
     generatedImageUrls: {},
     generatingStepIds: new Set<string>(),
     hasEverGenerated: false,
     generatedWithSelections: {},
     errors: {},
-  };
-}
+  }));
 
-// Check if a step has any non-zero-price selections
-function stepHasUpgrades(
-  step: typeof steps[number],
-  selections: Record<string, string>,
-  quantities: Record<string, number>
-): boolean {
-  for (const section of step.sections) {
-    for (const subId of section.subCategoryIds) {
-      const sub = subCategoryMap.get(subId);
-      if (!sub) continue;
-      const selectedId = selections[subId];
-      if (!selectedId) continue;
-      const option = sub.options.find((o) => o.id === selectedId);
-      if (option && option.price > 0) {
-        const qty = sub.isAdditive ? (quantities[subId] || 0) : 1;
-        if (qty > 0) return true;
-      }
-    }
-  }
-  return false;
-}
-
-export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome }: { onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrls: Record<string, string> }) => void; buyerId?: string; contractPhase: ContractPhase; onNavigateHome: () => void }) {
-  const [state, dispatch] = useReducer(reducer, null, getInitialState);
   const [activeStepId, setActiveStepIdRaw] = useState(() => {
     if (typeof window === "undefined") return steps[0].id;
     const params = new URLSearchParams(window.location.search);
@@ -206,7 +242,6 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
     return steps[0].id;
   });
 
-  // Wrap setActiveStepId to also update the URL
   const setActiveStepId = useCallback((stepId: string) => {
     setActiveStepIdRaw(stepId);
     const url = new URL(window.location.href);
@@ -214,7 +249,6 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
     window.history.pushState({}, "", url.toString());
   }, []);
 
-  // Ensure step param is in URL on mount (replaceState, no extra history entry)
   useEffect(() => {
     const url = new URL(window.location.href);
     if (!url.searchParams.get("step")) {
@@ -223,7 +257,6 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Listen for back/forward to update step
   useEffect(() => {
     const onPopState = () => {
       const params = new URLSearchParams(window.location.search);
@@ -234,15 +267,12 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+  }, [steps]);
+
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedRef = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
   const [headerHeight, setHeaderHeight] = useState(120);
-  const lockedSubCategoryIds = useMemo(
-    () => (contractPhase === "post-contract" ? CONTRACT_LOCKED_IDS : new Set<string>()),
-    [contractPhase]
-  );
   const [syncPrompt, setSyncPrompt] = useState<{
     sourceSubId: string;
     targetSubId: string;
@@ -251,23 +281,17 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
     label: string;
   } | null>(null);
 
-  // Measure header height dynamically
   useEffect(() => {
     const el = headerRef.current;
     if (!el) return;
-
     const ro = new ResizeObserver(() => {
       if (el) setHeaderHeight(el.offsetHeight);
     });
     ro.observe(el);
-
-    // Initial measurement
     setHeaderHeight(el.offsetHeight);
-
     return () => ro.disconnect();
   }, []);
 
-  // Set CSS variable for scroll-margin-top
   useEffect(() => {
     document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
   }, [headerHeight]);
@@ -285,9 +309,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
             quantities: data.quantities ?? {},
           });
 
-          // Check for cached generated images per step
-          // Use merged selections (defaults + loaded) so snapshots match the comparison source
-          const mergedSelections = { ...getDefaultSelections(), ...data.selections };
+          const mergedSelections = { ...defaultSelections, ...data.selections };
           const modelParam = new URLSearchParams(window.location.search).get("model");
           for (const step of steps) {
             if (!step.showGenerateButton) continue;
@@ -325,7 +347,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
       .catch(() => {
         hasLoadedRef.current = true;
       });
-  }, [buyerId]);
+  }, [buyerId, steps, defaultSelections, getStepVisualSelections]);
 
   // Auto-save selections (debounced 1s)
   useEffect(() => {
@@ -350,8 +372,29 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
   const activeStepIndex = steps.findIndex((s) => s.id === activeStepId);
 
   const total = useMemo(
-    () => calculateTotal(state.selections, state.quantities),
-    [state.selections, state.quantities]
+    () => calculateTotal(state.selections, state.quantities, categories),
+    [state.selections, state.quantities, categories]
+  );
+
+  // Check if a step has any non-zero-price selections
+  const stepHasUpgrades = useCallback(
+    (step: StepConfig, selections: Record<string, string>, quantities: Record<string, number>): boolean => {
+      for (const section of step.sections) {
+        for (const subId of section.subCategoryIds) {
+          const sub = subCategoryMap.get(subId);
+          if (!sub) continue;
+          const selectedId = selections[subId];
+          if (!selectedId) continue;
+          const option = sub.options.find((o) => o.id === selectedId);
+          if (option && option.price > 0) {
+            const qty = sub.isAdditive ? (quantities[subId] || 0) : 1;
+            if (qty > 0) return true;
+          }
+        }
+      }
+      return false;
+    },
+    [subCategoryMap]
   );
 
   const completionMap = useMemo(() => {
@@ -360,14 +403,13 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
       map[step.id] = stepHasUpgrades(step, state.selections, state.quantities);
     }
     return map;
-  }, [state.selections, state.quantities]);
+  }, [steps, state.selections, state.quantities, stepHasUpgrades]);
 
   const handleSelect = useCallback(
     (subCategoryId: string, optionId: string) => {
       dispatch({ type: "SELECT_OPTION", subCategoryId, optionId });
 
-      // Check if this subcategory has a sync partner
-      const partner = getSyncPartner(subCategoryId);
+      const partner = getSyncPartnerFromPairs(subCategoryId, syncPairs);
       if (!partner) return;
 
       const sourceSub = subCategoryMap.get(subCategoryId);
@@ -377,13 +419,11 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
       const selectedOption = sourceSub.options.find((o) => o.id === optionId);
       if (!selectedOption) return;
 
-      // Find matching option in partner by name
       const matchingOption = targetSub.options.find(
         (o) => o.name === selectedOption.name
       );
       if (!matchingOption) return;
 
-      // Don't prompt if partner already has the same selection
       const currentPartnerSelection = state.selections[partner.partnerSubId];
       if (currentPartnerSelection === matchingOption.id) return;
 
@@ -395,7 +435,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
         label: partner.label,
       });
     },
-    [state.selections]
+    [state.selections, syncPairs, subCategoryMap]
   );
 
   const handleSetQuantity = useCallback(
@@ -420,6 +460,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
         body: JSON.stringify({
           selections: visualSelections,
           heroImage: activeStep.heroImage,
+          stepSlug: activeStep.id,
           ...(modelParam ? { model: modelParam } : {}),
         }),
       });
@@ -432,7 +473,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
       const message = err instanceof Error ? err.message : "Something went wrong";
       dispatch({ type: "GENERATION_ERROR", stepId: activeStep.id, error: message });
     }
-  }, [state.selections, state.generatingStepIds, activeStep]);
+  }, [state.selections, state.generatingStepIds, activeStep, getStepVisualSelections]);
 
   const handleClearSelections = useCallback(() => {
     dispatch({ type: "CLEAR_SELECTIONS" });
@@ -443,7 +484,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
       setActiveStepId(steps[activeStepIndex + 1].id);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [activeStepIndex]);
+  }, [activeStepIndex, steps, setActiveStepId]);
 
   const isLastStep = activeStepIndex >= steps.length - 1;
   const nextStepName = isLastStep ? "" : steps[activeStepIndex + 1].name;
@@ -455,7 +496,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
     );
     const lastSnapshot = state.generatedWithSelections[activeStep.id];
     return currentSnapshot !== lastSnapshot;
-  }, [activeStep, state.selections, state.generatedWithSelections]);
+  }, [activeStep, state.selections, state.generatedWithSelections, getStepVisualSelections]);
 
   // Preload all generated images so step switching is instant
   useEffect(() => {
@@ -491,7 +532,7 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
       }
     }
     return summary;
-  }, [activeStep, state.selections]);
+  }, [activeStep, state.selections, subCategoryMap]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -565,7 +606,6 @@ export function UpgradePicker({ onFinish, buyerId, contractPhase, onNavigateHome
 
           {/* Right Column — scrollable options */}
           <div className="flex-1 min-w-0 pb-20 lg:pb-5">
-            {/* Step-specific upgrade options */}
             <StepContent
               key={activeStepId}
               step={activeStep}
