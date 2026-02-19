@@ -160,6 +160,7 @@ export function SidebarPanel({
       {/* AI Image — steps 1-4 */}
       {showImage && (
         <StepHero
+          key={step.id}
           step={step}
           generatedImageUrl={step.showGenerateButton ? generatedImageUrl : null}
           isGenerating={step.showGenerateButton ? isGenerating : false}
