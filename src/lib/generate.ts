@@ -82,6 +82,11 @@ export interface SwatchImage {
   mediaType: string;
 }
 
+/**
+ * Bump this when prompt semantics materially change so old cached images are not reused.
+ */
+export const GENERATION_CACHE_VERSION = "v7";
+
 const INVARIANT_RULES_BY_SUBCATEGORY: Record<string, string[]> = {
   "kitchen-cabinet-color": [
     "Apply cabinet color ONLY to perimeter/wall cabinets. Do NOT apply it to island cabinetry.",
@@ -105,7 +110,25 @@ const INVARIANT_RULES_BY_SUBCATEGORY: Record<string, string[]> = {
     "Keep the refrigerator in its built-in alcove. Do NOT move, resize, or relocate it.",
   ],
   "range": [
-    "Keep the range in the same back-wall cutout between the same cabinets. Do NOT move it or swap appliance type.",
+    "Keep the range in the same back-wall cutout between the same cabinets. Do NOT move or relocate it.",
+    "A kitchen range in this step is a SINGLE-oven appliance: exactly one oven door below the cooktop. Do NOT add a second/upper oven door or a stacked double-oven look.",
+  ],
+};
+
+const INVARIANT_RULES_BY_OPTION_ID: Record<string, string[]> = {
+  "range-ge-included-freestanding": [
+    "Freestanding range: include the raised backguard/control panel behind the burners.",
+    "This is still a single-oven range: one oven cavity/door only, with no upper oven compartment.",
+  ],
+  "range-ge-gas-slide-in": [
+    "Slide-in range: NO raised backguard panel; the cooktop sits flush with the countertop and backsplash is visible directly behind it.",
+    "If the source photo shows a freestanding range backguard, remove that backguard and restore matching backsplash tile directly behind the range.",
+    "This is still a single-oven range: one oven cavity/door only, with no upper oven compartment.",
+  ],
+  "range-ge-gas-slide-in-convection": [
+    "Slide-in range: NO raised backguard panel; the cooktop sits flush with the countertop and backsplash is visible directly behind it.",
+    "If the source photo shows a freestanding range backguard, remove that backguard and restore matching backsplash tile directly behind the range.",
+    "This is still a single-oven range: one oven cavity/door only, with no upper oven compartment.",
   ],
 };
 
@@ -127,6 +150,8 @@ export async function buildEditPrompt(
   const listLines: string[] = [];
   const swatches: SwatchImage[] = [];
   const selectedSubIds = new Set<string>();
+  const selectedOptionIds = new Set<string>();
+  const dynamicInvariantRules = new Set<string>();
   let listIndex = 1;
   let swatchIndex = 1;
 
@@ -142,6 +167,25 @@ export async function buildEditPrompt(
     selectedSubIds.add(subId);
 
     const { option, subCategory } = found;
+    selectedOptionIds.add(option.id);
+
+    if (subId === "range") {
+      const optionName = option.name.toLowerCase();
+      if (optionName.includes("slide in") || optionName.includes("slide-in")) {
+        dynamicInvariantRules.add(
+          "Selected range is slide-in: NO raised backguard panel; the cooktop sits flush with the countertop and backsplash is visible directly behind it."
+        );
+        dynamicInvariantRules.add(
+          "If the source photo shows a freestanding range backguard, remove that backguard and restore matching backsplash tile directly behind the range."
+        );
+      }
+      if (optionName.includes("freestanding") || optionName.includes("free standing")) {
+        dynamicInvariantRules.add(
+          "Selected range is freestanding: include a raised backguard/control panel behind the burners."
+        );
+      }
+    }
+
     const hint = spatialHints[subId];
     const descriptor = option.promptDescriptor?.trim();
     const descriptorSuffix = descriptor ? ` (${descriptor})` : "";
@@ -196,15 +240,36 @@ export async function buildEditPrompt(
     };
   }
 
-  const invariantRules: string[] = [];
+  const invariantRules = new Set<string>();
   for (const subId of selectedSubIds) {
     const rules = INVARIANT_RULES_BY_SUBCATEGORY[subId];
-    if (rules) invariantRules.push(...rules);
+    if (!rules) continue;
+    for (const rule of rules) invariantRules.add(rule);
+  }
+  for (const optionId of selectedOptionIds) {
+    const rules = INVARIANT_RULES_BY_OPTION_ID[optionId];
+    if (!rules) continue;
+    for (const rule of rules) invariantRules.add(rule);
+  }
+  for (const rule of dynamicInvariantRules) {
+    invariantRules.add(rule);
   }
   const invariantBlock =
-    invariantRules.length > 0
-      ? `\nCRITICAL FIXED-GEOMETRY RULES:\n${invariantRules.map((r) => `- ${r}`).join("\n")}`
+    invariantRules.size > 0
+      ? `\nCRITICAL FIXED-GEOMETRY RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
       : "";
+
+  const hasApplianceSelection =
+    selectedSubIds.has("dishwasher") ||
+    selectedSubIds.has("refrigerator") ||
+    selectedSubIds.has("range");
+  const editObjective = hasApplianceSelection
+    ? "Edit this room photo to match the selected finishes and appliance models."
+    : "Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:";
+  const applianceRuleBlock = hasApplianceSelection
+    ? `\n- Appliance selections (dishwasher/refrigerator/range) may require model-shape changes. Replace ONLY the selected appliance in-place to match the swatch and descriptor.
+- Keep each appliance in the same location, opening, perspective, and approximate footprint.`
+    : "";
 
   const sceneBlock = sceneDescription ? `SCENE: ${sceneDescription}\n\n` : "";
   const swatchMappingLine =
@@ -212,7 +277,7 @@ export async function buildEditPrompt(
       ? `Swatch mapping: after the base room photo, attached swatches are ordered #1..#${swatches.length}.`
       : "No swatch attachments were provided; use text instructions only.";
 
-  const prompt = `${sceneBlock}Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:
+  const prompt = `${sceneBlock}${editObjective}
 
 ${listLines.join("\n")}
 
@@ -222,12 +287,12 @@ RULES:
 - For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
 - The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
 - Different rooms have different flooring. Tile stays in bathrooms. LVP/hardwood stays in closets, bedrooms, and hallways. Do NOT extend one flooring material into another room.
-- Do NOT add, remove, or move any object. Keep exact counts of cabinets, drawer fronts, appliance doors, fixtures, and hardware.
+- Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
 - Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.
 - Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
 - If an edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.
 - Keep the exact camera angle, perspective, lighting, and room layout.
-- Photorealistic result with accurate shadows and reflections.${invariantBlock}`;
+- Photorealistic result with accurate shadows and reflections.${applianceRuleBlock}${invariantBlock}`;
 
   return { prompt, swatches };
 }

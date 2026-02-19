@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
-import { buildEditPrompt, hashSelections } from "@/lib/generate";
+import { buildEditPrompt, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getVisualSubCategoryIdsFromDb, getOptionLookup, getStepAiConfig } from "@/lib/db-queries";
 import { readFile } from "fs/promises";
 import path from "path";
+import { deflateSync } from "zlib";
 
 export const maxDuration = 120;
 
@@ -30,6 +31,94 @@ const ALLOWED_HERO_IMAGES = new Set([
 // Hardcoded org/floorplan for SM demo — will be dynamic in Phase 2
 const SM_ORG_SLUG = "stone-martin";
 const SM_FLOORPLAN_SLUG = "kinkade";
+const SLIDE_IN_RANGE_OPTION_IDS = new Set([
+  "range-ge-gas-slide-in",
+  "range-ge-gas-slide-in-convection",
+]);
+const SLIDE_IN_RANGE_REFINE_RECT = {
+  // Tuned for 1536x1024 output.
+  // Wide enough to include the full visible slide-in range footprint and nearby backsplash,
+  // but capped above the island-front panel area to avoid cabinet drift.
+  x: 800,
+  y: 330,
+  width: 540,
+  height: 290,
+};
+
+function mediaTypeFromExt(ext: string): string {
+  const normalized = ext.toLowerCase();
+  if (normalized === "jpg" || normalized === "jpeg") return "image/jpeg";
+  if (normalized === "png") return "image/png";
+  if (normalized === "webp") return "image/webp";
+  return `image/${normalized}`;
+}
+
+function crc32(buf: Buffer): Buffer {
+  let crc = 0xffffffff;
+  for (let i = 0; i < buf.length; i++) {
+    crc ^= buf[i];
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  crc ^= 0xffffffff;
+  const out = Buffer.alloc(4);
+  out.writeUInt32BE(crc >>> 0);
+  return out;
+}
+
+function pngChunk(type: string, data: Buffer): Buffer {
+  const len = Buffer.alloc(4);
+  len.writeUInt32BE(data.length);
+  const typeB = Buffer.from(type, "ascii");
+  const crc = crc32(Buffer.concat([typeB, data]));
+  return Buffer.concat([len, typeB, data, crc]);
+}
+
+function createRectEditMaskPng(
+  width: number,
+  height: number,
+  editRect: { x: number; y: number; width: number; height: number },
+): Buffer {
+  const raw = Buffer.alloc(height * (1 + width * 4));
+
+  for (let y = 0; y < height; y++) {
+    const rowStart = y * (1 + width * 4);
+    raw[rowStart] = 0;
+
+    for (let x = 0; x < width; x++) {
+      const px = rowStart + 1 + x * 4;
+      const inside =
+        x >= editRect.x &&
+        x < editRect.x + editRect.width &&
+        y >= editRect.y &&
+        y < editRect.y + editRect.height;
+
+      raw[px] = 0;
+      raw[px + 1] = 0;
+      raw[px + 2] = 0;
+      raw[px + 3] = inside ? 0 : 255;
+    }
+  }
+
+  const compressed = deflateSync(raw);
+  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(width, 0);
+  ihdr.writeUInt32BE(height, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  ihdr[10] = 0;
+  ihdr[11] = 0;
+  ihdr[12] = 0;
+
+  return Buffer.concat([
+    signature,
+    pngChunk("IHDR", ihdr),
+    pngChunk("IDAT", compressed),
+    pngChunk("IEND", Buffer.alloc(0)),
+  ]);
+}
 
 export async function POST(request: Request) {
   try {
@@ -93,7 +182,11 @@ export async function POST(request: Request) {
     lastRequestTime.value = now;
 
     const modelName = model === "gpt-5.2" ? "gpt-5.2" : "gpt-image-1.5";
-    const selectionsHash = hashSelections({ ...selections, _model: modelName });
+    const selectionsHash = hashSelections({
+      ...selections,
+      _model: modelName,
+      _cacheVersion: GENERATION_CACHE_VERSION,
+    });
 
     // Double-click guard — skip if this exact hash is already being generated
     if (inProgressHashes.has(selectionsHash)) {
@@ -149,9 +242,21 @@ export async function POST(request: Request) {
       const heroMime = heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`;
       const heroFilename = path.basename(heroImage);
 
-      // Build edit-style prompt + load swatch images (all selections with swatches)
+      const selectedRangeId = typeof selections.range === "string" ? selections.range : null;
+      const shouldRunSlideInRangeRefine =
+        heroImage === "/rooms/kitchen-close.webp" &&
+        !!selectedRangeId &&
+        SLIDE_IN_RANGE_OPTION_IDS.has(selectedRangeId);
+
+      // For known-stubborn slide-in range cases, defer range editing to pass 2 only.
+      // This keeps pass 1 focused on finishes and avoids incidental cabinet-geometry drift.
+      const primaryPassSelections = shouldRunSlideInRangeRefine
+        ? Object.fromEntries(Object.entries(selections).filter(([subId]) => subId !== "range"))
+        : selections;
+
+      // Build edit-style prompt + load swatch images
       const { prompt, swatches } = await buildEditPrompt(
-        selections,
+        primaryPassSelections,
         optionLookup,
         spatialHints,
         sceneDescription,
@@ -228,6 +333,66 @@ export async function POST(request: Request) {
         }
 
         outputBuffer = Buffer.from(imageData.b64_json, "base64");
+
+        if (shouldRunSlideInRangeRefine && selectedRangeId) {
+          try {
+            const selectedRange = optionLookup.get(`range:${selectedRangeId}`);
+            const selectedRangeName = selectedRange?.option.name ?? "slide-in range";
+            const selectedRangeDescriptor = selectedRange?.option.promptDescriptor?.trim();
+
+            const rangeRefineImages = [
+              await toFile(outputBuffer, "kitchen-pass-1.png", { type: "image/png" }),
+            ];
+
+            if (selectedRange?.option.swatchUrl) {
+              try {
+                const swatchPath = path.join(process.cwd(), "public", selectedRange.option.swatchUrl);
+                const swatchBuffer = await readFile(swatchPath);
+                const ext = path.extname(selectedRange.option.swatchUrl).slice(1).toLowerCase();
+                const swatchMime = mediaTypeFromExt(ext);
+                rangeRefineImages.push(
+                  await toFile(swatchBuffer, `range-swatch.${ext || "jpg"}`, { type: swatchMime })
+                );
+              } catch (swatchErr) {
+                console.warn("[generate] Range refine pass: failed to load range swatch", swatchErr);
+              }
+            }
+
+            const rangeMask = createRectEditMaskPng(1536, 1024, SLIDE_IN_RANGE_REFINE_RECT);
+
+            const refinePrompt = `Refine ONLY the kitchen range in the masked region.
+Selected model: ${selectedRangeName}${selectedRangeDescriptor ? ` (${selectedRangeDescriptor})` : ""}.
+Critical requirements:
+- Must be a slide-in gas range: NO raised backguard/control panel behind burners.
+- Keep the range clearly present and complete in frame (burners/knobs and single oven door visible where the base perspective allows).
+- Backsplash tile must be visible directly behind the cooktop.
+- Keep exactly one oven door below cooktop; do NOT add an upper oven compartment.
+- Do NOT alter any part of the foreground island cabinetry (panel style, grooves, door seams, or color).
+- Do NOT modify anything below the island countertop plane.
+- Preserve all surrounding cabinets, countertop, microwave, faucet, lighting, camera angle, and room geometry unchanged.
+- Keep the range in the exact same opening and approximate footprint.`;
+
+            console.log("[generate] Running slide-in range refine pass (masked, low fidelity)");
+            const refineResult = await openai.images.edit({
+              model: "gpt-image-1.5",
+              image: rangeRefineImages,
+              mask: await toFile(rangeMask, "range-mask.png", { type: "image/png" }),
+              prompt: refinePrompt,
+              quality: "high",
+              size: "1536x1024",
+              input_fidelity: "low",
+            });
+
+            const refineImageData = refineResult.data?.[0];
+            if (refineImageData?.b64_json) {
+              outputBuffer = Buffer.from(refineImageData.b64_json, "base64");
+            } else {
+              console.warn("[generate] Range refine pass returned no image; keeping first pass output");
+            }
+          } catch (refineErr) {
+            console.warn("[generate] Range refine pass failed; keeping first pass output", refineErr);
+          }
+        }
       }
 
       const outputPath = `${selectionsHash}.png`;
@@ -255,7 +420,11 @@ export async function POST(request: Request) {
       // Cache the result (upsert to handle race conditions)
       const { error: upsertError } = await supabase.from("generated_images").upsert({
         selections_hash: selectionsHash,
-        selections_json: { ...selections, _model: modelName },
+        selections_json: {
+          ...selections,
+          _model: modelName,
+          _cacheVersion: GENERATION_CACHE_VERSION,
+        },
         image_path: outputPath,
         prompt,
         step_id: stepId ?? null,

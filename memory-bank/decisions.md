@@ -126,7 +126,7 @@
 
 ## D30: Product name — Finch
 **Context**: Needed a product name. "UpgradeVision" was a working title.
-**Decision**: Finch. Pending LLC registration. Short, memorable, not generic SaaS-sounding. Domain TBD (finchweb.io frontrunner).
+**Decision**: Finch. Pending LLC registration. Short, memorable, not generic SaaS-sounding. Domain: withfin.ch
 
 ## D31: SM demo as sales tool, not the product
 **Context**: Stone Martin uses BuilderLinq — they're unlikely to become a paying customer. But the demo is the most persuasive sales tool we have.
@@ -184,3 +184,23 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 **Context**: Force-sending unchanged selections can trigger unnecessary edits and amplify hallucinations.
 **Decision**: Remove `kitchen-island-cabinet-color` and `range` from `ALWAYS_SEND`. Only include them when they differ from photo baseline/default (or are otherwise explicitly changed).
 **Trade-off**: Fewer "reminder" instructions for unchanged features, but better edit precision and less collateral drift.
+
+## D44: Prompt-semantic cache versioning in generation hash
+**Context**: Prompt and pipeline fixes were being deployed correctly, but users still saw old bad outputs because cache keys only included selections + model.
+**Decision**: Add `_cacheVersion` to generation/check hash inputs and bump it whenever prompt semantics or generation behavior changes. Implemented via `GENERATION_CACHE_VERSION` in `src/lib/generate.ts`, used by both `/api/generate` and `/api/generate/check`.
+**Trade-off**: Old cached rows are bypassed after each bump (higher temporary generation cost), but fixes become immediately visible and debuggable.
+
+## D45: Conditional two-pass masked refinement for stubborn geometry failures
+**Context**: Some appliance failures persisted even with stronger prompt constraints (example: slide-in range still rendering with freestanding backguard).
+**Decision**: Keep normal full-room edit as pass 1, then run a targeted pass 2 only for known failure cases. Pass 2 uses a localized mask + narrow object-only prompt + lower input fidelity to permit geometry correction while preserving surroundings.
+**Current scope**: Slide-in range correction on `/rooms/kitchen-close.webp` when `range` is a slide-in option.
+**Trade-off**: Higher latency/cost when fallback triggers, but significantly better reliability on high-impact visual correctness issues.
+
+## D46: Isolate slide-in range edits from global finish pass to stop island-front drift
+**Context**: On `/rooms/kitchen-close.webp`, slide-in range correction and island-front cabinet fidelity were competing. A broad pass-2 mask could stabilize the range but mutate island panel geometry; a narrow mask could preserve island fronts but sometimes drop or weaken the range.
+**Decision**: For the slide-in range fallback path, remove `range` from pass 1 selections and handle it only in pass 2 with a dedicated range-region mask and explicit "do not alter foreground island cabinetry" constraints.
+**Implementation notes**:
+- Route logic computes `primaryPassSelections` and excludes `range` only when slide-in fallback is active.
+- Pass 2 prompt includes both positive constraints (range remains clearly present, single-oven, no backguard) and negative constraints (no edits to island-front cabinetry / below island countertop plane).
+- Cache version was bumped so stale pre-fix outputs are never reused for diagnosis.
+**Trade-off**: Adds complexity and one extra generation pass for this specific case, but removes the "either oven or island-front correctness" failure mode.
