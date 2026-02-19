@@ -175,7 +175,7 @@ export function SidebarPanel({
             onClick={onGenerate}
             isGenerating={isGenerating}
             hasChanges={hasChanges}
-            stepId={step.id}
+            stepName={step.name}
           />
           {error && (
             <div className="mt-2 bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
@@ -227,14 +227,14 @@ export function SidebarPanel({
         {isLastStep ? (
           <button
             onClick={onFinish}
-            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
           >
             Finish &rarr;
           </button>
         ) : (
           <button
             onClick={onContinue}
-            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
           >
             Next Step &rarr;
           </button>

@@ -5,12 +5,9 @@ import type { StepConfig } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
 
-const overlayLabels: Record<string, string> = {
-  "set-your-style": "Visualizing Your Style...",
-  "design-your-kitchen": "Visualizing Your Kitchen...",
-  "primary-bath": "Visualizing Your Bathroom...",
-  "secondary-spaces": "Visualizing Your Spaces...",
-};
+function getOverlayLabel(stepName: string): string {
+  return `Visualizing Your ${stepName}...`;
+}
 
 interface StepHeroProps {
   step: StepConfig;
@@ -69,7 +66,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
             className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100 cursor-pointer group"
             onClick={() => !isGenerating && setShowZoom(true)}
           >
-            {isGenerating && <GeneratingOverlay stepId={step.id} />}
+            {isGenerating && <GeneratingOverlay stepName={step.name} />}
             <img
               src={splitPrimary}
               alt={step.name}
@@ -123,7 +120,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
           className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100 cursor-pointer group"
           onClick={() => !isGenerating && setShowZoom(true)}
         >
-          {isGenerating && <GeneratingOverlay stepId={step.id} />}
+          {isGenerating && <GeneratingOverlay stepName={step.name} />}
           <img
             src={primarySrc}
             alt={step.name}
@@ -156,7 +153,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
         className="relative w-full aspect-[16/9] max-h-[45vh] overflow-hidden bg-gray-100 cursor-pointer group"
         onClick={() => !isGenerating && setShowZoom(true)}
       >
-        {isGenerating && <GeneratingOverlay stepId={step.id} />}
+        {isGenerating && <GeneratingOverlay stepName={step.name} />}
         <img
           src={primarySrc}
           alt={step.name}
@@ -194,8 +191,8 @@ function ZoomHint() {
   );
 }
 
-function GeneratingOverlay({ stepId }: { stepId: string }) {
-  const label = overlayLabels[stepId] ?? "Visualizing...";
+function GeneratingOverlay({ stepName }: { stepName: string }) {
+  const label = getOverlayLabel(stepName);
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm overlay-enter">
       <LogoLoader className="w-16 h-auto text-[var(--color-navy)] mb-4" />

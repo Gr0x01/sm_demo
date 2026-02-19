@@ -51,7 +51,7 @@ export function QuantityStepper({ subCategory, quantity, onSetQuantity }: Quanti
           <button
             onClick={() => setQty(quantity - step)}
             disabled={quantity === 0}
-            className="w-8 h-8 flex items-center justify-center border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer text-lg font-medium rounded-l-md"
+            className="w-8 h-8 flex items-center justify-center border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer text-lg font-medium"
           >
             &minus;
           </button>
@@ -73,7 +73,7 @@ export function QuantityStepper({ subCategory, quantity, onSetQuantity }: Quanti
           <button
             onClick={() => setQty(quantity + step)}
             disabled={quantity >= max}
-            className="w-8 h-8 flex items-center justify-center border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer text-lg font-medium rounded-r-md"
+            className="w-8 h-8 flex items-center justify-center border border-gray-300 bg-white text-gray-600 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors cursor-pointer text-lg font-medium"
           >
             +
           </button>

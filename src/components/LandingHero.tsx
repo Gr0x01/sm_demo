@@ -5,14 +5,16 @@ import type { ContractPhase } from "@/lib/contract-phase";
 
 interface LandingHeroProps {
   onStart: (phase: ContractPhase) => void;
+  orgName: string;
   planName?: string;
   community?: string;
 }
 
 export function LandingHero({
   onStart,
-  planName = "Kinkade",
-  community = "McClain Landing Phase 7",
+  orgName,
+  planName = "",
+  community = "",
 }: LandingHeroProps) {
   const [phase, setPhaseRaw] = useState<ContractPhase>(() => {
     if (typeof window === "undefined") return "pre-contract";
@@ -29,7 +31,7 @@ export function LandingHero({
       <div className="max-w-2xl text-center">
         <div className="mb-8">
           <h2 className="text-sm font-semibold tracking-widest uppercase text-[var(--color-accent)] mb-4">
-            Stone Martin Builders
+            {orgName}
           </h2>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight text-[var(--color-navy)] mb-4">
             See Your Kitchen <span className="text-[var(--color-accent)]">Before You Choose</span>
@@ -63,7 +65,7 @@ export function LandingHero({
         <div>
           <button
             onClick={() => onStart(phase)}
-            className="inline-flex items-center gap-2 px-8 py-4 bg-[var(--color-navy)] text-white text-lg font-semibold hover:bg-[#243358] transition-all duration-150 shadow-lg hover:shadow-xl active:scale-[0.98] cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-[var(--color-navy)] text-white text-lg font-semibold hover:bg-[var(--color-navy-hover)] transition-all duration-150 shadow-lg hover:shadow-xl active:scale-[0.98] cursor-pointer"
           >
             Start the Demo
             <svg

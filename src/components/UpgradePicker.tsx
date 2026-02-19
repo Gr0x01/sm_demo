@@ -55,6 +55,10 @@ interface UpgradePickerProps {
   buyerId?: string;
   contractPhase: ContractPhase;
   onNavigateHome: () => void;
+  orgName: string;
+  logoUrl: string | null;
+  planName: string;
+  community: string;
   categories: Category[];
   steps: StepConfig[];
   contractLockedIds: string[];
@@ -109,6 +113,10 @@ export function UpgradePicker({
   buyerId,
   contractPhase,
   onNavigateHome,
+  orgName,
+  logoUrl,
+  planName,
+  community,
   categories,
   steps,
   contractLockedIds,
@@ -547,13 +555,13 @@ export function UpgradePicker({
             onClick={onNavigateHome}
             className="flex items-center gap-2 sm:gap-3 w-16 sm:w-auto shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
           >
-            <img src="/logo.svg" alt="Stone Martin Builders" className="h-6 sm:h-5 text-[var(--color-navy)]" />
+            {logoUrl && <img src={logoUrl} alt={orgName} className="h-6 sm:h-5" />}
             <div className="hidden sm:block text-left">
               <h1 className="text-sm font-bold text-[var(--color-navy)]">
-                Kinkade Plan
+                {planName} Plan
               </h1>
               <p className="text-[10px] text-gray-400">
-                McClain Landing Phase 7
+                {community}
               </p>
             </div>
           </button>
@@ -621,7 +629,7 @@ export function UpgradePicker({
             {!isLastStep && (
               <button
                 onClick={handleContinue}
-                className="lg:hidden w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[#243a5e] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+                className="lg:hidden w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
               >
                 Next Step &rarr;
               </button>
@@ -637,7 +645,7 @@ export function UpgradePicker({
           onGenerate={handleGenerate}
           isGenerating={isGeneratingThisStep}
           hasChanges={activeStepHasChanges}
-          stepId={activeStep.id}
+          stepName={activeStep.name}
           showGenerateButton={!!activeStep.showGenerateButton}
           error={state.errors[activeStep.id] ?? null}
           hasGeneratedPreview={!!activeGeneratedImageUrl}

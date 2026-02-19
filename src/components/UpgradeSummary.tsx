@@ -11,6 +11,8 @@ interface UpgradeSummaryProps {
   generatedImageUrls: Record<string, string>;
   planName: string;
   community: string;
+  orgName: string;
+  logoUrl: string | null;
   categories: Category[];
   steps: StepConfig[];
   onBack: () => void;
@@ -35,6 +37,8 @@ export function UpgradeSummary({
   generatedImageUrls,
   planName,
   community,
+  orgName,
+  logoUrl,
   categories,
   steps,
   onBack,
@@ -113,11 +117,11 @@ export function UpgradeSummary({
       <header className="border-b border-gray-200 print:border-gray-300">
         <div className="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img
-              src="/logo.svg"
-              alt="Stone Martin Builders"
-              className="h-6 text-[var(--color-navy)]"
-            />
+            {logoUrl && <img
+              src={logoUrl}
+              alt={orgName}
+              className="h-6"
+            />}
             <div>
               <h1 className="text-lg font-bold text-[var(--color-navy)]">
                 Your Selections
@@ -136,7 +140,7 @@ export function UpgradeSummary({
             </button>
             <button
               onClick={() => window.print()}
-              className="px-4 py-2 bg-[var(--color-navy)] text-white text-xs font-semibold hover:bg-[#243a5e] transition-colors cursor-pointer"
+              className="px-4 py-2 bg-[var(--color-navy)] text-white text-xs font-semibold hover:bg-[var(--color-navy-hover)] transition-colors cursor-pointer"
             >
               Download PDF
             </button>

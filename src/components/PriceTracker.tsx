@@ -3,19 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 
-const stepLabels: Record<string, { action: string; generating: string }> = {
-  "set-your-style": { action: "Generate Style Preview", generating: "Generating Style..." },
-  "design-your-kitchen": { action: "Generate Kitchen Preview", generating: "Generating Kitchen..." },
-  "primary-bath": { action: "Generate Bathroom Preview", generating: "Generating Bathroom..." },
-  "secondary-spaces": { action: "Generate Space Preview", generating: "Generating Spaces..." },
-};
-
 interface PriceTrackerProps {
   total: number;
   onGenerate?: () => void;
   isGenerating?: boolean;
   hasChanges?: boolean;
-  stepId?: string;
+  stepName?: string;
   showGenerateButton?: boolean;
   error?: string | null;
   hasGeneratedPreview?: boolean;
@@ -29,7 +22,7 @@ export function PriceTracker({
   onGenerate,
   isGenerating = false,
   hasChanges = false,
-  stepId,
+  stepName,
   showGenerateButton = false,
   error,
   hasGeneratedPreview = false,
@@ -52,12 +45,11 @@ export function PriceTracker({
 
   useEffect(() => {
     setIsExpanded(false);
-  }, [stepId]);
+  }, [stepName]);
 
   const disabled = isGenerating || (hasGeneratedPreview && !hasChanges);
-  const labels = stepId && stepLabels[stepId]
-    ? stepLabels[stepId]
-    : { action: "Generate Room Preview", generating: "Generating..." };
+  const label = stepName || "Room";
+  const labels = { action: `Generate ${label} Preview`, generating: `Generating ${label}...` };
   const canExpand = showGenerateButton && !!previewImageUrl;
 
   return (
@@ -98,7 +90,7 @@ export function PriceTracker({
                     className={`inline-flex items-center justify-center py-2 px-4 font-semibold text-sm transition-all duration-150 cursor-pointer shrink-0 ${
                       disabled
                         ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-[var(--color-navy)] text-white hover:bg-[#243a5e] active:scale-[0.98]"
+                        : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-hover)] active:scale-[0.98]"
                     }`}
                   >
                     {isGenerating ? labels.generating : "Generate"}

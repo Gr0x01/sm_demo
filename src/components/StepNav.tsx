@@ -48,7 +48,7 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 ${
+                  className={`w-8 h-8  flex items-center justify-center text-xs font-bold transition-all duration-300 ${
                     isActive
                       ? "bg-[var(--color-navy)] text-white shadow-md scale-110"
                       : isComplete
@@ -91,7 +91,7 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
                 className="cursor-pointer"
               >
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
+                  className={`w-7 h-7  flex items-center justify-center text-[10px] font-bold transition-all duration-300 ${
                     isActive
                       ? "bg-[var(--color-navy)] text-white shadow-md scale-110"
                       : isComplete

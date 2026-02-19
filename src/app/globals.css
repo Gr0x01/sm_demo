@@ -2,8 +2,9 @@
 
 :root {
   --color-navy: #1b2d4e;
+  --color-navy-hover: #172742;
   --color-accent: #2767b1;
-  --color-accent-light: #3578c4;
+  --color-secondary: #C5A572;
 }
 
 body {

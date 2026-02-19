@@ -1,24 +1,39 @@
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { getServiceClient } from "./supabase";
 import type { Category, SubCategory, Option } from "@/types";
 import type { StepConfig, StepSection } from "./step-config";
 
+// ---------- Cross-request cache (Next.js data cache) ----------
+// These rarely change — revalidate every 5 minutes, bust via tags on admin update.
+
+const REVALIDATE_SECONDS = 86400; // 24 hours — data changes ~quarterly, bust via tags when needed
+
 // ---------- Organization ----------
 
-export async function getOrgBySlug(slug: string) {
+const _getOrgBySlug = async (slug: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, name, slug, logo_url, primary_color, secondary_color")
+    .select("id, name, slug, logo_url, primary_color, secondary_color, accent_color")
     .eq("slug", slug)
     .single();
 
   if (error || !data) return null;
   return data;
-}
+};
+
+/** Request-deduped + cross-request cached org lookup */
+export const getOrgBySlug = cache((slug: string) =>
+  unstable_cache(_getOrgBySlug, ["org-by-slug", slug], {
+    revalidate: REVALIDATE_SECONDS,
+    tags: [`org:${slug}`],
+  })(slug)
+);
 
 // ---------- Floorplan ----------
 
-export async function getFloorplan(orgId: string, floorplanSlug: string) {
+const _getFloorplan = async (orgId: string, floorplanSlug: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("floorplans")
@@ -29,81 +44,81 @@ export async function getFloorplan(orgId: string, floorplanSlug: string) {
 
   if (error || !data) return null;
   return data;
-}
+};
 
-// ---------- Categories with options ----------
+export const getFloorplan = cache((orgId: string, floorplanSlug: string) =>
+  unstable_cache(_getFloorplan, ["floorplan", orgId, floorplanSlug], {
+    revalidate: REVALIDATE_SECONDS,
+    tags: [`floorplan:${orgId}:${floorplanSlug}`],
+  })(orgId, floorplanSlug)
+);
 
-export async function getCategoriesWithOptions(orgId: string): Promise<Category[]> {
+// ---------- Categories with options (single nested select) ----------
+
+const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => {
   const supabase = getServiceClient();
 
-  const { data: cats, error: catErr } = await supabase
+  const { data: cats, error } = await supabase
     .from("categories")
-    .select("id, name, sort_order")
+    .select(`
+      id, name, sort_order,
+      subcategories (
+        id, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order,
+        options ( id, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order )
+      )
+    `)
     .eq("org_id", orgId)
     .order("sort_order");
 
-  if (catErr || !cats) return [];
+  if (error || !cats) return [];
 
-  const { data: subs, error: subErr } = await supabase
-    .from("subcategories")
-    .select("id, category_id, name, is_visual, is_additive, unit_label, max_quantity, sort_order")
-    .eq("org_id", orgId)
-    .order("sort_order");
-
-  if (subErr || !subs) return [];
-
-  const { data: opts, error: optErr } = await supabase
-    .from("options")
-    .select("id, subcategory_id, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, is_default, sort_order")
-    .eq("org_id", orgId)
-    .order("sort_order");
-
-  if (optErr || !opts) return [];
-
-  // Group options by subcategory
-  const optionsBySubId = new Map<string, Option[]>();
-  for (const opt of opts) {
-    const list = optionsBySubId.get(opt.subcategory_id) ?? [];
-    list.push({
-      id: opt.id,
-      name: opt.name,
-      price: opt.price,
-      promptDescriptor: opt.prompt_descriptor ?? undefined,
-      swatchUrl: opt.swatch_url ?? undefined,
-      swatchColor: opt.swatch_color ?? undefined,
-      nudge: opt.nudge ?? undefined,
-    });
-    optionsBySubId.set(opt.subcategory_id, list);
-  }
-
-  // Group subcategories by category
-  const subsByCatId = new Map<string, SubCategory[]>();
-  for (const sub of subs) {
-    const list = subsByCatId.get(sub.category_id) ?? [];
-    list.push({
-      id: sub.id,
-      name: sub.name,
-      categoryId: sub.category_id,
-      isVisual: sub.is_visual,
-      isAdditive: sub.is_additive || undefined,
-      unitLabel: sub.unit_label ?? undefined,
-      maxQuantity: sub.max_quantity ?? undefined,
-      options: optionsBySubId.get(sub.id) ?? [],
-    });
-    subsByCatId.set(sub.category_id, list);
-  }
-
-  // Assemble categories
   return cats.map((cat) => ({
     id: cat.id,
     name: cat.name,
-    subCategories: subsByCatId.get(cat.id) ?? [],
+    subCategories: ((cat.subcategories ?? []) as {
+      id: string; name: string; category_id: string; is_visual: boolean;
+      is_additive: boolean | null; unit_label: string | null; max_quantity: number | null;
+      sort_order: number;
+      options: {
+        id: string; name: string; price: number; prompt_descriptor: string | null;
+        swatch_url: string | null; swatch_color: string | null; nudge: string | null;
+        sort_order: number;
+      }[];
+    }[])
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((sub): SubCategory => ({
+        id: sub.id,
+        name: sub.name,
+        categoryId: sub.category_id,
+        isVisual: sub.is_visual,
+        isAdditive: sub.is_additive || undefined,
+        unitLabel: sub.unit_label ?? undefined,
+        maxQuantity: sub.max_quantity ?? undefined,
+        options: (sub.options ?? [])
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map((opt): Option => ({
+            id: opt.id,
+            name: opt.name,
+            price: opt.price,
+            promptDescriptor: opt.prompt_descriptor ?? undefined,
+            swatchUrl: opt.swatch_url ?? undefined,
+            swatchColor: opt.swatch_color ?? undefined,
+            nudge: opt.nudge ?? undefined,
+          })),
+      })),
   }));
-}
+};
+
+export const getCategoriesWithOptions = cache((orgId: string) =>
+  unstable_cache(_getCategoriesWithOptions, ["categories", orgId], {
+    revalidate: REVALIDATE_SECONDS,
+    tags: [`categories:${orgId}`],
+  })(orgId)
+);
 
 // ---------- Steps with config ----------
 
-export async function getStepsWithConfig(floorplanId: string): Promise<StepConfig[]> {
+const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> => {
   const supabase = getServiceClient();
 
   const { data: dbSteps, error: stepsErr } = await supabase
@@ -141,16 +156,18 @@ export async function getStepsWithConfig(floorplanId: string): Promise<StepConfi
       photoBaseline: (s.photo_baseline as Record<string, string>) ?? undefined,
     };
   });
-}
+};
 
-// ---------- Visual subcategory IDs (cached at module scope) ----------
+export const getStepsWithConfig = cache((floorplanId: string) =>
+  unstable_cache(_getStepsWithConfig, ["steps", floorplanId], {
+    revalidate: REVALIDATE_SECONDS,
+    tags: [`steps:${floorplanId}`],
+  })(floorplanId)
+);
 
-let cachedVisualIds: Set<string> | null = null;
-let cachedOrgId: string | null = null;
+// ---------- Visual subcategory IDs ----------
 
-export async function getVisualSubCategoryIdsFromDb(orgId: string): Promise<Set<string>> {
-  if (cachedVisualIds && cachedOrgId === orgId) return cachedVisualIds;
-
+const _getVisualSubCategoryIdsFromDb = async (orgId: string): Promise<string[]> => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("subcategories")
@@ -158,39 +175,39 @@ export async function getVisualSubCategoryIdsFromDb(orgId: string): Promise<Set<
     .eq("org_id", orgId)
     .eq("is_visual", true);
 
-  if (error || !data) return new Set();
+  if (error || !data) return [];
+  return data.map((d) => d.id);
+};
 
-  cachedVisualIds = new Set(data.map((d) => d.id));
-  cachedOrgId = orgId;
-  return cachedVisualIds;
+/** Returns visual subcategory IDs as a Set. Cached across requests. */
+export async function getVisualSubCategoryIdsFromDb(orgId: string): Promise<Set<string>> {
+  const ids = await unstable_cache(_getVisualSubCategoryIdsFromDb, ["visual-subs", orgId], {
+    revalidate: REVALIDATE_SECONDS,
+    tags: [`categories:${orgId}`],
+  })(orgId);
+  return new Set(ids);
 }
 
-// ---------- Step AI config lookup ----------
+// ---------- Step AI config lookup (API routes only — no RSC cache needed) ----------
 
 export async function getStepAiConfig(stepSlug: string, floorplanId: string) {
   const supabase = getServiceClient();
 
-  // First get the step UUID from slug
   const { data: step, error: stepErr } = await supabase
     .from("steps")
-    .select("id, scene_description, also_include_ids, photo_baseline")
+    .select("id, scene_description, also_include_ids, photo_baseline, step_ai_config ( spatial_hints )")
     .eq("floorplan_id", floorplanId)
     .eq("slug", stepSlug)
     .single();
 
   if (stepErr || !step) return null;
 
-  // Then get AI config
-  const { data: config, error: configErr } = await supabase
-    .from("step_ai_config")
-    .select("spatial_hints")
-    .eq("step_id", step.id)
-    .single();
+  const config = step.step_ai_config as { spatial_hints: Record<string, string> }[] | null;
 
   return {
     stepId: step.id,
     sceneDescription: step.scene_description as string | null,
-    spatialHints: (config?.spatial_hints ?? {}) as Record<string, string>,
+    spatialHints: (config?.[0]?.spatial_hints ?? {}) as Record<string, string>,
   };
 }
 
@@ -203,7 +220,6 @@ export async function getOptionLookup(orgId: string): Promise<Map<string, { opti
   for (const cat of categories) {
     for (const sub of cat.subCategories) {
       for (const opt of sub.options) {
-        // Key by "subId:optId" for the findOption pattern
         map.set(`${sub.id}:${opt.id}`, { option: opt, subCategory: sub });
       }
     }

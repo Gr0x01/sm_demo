@@ -73,7 +73,7 @@ export function SyncModal({
         <div className="flex gap-3">
           <button
             onClick={onSync}
-            className="flex-1 py-2.5 px-4 bg-[var(--color-navy)] text-white text-sm font-semibold hover:bg-[#243a5e] transition-colors cursor-pointer"
+            className="flex-1 py-2.5 px-4 bg-[var(--color-navy)] text-white text-sm font-semibold hover:bg-[var(--color-navy-hover)] transition-colors cursor-pointer"
           >
             Yes, match them
           </button>
