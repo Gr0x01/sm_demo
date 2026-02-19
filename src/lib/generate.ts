@@ -104,7 +104,7 @@ const SPATIAL_HINTS: Record<string, string> = {
   "kitchen-faucet": "faucet on the island countertop — the faucet spout arches AWAY from the camera toward the back wall/range side. Keep this exact orientation, do NOT flip it.",
   "dishwasher": "dishwasher panel (left side of island or near sink)",
   "refrigerator": "refrigerator in its built-in alcove",
-  "range": "range/stovetop in its cutout along the wall",
+  "range": "range/stovetop along the back wall next to the microwave. NOTE: if the range is a 'slide-in' model, it has NO raised back panel — it sits flush with the countertop and the backsplash tile is visible behind it. Only freestanding ranges have the raised back panel with controls.",
   // Great room / whole-house
   "cabinet-style-whole-house": "cabinet door style on ALL cabinets (shaker, flat, raised panel, etc.)",
   "main-area-flooring-color": "LVP/hardwood plank flooring in non-bathroom areas (closets, bedrooms, hallways) — NOT on bathroom floors which have tile",
