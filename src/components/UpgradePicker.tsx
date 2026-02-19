@@ -178,7 +178,7 @@ export function UpgradePicker({
           ...state.selections,
           [action.subCategoryId]: action.optionId,
         };
-        return { ...state, selections: newSelections };
+        return { ...state, selections: newSelections, errors: {} };
       }
       case "SET_QUANTITY": {
         const newQuantities = { ...state.quantities, [action.subCategoryId]: action.quantity };
@@ -186,7 +186,7 @@ export function UpgradePicker({
           ...state.selections,
           [action.subCategoryId]: action.quantity > 0 ? action.addOptionId : action.noUpgradeOptionId,
         };
-        return { ...state, selections: newSelections, quantities: newQuantities };
+        return { ...state, selections: newSelections, quantities: newQuantities, errors: {} };
       }
       case "LOAD_SELECTIONS": {
         return {
@@ -503,6 +503,58 @@ export function UpgradePicker({
     const lastSnapshot = state.generatedWithSelections[activeStep.id];
     return currentSnapshot !== lastSnapshot;
   }, [activeStep, state.selections, state.generatedWithSelections, getStepVisualSelections]);
+
+  // When selections change to a combination we haven't generated in this session,
+  // check server cache — if it's a hit, restore instantly without requiring a click.
+  // Debounced (300ms) so rapid swatch clicks don't fire excessive requests.
+  const cacheCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cacheCheckAbortRef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    if (!activeStepHasChanges || !activeStep.showGenerateButton) return;
+    if (state.generatingStepIds.has(activeStep.id)) return;
+
+    const visualSelections = getStepVisualSelections(activeStep, state.selections);
+    if (Object.keys(visualSelections).length === 0) return;
+
+    const selectionsSnapshot = stableStringify(visualSelections);
+    const modelParam = new URLSearchParams(window.location.search).get("model");
+
+    // Abort any in-flight check and clear pending timer
+    cacheCheckAbortRef.current?.abort();
+    if (cacheCheckTimerRef.current) clearTimeout(cacheCheckTimerRef.current);
+
+    const controller = new AbortController();
+    cacheCheckAbortRef.current = controller;
+
+    cacheCheckTimerRef.current = setTimeout(() => {
+      fetch("/api/generate/check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selections: visualSelections,
+          ...(modelParam ? { model: modelParam } : {}),
+        }),
+        signal: controller.signal,
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.imageUrl) {
+            dispatch({
+              type: "GENERATION_COMPLETE",
+              stepId: activeStep.id,
+              imageUrl: data.imageUrl,
+              selectionsSnapshot,
+            });
+          }
+        })
+        .catch(() => {});
+    }, 300);
+
+    return () => {
+      controller.abort();
+      if (cacheCheckTimerRef.current) clearTimeout(cacheCheckTimerRef.current);
+    };
+  }, [activeStepHasChanges, activeStep, state.selections, state.generatingStepIds, getStepVisualSelections]);
 
   // Preload all generated images so step switching is instant
   useEffect(() => {
