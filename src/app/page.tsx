@@ -10,12 +10,16 @@ const faqs = [
     a: "Most builders are live in 2-3 weeks. We handle configuration. You send floor plans, options, and pricing.",
   },
   {
+    q: "What does a pilot look like?",
+    a: "We set up your 3 best-selling floor plans at no cost. You use Finch for 90 days with real buyers. We measure upgrade revenue together. If the numbers work, we expand to your full catalog at standard pricing. If they don't, you walk away with zero obligation.",
+  },
+  {
     q: "Do we need to change our sales process?",
     a: "No. Finch fits into your existing design appointment flow. Buyers use a visual tool, and your team gets a clean priced export.",
   },
   {
-    q: "What does this cost?",
-    a: "Pricing depends on community count and option catalog size. We scope it with you on a short walkthrough.",
+    q: "What's the difference between Starter and Pro?",
+    a: "Starter: you upload photos and manage your catalog. Pro: we handle everything — professional photography, option transcription, and thousands of pre-generated images so buyers see results instantly. Most builders start with Pro.",
   },
   {
     q: "Can this work with our current design center software?",
@@ -158,10 +162,10 @@ function EditableNumber({
 /* ─── ROI Calculator ─── */
 function RoiCalculator() {
   const [homes, setHomes] = useState(200);
-  const [spend, setSpend] = useState(10000);
-  const LIFT = 0.10;
+  const [spend, setSpend] = useState(12000);
+  const [liftPct, setLiftPct] = useState(15);
 
-  const additionalRevenue = Math.round(homes * spend * LIFT);
+  const additionalRevenue = Math.round(homes * spend * (liftPct / 100));
 
   function formatDollars(n: number) {
     if (n >= 1_000_000) {
@@ -176,7 +180,7 @@ function RoiCalculator() {
 
   return (
     <div data-reveal style={revealStyle(90)} className="mb-12">
-      <div className="grid md:grid-cols-3 gap-8 md:gap-12 text-center items-end">
+      <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-8 md:gap-10 text-center items-end">
         <div data-reveal style={revealStyle(140)}>
           <p className="text-sm text-slate-400 uppercase tracking-wider mb-2">
             Avg. upgrade spend
@@ -203,13 +207,29 @@ function RoiCalculator() {
             min={10}
             max={10000}
             id="roi-homes"
+            nextId="roi-lift"
           />
           <p className="text-sm text-slate-500 mt-2">homes per year</p>
         </div>
 
+        <div data-reveal style={revealStyle(230)}>
+          <p className="text-sm text-slate-400 uppercase tracking-wider mb-2">
+            Upgrade lift
+          </p>
+          <EditableNumber
+            value={liftPct}
+            onChange={setLiftPct}
+            suffix="%"
+            min={1}
+            max={35}
+            id="roi-lift"
+          />
+          <p className="text-sm text-slate-500 mt-2">per buyer</p>
+        </div>
+
         <div data-reveal style={revealStyle(260)}>
           <p className="text-sm text-slate-400 uppercase tracking-wider mb-2">
-            At a 10% lift
+            Additional revenue
           </p>
           <p
             className="text-5xl md:text-6xl leading-none tracking-tight text-slate-900"
@@ -218,11 +238,48 @@ function RoiCalculator() {
             {formatDollars(additionalRevenue)}
           </p>
           <p className="text-sm text-slate-500 mt-2">
-            additional annual revenue
+            per year
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+
+function HeroProofCard() {
+  return (
+    <Link
+      href="/stone-martin/kinkade"
+      className="block w-full border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+    >
+      <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
+        <Image
+          src="/home-hero-lg.png"
+          alt="Kitchen with upgraded selections applied"
+          fill
+          priority
+          className="object-cover"
+        />
+        <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 border border-slate-200 text-[11px] uppercase tracking-[0.16em] text-slate-700">
+          Builder options applied
+        </div>
+        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-slate-900/70 to-transparent">
+          <p className="text-[11px] uppercase tracking-[0.14em] text-slate-100">Image updated from selection</p>
+        </div>
+      </div>
+
+      <div className="p-3 md:p-4 border-t border-slate-200 bg-white">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 mb-2">
+          Example Kitchen Selections
+        </p>
+        <div className="space-y-1.5">
+          <p className="text-xs text-slate-700">Counter Top: Quartz - White Carrara (+$2,150)</p>
+          <p className="text-xs text-slate-700">Island Color: Naval Blue Paint (+$350)</p>
+          <p className="text-xs text-slate-700">Flooring: Hickory Hardwood - Natural (+$1,800)</p>
+        </div>
+      </div>
+    </Link>
   );
 }
 
@@ -262,35 +319,23 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <section className="relative overflow-hidden px-6 pt-14 pb-20 md:pt-20 md:pb-24 bg-white">
+      <section className="relative overflow-hidden px-6 pt-14 pb-18 md:pt-18 md:pb-16 lg:pt-20 lg:pb-24 bg-white">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-36 right-0 h-[420px] w-[420px] rounded-full bg-sky-100/40 blur-3xl" />
           <div className="absolute top-24 -left-20 h-[300px] w-[300px] rounded-full bg-slate-100 blur-3xl" />
         </div>
 
         <div className="relative max-w-6xl mx-auto">
-          <p
-            data-reveal
-            style={revealStyle(20)}
-            className="text-xs font-semibold text-slate-500 uppercase tracking-[0.24em] mb-10"
-          >
-            Finch for Production Builders
-          </p>
-
-          <div className="grid lg:grid-cols-[1.2fr,0.8fr] gap-12 items-end">
+          <div className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center">
             <div data-reveal style={revealStyle(100)}>
-              <h1 className="text-[2.6rem] md:text-[4.4rem] leading-[0.95] text-slate-900 tracking-[-0.02em] mb-8">
-                Buyers pick
+              <h1 className="text-[2.6rem] md:text-[3.6rem] lg:text-[4.4rem] leading-[0.95] text-slate-900 tracking-[-0.02em] mb-8">
+                They always
                 <br />
-                Standard when
-                <br />
-                they cannot see
-                <br />
-                the upgrade.
+                pick Standard.
               </h1>
 
-              <p className="text-lg md:text-2xl leading-tight text-slate-600 max-w-2xl mb-10">
-                Visual context changes option decisions. Same communities, same plans, stronger upgrade mix.
+              <p className="text-lg md:text-xl lg:text-2xl leading-tight text-slate-600 max-w-xl mb-10">
+                Not because they don&apos;t want the upgrade. Because they can&apos;t picture what they&apos;re paying for.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 mb-6">
@@ -307,26 +352,11 @@ export default function LandingPage() {
                   Book a Walkthrough
                 </a>
               </div>
-              <p className="text-sm text-slate-500">Built for builders closing 100+ homes per year.</p>
+
             </div>
 
-            <div
-              data-reveal
-              style={revealStyle(180)}
-              className="border border-slate-200 p-6 md:p-8 bg-white shadow-sm"
-            >
-              <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">
-                First 30 Days
-              </p>
-              <p className="text-3xl md:text-4xl leading-[1] tracking-tight text-slate-900 mb-8">
-                Launch the visual selling layer without changing your process.
-              </p>
-              <div className="space-y-4 text-sm text-slate-600">
-                <p>01. Share floor plans, options, and pricing.</p>
-                <p>02. We configure your branded experience.</p>
-                <p>03. Buyers select visually, not from a spreadsheet.</p>
-                <p>04. Your team receives priced exports.</p>
-              </div>
+            <div data-reveal style={revealStyle(180)}>
+              <HeroProofCard />
             </div>
           </div>
         </div>
@@ -340,9 +370,9 @@ export default function LandingPage() {
         >
           <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">The Core Contrast</p>
           <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900">
-            Same upgrades.
+            A price sheet
             <br />
-            Different decisions.
+            doesn&apos;t sell. It lists.
           </h2>
         </div>
 
@@ -430,8 +460,7 @@ export default function LandingPage() {
             Use your own close count and option mix to pressure-test this model.
           </p>
           <p className="text-xs text-slate-400 max-w-2xl mx-auto">
-            Industry data shows visualization drives 35% higher upgrade spend (Zonda/Envision).
-            We model at 10% because we&apos;d rather under-promise. Our first pilot showed 16%.
+            Industry benchmark: 35% lift (Zonda/Envision). Our first real-world result: 40%, from a buyer actively trying to minimize spend. We model at 15%.
           </p>
         </div>
       </Section>
@@ -478,24 +507,148 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      <Section id="positioning">
+      <Section id="pricing">
         <div
           data-reveal
           style={revealStyle(20)}
-          className="max-w-4xl mx-auto text-center"
+          className="text-center mb-14"
         >
-          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Directly Stated</p>
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-8">
-            No logo wall yet.
+          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">Pricing</p>
+          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900">
+            One floor plan. One price.
             <br />
-            No inflated case study deck.
+            No per-buyer fees.
           </h2>
-          <p className="text-xl md:text-2xl text-slate-700 leading-tight mb-6">
-            If you want polished vendor theater, this is not that. If you want a practical rollout that helps buyers choose better upgrades, this is built for that.
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto mb-12">
+          <div
+            data-reveal
+            style={revealStyle(90)}
+            className="border border-slate-200 bg-white p-8 flex flex-col"
+          >
+            <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-3">Starter</p>
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="text-5xl md:text-6xl leading-none tracking-tight text-slate-900" style={{ fontVariantNumeric: "tabular-nums" }}>$149</span>
+              <span className="text-base text-slate-400">/floor plan/mo</span>
+            </div>
+            <p className="text-sm text-slate-500 mb-6">You upload photos. You manage your catalog.</p>
+
+            <ul className="space-y-3 mb-8 flex-1">
+              {[
+                "Upload your own room photos",
+                "On-demand AI generation",
+                "Admin dashboard for option and pricing updates",
+                "Email support",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
+                  <span className="text-slate-400 mt-0.5 shrink-0">&mdash;</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href="mailto:hello@finchweb.io?subject=Finch Starter Trial"
+              className="block text-center px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-400 hover:bg-slate-50 transition-colors"
+            >
+              Start 14-Day Trial
+            </a>
+            <p className="text-xs text-slate-400 text-center mt-2">1 floor plan. No card required.</p>
+          </div>
+
+          <div
+            data-reveal
+            style={revealStyle(160)}
+            className="border-2 border-slate-900 bg-white p-8 flex flex-col relative"
+          >
+            <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-3">Pro</p>
+            <p className="text-2xl md:text-3xl leading-tight tracking-tight text-slate-900 mb-1">Done for you.</p>
+            <p className="text-sm text-slate-500 mb-6">We handle everything. Buyers see results instantly.</p>
+
+            <ul className="space-y-3 mb-8 flex-1">
+              {[
+                "Professional photography coordinated by us",
+                "Full option and pricing transcription",
+                "5,000+ pre-generated images per floor plan",
+                "Instant results for buyers — no wait time",
+                "Priority support",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2.5 text-sm text-slate-700">
+                  <span className="text-slate-400 mt-0.5 shrink-0">&mdash;</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <a
+              href="mailto:hello@finchweb.io?subject=Finch Pro"
+              className="block text-center px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+            >
+              Talk to Us
+            </a>
+            <p className="text-xs text-slate-400 text-center mt-2">We scope it to your floor plans. 15 minutes.</p>
+          </div>
+        </div>
+
+        <div
+          data-reveal
+          style={revealStyle(230)}
+          className="max-w-4xl mx-auto border border-slate-200 bg-slate-50 p-6 md:p-8"
+        >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex-1">
+              <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-2">Founding Partners</p>
+              <h3 className="text-xl md:text-2xl leading-tight tracking-[-0.01em] text-slate-900 mb-2">
+                3 floor plans. Setup waived. 3 months free.
+              </h3>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                We configure your 3 best-selling plans on Pro at no cost. You use it for 90 days with real buyers. If upgrade revenue goes up, we expand to your full catalog. If it doesn&apos;t, you walk away.
+              </p>
+            </div>
+            <div className="shrink-0">
+              <a
+                href="mailto:hello@finchweb.io?subject=Founding Partner Interest"
+                className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors whitespace-nowrap"
+              >
+                Claim Your Spot
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div data-reveal style={revealStyle(290)} className="text-center mt-8">
+          <p className="text-xs text-slate-400">
+            All plans include unlimited buyers. No per-session or per-user fees.
           </p>
-          <p className="text-base text-slate-500 max-w-3xl mx-auto">
-            We start with your floor plans, your option list, and your current pricing. You evaluate the output in your own market conditions.
-          </p>
+        </div>
+      </Section>
+
+      <Section gray id="why">
+        <div
+          data-reveal
+          style={revealStyle(20)}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Why This Exists</p>
+          <h2 className="text-4xl md:text-5xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-8">
+            I was the buyer with the price sheet.
+          </h2>
+          <div className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5 text-left max-w-2xl mx-auto">
+            <p>
+              Last year my wife and I bought a new construction home. The builder handed us a printed sheet of paper and asked us to choose $20,000 in upgrades from it. Cabinets, countertops, flooring, fixtures. No images. No context. Just line items and prices.
+            </p>
+            <p>
+              So I built the first version of Finch for our own selections.
+            </p>
+            <p>
+              We used it. We spent 40% more than we planned. And we were happier about every choice we made.
+            </p>
+            <p className="text-slate-800 font-medium">
+              When buyers can see what they are getting, they choose more and feel better about it. The builder gets more revenue per home. The buyer gets a kitchen they actually picked, not one they defaulted into.
+            </p>
+          </div>
+          <p className="text-sm text-slate-400 mt-8">— Rashaad B., Finch founder. Homebuyer, then builder.</p>
         </div>
       </Section>
 
@@ -526,18 +679,21 @@ export default function LandingPage() {
         >
           <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Next Step</p>
           <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
-            Bring your floor plans.
+            Your 3 best-selling plans.
             <br />
-            We will map the first version.
+            No setup cost. 90 days to prove it.
           </h2>
-          <p className="text-lg text-slate-600 mb-10">15 minutes. No commitment. Directly scoped to your communities.</p>
+          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto">
+            We configure Finch for your top floor plans — your options, your pricing, your brand. You use it for 90 days. If upgrade revenue goes up, we talk about the rest of your catalog. If it doesn&apos;t, you walk away.
+          </p>
           <a
             href="mailto:hello@finchweb.io"
             className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
             Book a 15-Minute Walkthrough
           </a>
-          <p className="text-xs text-slate-400 mt-4">Or email us directly: hello@finchweb.io</p>
+          <p className="text-sm text-slate-500 mt-4">Now onboarding first builders in Alabama and Georgia. 15 minutes. No commitment.</p>
+          <p className="text-xs text-slate-400 mt-2">Or email us directly: hello@finchweb.io</p>
         </div>
       </section>
 
