@@ -107,6 +107,7 @@
 **Decision**: Changed to `generatedImageUrls: Record<stepId, string>`. Each step's generation is stored independently. Cache restoration on refresh checks each step's selections separately via `/api/generate/check`.
 
 ## D27: highImpactIds for swatch image budgeting
+**Status**: Historical (Gemini-era strategy). Superseded by D41 for current OpenAI edit flow.
 **Context**: Step 1 has ~20 visual subcategories. Sending all swatch images to the AI caused Gemini 500 errors (too many images). But being too conservative (4-5 swatches) left out important visible elements like hardware, lighting, trim.
 **Decision**: Each step in `step-config.ts` has a `highImpactIds` array listing subcategories that get swatch images sent to the AI (9-13 per step). Others are described in text only. Curated based on what's actually visible in each room photo — e.g., step 1 (greatroom) skips carpet (not visible in photo) but includes wainscoting, baseboard, lighting, fan.
 
@@ -154,3 +155,32 @@
 ## D37: Landing page copy — benefit-first, not personalized
 **Context**: Landing hero had buyer's name ("May Baten's Upgrade Selections"). Needed something generic and compelling for demo purposes.
 **Decision**: Heading: "See Your Kitchen Before You Choose". CTA: "Start the Demo". Benefit-first framing — emphasizes the AI visualization value prop. Brand guardian approved.
+
+## D38: Org-scoped theming via CSS custom properties
+**Context**: Need each builder demo to have their own brand colors and logo without component changes.
+**Decision**: Store `primary_color`, `secondary_color`, `accent_color` (NOT NULL, CHECK hex format) and `logo_url` on the `organizations` table. Server component passes theme to client wrapper, which overrides `:root` CSS vars via inline `style`. Components reference `var(--color-navy)` etc. — zero hardcoded colors. Hover variant computed via `shiftHex()`.
+
+## D39: 24-hour cross-request cache for catalog data
+**Context**: Option data changes ~quarterly but every page load was hitting Supabase fresh. Traffic is ~1 visitor/day so short revalidation windows expire before the next visit.
+**Decision**: Wrap all catalog queries (`getOrgBySlug`, `getFloorplan`, `getCategoriesWithOptions`, `getStepsWithConfig`) with `unstable_cache` at 24h revalidation. Cache tags allow instant invalidation when data changes. Interactive data (selections, AI generation) bypasses the cache entirely.
+
+## D40: Step labels derived from step.name, not hardcoded slug maps
+**Context**: `GenerateButton`, `PriceTracker`, `StepHero` each had hardcoded slug→label maps (`"design-your-kitchen"` → `"Kitchen"`). Breaks for new builders with different step slugs.
+**Decision**: Derive labels from `step.name` (DB field). Pattern: `"Visualize My ${name}"`. Removes all three duplicate maps. Trade-off: labels like "Visualize My Design Your Kitchen" read slightly awkwardly — may add a `short_label` column later.
+
+## D41: Individual swatch attachments with deterministic mapping
+**Context**: Reliability issues showed up when material intent was ambiguous (wrong range style, wrong cabinet region, swapped fixture orientation). One root cause was weak swatch/item correspondence in the prompt.
+**Decision**: Keep swatches as individual image attachments (not collage boards). Build the upgrade list in deterministic order and explicitly map each line item to `swatch #N` in the prompt. If a swatch file is missing, keep the item as text-only rather than silently dropping it.
+**Trade-off**: Slightly longer prompts, but much stronger instruction grounding and fewer wrong-surface edits.
+
+## D42: Global fixed-geometry invariants for kitchen object stability
+**Context**: Common regressions included extra cabinet panels, island color bleeding to perimeter cabinets, sink/faucet flips, and refrigerator/range movement.
+**Decision**: Add reusable hard constraints to prompt generation:
+- Global: preserve object counts, cabinet geometry, and layout; under-edit instead of moving objects.
+- Subcategory-specific invariants: cabinet vs island boundaries, sink/faucet orientation lock, dishwasher slot lock, refrigerator alcove lock, and range cutout/type lock.
+Apply these invariants whenever the corresponding subcategory is in the current visual selection set.
+
+## D43: Reduce prompt noise by not force-sending unchanged kitchen selections
+**Context**: Force-sending unchanged selections can trigger unnecessary edits and amplify hallucinations.
+**Decision**: Remove `kitchen-island-cabinet-color` and `range` from `ALWAYS_SEND`. Only include them when they differ from photo baseline/default (or are otherwise explicitly changed).
+**Trade-off**: Fewer "reminder" instructions for unchanged features, but better edit precision and less collateral drift.

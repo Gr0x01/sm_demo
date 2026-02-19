@@ -13,6 +13,7 @@ The demo is done. Keep it working. Fix bugs if they come up. Don't add features 
 - [x] 350+ options from real Kinkade pricing PDF, 166 swatch images
 - [x] Contract phase locking (pre/post toggle)
 - [x] Mobile UI overhaul
+- [x] Generation reliability hardening documented (deterministic swatch mapping, fixed-geometry invariants, reduced prompt noise)
 - [ ] Pre-generate ~6 key combos for instant demo (nice-to-have)
 - [ ] Vercel deploy (when domain is ready)
 
@@ -37,9 +38,12 @@ Move from single-tenant demo to a system that can host multiple builder demos. S
 - [x] Data-fetching layer (`src/lib/db-queries.ts`) — all queries for org/floorplan/categories/steps
 - [x] Server component page fetches from DB, passes props to client wrapper
 - [x] API routes fetch spatial hints, scene descriptions, option lookups from DB
+- [x] Org-scoped theming — colors (primary, secondary, accent) + logo from DB via CSS custom properties
+- [x] Cross-request caching — `unstable_cache` (24h revalidation) + React `cache()` for request dedup
+- [x] Query optimization — nested PostgREST select (4 queries/page, 0 on cache hit)
 - [ ] RLS policies for tenant isolation
-- [ ] Org-scoped theming (logo, colors)
 - [ ] Builder demo template: lighter-weight version of SM demo
+- [ ] Add a reusable "generation reliability checklist" to onboarding so every new builder demo gets the same prompt/invariant standards
 - [ ] Deploy to Vercel with subdomain routing
 
 ### Stream D: Sales & Outreach

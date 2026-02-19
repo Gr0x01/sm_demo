@@ -16,13 +16,13 @@ Browser (Next.js client)
 
 Server (Next.js API route)
   └── POST /api/generate
-        ├── Receives: selections + heroImage + highImpactIds + stepSlug
+        ├── Receives: selections + heroImage + stepSlug (+ optional model)
         ├── Fetches spatial hints + scene description from Supabase (step_ai_config)
         ├── Builds option lookup from Supabase (categories → subcategories → options)
         ├── Hashes visual selections → check Supabase cache
         ├── Cache HIT → return cached image URL instantly
         ├── Cache MISS:
-        │     ├── Build prompt + load swatch images (high-impact get images, others text-only)
+        │     ├── Build prompt + load swatch images (all selected visual items with swatches; text-only fallback if missing)
         │     ├── Call OpenAI images.edit (gpt-image-1.5) with room photo + swatch images
         │     ├── Store result in Supabase (image in Storage, metadata + step_id + model in table)
         │     └── Return image URL
@@ -38,6 +38,10 @@ Supabase
 ```
 
 **Data flow**: All option/step/AI-config data lives in Supabase. The server component in `page.tsx` fetches via `src/lib/db-queries.ts` and passes to client components as props. API routes also fetch from DB. Static TypeScript files (`options-data.ts`, `step-config.ts`) remain as seed source but are no longer imported at runtime.
+
+**Caching**: Query functions use `unstable_cache` (24h revalidation) for cross-request caching + React `cache()` for request-scoped dedup. First visitor hits DB (4 queries), subsequent visitors get cached results. Cache tags (`org:{slug}`, `categories:{orgId}`, `steps:{floorplanId}`) allow on-demand invalidation.
+
+**Theming**: Org colors (`primary_color`, `secondary_color`, `accent_color`) and `logo_url` stored in `organizations` table. Server component passes theme to `DemoPageClient`, which sets CSS custom properties (`--color-navy`, `--color-navy-hover`, `--color-accent`, `--color-secondary`) via inline style on the wrapper div. All components use CSS vars — no hardcoded brand colors.
 
 ## URL & Multi-Tenant Strategy
 
@@ -146,8 +150,8 @@ State shape:
 ## AI Image Generation Pipeline
 
 1. User clicks "Visualize" (available on steps 1-4, each step generates independently)
-2. Client sends POST to `/api/generate` with step's visual selections + heroImage + highImpactIds
-3. Server builds edit prompt + loads swatch images for high-impact selections (others described in text only)
+2. Client sends POST to `/api/generate` with step's visual selections + heroImage + stepSlug
+3. Server builds edit prompt + loads swatch images for selected visual items (text-only fallback if swatch missing)
 4. Server calls OpenAI `images.edit` with `gpt-image-1.5`:
    - Input: room photo + swatch images (array of files)
    - Prompt includes upgrade list + spatial placement rules + perspective-locking
@@ -156,9 +160,9 @@ State shape:
 6. Return image URL to client
 7. Client displays in StepHero (per-step, not shared)
 
-**Image approach**: OpenAI image editing via `images.edit` endpoint. Sends base room photo + high-impact swatch images as an array of files. The `highImpactIds` config in `step-config.ts` controls which selections send swatch images (9-13 per step) vs text-only descriptions. This keeps image count reasonable while still covering everything visible in the photo.
+**Image approach**: OpenAI image editing via `images.edit` endpoint. Sends base room photo + individually attached swatch images for selected visual items. Prompt lines explicitly map each item to `swatch #N` in deterministic order, so the model can bind the correct material to the correct surface.
 
-**Prompt strategy**: "Surgical precision" pattern — lead with "change ONLY these surfaces", followed by upgrade list, then constraints ("do NOT add, remove, or reposition anything"). Explicit count constraint for cabinets/drawers/hardware to prevent hallucination. Preserves cabinet door style (shaker panels). Concise prompt to avoid drawing model attention to elements it shouldn't touch.
+**Prompt strategy**: "Surgical precision" pattern — lead with "change ONLY these surfaces", followed by upgrade list and hard constraints ("do NOT add, remove, or reposition anything"). Includes explicit object-count and cabinet-geometry preservation, plus subcategory-triggered invariants for known failure points (sink/faucet orientation, refrigerator alcove, range cutout/type, island vs perimeter cabinet boundaries).
 
 **`input_fidelity: "high"`**: Added to the `images.edit` call to maximize preservation of base image details (hardware, pulls, fixtures). Default is "low". Costs ~$0.04-0.06 extra per request.
 
