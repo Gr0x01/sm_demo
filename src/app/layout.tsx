@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "500", "600", "700"] });
 
 export const metadata: Metadata = {
-  title: "Stone Martin Builders — Upgrade Picker",
-  description: "Visualize your dream kitchen with AI-powered upgrade selection",
+  title: "Finch — Upgrade Visualization for Home Builders",
+  description: "AI-powered upgrade visualization that helps home builders close more upgrades",
 };
 
 export default function RootLayout({

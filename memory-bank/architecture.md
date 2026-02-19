@@ -1,17 +1,17 @@
-# Architecture: Stone Martin Upgrade Picker + Kitchen Visualizer
+# Architecture: Finch — Upgrade Visualization for Home Builders
 
 ## System Overview
 
 ```
 Browser (Next.js client)
-  ├── Landing page (static)
-  ├── Upgrade Picker (React state manages all selections)
-  │     ├── Options data loaded from static TypeScript config
+  ├── / — Finch landing page (static, server component)
+  ├── /[orgSlug]/[floorplanSlug] — Upgrade Picker (per-builder demo)
+  │     ├── LandingHero → UpgradePicker → UpgradeSummary (client-side flow via ?page= params)
+  │     ├── Options data loaded from static TypeScript config (→ Supabase later)
   │     ├── Price calculation (client-side, instant)
   │     └── Visual change detection (did a visual sub-category change?)
-  ├── Kitchen Viewer
-  │     └── Calls POST /api/generate when user clicks "Visualize"
-  └── Upgrade Summary (room images + upgrade table + PDF download)
+  ├── /admin — Admin dashboard (no-auth, demo only)
+  └── /api/* — API routes
 
 Server (Next.js API route)
   └── POST /api/generate
@@ -37,7 +37,23 @@ Supabase
         └── {selections_hash}.png
 ```
 
-Option data is static TypeScript. Selections state is client-side React. Supabase is ONLY for caching generated images.
+Option data is static TypeScript (will migrate to Supabase for multi-tenant). Selections state is client-side React. Supabase currently only for caching generated images.
+
+## URL & Multi-Tenant Strategy
+
+**Internal routing** (Next.js paths):
+- `/` → Finch product landing page
+- `/[orgSlug]/[floorplanSlug]` → builder demo (e.g. `/stone-martin/kinkade`)
+- `/admin` → static route, not caught by dynamic segments
+- `/api/*` → static routes, unaffected
+
+**Production URLs** (future, via proxy):
+- `getfinch.app` → Finch landing page
+- `stonemartin.getfinch.app/kinkade` → builder demo
+- Proxy maps subdomains → path-based routes internally
+- No Next.js middleware — subdomain resolution at proxy layer
+
+**Buyer access model**: Open page, no auth required. Anonymous session via cookie. Buyer can save selections by entering name/email → creates persistent retrievable session. Builder sees all saved sessions in admin.
 
 ## Cache Flow
 
@@ -164,9 +180,12 @@ Need stock images: Countertop materials, backsplash tiles, flooring, sinks.
 ```
 src/
 ├── app/
-│   ├── page.tsx
-│   ├── layout.tsx
+│   ├── page.tsx                    # Finch landing page (server component)
+│   ├── layout.tsx                  # Root layout — Finch branding
 │   ├── globals.css
+│   ├── [orgSlug]/[floorplanSlug]/
+│   │   ├── page.tsx               # Demo picker (client component, LandingHero → picker → summary)
+│   │   └── layout.tsx             # Demo layout — builder-specific metadata
 │   ├── admin/page.tsx              # Admin UI — view/delete cached generated images
 │   └── api/
 │       ├── admin/images/route.ts   # GET all cached images, DELETE single or all
