@@ -3,6 +3,13 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { SiteNav } from "@/components/SiteNav";
+
+const HOMEPAGE_NAV_LINKS = [
+  { label: "How It Works", href: "#compare" },
+  { label: "Pricing", href: "#pricing" },
+  { label: "FAQ", href: "#faq" },
+];
 
 const faqs = [
   {
@@ -319,6 +326,8 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white">
+      <SiteNav links={HOMEPAGE_NAV_LINKS} />
+
       <section className="relative overflow-hidden px-6 pt-14 pb-18 md:pt-18 md:pb-16 lg:pt-20 lg:pb-24 bg-white">
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute -top-36 right-0 h-[420px] w-[420px] rounded-full bg-sky-100/40 blur-3xl" />
@@ -328,7 +337,7 @@ export default function LandingPage() {
         <div className="relative max-w-6xl mx-auto">
           <div className="grid md:grid-cols-2 gap-8 md:gap-10 lg:gap-12 items-center">
             <div data-reveal style={revealStyle(100)}>
-              <h1 className="text-[2.6rem] md:text-[3.6rem] lg:text-[4.4rem] leading-[0.95] text-slate-900 tracking-[-0.02em] mb-8">
+              <h1 className="text-[3.2rem] md:text-[3.6rem] lg:text-[4.4rem] leading-[0.95] text-slate-900 tracking-[-0.02em] mb-8">
                 They always
                 <br />
                 pick Standard.
@@ -340,10 +349,10 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 mb-6">
                 <Link
-                  href="/stone-martin/kinkade"
+                  href="/demo"
                   className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                 >
-                  See the Demo
+                  Try It Live
                 </Link>
                 <a
                   href="#contact"
@@ -355,7 +364,7 @@ export default function LandingPage() {
 
             </div>
 
-            <div data-reveal style={revealStyle(180)}>
+            <div data-reveal style={revealStyle(180)} className="hidden md:block">
               <HeroProofCard />
             </div>
           </div>
@@ -376,7 +385,38 @@ export default function LandingPage() {
           </h2>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6 md:gap-8">
+        {/* Mobile: single combined card */}
+        <div data-reveal style={revealStyle(90)} className="md:hidden bg-white border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-slate-100 px-6 py-8">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 mb-4 text-center">What buyers see today</p>
+            <div className="max-w-[290px] mx-auto space-y-2">
+              {[
+                { label: "BACKSPLASH — Herringbone Glacier", price: "$425" },
+                { label: "COUNTERTOP — Calacatta Venice", price: "$2,450" },
+                { label: "HARDWARE — Dominique Gold Pulls", price: "$300" },
+                { label: "ISLAND — Admiral Blue", price: "$200" },
+              ].map((item, i) => (
+                <div key={i} className="flex justify-between text-[11px] font-mono">
+                  <span className="text-slate-400">{item.label}</span>
+                  <span className="text-slate-500">+{item.price}</span>
+                </div>
+              ))}
+              <div className="border-t border-slate-200 mt-3 pt-2 flex justify-between text-[11px] font-mono">
+                <span className="text-slate-500 font-semibold">TOTAL UPGRADES</span>
+                <span className="text-slate-700 font-semibold">+$3,375</span>
+              </div>
+            </div>
+          </div>
+          <div className="relative aspect-[4/3] bg-slate-100">
+            <Image src="/home-hero-generated.png" alt="AI-generated kitchen visualization" fill className="object-cover" />
+          </div>
+          <div className="p-4 text-center">
+            <p className="text-sm font-semibold text-slate-900">What buyers see with Finch</p>
+          </div>
+        </div>
+
+        {/* Desktop: side-by-side cards */}
+        <div className="hidden md:grid md:grid-cols-2 gap-8">
           <div
             data-reveal
             style={revealStyle(90)}
@@ -391,12 +431,12 @@ export default function LandingPage() {
                     { label: "HARDWARE — Dominique Gold Pulls", price: "$300" },
                     { label: "ISLAND — Admiral Blue", price: "$200" },
                   ].map((item, i) => (
-                    <div key={i} className="flex justify-between text-[11px] md:text-xs font-mono">
+                    <div key={i} className="flex justify-between text-xs font-mono">
                       <span className="text-slate-400">{item.label}</span>
                       <span className="text-slate-500">+{item.price}</span>
                     </div>
                   ))}
-                  <div className="border-t border-slate-200 mt-3 pt-2 flex justify-between text-[11px] md:text-xs font-mono">
+                  <div className="border-t border-slate-200 mt-3 pt-2 flex justify-between text-xs font-mono">
                     <span className="text-slate-500 font-semibold">TOTAL UPGRADES</span>
                     <span className="text-slate-700 font-semibold">+$3,375</span>
                   </div>
@@ -427,7 +467,7 @@ export default function LandingPage() {
             This demo is configured to mirror real builder choices. Your version uses your plans, finishes, and pricing.
           </p>
           <Link
-            href="/stone-martin/kinkade"
+            href="/demo"
             className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
             Try It Yourself
@@ -700,13 +740,15 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="px-6 py-8 border-t border-slate-100 bg-slate-50">
-        <div
-          data-reveal
-          style={revealStyle(20)}
-          className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4"
-        >
-          <p className="text-sm font-semibold text-slate-500 tracking-[0.16em] uppercase">Finch</p>
+      <footer className="px-6 py-10 border-t border-slate-100 bg-slate-50">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
+          <p className="text-sm font-semibold text-slate-900 tracking-[0.04em]">Finch</p>
+          <div className="flex items-center gap-6">
+            <a href="#compare" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">How It Works</a>
+            <a href="#pricing" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">Pricing</a>
+            <a href="#faq" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">FAQ</a>
+            <a href="mailto:hello@finchweb.io" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">Contact</a>
+          </div>
           <p className="text-xs text-slate-400">&copy; {new Date().getFullYear()} Finch. All rights reserved.</p>
         </div>
       </footer>

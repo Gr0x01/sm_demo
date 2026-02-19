@@ -121,6 +121,12 @@ h6 {
   animation: fadeIn 200ms ease-out both;
 }
 
+/* Demo generation progress bar shimmer */
+@keyframes progress-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
 /* Hide scrollbar for room strip */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
