@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: "What does a pilot look like?",
-    a: "We set up your 3 best-selling floor plans at no cost. You use Finch for 90 days with real buyers. We measure upgrade revenue together. If the numbers work, we expand to your full catalog at standard pricing. If they don't, you walk away with zero obligation.",
+    a: "We set up your 2 best-selling floor plans at no cost. You use Finch for 90 days with real buyers. We measure upgrade revenue together. If the numbers work, we expand to your full catalog at standard pricing. If they don't, you walk away with zero obligation.",
   },
   {
     q: "Do we need to change our sales process?",
@@ -386,17 +386,20 @@ export default function LandingPage() {
               <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
                 <div className="w-full max-w-[290px] space-y-2">
                   {[
-                    "CABINETS — Oxford.............$0",
-                    "COLOR — White Paint...........$0",
-                    "COUNTERTOP — Dallas White..$0",
-                    "BACKSPLASH — Warm Grey....$0",
-                    "FLOORING — Westbourne.......$0",
-                    "APPLIANCE — Side by Side....$0",
-                  ].map((line, i) => (
-                    <p key={i} className="text-[11px] md:text-xs font-mono text-slate-400 text-left">
-                      {line}
-                    </p>
+                    { label: "BACKSPLASH — Herringbone Glacier", price: "$425" },
+                    { label: "COUNTERTOP — Calacatta Venice", price: "$2,450" },
+                    { label: "HARDWARE — Dominique Gold Pulls", price: "$300" },
+                    { label: "ISLAND — Admiral Blue", price: "$200" },
+                  ].map((item, i) => (
+                    <div key={i} className="flex justify-between text-[11px] md:text-xs font-mono">
+                      <span className="text-slate-400">{item.label}</span>
+                      <span className="text-slate-500">+{item.price}</span>
+                    </div>
                   ))}
+                  <div className="border-t border-slate-200 mt-3 pt-2 flex justify-between text-[11px] md:text-xs font-mono">
+                    <span className="text-slate-500 font-semibold">TOTAL UPGRADES</span>
+                    <span className="text-slate-700 font-semibold">+$3,375</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -411,7 +414,7 @@ export default function LandingPage() {
             className="bg-white border border-slate-200 shadow-sm overflow-hidden"
           >
             <div className="aspect-[4/3] relative bg-slate-100">
-              <Image src="/rooms/kitchen-close.webp" alt="AI-generated kitchen visualization" fill className="object-cover" />
+              <Image src="/home-hero-generated.png" alt="AI-generated kitchen visualization" fill className="object-cover" />
             </div>
             <div className="p-4 text-center">
               <p className="text-sm font-semibold text-slate-900">What buyers see with Finch</p>
@@ -549,12 +552,12 @@ export default function LandingPage() {
             </ul>
 
             <a
-              href="mailto:hello@finchweb.io?subject=Finch Starter Trial"
+              href="mailto:hello@finchweb.io?subject=Finch Starter"
               className="block text-center px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-400 hover:bg-slate-50 transition-colors"
             >
-              Start 14-Day Trial
+              Get Started
             </a>
-            <p className="text-xs text-slate-400 text-center mt-2">1 floor plan. No card required.</p>
+            <p className="text-xs text-slate-400 text-center mt-2">1 floor plan. Live in under a week.</p>
           </div>
 
           <div
@@ -596,14 +599,14 @@ export default function LandingPage() {
           style={revealStyle(230)}
           className="max-w-4xl mx-auto border border-slate-200 bg-slate-50 p-6 md:p-8"
         >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
             <div className="flex-1">
               <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-2">Founding Partners</p>
               <h3 className="text-xl md:text-2xl leading-tight tracking-[-0.01em] text-slate-900 mb-2">
-                3 floor plans. Setup waived. 3 months free.
+                2 Pro floor plans. Setup waived. 3 months free.
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed">
-                We configure your 3 best-selling plans on Pro at no cost. You use it for 90 days with real buyers. If upgrade revenue goes up, we expand to your full catalog. If it doesn&apos;t, you walk away.
+                We configure your 2 best-selling plans on Pro at no cost. You use it for 90 days with real buyers. If upgrade revenue goes up, we expand to your full catalog. If it doesn&apos;t, you walk away.
               </p>
             </div>
             <div className="shrink-0">
@@ -679,7 +682,7 @@ export default function LandingPage() {
         >
           <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Next Step</p>
           <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
-            Your 3 best-selling plans.
+            Your 2 best-selling plans.
             <br />
             No setup cost. 90 days to prove it.
           </h2>
