@@ -507,6 +507,8 @@ export function UpgradePicker({
   // When selections change to a combination we haven't generated in this session,
   // check server cache — if it's a hit, restore instantly without requiring a click.
   // Debounced (300ms) so rapid swatch clicks don't fire excessive requests.
+  // While checking, suppress hasChanges so the button doesn't flash "Visualize" → "Up to Date".
+  const [isCheckingCache, setIsCheckingCache] = useState(false);
   const cacheCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cacheCheckAbortRef = useRef<AbortController | null>(null);
   useEffect(() => {
@@ -525,6 +527,7 @@ export function UpgradePicker({
 
     const controller = new AbortController();
     cacheCheckAbortRef.current = controller;
+    setIsCheckingCache(true);
 
     cacheCheckTimerRef.current = setTimeout(() => {
       fetch("/api/generate/check", {
@@ -546,8 +549,11 @@ export function UpgradePicker({
               selectionsSnapshot,
             });
           }
+          setIsCheckingCache(false);
         })
-        .catch(() => {});
+        .catch(() => {
+          if (!controller.signal.aborted) setIsCheckingCache(false);
+        });
     }, 300);
 
     return () => {
@@ -555,6 +561,9 @@ export function UpgradePicker({
       if (cacheCheckTimerRef.current) clearTimeout(cacheCheckTimerRef.current);
     };
   }, [activeStepHasChanges, activeStep, state.selections, state.generatingStepIds, getStepVisualSelections]);
+
+  // Suppress hasChanges while cache check is in flight — prevents button flash
+  const effectiveHasChanges = activeStepHasChanges && !isCheckingCache;
 
   // Preload all generated images so step switching is instant
   useEffect(() => {
@@ -650,7 +659,7 @@ export function UpgradePicker({
               isGenerating={isGeneratingThisStep}
               error={state.errors[activeStep.id] ?? null}
               onGenerate={handleGenerate}
-              hasChanges={activeStepHasChanges}
+              hasChanges={effectiveHasChanges}
               total={total}
               onContinue={handleContinue}
               onClearSelections={handleClearSelections}
@@ -694,7 +703,7 @@ export function UpgradePicker({
           total={total}
           onGenerate={handleGenerate}
           isGenerating={isGeneratingThisStep}
-          hasChanges={activeStepHasChanges}
+          hasChanges={effectiveHasChanges}
           stepName={activeStep.name}
           showGenerateButton={!!activeStep.showGenerateButton}
           error={state.errors[activeStep.id] ?? null}
