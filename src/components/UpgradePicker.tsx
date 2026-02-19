@@ -49,6 +49,7 @@ const ALWAYS_SEND = new Set([
   "trim-paint",
   "door-casing-color",
   "main-area-flooring-color",
+  "kitchen-island-cabinet-color",
   // Bath — mostly base/bone colored, multiple free options
   "primary-bath-cabinet-color",
   "bathroom-cabinet-hardware",
