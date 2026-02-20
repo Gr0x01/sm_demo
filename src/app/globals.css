@@ -44,6 +44,11 @@ h6 {
     transform: none;
     transition: none;
   }
+  .demo-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Accordion slide animation using grid rows */
@@ -125,6 +130,27 @@ h6 {
 @keyframes progress-slide {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(400%); }
+}
+
+/* Demo page entrance stagger */
+@keyframes demoEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.demo-enter {
+  animation: demoEnter 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.demo-enter-delay-1 {
+  animation-delay: 80ms;
+}
+.demo-enter-delay-2 {
+  animation-delay: 180ms;
 }
 
 /* Hide scrollbar for room strip */

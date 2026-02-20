@@ -238,7 +238,7 @@ export function DemoClient() {
         <div className="mx-auto w-full max-w-[1660px]">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)] gap-4 md:gap-6">
             {/* Left: sticky viewer + controls */}
-            <section className="lg:sticky lg:top-[72px] h-full">
+            <section className="lg:sticky lg:top-[72px] h-full demo-enter demo-enter-delay-1">
               <div className="h-full p-3 md:p-4 bg-white border border-slate-200 flex flex-col gap-4">
                 <div ref={previewSectionRef} className="flex-1 min-h-0">
                   {uploadedPhoto ? (
@@ -304,7 +304,7 @@ export function DemoClient() {
             </section>
 
             {/* Right: scrollable picker */}
-            <section className="lg:pr-1">
+            <section className="lg:pr-1 demo-enter demo-enter-delay-2">
               <DemoPickerPanel
                 selections={selections}
                 sceneAnalysis={uploadedPhoto?.sceneAnalysis}
