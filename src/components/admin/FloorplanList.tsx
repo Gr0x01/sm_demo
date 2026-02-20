@@ -119,14 +119,14 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
         return (
           <div
             key={fp.id}
-            className="bg-neutral-900 border border-neutral-800 p-4 flex items-center gap-4"
+            className="bg-slate-50 border border-slate-200 p-4 flex items-center gap-4"
           >
             {isEditing ? (
               <div className="flex-1 flex items-center gap-2">
                 <input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-sm text-white flex-1"
+                  className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 flex-1"
                   placeholder="Name"
                   autoFocus
                   onKeyDown={(e) => {
@@ -137,7 +137,7 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                 <input
                   value={editCommunity}
                   onChange={(e) => setEditCommunity(e.target.value)}
-                  className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-sm text-white w-40"
+                  className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 w-40"
                   placeholder="Community"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleUpdate(fp);
@@ -147,11 +147,11 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                 <button
                   onClick={() => handleUpdate(fp)}
                   disabled={saving}
-                  className="text-green-400 hover:text-green-300 p-1"
+                  className="text-emerald-700 hover:text-emerald-600 p-1"
                 >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                 </button>
-                <button onClick={() => setEditingId(null)} className="text-neutral-400 hover:text-white p-1">
+                <button onClick={() => setEditingId(null)} className="text-slate-500 hover:text-slate-900 p-1">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -160,12 +160,12 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                 <div className="flex-1 min-w-0">
                   <Link
                     href={`/admin/${orgSlug}/floorplans/${fp.id}`}
-                    className="text-sm font-medium text-white hover:text-blue-400 transition-colors"
+                    className="text-sm font-medium text-slate-900 hover:text-slate-700 transition-colors"
                   >
                     {fp.name}
                   </Link>
                   {fp.community && (
-                    <span className="text-xs text-neutral-500 ml-2">{fp.community}</span>
+                    <span className="text-xs text-slate-500 ml-2">{fp.community}</span>
                   )}
                 </div>
 
@@ -173,8 +173,8 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                   onClick={() => handleToggleActive(fp)}
                   className={`text-xs px-2 py-0.5 border transition-colors ${
                     fp.is_active
-                      ? "border-green-800 text-green-400 hover:bg-green-900/30"
-                      : "border-neutral-700 text-neutral-500 hover:bg-neutral-800"
+                      ? "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                      : "border-slate-300 text-slate-500 hover:bg-slate-100"
                   }`}
                 >
                   {fp.is_active ? "Active" : "Inactive"}
@@ -188,14 +188,14 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                         setEditName(fp.name);
                         setEditCommunity(fp.community || "");
                       }}
-                      className="text-neutral-400 hover:text-white p-1"
+                      className="text-slate-500 hover:text-slate-900 p-1"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(fp)}
                       disabled={isDeleting}
-                      className="text-neutral-400 hover:text-red-400 p-1"
+                      className="text-slate-500 hover:text-red-600 p-1"
                     >
                       {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                     </button>
@@ -210,12 +210,12 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
       {isAdmin && (
         <>
           {showAdd ? (
-            <div className="bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+            <div className="bg-slate-50 border border-slate-200 p-4 space-y-3">
               <div className="flex gap-2">
                 <input
                   value={addName}
                   onChange={(e) => setAddName(e.target.value)}
-                  className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-sm text-white flex-1"
+                  className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 flex-1"
                   placeholder="Floorplan name"
                   autoFocus
                   onKeyDown={(e) => {
@@ -226,7 +226,7 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                 <input
                   value={addCommunity}
                   onChange={(e) => setAddCommunity(e.target.value)}
-                  className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-sm text-white w-40"
+                  className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 w-40"
                   placeholder="Community (optional)"
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleAdd();
@@ -238,13 +238,13 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                 <button
                   onClick={handleAdd}
                   disabled={adding || !addName.trim()}
-                  className="bg-white text-black px-3 py-1 text-sm font-medium hover:bg-neutral-200 disabled:opacity-50"
+                  className="bg-slate-900 text-white px-3 py-1 text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
                 >
                   {adding ? "Creating..." : "Create"}
                 </button>
                 <button
                   onClick={() => setShowAdd(false)}
-                  className="text-neutral-400 hover:text-white text-sm px-3 py-1"
+                  className="text-slate-500 hover:text-slate-900 text-sm px-3 py-1"
                 >
                   Cancel
                 </button>
@@ -253,7 +253,7 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
           ) : (
             <button
               onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
             >
               <Plus className="w-4 h-4" /> Add floorplan
             </button>

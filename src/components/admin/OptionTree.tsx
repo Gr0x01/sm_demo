@@ -47,6 +47,7 @@ interface OptionTreeProps {
 }
 
 export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAdmin, floorplans }: OptionTreeProps) {
+  void orgSlug;
   const [categories, setCategories] = useState(initialCategories);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
@@ -311,7 +312,7 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
         {isAdmin && (
           <button
             onClick={() => setShowAddCategory(true)}
-            className="px-3 py-1.5 text-xs text-white bg-neutral-800 border border-neutral-700 hover:bg-neutral-700 transition-colors flex items-center gap-1 ml-auto"
+            className="px-3 py-1.5 text-xs text-white bg-slate-900 border border-slate-900 hover:bg-slate-800 transition-colors flex items-center gap-1 ml-auto"
           >
             <Plus className="w-3 h-3" /> Category
           </button>
@@ -700,7 +701,6 @@ const SortableOptionRow = memo(function SortableOptionRow({
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(String(option.price));
-  const [saving, setSaving] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -711,26 +711,20 @@ const SortableOptionRow = memo(function SortableOptionRow({
   const handleSavePrice = async () => {
     const newPrice = parseInt(priceValue, 10);
     if (!isNaN(newPrice) && newPrice !== option.price) {
-      setSaving(true);
       try {
         await onUpdate(option.id, { price: newPrice });
       } catch (err) {
         console.error("Price save failed:", err);
-      } finally {
-        setSaving(false);
       }
     }
     setEditingPrice(false);
   };
 
   const handleSaveField = async (field: string, value: unknown) => {
-    setSaving(true);
     try {
       await onUpdate(option.id, { [field]: value });
     } catch (err) {
       console.error("Field save failed:", err);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -812,7 +806,7 @@ const SortableOptionRow = memo(function SortableOptionRow({
 
       {/* Detail panel */}
       {isDetailExpanded && isAdmin && (
-        <OptionDetailPanel option={option} orgId={orgId} categoryName={categoryName} subcategoryName={subcategoryName} onSave={handleSaveField} saving={saving} />
+        <OptionDetailPanel option={option} orgId={orgId} categoryName={categoryName} subcategoryName={subcategoryName} onSave={handleSaveField} />
       )}
     </div>
   );
@@ -826,14 +820,12 @@ function OptionDetailPanel({
   categoryName,
   subcategoryName,
   onSave,
-  saving,
 }: {
   option: AdminOption;
   orgId: string;
   categoryName: string;
   subcategoryName: string;
   onSave: (field: string, value: unknown) => Promise<void>;
-  saving: boolean;
 }) {
   const [generating, setGenerating] = useState(false);
 
@@ -889,7 +881,7 @@ function OptionDetailPanel({
           <button
             onClick={handleGenerateDescriptor}
             disabled={generating}
-            className="text-[10px] px-1.5 py-0.5 bg-purple-900/30 text-purple-400 border border-purple-800/50 hover:bg-purple-900/50 transition-colors disabled:opacity-50 flex items-center gap-1"
+            className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors disabled:opacity-50 flex items-center gap-1"
           >
             {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
             {generating ? "Generating..." : "AI Generate"}
@@ -1015,11 +1007,11 @@ function AddItemForm({
       <button
         onClick={() => { if (name.trim()) onSubmit(name.trim()); }}
         disabled={!name.trim()}
-        className="px-3 py-1.5 text-xs text-white bg-neutral-700 hover:bg-neutral-600 transition-colors disabled:opacity-50"
+        className="px-3 py-1.5 text-xs text-white bg-slate-900 hover:bg-slate-800 transition-colors disabled:opacity-50"
       >
         Add
       </button>
-      <button onClick={onCancel} className="px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-200 transition-colors">
+      <button onClick={onCancel} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors">
         Cancel
       </button>
     </div>
@@ -1065,11 +1057,11 @@ function AddOptionForm({
       <button
         onClick={handleSubmit}
         disabled={!name.trim()}
-        className="px-3 py-1.5 text-xs text-white bg-neutral-700 hover:bg-neutral-600 transition-colors disabled:opacity-50"
+        className="px-3 py-1.5 text-xs text-white bg-slate-900 hover:bg-slate-800 transition-colors disabled:opacity-50"
       >
         Add
       </button>
-      <button onClick={onCancel} className="px-3 py-1.5 text-xs text-neutral-400 hover:text-neutral-200 transition-colors">
+      <button onClick={onCancel} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors">
         Cancel
       </button>
     </div>

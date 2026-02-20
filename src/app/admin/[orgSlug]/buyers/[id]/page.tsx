@@ -89,67 +89,70 @@ export default async function AdminBuyerDetailPage({
   const floorplanName = (session as any).floorplans?.name ?? "Unknown";
 
   return (
-    <div className="p-6 max-w-3xl">
-      <Link href={`/admin/${orgSlug}/buyers`} className="text-sm text-neutral-400 hover:text-white mb-4 inline-block">
-        &larr; All Buyers
-      </Link>
+    <div className="p-6 md:p-8">
+      <div className="max-w-4xl space-y-6">
+        <Link href={`/admin/${orgSlug}/buyers`} className="text-sm text-slate-500 hover:text-slate-900 inline-block">
+          &larr; All Buyers
+        </Link>
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-xl font-bold">
-          {session.buyer_email ?? <span className="text-neutral-500 italic">Anonymous Session</span>}
-        </h1>
-        <div className="flex gap-6 mt-2 text-sm text-neutral-400">
-          <span>Floorplan: <span className="text-neutral-200">{floorplanName}</span></span>
-          <span>Total: <span className="text-neutral-200 font-mono">${Number(session.total_price).toLocaleString()}</span></span>
-          <span className={`inline-block px-2 py-0.5 text-xs font-medium ${
-            session.status === "submitted"
-              ? "bg-green-900/30 text-green-400"
-              : "bg-yellow-900/30 text-yellow-400"
-          }`}>
-            {session.status === "submitted" ? "Submitted" : "In Progress"}
-          </span>
+        <div className="border border-slate-200 bg-white/90 backdrop-blur px-5 py-5 md:px-6 md:py-6 shadow-sm">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-semibold">Session Detail</p>
+          <h1 className="text-2xl md:text-3xl leading-tight tracking-tight mt-2">
+            {session.buyer_email ?? <span className="text-slate-500 italic">Anonymous Session</span>}
+          </h1>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 mt-3 text-sm text-slate-600">
+            <span>Floorplan: <span className="text-slate-900">{floorplanName}</span></span>
+            <span>Total: <span className="text-slate-900 font-mono">${Number(session.total_price).toLocaleString()}</span></span>
+            <span className={`inline-block px-2 py-0.5 text-xs font-medium border ${
+              session.status === "submitted"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : "bg-amber-50 text-amber-700 border-amber-200"
+            }`}>
+              {session.status === "submitted" ? "Submitted" : "In Progress"}
+            </span>
+          </div>
+          <p className="text-xs text-slate-500 mt-3">
+            Last active: {formatDate(session.updated_at)} &middot; Created: {formatDate(session.created_at)}
+          </p>
         </div>
-        <p className="text-xs text-neutral-500 mt-2">
-          Last active: {formatDate(session.updated_at)} &middot; Created: {formatDate(session.created_at)}
-        </p>
-      </div>
 
-      {/* Selections by step */}
-      {stepSelections.length === 0 ? (
-        <p className="text-sm text-neutral-500">No upgrades selected yet.</p>
-      ) : (
-        <div className="space-y-6">
-          {stepSelections.map((step) => (
-            <div key={step.stepName}>
-              <h2 className="text-sm font-semibold text-neutral-300 mb-2 uppercase tracking-wider">
-                {step.stepName}
-              </h2>
-              <div className="border border-neutral-800">
-                {step.entries.map((entry, i) => (
-                  <div
-                    key={`${step.stepName}-${i}`}
-                    className={`flex items-center justify-between px-4 py-2.5 text-sm ${
-                      i > 0 ? "border-t border-neutral-800/50" : ""
-                    }`}
-                  >
-                    <div>
-                      <span className="text-neutral-400">{entry.subName}:</span>{" "}
-                      <span className="text-neutral-200">{entry.optionName}</span>
-                      {entry.quantity > 1 && (
-                        <span className="text-neutral-500 ml-1">&times;{entry.quantity}</span>
-                      )}
+        {stepSelections.length === 0 ? (
+          <div className="border border-slate-200 bg-white px-6 py-10 text-center text-sm text-slate-500 shadow-sm">
+            No upgrades selected yet.
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {stepSelections.map((step) => (
+              <div key={step.stepName} className="border border-slate-200 bg-white shadow-sm">
+                <h2 className="text-xs font-semibold text-slate-500 px-4 py-3 uppercase tracking-[0.14em] border-b border-slate-200">
+                  {step.stepName}
+                </h2>
+                <div>
+                  {step.entries.map((entry, i) => (
+                    <div
+                      key={`${step.stepName}-${i}`}
+                      className={`flex items-center justify-between px-4 py-2.5 text-sm ${
+                        i > 0 ? "border-t border-slate-200/80" : ""
+                      }`}
+                    >
+                      <div>
+                        <span className="text-slate-500">{entry.subName}:</span>{" "}
+                        <span className="text-slate-800">{entry.optionName}</span>
+                        {entry.quantity > 1 && (
+                          <span className="text-slate-500 ml-1">&times;{entry.quantity}</span>
+                        )}
+                      </div>
+                      <span className="font-mono text-slate-700">
+                        {formatPrice(entry.price * entry.quantity)}
+                      </span>
                     </div>
-                    <span className="font-mono text-neutral-300">
-                      {formatPrice(entry.price * entry.quantity)}
-                    </span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

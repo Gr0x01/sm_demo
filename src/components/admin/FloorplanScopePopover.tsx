@@ -96,10 +96,10 @@ export function FloorplanScopePopover({
         onClick={() => setOpen(!open)}
         className={`p-1 transition-colors ${
           isAllFloorplans && loaded
-            ? "text-neutral-600 hover:text-neutral-400"
+            ? "text-slate-500 hover:text-slate-700"
             : loaded
-              ? "text-amber-500 hover:text-amber-400"
-              : "text-neutral-600 hover:text-neutral-400"
+              ? "text-amber-600 hover:text-amber-500"
+              : "text-slate-500 hover:text-slate-700"
         }`}
         title="Floorplan scope"
       >
@@ -107,37 +107,37 @@ export function FloorplanScopePopover({
       </button>
 
       {open && (
-        <div className="absolute z-50 top-full right-0 mt-1 w-56 bg-neutral-900 border border-neutral-700 shadow-lg p-3 space-y-2">
-          <p className="text-xs text-neutral-400 font-medium">Floorplan scope</p>
+        <div className="absolute z-50 top-full right-0 mt-1 w-56 bg-white border border-slate-200 shadow-lg p-3 space-y-2">
+          <p className="text-xs text-slate-600 font-medium">Floorplan scope</p>
 
           {loading ? (
-            <p className="text-xs text-neutral-500">Loading...</p>
+            <p className="text-xs text-slate-500">Loading...</p>
           ) : (
             <>
               {inheritedFrom && isAllFloorplans && (
-                <p className="text-[10px] text-neutral-500 italic">
+                <p className="text-[10px] text-slate-500 italic">
                   Inherits from: {inheritedFrom}
                 </p>
               )}
 
-              <label className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer">
+              <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isAllFloorplans}
                   onChange={() => setSelectedIds(new Set())}
-                  className="accent-white"
+                  className="accent-slate-700"
                 />
                 All floorplans
               </label>
 
-              <div className="border-t border-neutral-800 pt-1 space-y-1">
+              <div className="border-t border-slate-200 pt-1 space-y-1">
                 {floorplans.map((fp) => (
-                  <label key={fp.id} className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer">
+                  <label key={fp.id} className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer">
                     <input
                       type="checkbox"
                       checked={selectedIds.has(fp.id)}
                       onChange={() => handleToggle(fp.id)}
-                      className="accent-white"
+                      className="accent-slate-700"
                     />
                     {fp.name}
                   </label>
@@ -147,7 +147,7 @@ export function FloorplanScopePopover({
               <button
                 onClick={handleSave}
                 disabled={loading}
-                className="w-full px-2 py-1.5 text-xs text-white bg-neutral-700 hover:bg-neutral-600 transition-colors disabled:opacity-50"
+                className="w-full px-2 py-1.5 text-xs text-white bg-slate-900 hover:bg-slate-800 transition-colors disabled:opacity-50"
               >
                 Save
               </button>

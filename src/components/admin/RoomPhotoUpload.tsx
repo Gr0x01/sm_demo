@@ -120,8 +120,8 @@ export function RoomPhotoUpload({ orgId, stepId, onUploaded }: RoomPhotoUploadPr
         onClick={() => inputRef.current?.click()}
         className={`border border-dashed px-4 py-6 text-center cursor-pointer transition-colors ${
           isDragOver
-            ? "border-neutral-400 bg-neutral-800"
-            : "border-neutral-700 hover:border-neutral-500 bg-neutral-900"
+            ? "border-slate-400 bg-slate-100"
+            : "border-slate-300 hover:border-slate-500 bg-slate-50"
         } ${uploading ? "pointer-events-none opacity-50" : ""}`}
       >
         <input
@@ -132,11 +132,11 @@ export function RoomPhotoUpload({ orgId, stepId, onUploaded }: RoomPhotoUploadPr
           className="hidden"
         />
         {uploading ? (
-          <span className="flex items-center justify-center gap-2 text-neutral-400 text-sm">
+          <span className="flex items-center justify-center gap-2 text-slate-600 text-sm">
             <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
           </span>
         ) : (
-          <span className="flex items-center justify-center gap-2 text-neutral-500 text-sm">
+          <span className="flex items-center justify-center gap-2 text-slate-500 text-sm">
             <Upload className="w-4 h-4" /> Drop room photo or click to upload
           </span>
         )}

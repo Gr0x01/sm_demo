@@ -149,16 +149,16 @@ function SortableStep({
   }, [step.id, step.name, orgId, onDelete]);
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-neutral-900 border border-neutral-800">
+    <div ref={setNodeRef} style={style} className="bg-slate-50 border border-slate-200">
       {/* Step header */}
       <div className="flex items-center gap-2 px-4 py-3">
         {isAdmin && (
-          <button {...attributes} {...listeners} className="text-neutral-600 hover:text-neutral-400 cursor-grab">
+          <button {...attributes} {...listeners} className="text-slate-500 hover:text-slate-700 cursor-grab">
             <GripVertical className="w-4 h-4" />
           </button>
         )}
 
-        <button onClick={onToggle} className="text-neutral-400 hover:text-white">
+        <button onClick={onToggle} className="text-slate-500 hover:text-slate-900">
           {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
         </button>
 
@@ -167,7 +167,7 @@ function SortableStep({
             <input
               value={nameValue}
               onChange={(e) => setNameValue(e.target.value)}
-              className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-sm text-white flex-1"
+              className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 flex-1"
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSaveName();
@@ -177,7 +177,7 @@ function SortableStep({
             <input
               value={subtitleValue}
               onChange={(e) => setSubtitleValue(e.target.value)}
-              className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-sm text-white w-40"
+              className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 w-40"
               placeholder="Subtitle"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleSaveName();
@@ -187,22 +187,22 @@ function SortableStep({
             <button onClick={handleSaveName} disabled={saving} className="text-green-400 hover:text-green-300 p-1">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
             </button>
-            <button onClick={() => { setEditingName(false); setNameValue(step.name); }} className="text-neutral-400 hover:text-white p-1">
+            <button onClick={() => { setEditingName(false); setNameValue(step.name); }} className="text-slate-500 hover:text-slate-900 p-1">
               <X className="w-4 h-4" />
             </button>
           </div>
         ) : (
           <>
             <div className="flex-1 min-w-0">
-              <span className="text-xs text-neutral-500 mr-2">#{step.number}</span>
-              <span className="text-sm font-medium text-white">{step.name}</span>
-              {step.subtitle && <span className="text-xs text-neutral-500 ml-2">{step.subtitle}</span>}
+              <span className="text-xs text-slate-500 mr-2">#{step.number}</span>
+              <span className="text-sm font-medium text-slate-900">{step.name}</span>
+              {step.subtitle && <span className="text-xs text-slate-500 ml-2">{step.subtitle}</span>}
             </div>
 
-            <div className="flex items-center gap-2 text-xs text-neutral-500">
+            <div className="flex items-center gap-2 text-xs text-slate-500">
               <Link
                 href={`/admin/${orgSlug}/floorplans/${floorplanId}/photos?step=${step.id}`}
-                className="flex items-center gap-1 hover:text-white transition-colors"
+                className="flex items-center gap-1 hover:text-slate-900 transition-colors"
               >
                 <Camera className="w-3.5 h-3.5" />
                 {step.photo_count} photo{step.photo_count !== 1 ? "s" : ""}
@@ -218,11 +218,11 @@ function SortableStep({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => { setEditingName(true); setNameValue(step.name); setSubtitleValue(step.subtitle || ""); }}
-                  className="text-neutral-400 hover:text-white p-1"
+                  className="text-slate-500 hover:text-slate-900 p-1"
                 >
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button onClick={handleDelete} disabled={deleting} className="text-neutral-400 hover:text-red-400 p-1">
+                <button onClick={handleDelete} disabled={deleting} className="text-slate-500 hover:text-red-600 p-1">
                   {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 </button>
               </div>
@@ -233,10 +233,10 @@ function SortableStep({
 
       {/* Expanded detail */}
       {isExpanded && (
-        <div className="border-t border-neutral-800 px-4 py-4 space-y-4">
+        <div className="border-t border-slate-200 px-4 py-4 space-y-4">
           {/* AI Generation toggle */}
           <div className="flex items-center gap-3">
-            <label className="text-sm text-neutral-400">Show Generate Button</label>
+            <label className="text-sm text-slate-600">Show Generate Button</label>
             <button
               onClick={() => {
                 const next = !showGenBtn;
@@ -244,7 +244,7 @@ function SortableStep({
                 saveField({ show_generate_button: next });
               }}
               disabled={savingField === "show_generate_button"}
-              className={`w-8 h-5 flex items-center transition-colors ${showGenBtn ? "bg-green-600" : "bg-neutral-700"}`}
+              className={`w-8 h-5 flex items-center transition-colors ${showGenBtn ? "bg-emerald-600" : "bg-slate-400"}`}
             >
               <span className={`w-3.5 h-3.5 bg-white block transition-transform ${showGenBtn ? "translate-x-4" : "translate-x-0.5"}`} />
             </button>
@@ -252,7 +252,7 @@ function SortableStep({
 
           {/* Scene description */}
           <div>
-            <label className="text-sm text-neutral-400 block mb-1">Scene Description</label>
+            <label className="text-sm text-slate-600 block mb-1">Scene Description</label>
             <textarea
               value={sceneDesc}
               onChange={(e) => setSceneDesc(e.target.value)}
@@ -261,7 +261,7 @@ function SortableStep({
                   saveField({ scene_description: sceneDesc || null });
                 }
               }}
-              className="w-full bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm text-white resize-none"
+              className="w-full bg-white border border-slate-300 px-3 py-2 text-sm text-slate-900 resize-none"
               rows={2}
               placeholder="Describe the scene for AI generation..."
             />
@@ -269,7 +269,7 @@ function SortableStep({
 
           {/* Sections */}
           <div>
-            <h4 className="text-sm font-medium text-neutral-300 mb-2">Sections</h4>
+            <h4 className="text-sm font-medium text-slate-700 mb-2">Sections</h4>
             <StepSectionEditor
               stepId={step.id}
               orgId={orgId}
@@ -370,7 +370,7 @@ export function FloorplanEditor({
       <div className="flex gap-3">
         <Link
           href={`/admin/${orgSlug}/floorplans/${floorplan.id}/photos`}
-          className="text-sm text-neutral-400 hover:text-white transition-colors flex items-center gap-1.5"
+          className="text-sm text-slate-600 hover:text-slate-900 transition-colors flex items-center gap-1.5"
         >
           <Camera className="w-4 h-4" /> Manage Photos
         </Link>
@@ -414,11 +414,11 @@ export function FloorplanEditor({
       {isAdmin && (
         <>
           {showAdd ? (
-            <div className="bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+            <div className="bg-slate-50 border border-slate-200 p-4 space-y-3">
               <input
                 value={addName}
                 onChange={(e) => setAddName(e.target.value)}
-                className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-sm text-white w-full"
+                className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 w-full"
                 placeholder="Step name (e.g. Kitchen)"
                 autoFocus
                 onKeyDown={(e) => {
@@ -430,13 +430,13 @@ export function FloorplanEditor({
                 <button
                   onClick={handleAdd}
                   disabled={adding || !addName.trim()}
-                  className="bg-white text-black px-3 py-1 text-sm font-medium hover:bg-neutral-200 disabled:opacity-50"
+                  className="bg-slate-900 text-white px-3 py-1 text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
                 >
                   {adding ? "Creating..." : "Add Step"}
                 </button>
                 <button
                   onClick={() => setShowAdd(false)}
-                  className="text-neutral-400 hover:text-white text-sm px-3 py-1"
+                  className="text-slate-500 hover:text-slate-900 text-sm px-3 py-1"
                 >
                   Cancel
                 </button>
@@ -445,7 +445,7 @@ export function FloorplanEditor({
           ) : (
             <button
               onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors"
+              className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
             >
               <Plus className="w-4 h-4" /> Add step
             </button>

@@ -84,11 +84,11 @@ export function SwatchUpload({ orgId, optionId, currentUrl, onUploaded, onRemove
     <div className="space-y-2">
       {currentUrl && (
         <div className="flex items-center gap-2">
-          <img src={currentUrl} alt="Current swatch" className="w-12 h-12 object-cover border border-neutral-700" />
+          <img src={currentUrl} alt="Current swatch" className="w-12 h-12 object-cover border border-slate-300" />
           <button
             onClick={handleRemove}
             disabled={uploading}
-            className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1"
+            className="text-xs text-red-600 hover:text-red-500 flex items-center gap-1"
           >
             <X className="w-3 h-3" /> Remove
           </button>
@@ -102,8 +102,8 @@ export function SwatchUpload({ orgId, optionId, currentUrl, onUploaded, onRemove
         onClick={() => inputRef.current?.click()}
         className={`border border-dashed px-3 py-2 text-center cursor-pointer transition-colors text-xs ${
           isDragOver
-            ? "border-neutral-400 bg-neutral-800"
-            : "border-neutral-700 hover:border-neutral-500 bg-neutral-900"
+            ? "border-slate-400 bg-slate-100"
+            : "border-slate-300 hover:border-slate-500 bg-slate-50"
         } ${uploading ? "pointer-events-none opacity-50" : ""}`}
       >
         <input
@@ -114,11 +114,11 @@ export function SwatchUpload({ orgId, optionId, currentUrl, onUploaded, onRemove
           className="hidden"
         />
         {uploading ? (
-          <span className="flex items-center justify-center gap-1 text-neutral-400">
+          <span className="flex items-center justify-center gap-1 text-slate-600">
             <Loader2 className="w-3 h-3 animate-spin" /> Uploading...
           </span>
         ) : (
-          <span className="flex items-center justify-center gap-1 text-neutral-500">
+          <span className="flex items-center justify-center gap-1 text-slate-500">
             <Upload className="w-3 h-3" /> Drop swatch or click to upload
           </span>
         )}

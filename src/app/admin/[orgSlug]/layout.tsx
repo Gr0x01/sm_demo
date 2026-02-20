@@ -23,9 +23,9 @@ export default async function AdminOrgLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-neutral-950 text-white">
+    <div className="admin-theme flex min-h-screen bg-slate-50 text-slate-900">
       <AdminSidebar orgSlug={orgSlug} orgName={org.name} />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_8%_12%,rgba(186,230,253,0.24),transparent_35%),radial-gradient(circle_at_90%_8%,rgba(226,232,240,0.36),transparent_38%)]">
         {children}
       </main>
     </div>

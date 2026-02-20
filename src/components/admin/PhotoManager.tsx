@@ -134,13 +134,13 @@ function PhotoCard({
   const publicUrl = getPublicUrl(supabaseUrl, photo.image_path);
 
   return (
-    <div className="bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+    <div className="bg-slate-50 border border-slate-200 p-4 space-y-3">
       {/* Top row: thumbnail + metadata */}
       <div className="flex gap-4">
         <img
           src={publicUrl}
           alt={photo.label || "Room photo"}
-          className="w-32 h-24 object-cover border border-neutral-700 flex-shrink-0"
+          className="w-32 h-24 object-cover border border-slate-300 flex-shrink-0"
         />
         <div className="flex-1 min-w-0 space-y-2">
           <div className="flex items-center gap-2">
@@ -148,7 +148,7 @@ function PhotoCard({
             <button
               onClick={handleCheck}
               disabled={checking}
-              className="text-xs text-neutral-400 hover:text-white flex items-center gap-1"
+              className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1"
             >
               {checking ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
               {photo.check_result ? "Re-check" : "Check"}
@@ -156,7 +156,7 @@ function PhotoCard({
           </div>
 
           {photo.check_feedback && (
-            <p className="text-xs text-neutral-400">{photo.check_feedback}</p>
+            <p className="text-xs text-slate-600">{photo.check_feedback}</p>
           )}
 
           {/* Label */}
@@ -167,7 +167,7 @@ function PhotoCard({
               onBlur={() => {
                 if (label !== photo.label) saveField("label", label);
               }}
-              className="bg-neutral-800 border border-neutral-700 px-2 py-1 text-xs text-white flex-1"
+              className="bg-white border border-slate-300 px-2 py-1 text-xs text-slate-900 flex-1"
               placeholder="Photo label"
             />
           </div>
@@ -179,8 +179,8 @@ function PhotoCard({
               disabled={togglingHero}
               className={`text-xs flex items-center gap-1 px-2 py-0.5 border transition-colors ${
                 photo.is_hero
-                  ? "border-yellow-700 text-yellow-400 bg-yellow-900/20"
-                  : "border-neutral-700 text-neutral-500 hover:text-neutral-300"
+                  ? "border-amber-200 text-amber-700 bg-amber-50"
+                  : "border-slate-300 text-slate-500 hover:text-slate-700"
               }`}
             >
               {togglingHero ? <Loader2 className="w-3 h-3 animate-spin" /> : <Star className="w-3 h-3" />}
@@ -190,7 +190,7 @@ function PhotoCard({
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="text-xs text-neutral-400 hover:text-red-400 flex items-center gap-1 ml-auto"
+              className="text-xs text-slate-600 hover:text-red-600 flex items-center gap-1 ml-auto"
             >
               {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
               Delete
@@ -202,16 +202,16 @@ function PhotoCard({
       {/* Spatial hint */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <label className="text-xs text-neutral-400">Spatial Hint</label>
+          <label className="text-xs text-slate-600">Spatial Hint</label>
           <button
             onClick={handleGenerateHint}
             disabled={generatingHint}
-            className="text-xs text-neutral-400 hover:text-white flex items-center gap-1"
+            className="text-xs text-slate-600 hover:text-slate-900 flex items-center gap-1"
           >
             {generatingHint ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
             Generate
           </button>
-          {savingField === "spatial_hint" && <Loader2 className="w-3 h-3 animate-spin text-neutral-500" />}
+          {savingField === "spatial_hint" && <Loader2 className="w-3 h-3 animate-spin text-slate-500" />}
         </div>
         <textarea
           value={spatialHint}
@@ -221,7 +221,7 @@ function PhotoCard({
               saveField("spatial_hint", spatialHint || null);
             }
           }}
-          className="w-full bg-neutral-800 border border-neutral-700 px-2 py-1 text-xs text-white resize-none"
+          className="w-full bg-white border border-slate-300 px-2 py-1 text-xs text-slate-900 resize-none"
           rows={2}
           placeholder="Spatial layout description for AI..."
         />
@@ -230,8 +230,8 @@ function PhotoCard({
       {/* Photo baseline */}
       <div>
         <div className="flex items-center gap-2 mb-1">
-          <label className="text-xs text-neutral-400">Photo Baseline</label>
-          {savingField === "photo_baseline" && <Loader2 className="w-3 h-3 animate-spin text-neutral-500" />}
+          <label className="text-xs text-slate-600">Photo Baseline</label>
+          {savingField === "photo_baseline" && <Loader2 className="w-3 h-3 animate-spin text-slate-500" />}
         </div>
         <textarea
           value={photoBaseline}
@@ -241,7 +241,7 @@ function PhotoCard({
               saveField("photo_baseline", photoBaseline || null);
             }
           }}
-          className="w-full bg-neutral-800 border border-neutral-700 px-2 py-1 text-xs text-white resize-none"
+          className="w-full bg-white border border-slate-300 px-2 py-1 text-xs text-slate-900 resize-none"
           rows={2}
           placeholder="Baseline description of what's in the photo..."
         />
@@ -251,6 +251,7 @@ function PhotoCard({
 }
 
 export function PhotoManager({ steps: initialSteps, orgId, orgSlug, supabaseUrl, initialStepId }: PhotoManagerProps) {
+  void orgSlug;
   const router = useRouter();
   const [steps, setSteps] = useState(initialSteps);
   const [activeStepId, setActiveStepId] = useState(() => {
@@ -333,12 +334,12 @@ export function PhotoManager({ steps: initialSteps, orgId, orgSlug, supabaseUrl,
             onClick={() => setActiveStepId(step.id)}
             className={`px-3 py-1.5 text-sm transition-colors ${
               activeStepId === step.id
-                ? "bg-neutral-800 text-white font-medium"
-                : "text-neutral-400 hover:text-white hover:bg-neutral-800/50"
+                ? "bg-slate-900 text-white font-medium"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
             }`}
           >
             {step.name}
-            <span className="text-xs text-neutral-500 ml-1">({step.step_photos.length})</span>
+            <span className="text-xs text-slate-500 ml-1">({step.step_photos.length})</span>
           </button>
         ))}
       </div>
@@ -355,7 +356,7 @@ export function PhotoManager({ steps: initialSteps, orgId, orgSlug, supabaseUrl,
 
           {/* Photo list */}
           {activeStep.step_photos.length === 0 ? (
-            <p className="text-sm text-neutral-500 py-4 text-center">No photos yet. Upload one above.</p>
+            <p className="text-sm text-slate-500 py-4 text-center">No photos yet. Upload one above.</p>
           ) : (
             <div className="space-y-3">
               {activeStep.step_photos.map((photo) => (
@@ -374,7 +375,7 @@ export function PhotoManager({ steps: initialSteps, orgId, orgSlug, supabaseUrl,
       )}
 
       {steps.length === 0 && (
-        <p className="text-sm text-neutral-500 py-8 text-center">
+        <p className="text-sm text-slate-500 py-8 text-center">
           No steps yet. Add steps to this floorplan first.
         </p>
       )}

@@ -39,12 +39,12 @@ export function AdminSidebar({ orgSlug, orgName }: AdminSidebarProps) {
   };
 
   return (
-    <aside className="w-56 bg-neutral-900 border-r border-neutral-800 flex flex-col h-screen sticky top-0">
+    <aside className="w-56 bg-white/95 backdrop-blur border-r border-slate-200 flex flex-col h-screen sticky top-0">
       {/* Org header */}
-      <div className="px-4 py-4 border-b border-neutral-800">
+      <div className="px-4 py-4 border-b border-slate-200">
         <Link href={`/admin/${orgSlug}`} className="block">
-          <p className="text-xs text-neutral-500 uppercase tracking-wider font-medium">Admin</p>
-          <p className="text-sm font-semibold text-white truncate mt-0.5">{orgName}</p>
+          <p className="text-[11px] text-slate-500 uppercase tracking-[0.16em] font-semibold">Admin</p>
+          <p className="text-sm font-semibold text-slate-900 truncate mt-1">{orgName}</p>
         </Link>
       </div>
 
@@ -60,8 +60,8 @@ export function AdminSidebar({ orgSlug, orgName }: AdminSidebarProps) {
               href={href}
               className={`flex items-center gap-2 px-3 py-2 text-sm transition-colors ${
                 isActive
-                  ? "bg-neutral-800 text-white font-medium"
-                  : "text-neutral-400 hover:text-white hover:bg-neutral-800/50"
+                  ? "bg-slate-900 text-slate-50 font-medium"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
               }`}
             >
               {item.icon === "grid" && (
@@ -91,10 +91,10 @@ export function AdminSidebar({ orgSlug, orgName }: AdminSidebarProps) {
       </nav>
 
       {/* Sign out */}
-      <div className="px-2 py-3 border-t border-neutral-800">
+      <div className="px-2 py-3 border-t border-slate-200">
         <button
           onClick={handleSignOut}
-          className="flex items-center gap-2 px-3 py-2 text-sm text-neutral-400 hover:text-white hover:bg-neutral-800/50 transition-colors w-full"
+          className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors w-full"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />

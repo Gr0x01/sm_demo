@@ -100,15 +100,15 @@ export function StepSectionEditor({
   return (
     <div className="space-y-3">
       {sections.map((section, idx) => (
-        <div key={idx} className="bg-neutral-800 border border-neutral-700 p-3 space-y-2">
+        <div key={idx} className="bg-slate-50 border border-slate-200 p-3 space-y-2">
           <div className="flex items-center gap-2">
             <input
               value={section.title}
               onChange={(e) => updateTitle(idx, e.target.value)}
-              className="bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm text-white flex-1"
+              className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 flex-1"
               placeholder="Section title"
             />
-            <button onClick={() => removeSection(idx)} className="text-neutral-400 hover:text-red-400 p-1">
+            <button onClick={() => removeSection(idx)} className="text-slate-500 hover:text-red-600 p-1">
               <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -120,12 +120,12 @@ export function StepSectionEditor({
               return (
                 <span
                   key={subId}
-                  className="inline-flex items-center gap-1 bg-neutral-700 text-xs text-neutral-200 px-2 py-0.5"
+                  className="inline-flex items-center gap-1 bg-slate-200 text-xs text-slate-700 px-2 py-0.5"
                 >
                   {sub?.name || subId}
                   <button
                     onClick={() => removeSubcategory(idx, subId)}
-                    className="text-neutral-400 hover:text-red-400"
+                    className="text-slate-500 hover:text-red-600"
                   >
                     <span className="text-xs">&times;</span>
                   </button>
@@ -140,7 +140,7 @@ export function StepSectionEditor({
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-neutral-900 border border-neutral-600 px-2 py-1 text-sm text-white w-full"
+                className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 w-full"
                 placeholder="Search subcategories..."
                 autoFocus
                 onKeyDown={(e) => {
@@ -151,15 +151,15 @@ export function StepSectionEditor({
                 }}
               />
               {searchQuery && filteredSubs.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full bg-neutral-800 border border-neutral-700 max-h-48 overflow-y-auto">
+                <div className="absolute z-10 mt-1 w-full bg-white border border-slate-200 max-h-48 overflow-y-auto shadow-sm">
                   {filteredSubs.slice(0, 20).map((sub) => (
                     <button
                       key={sub.id}
                       onClick={() => addSubcategory(idx, sub.id)}
-                      className="w-full text-left px-3 py-1.5 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-white"
+                      className="w-full text-left px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                     >
                       {sub.name}
-                      <span className="text-xs text-neutral-500 ml-2">{sub.categoryName}</span>
+                      <span className="text-xs text-slate-500 ml-2">{sub.categoryName}</span>
                     </button>
                   ))}
                 </div>
@@ -170,7 +170,7 @@ export function StepSectionEditor({
           {activeSection !== idx && (
             <button
               onClick={() => { setActiveSection(idx); setSearchQuery(""); }}
-              className="text-xs text-neutral-500 hover:text-neutral-300"
+              className="text-xs text-slate-500 hover:text-slate-700"
             >
               + Add subcategory
             </button>
@@ -181,7 +181,7 @@ export function StepSectionEditor({
       <div className="flex items-center gap-3">
         <button
           onClick={addSection}
-          className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white"
+          className="flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900"
         >
           <Plus className="w-3.5 h-3.5" /> Add section
         </button>
@@ -190,7 +190,7 @@ export function StepSectionEditor({
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-white text-black px-3 py-1 text-xs font-medium hover:bg-neutral-200 disabled:opacity-50"
+            className="bg-slate-900 text-white px-3 py-1 text-xs font-medium hover:bg-slate-800 disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
             Save sections
