@@ -563,7 +563,7 @@ export function UpgradePicker({
   // Reuse getStepVisualSelections — same logic applies per-photo (uses parent step's photoBaseline)
   const getPhotoVisualSelections = getStepVisualSelections;
 
-  const handleGeneratePhoto = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig) => {
+  const handleGeneratePhoto = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig, opts?: { retry?: boolean }) => {
     if (state.generatingPhotoKeys.has(photoKey)) return;
     dispatch({ type: "START_GENERATING_PHOTO", photoKey });
     track("generation_started", { stepName: step.name, photoKey });
@@ -583,6 +583,7 @@ export function UpgradePicker({
           selections: visualSelections,
           sessionId,
           ...(modelParam ? { model: modelParam } : {}),
+          ...(opts?.retry ? { retry: true } : {}),
         }),
       });
 
@@ -643,32 +644,23 @@ export function UpgradePicker({
     await Promise.all(Array.from({ length: Math.min(concurrency, pending.length) }, () => runNext()));
   }, [steps, state.selections, state.generatedWithSelections, state.generatingPhotoKeys, getPhotoVisualSelections, handleGeneratePhoto]);
 
-  const handleFeedback = useCallback(async (photoKey: string, vote: 1 | -1) => {
+  const handleRetry = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig) => {
+    // Refund credit for the old image, then regenerate
     const generatedImageId = state.generatedImageIds[photoKey];
-    if (!generatedImageId || !sessionId) return;
-
-    dispatch({ type: "SET_FEEDBACK", photoKey, vote });
-    track("feedback_given", { vote, photoKey });
-
-    if (vote === -1) {
+    if (generatedImageId && sessionId) {
       dispatch({ type: "REMOVE_GENERATED_IMAGE", photoKey });
-    }
-
-    try {
-      const res = await fetch("/api/generate/photo/feedback", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ generatedImageId, vote, sessionId, orgSlug }),
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
+      try {
+        await fetch("/api/generate/photo/feedback", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ generatedImageId, vote: -1, sessionId, orgSlug }),
+        });
+      } catch {
+        // Best-effort refund
       }
-    } catch {
-      // Non-critical — feedback is best-effort
     }
-  }, [state.generatedImageIds, sessionId, orgSlug, track]);
+    await handleGeneratePhoto(photoKey, stepPhotoId, step, { retry: true });
+  }, [state.generatedImageIds, sessionId, orgSlug, handleGeneratePhoto]);
 
   const handleClearSelections = useCallback(() => {
     dispatch({ type: "CLEAR_SELECTIONS" });
@@ -802,8 +794,7 @@ export function UpgradePicker({
                 generatedImageUrls={state.generatedImageUrls}
                 generatingPhotoKeys={state.generatingPhotoKeys}
                 onGeneratePhoto={handleGeneratePhoto}
-                onFeedback={handleFeedback}
-                feedbackVotes={state.feedbackVotes}
+                onRetry={handleRetry}
                 generationCredits={state.generationCredits}
                 errors={state.errors}
                 generatedWithSelections={state.generatedWithSelections}
@@ -821,9 +812,8 @@ export function UpgradePicker({
                 generatedImageUrls={state.generatedImageUrls}
                 generatingPhotoKeys={state.generatingPhotoKeys}
                 onGeneratePhoto={handleGeneratePhoto}
+                onRetry={handleRetry}
                 onGenerateAll={handleGenerateAll}
-                onFeedback={handleFeedback}
-                feedbackVotes={state.feedbackVotes}
                 generationCredits={state.generationCredits}
                 errors={state.errors}
                 generatedWithSelections={state.generatedWithSelections}
@@ -840,8 +830,7 @@ export function UpgradePicker({
                       generatedImageUrls={state.generatedImageUrls}
                       generatingPhotoKeys={state.generatingPhotoKeys}
                       onGeneratePhoto={handleGeneratePhoto}
-                      onFeedback={handleFeedback}
-                      feedbackVotes={state.feedbackVotes}
+                      onRetry={handleRetry}
                       errors={state.errors}
                       generatedWithSelections={state.generatedWithSelections}
                       getPhotoVisualSelections={getPhotoVisualSelections}

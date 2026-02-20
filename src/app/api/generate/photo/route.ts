@@ -23,6 +23,7 @@ async function claimGenerationSlot(
   stepPhotoId: string,
   orgId: string,
   stepId: string,
+  selectionsJson: Record<string, unknown>,
 ): Promise<ClaimResult> {
   // Clean up stale pending rows (older than 5 min — safely above maxDuration of 120s)
   const staleThreshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -37,6 +38,7 @@ async function claimGenerationSlot(
     .from("generated_images")
     .insert({
       selections_hash: selectionsHash,
+      selections_json: selectionsJson,
       image_path: "__pending__",
       step_photo_id: stepPhotoId,
       org_id: orgId,
@@ -71,7 +73,7 @@ async function releaseGenerationSlot(
  */
 export async function POST(request: Request) {
   try {
-    const { orgSlug, floorplanSlug, stepPhotoId, selections, sessionId, model } = await request.json();
+    const { orgSlug, floorplanSlug, stepPhotoId, selections, sessionId, model, retry } = await request.json();
 
     if (!orgSlug || !floorplanSlug || !stepPhotoId || !selections || !sessionId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -110,6 +112,15 @@ export async function POST(request: Request) {
       _cacheVersion: GENERATION_CACHE_VERSION,
     });
 
+    // --- Retry: delete existing cached image so we regenerate fresh ---
+    if (retry) {
+      await supabase
+        .from("generated_images")
+        .delete()
+        .eq("selections_hash", selectionsHash)
+        .neq("image_path", "__pending__");
+    }
+
     // --- Cache check (skip __pending__ placeholder rows) ---
     const { data: cached } = await supabase
       .from("generated_images")
@@ -134,7 +145,13 @@ export async function POST(request: Request) {
     }
 
     // --- Double-click guard via DB placeholder row (cross-instance safe) ---
-    const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId);
+    const selectionsJsonForClaim = {
+      ...selections,
+      _stepPhotoId: stepPhotoId,
+      _model: modelName,
+      _cacheVersion: GENERATION_CACHE_VERSION,
+    };
+    const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId, selectionsJsonForClaim);
     if (claimResult === "in_progress") {
       return NextResponse.json(
         { error: "This combination is already being generated" },
@@ -211,11 +228,16 @@ export async function POST(request: Request) {
       resolveSwatchBuffer,
     );
 
-    // --- Generate image ---
+    // --- Generate image (filter out unsupported formats like SVG) ---
+    const supportedSwatches = swatches.filter((s) => {
+      const supported = ["image/jpeg", "image/png", "image/webp"];
+      return supported.includes(s.mediaType);
+    });
+
     const inputImages = [
       await toFile(imageBuffer, heroFilename, { type: heroMime }),
       ...await Promise.all(
-        swatches.map((s) => {
+        supportedSwatches.map((s) => {
           const ext = s.mediaType.split("/")[1] || "png";
           const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
           return toFile(s.buffer, filename, { type: s.mediaType });

@@ -4,16 +4,15 @@ import { useState } from "react";
 import type { StepConfig } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
-import { ThumbsUp, ThumbsDown, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 interface GalleryViewProps {
   steps: StepConfig[];
   generatedImageUrls: Record<string, string>;
   generatingPhotoKeys: Set<string>;
   onGeneratePhoto: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
+  onRetry: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
   onGenerateAll: () => void;
-  onFeedback: (photoKey: string, vote: 1 | -1) => void;
-  feedbackVotes: Record<string, 1 | -1>;
   generationCredits: { used: number; total: number } | null;
   errors: Record<string, string>;
   generatedWithSelections: Record<string, string>;
@@ -34,9 +33,8 @@ export function GalleryView({
   generatedImageUrls,
   generatingPhotoKeys,
   onGeneratePhoto,
+  onRetry,
   onGenerateAll,
-  onFeedback,
-  feedbackVotes,
   generationCredits,
   errors,
   generatedWithSelections,
@@ -44,6 +42,7 @@ export function GalleryView({
   selections,
 }: GalleryViewProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const [lightboxContext, setLightboxContext] = useState<{ photoId: string; step: StepConfig } | null>(null);
 
   // Count pending photos (need generation or are stale)
   let pendingCount = 0;
@@ -123,7 +122,6 @@ export function GalleryView({
                 const isStale = generatedWithSelections[photo.id] !== fingerprint && !!generatedWithSelections[photo.id];
                 const hasGenerated = !!generatedUrl;
                 const displayUrl = generatedUrl || photo.imageUrl;
-                const vote = feedbackVotes[photo.id] ?? null;
                 const error = errors[photo.id] ?? null;
 
                 return (
@@ -132,7 +130,7 @@ export function GalleryView({
                       src={displayUrl}
                       alt={photo.label}
                       className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => setLightboxSrc(displayUrl)}
+                      onClick={() => { setLightboxSrc(displayUrl); setLightboxContext({ photoId: photo.id, step }); }}
                     />
 
                     {/* Generating overlay */}
@@ -155,29 +153,9 @@ export function GalleryView({
                       <div className="flex items-end justify-between gap-2">
                         <p className="text-xs font-medium text-white truncate">{photo.label}</p>
                         <div className="flex items-center gap-1 shrink-0">
-                          {hasGenerated && !isGenerating && (
-                            <>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onFeedback(photo.id, 1); }}
-                                className={`p-1 transition-colors cursor-pointer ${
-                                  vote === 1 ? "text-green-400" : "text-white/60 hover:text-green-400"
-                                }`}
-                              >
-                                <ThumbsUp className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={(e) => { e.stopPropagation(); onFeedback(photo.id, -1); }}
-                                className={`p-1 transition-colors cursor-pointer ${
-                                  vote === -1 ? "text-red-400" : "text-white/60 hover:text-red-400"
-                                }`}
-                              >
-                                <ThumbsDown className="w-3.5 h-3.5" />
-                              </button>
-                            </>
-                          )}
                           {!isGenerating && (
                             <button
-                              onClick={(e) => { e.stopPropagation(); onGeneratePhoto(photo.id, photo.id, step); }}
+                              onClick={(e) => { e.stopPropagation(); hasGenerated && !isStale ? onRetry(photo.id, photo.id, step) : onGeneratePhoto(photo.id, photo.id, step); }}
                               disabled={capReached}
                               className={`px-2 py-1 text-[10px] font-semibold transition-colors cursor-pointer ${
                                 capReached
@@ -185,7 +163,7 @@ export function GalleryView({
                                   : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-hover)]"
                               }`}
                             >
-                              {hasGenerated && isStale ? "Update" : hasGenerated ? "Redo" : "Visualize"}
+                              {hasGenerated && isStale ? "Update" : hasGenerated ? "Retry" : "Visualize"}
                             </button>
                           )}
                         </div>
@@ -217,7 +195,8 @@ export function GalleryView({
         <ImageLightbox
           src={lightboxSrc}
           alt="Gallery image"
-          onClose={() => setLightboxSrc(null)}
+          onClose={() => { setLightboxSrc(null); setLightboxContext(null); }}
+          onRetry={lightboxContext && generatedImageUrls[lightboxContext.photoId] ? () => onRetry(lightboxContext.photoId, lightboxContext.photoId, lightboxContext.step) : undefined}
         />
       )}
     </div>

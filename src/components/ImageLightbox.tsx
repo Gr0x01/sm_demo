@@ -8,9 +8,10 @@ interface ImageLightboxProps {
   color?: string;
   alt: string;
   onClose: () => void;
+  onRetry?: () => void;
 }
 
-export function ImageLightbox({ src, color, alt, onClose }: ImageLightboxProps) {
+export function ImageLightbox({ src, color, alt, onClose, onRetry }: ImageLightboxProps) {
   const [visible, setVisible] = useState(false);
 
   // Animate in on mount
@@ -65,7 +66,7 @@ export function ImageLightbox({ src, color, alt, onClose }: ImageLightboxProps) 
         </button>
 
         {/* Image */}
-        <div className="w-full overflow-hidden shadow-2xl bg-gray-100 border-2 border-white/20">
+        <div className="relative w-full overflow-hidden shadow-2xl bg-gray-100 border-2 border-white/20">
           {src ? (
             <img
               src={src}
@@ -75,6 +76,17 @@ export function ImageLightbox({ src, color, alt, onClose }: ImageLightboxProps) 
           ) : color ? (
             <div className="w-full aspect-square max-h-[60vh]" style={{ backgroundColor: color }} />
           ) : null}
+
+          {onRetry && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-4 pt-8 pb-3 flex justify-end">
+              <button
+                onClick={() => { onRetry(); onClose(); }}
+                className="px-3 py-1.5 bg-white/90 text-slate-800 text-xs font-semibold uppercase tracking-wider hover:bg-white transition-colors cursor-pointer backdrop-blur-sm"
+              >
+                Retry
+              </button>
+            </div>
+          )}
         </div>
 
       </div>

@@ -56,8 +56,7 @@ interface SidebarPanelProps {
   generatedImageUrls?: Record<string, string>;
   generatingPhotoKeys?: Set<string>;
   onGeneratePhoto?: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
-  onFeedback?: (photoKey: string, vote: 1 | -1) => void;
-  feedbackVotes?: Record<string, 1 | -1>;
+  onRetry?: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
   generationCredits?: { used: number; total: number } | null;
   errors?: Record<string, string>;
   generatedWithSelections?: Record<string, string>;
@@ -83,8 +82,7 @@ export function SidebarPanel({
   generatedImageUrls,
   generatingPhotoKeys,
   onGeneratePhoto,
-  onFeedback,
-  feedbackVotes,
+  onRetry,
   generationCredits,
   errors,
   generatedWithSelections,
@@ -166,7 +164,7 @@ export function SidebarPanel({
   }, []);
 
   const showImage = step.heroVariant !== "none";
-  const hasPhotos = !!photos?.length && !!onGeneratePhoto && !!generatedImageUrls && !!generatingPhotoKeys && !!onFeedback && !!feedbackVotes && !!errors && !!generatedWithSelections && !!getPhotoVisualSelections && !!selections;
+  const hasPhotos = !!photos?.length && !!onGeneratePhoto && !!onRetry && !!generatedImageUrls && !!generatingPhotoKeys && !!errors && !!generatedWithSelections && !!getPhotoVisualSelections && !!selections;
 
   return (
     <div
@@ -186,8 +184,7 @@ export function SidebarPanel({
             generatedImageUrls={generatedImageUrls}
             generatingPhotoKeys={generatingPhotoKeys}
             onGeneratePhoto={onGeneratePhoto}
-            onFeedback={onFeedback}
-            feedbackVotes={feedbackVotes}
+            onRetry={onRetry}
             errors={errors}
             generatedWithSelections={generatedWithSelections}
             getPhotoVisualSelections={getPhotoVisualSelections}
