@@ -15,11 +15,23 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
+        // Subdomain root: stone-martin.withfin.ch → /stone-martin
+        {
+          source: "/",
+          has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.withfin\\.ch" }],
+          destination: "/:orgSlug",
+        },
         // Subdomain paths: stone-martin.withfin.ch/kinkade → /stone-martin/kinkade
         {
           source: `/:path(${PASSTHROUGH}.*)`,
           has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.withfin\\.ch" }],
           destination: "/:orgSlug/:path",
+        },
+        // Localhost dev root: demo.localhost:3000 → /demo
+        {
+          source: "/",
+          has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.localhost" }],
+          destination: "/:orgSlug",
         },
         // Localhost dev: demo.localhost:3000/floorplan → /demo/floorplan
         {
