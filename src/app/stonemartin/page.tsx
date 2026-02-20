@@ -115,7 +115,7 @@ export default function StoneMartin() {
                 return (
                   <Link
                     key={fp.slug}
-                    href={`/stone-martin/${fp.slug}`}
+                    href={`/stonemartin/${fp.slug}`}
                     className="block hover:shadow-md transition-shadow"
                   >
                     {card}

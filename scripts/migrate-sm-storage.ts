@@ -25,7 +25,7 @@ const supabase = createClient(url, key);
 
 // ---------- Constants ----------
 
-const ORG_SLUG = "stone-martin";
+const ORG_SLUG = "stonemartin";
 const FLOORPLAN_SLUG = "kinkade";
 
 /** Room photo config: step slug → photos to upload */

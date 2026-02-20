@@ -258,7 +258,7 @@ function RoiCalculator() {
 function HeroProofCard() {
   return (
     <Link
-      href="/stone-martin/kinkade"
+      href="/stonemartin/kinkade"
       className="block w-full border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
     >
       <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">

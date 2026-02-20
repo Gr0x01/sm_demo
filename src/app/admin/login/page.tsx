@@ -93,7 +93,7 @@ function AdminLoginContent() {
           { label: "Home", href: "/" },
           { label: "Try It", href: "/try" },
         ]}
-        cta={{ label: "Builder Demo", href: "/stone-martin/kinkade" }}
+        cta={{ label: "Builder Demo", href: "/stonemartin/kinkade" }}
       />
 
       <section className="relative overflow-hidden px-4 py-14 md:py-20 flex items-center justify-center">

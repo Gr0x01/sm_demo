@@ -13,7 +13,7 @@ function AdminScaffold({ children }: { children: React.ReactNode }) {
     <div className="admin-theme min-h-screen bg-white">
       <SiteNav
         links={ADMIN_NAV_LINKS}
-        cta={{ label: "Builder Demo", href: "/stone-martin/kinkade" }}
+        cta={{ label: "Builder Demo", href: "/stonemartin/kinkade" }}
       />
 
       <section className="relative overflow-hidden px-6 py-14 md:py-20">

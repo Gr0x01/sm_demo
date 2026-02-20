@@ -78,7 +78,7 @@ const supabase = createClient(url, key);
 // ---------- Constants ----------
 
 const ORG_NAME = "Stone Martin Builders";
-const ORG_SLUG = "stone-martin";
+const ORG_SLUG = "stonemartin";
 const FLOORPLAN_NAME = "Kinkade";
 const FLOORPLAN_SLUG = "kinkade";
 const COMMUNITY = "McClain Landing Phase 7";
