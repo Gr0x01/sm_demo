@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import { SiteNav } from "@/components/SiteNav";
@@ -15,18 +15,64 @@ export default function AdminLoginPage() {
 
 function AdminLoginContent() {
   const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
+  const [otp, setOtp] = useState<string[]>(Array(6).fill(""));
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [sent, setSent] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
-  const otpRef = useRef<HTMLInputElement>(null);
+  const digitRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const otpString = otp.join("");
+
+  const handleDigitChange = useCallback((index: number, value: string) => {
+    // Handle paste of full code
+    if (value.length > 1) {
+      const digits = value.replace(/\D/g, "").slice(0, 6).split("");
+      const newOtp = Array(6).fill("");
+      digits.forEach((d, i) => { newOtp[i] = d; });
+      setOtp(newOtp);
+      const focusIndex = Math.min(digits.length, 5);
+      digitRefs.current[focusIndex]?.focus();
+      return;
+    }
+
+    const digit = value.replace(/\D/g, "");
+    const newOtp = [...otp];
+    newOtp[index] = digit;
+    setOtp(newOtp);
+
+    if (digit && index < 5) {
+      digitRefs.current[index + 1]?.focus();
+    }
+  }, [otp]);
+
+  const handleDigitKeyDown = useCallback((index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      digitRefs.current[index - 1]?.focus();
+    }
+  }, [otp]);
+
+  // Restore OTP state from sessionStorage on mount (survives refresh)
+  useEffect(() => {
+    const saved = sessionStorage.getItem("finch_otp_email");
+    if (saved) {
+      setEmail(saved);
+      setSent(true);
+      setTimeout(() => digitRefs.current[0]?.focus(), 100);
+    }
+  }, []);
 
   useEffect(() => {
     if (searchParams.get("error") === "link_expired") {
       setError("Your sign-in link has expired or was opened in a different browser. Enter the code from your email instead.");
+      // Also check if we have a saved email to show the OTP form
+      const saved = sessionStorage.getItem("finch_otp_email");
+      if (saved) {
+        setEmail(saved);
+        setSent(true);
+      }
     }
   }, [searchParams]);
 
@@ -50,10 +96,10 @@ function AdminLoginContent() {
         return;
       }
 
+      sessionStorage.setItem("finch_otp_email", email);
       setSent(true);
       setLoading(false);
-      // Auto-focus the OTP input
-      setTimeout(() => otpRef.current?.focus(), 100);
+      setTimeout(() => digitRefs.current[0]?.focus(), 100);
     } catch {
       setError("An unexpected error occurred");
       setLoading(false);
@@ -69,7 +115,7 @@ function AdminLoginContent() {
       const supabase = createSupabaseBrowser();
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
-        token: otp,
+        token: otpString,
         type: "email",
       });
 
@@ -79,6 +125,7 @@ function AdminLoginContent() {
         return;
       }
 
+      sessionStorage.removeItem("finch_otp_email");
       router.push("/admin");
     } catch {
       setError("An unexpected error occurred");
@@ -93,7 +140,6 @@ function AdminLoginContent() {
           { label: "Home", href: "/" },
           { label: "Try It", href: "/try" },
         ]}
-        cta={{ label: "Builder Demo", href: "/stonemartin/kinkade" }}
       />
 
       <section className="relative overflow-hidden px-4 py-14 md:py-20 flex items-center justify-center">
@@ -123,27 +169,31 @@ function AdminLoginContent() {
 
               <form onSubmit={handleVerifyOtp} className="space-y-4">
                 <div>
-                  <label htmlFor="otp" className="block text-sm font-medium text-slate-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
                     Enter code
                   </label>
-                  <input
-                    ref={otpRef}
-                    id="otp"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    required
-                    className="w-full px-3 py-2 bg-white border border-slate-300 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-slate-500 tracking-widest text-center text-lg font-mono"
-                    placeholder="000000"
-                    maxLength={6}
-                  />
+                  <div className="flex gap-2 justify-center">
+                    {otp.map((digit, i) => (
+                      <input
+                        key={i}
+                        ref={(el) => { digitRefs.current[i] = el; }}
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete={i === 0 ? "one-time-code" : "off"}
+                        value={digit}
+                        onChange={(e) => handleDigitChange(i, e.target.value)}
+                        onKeyDown={(e) => handleDigitKeyDown(i, e)}
+                        onFocus={(e) => e.target.select()}
+                        maxLength={6}
+                        className="w-11 h-13 bg-white border border-slate-300 text-slate-900 text-xl font-mono text-center focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 transition-colors"
+                      />
+                    ))}
+                  </div>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={verifying || otp.length < 6}
+                  disabled={verifying || otpString.length < 6}
                   className="w-full py-2.5 bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {verifying ? "Verifying..." : "Sign in"}
@@ -159,9 +209,10 @@ function AdminLoginContent() {
                 </p>
                 <button
                   onClick={() => {
+                    sessionStorage.removeItem("finch_otp_email");
                     setSent(false);
                     setEmail("");
-                    setOtp("");
+                    setOtp(Array(6).fill(""));
                     setError(null);
                   }}
                   className="text-slate-600 text-xs hover:text-slate-900 transition-colors"
