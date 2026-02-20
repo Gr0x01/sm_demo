@@ -25,9 +25,16 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [ ] Generation reliability improvements
 - See `architecture.md` and `generation-reliability-playbook.md`
 
-### 4. V1 Workstream A: Builder Admin — Auth, RLS, Option Management
+### 4. V1 Workstream A: Builder Admin — Auth, RLS, Option Management ✅
 **The first product workstream.** See `v1-product.md` Section 9 for full breakdown.
-- [x] Admin auth (Supabase Auth email/password, org-scoped via `org_users` join table)
+- [x] Admin auth: magic link + 6-digit OTP (Supabase Auth, `@supabase/ssr` PKCE flow)
+- [x] Auth callback route (`/auth/callback`) with open-redirect protection
+- [x] Invite flow: `POST /api/admin/invite` — pending `org_users` row + Resend email + auto-link on sign-in
+- [x] `link_pending_invites` trigger (replaces hardcoded email trigger) — generic, links by email on auth.users INSERT
+- [x] `get_auth_user_id_by_email` RPC for direct-linking existing auth users at invite time
+- [x] `onAuthStateChange` listener in AdminSidebar — redirects to login on session expiry
+- [x] Sign-out button in admin sidebar
+- [x] Custom magic link email template (dark theme, OTP code prominent, magic link secondary)
 - [x] RLS policies on all tables (service role bypasses for buyer-facing; user-scoped for admin)
 - [x] Category/subcategory/option tree UI (CRUD, drag reorder, inline price edit)
 - [x] Floorplan scoping (category junction table + `floorplan_ids` array columns on sub/opt)

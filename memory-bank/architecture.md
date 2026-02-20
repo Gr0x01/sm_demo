@@ -11,10 +11,15 @@ Browser (Next.js client)
   │     ├── All option/step/config data passed as props from server component
   │     ├── Price calculation (client-side, instant)
   │     └── Visual change detection (did a visual sub-category change?)
-  ├── /admin — Admin root (redirects to org dashboard)
-  ├── /admin/login — Email/password login (Supabase Auth)
+  ├── /admin — Admin root (org picker or auto-redirect if single org)
+  ├── /admin/login — Magic link + OTP login (Supabase Auth)
+  ├── /auth/callback — PKCE code exchange for magic link redirects
   ├── /admin/[orgSlug] — Org dashboard (authenticated)
   ├── /admin/[orgSlug]/options — Category/subcategory/option tree CRUD
+  ├── /admin/[orgSlug]/floorplans — Floorplan list + CRUD
+  ├── /admin/[orgSlug]/floorplans/[id] — Step editor (reorder, section assignment)
+  ├── /admin/[orgSlug]/floorplans/[id]/photos — Photo manager (upload, quality check, spatial hints)
+  ├── /admin/[orgSlug]/buyers — Buyer session dashboard
   ├── /admin/[orgSlug]/images — Generated image cache management
   └── /api/* — API routes
 
@@ -40,6 +45,8 @@ Supabase
   ├── Table: buyer_sessions (anonymous + email-saved buyer sessions, replaces buyer_selections)
   ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, kept for reference)
   ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
+  ├── RPC: get_auth_user_id_by_email(lookup_email) — service-role-only user lookup for invite flow
+  ├── Trigger: link_pending_invites — on auth.users INSERT, links pending org_users by email
   ├── Storage bucket: kitchen-images ({selections_hash}.png)
   ├── Storage bucket: swatches ({orgId}/swatches/{subcatId}/{uuid}.{ext})
   └── Storage bucket: rooms ({orgId}/rooms/{stepId}/{uuid}.{ext}) — public read, admin upload

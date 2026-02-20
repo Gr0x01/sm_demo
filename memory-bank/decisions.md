@@ -229,3 +229,17 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 **Context**: Need to send resume links to buyers. Options: Resend, SendGrid, SES, Postmark.
 **Decision**: Resend. Simple API, good DX, generous free tier (100 emails/day). Lazy-initialized client singleton to avoid build-time failures when `RESEND_API_KEY` is not set. Fire-and-forget — save succeeds even if email delivery fails.
 **Trade-off**: External dependency, but email is table-stakes for buyer persistence.
+
+## D52: Magic link + OTP instead of email/password for admin auth
+**Context**: Building admin auth for builder onboarding. Email/password adds friction (password management, reset flows). Solo developer — no need for complex auth.
+**Decision**: Supabase `signInWithOtp` with PKCE flow. Login page shows email input → sends magic link + 6-digit OTP code. After sending, shows OTP code input (works from any browser) with magic link as secondary option (same-browser only due to PKCE `code_verifier` cookie). Custom dark-themed email template with OTP prominent.
+**Trade-off**: Requires email delivery (slight latency), but zero password UX, no reset flows, and OTP fallback eliminates the same-browser PKCE limitation.
+
+## D53: Invite flow with pending org_users rows
+**Context**: Original admin setup used a hardcoded DB trigger mapping `gr0x01@pm.me` → Stone Martin org. Doesn't scale to multiple builders.
+**Decision**: Invite flow via `POST /api/admin/invite`. Inserts `org_users` row with `user_id=NULL`, `invited_email`, `invited_at`. Generic `link_pending_invites` trigger on `auth.users` INSERT matches by email and links the user. If invitee already has an auth account, `get_auth_user_id_by_email` RPC links them directly at invite time (no trigger needed). Invite email sent via Resend.
+**Trade-off**: Slightly more complex than hardcoded trigger, but scales to any number of builders and provides audit trail.
+
+## D54: Finch Demo sandbox org
+**Context**: Need a safe place for prospects and testers to explore the admin without touching Stone Martin's real data.
+**Decision**: Created "Finch Demo" org with slug `demo`. Owner (gr0x01@pm.me) is admin on both orgs. Login shows org picker when user has multiple orgs. Invite anyone to demo org without risk to SM data.

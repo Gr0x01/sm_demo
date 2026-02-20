@@ -1,9 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
-import { useRouter } from "next/navigation";
 
 interface AdminSidebarProps {
   orgSlug: string;
@@ -20,6 +20,17 @@ const navItems = [
 export function AdminSidebar({ orgSlug, orgName }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
+
+  // Redirect to login when session expires or user signs out in another tab
+  useEffect(() => {
+    const supabase = createSupabaseBrowser();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_OUT") {
+        router.push("/admin/login");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [router]);
 
   const handleSignOut = async () => {
     const supabase = createSupabaseBrowser();
