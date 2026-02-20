@@ -261,7 +261,7 @@ export function UpgradePicker({
       url.searchParams.set("step", activeStepId);
       window.history.replaceState({}, "", url.toString());
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const onPopState = () => {

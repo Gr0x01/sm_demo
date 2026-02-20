@@ -61,10 +61,10 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
   const { data: cats, error } = await supabase
     .from("categories")
     .select(`
-      id, name, sort_order,
+      id, slug, name, sort_order,
       subcategories (
-        id, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order,
-        options ( id, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order )
+        id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order,
+        options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order )
       )
     `)
     .eq("org_id", orgId)
@@ -73,23 +73,23 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
   if (error || !cats) return [];
 
   return cats.map((cat) => ({
-    id: cat.id,
+    id: cat.slug,
     name: cat.name,
     subCategories: ((cat.subcategories ?? []) as {
-      id: string; name: string; category_id: string; is_visual: boolean;
+      id: string; slug: string; name: string; category_id: string; is_visual: boolean;
       is_additive: boolean | null; unit_label: string | null; max_quantity: number | null;
       sort_order: number;
       options: {
-        id: string; name: string; price: number; prompt_descriptor: string | null;
+        id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
         swatch_url: string | null; swatch_color: string | null; nudge: string | null;
         sort_order: number;
       }[];
     }[])
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((sub): SubCategory => ({
-        id: sub.id,
+        id: sub.slug,
         name: sub.name,
-        categoryId: sub.category_id,
+        categoryId: cat.slug,
         isVisual: sub.is_visual,
         isAdditive: sub.is_additive || undefined,
         unitLabel: sub.unit_label ?? undefined,
@@ -97,7 +97,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
         options: (sub.options ?? [])
           .sort((a, b) => a.sort_order - b.sort_order)
           .map((opt): Option => ({
-            id: opt.id,
+            id: opt.slug,
             name: opt.name,
             price: opt.price,
             promptDescriptor: opt.prompt_descriptor ?? undefined,
@@ -116,6 +116,94 @@ export const getCategoriesWithOptions = cache((orgId: string) =>
   })(orgId)
 );
 
+// ---------- Floorplan-scoped categories (category junction + column filters) ----------
+
+const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): Promise<Category[]> => {
+  const supabase = getServiceClient();
+
+  // Single query for categories + nested data, plus category-level scope junction
+  const [catsResult, catScopeResult] = await Promise.all([
+    supabase
+      .from("categories")
+      .select(`
+        id, slug, name, sort_order,
+        subcategories (
+          id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids,
+          options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, floorplan_ids )
+        )
+      `)
+      .eq("org_id", orgId)
+      .order("sort_order"),
+    supabase.from("category_floorplan_scope").select("category_id").eq("floorplan_id", floorplanId),
+  ]);
+
+  const cats = catsResult.data;
+  if (catsResult.error || !cats) return [];
+
+  // Category scope: junction table (has rows = restricted, no rows = all floorplans)
+  const catScoped = new Set((catScopeResult.data ?? []).map((r) => r.category_id));
+  // Get scope rows only for this org's categories to know which are restricted
+  const orgCatIds = cats.map((c) => c.id);
+  const { data: allCatScope } = await supabase
+    .from("category_floorplan_scope")
+    .select("category_id")
+    .in("category_id", orgCatIds);
+  const catHasScope = new Set((allCatScope ?? []).map((r) => r.category_id));
+
+  type RawSub = {
+    id: string; slug: string; name: string; category_id: string; is_visual: boolean;
+    is_additive: boolean | null; unit_label: string | null; max_quantity: number | null;
+    sort_order: number; floorplan_ids: string[];
+    options: {
+      id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
+      swatch_url: string | null; swatch_color: string | null; nudge: string | null;
+      sort_order: number; floorplan_ids: string[];
+    }[];
+  };
+
+  // Subcategory/option scope: floorplan_ids column (empty = all, non-empty = restricted)
+  const fitsFloorplan = (ids: string[]) => ids.length === 0 || ids.includes(floorplanId);
+
+  return cats
+    .filter((cat) => !catHasScope.has(cat.id) || catScoped.has(cat.id))
+    .map((cat) => ({
+      id: cat.slug,
+      name: cat.name,
+      subCategories: ((cat.subcategories ?? []) as RawSub[])
+        .filter((sub) => fitsFloorplan(sub.floorplan_ids))
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((sub): SubCategory => ({
+          id: sub.slug,
+          name: sub.name,
+          categoryId: cat.slug,
+          isVisual: sub.is_visual,
+          isAdditive: sub.is_additive || undefined,
+          unitLabel: sub.unit_label ?? undefined,
+          maxQuantity: sub.max_quantity ?? undefined,
+          options: (sub.options ?? [])
+            .filter((opt) => fitsFloorplan(opt.floorplan_ids))
+            .sort((a, b) => a.sort_order - b.sort_order)
+            .map((opt): Option => ({
+              id: opt.slug,
+              name: opt.name,
+              price: opt.price,
+              promptDescriptor: opt.prompt_descriptor ?? undefined,
+              swatchUrl: opt.swatch_url ?? undefined,
+              swatchColor: opt.swatch_color ?? undefined,
+              nudge: opt.nudge ?? undefined,
+            })),
+        })),
+    }))
+    .filter((cat) => cat.subCategories.length > 0);
+};
+
+export const getCategoriesForFloorplan = cache((orgId: string, floorplanId: string) =>
+  unstable_cache(_getCategoriesForFloorplan, ["categories-fp", orgId, floorplanId], {
+    revalidate: REVALIDATE_SECONDS,
+    tags: [`categories:${orgId}`],
+  })(orgId, floorplanId)
+);
+
 // ---------- Steps with config ----------
 
 const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> => {
@@ -126,9 +214,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
     .select(`
       id, slug, number, name, subtitle, hero_image, hero_variant,
       show_generate_button, scene_description, also_include_ids, photo_baseline,
-      sort_order,
-      step_sections ( id, title, subcategory_ids, sort_order ),
-      step_ai_config ( spatial_hints )
+      sort_order, sections, spatial_hints
     `)
     .eq("floorplan_id", floorplanId)
     .order("sort_order");
@@ -136,7 +222,8 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
   if (stepsErr || !dbSteps) return [];
 
   return dbSteps.map((s) => {
-    const sections: StepSection[] = (s.step_sections as { title: string; subcategory_ids: string[]; sort_order: number }[])
+    const rawSections = (s.sections as { title: string; subcategory_ids: string[]; sort_order: number }[]) ?? [];
+    const sections: StepSection[] = rawSections
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((sec) => ({
         title: sec.title,
@@ -171,12 +258,12 @@ const _getVisualSubCategoryIdsFromDb = async (orgId: string): Promise<string[]> 
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("subcategories")
-    .select("id")
+    .select("slug")
     .eq("org_id", orgId)
     .eq("is_visual", true);
 
   if (error || !data) return [];
-  return data.map((d) => d.id);
+  return data.map((d) => d.slug);
 };
 
 /** Returns visual subcategory IDs as a Set. Cached across requests. */
@@ -195,19 +282,17 @@ export async function getStepAiConfig(stepSlug: string, floorplanId: string) {
 
   const { data: step, error: stepErr } = await supabase
     .from("steps")
-    .select("id, scene_description, also_include_ids, photo_baseline, step_ai_config ( spatial_hints )")
+    .select("id, scene_description, also_include_ids, photo_baseline, spatial_hints")
     .eq("floorplan_id", floorplanId)
     .eq("slug", stepSlug)
     .single();
 
   if (stepErr || !step) return null;
 
-  const config = step.step_ai_config as { spatial_hints: Record<string, string> }[] | null;
-
   return {
     stepId: step.id,
     sceneDescription: step.scene_description as string | null,
-    spatialHints: (config?.[0]?.spatial_hints ?? {}) as Record<string, string>,
+    spatialHints: (step.spatial_hints as Record<string, string>) ?? {},
   };
 }
 

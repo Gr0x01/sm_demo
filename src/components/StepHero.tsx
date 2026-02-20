@@ -28,7 +28,7 @@ export function StepHero({ step, generatedImageUrl, isGenerating, compact }: Ste
   useEffect(() => {
     initialUrlRef.current = generatedImageUrl;
     setRevealingUrl(null);
-  }, [step.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [step.id]);
 
   // Detect fresh generation: URL appeared while we were on this step
   useEffect(() => {

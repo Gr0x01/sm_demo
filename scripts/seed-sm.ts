@@ -139,25 +139,36 @@ async function main() {
   const floorplanId = fp.id;
   console.log(`  Floorplan: ${FLOORPLAN_NAME} (${floorplanId})`);
 
-  // 3. Categories
+  // 3. Categories (slug-based upsert, DB generates UUID id)
   const categoryRows = categories.map((cat, i) => ({
-    id: cat.id,
+    slug: cat.id,
     org_id: orgId,
     name: cat.name,
     sort_order: i,
   }));
   const { error: catErr } = await supabase
     .from("categories")
-    .upsert(categoryRows, { onConflict: "id" });
+    .upsert(categoryRows, { onConflict: "org_id,slug" });
   if (catErr) {
     console.error("Failed to upsert categories:", catErr);
     process.exit(1);
   }
   console.log(`  Categories: ${categoryRows.length}`);
 
-  // 4. Subcategories
+  // Fetch category slug → UUID map for FK references
+  const { data: catLookup, error: catLookupErr } = await supabase
+    .from("categories")
+    .select("id, slug")
+    .eq("org_id", orgId);
+  if (catLookupErr || !catLookup) {
+    console.error("Failed to fetch category UUIDs:", catLookupErr);
+    process.exit(1);
+  }
+  const catSlugToUuid = new Map(catLookup.map((c) => [c.slug, c.id]));
+
+  // 4. Subcategories (slug-based upsert, category_id is UUID)
   const subcategoryRows: {
-    id: string;
+    slug: string;
     category_id: string;
     org_id: string;
     name: string;
@@ -169,11 +180,16 @@ async function main() {
   }[] = [];
 
   for (const cat of categories) {
+    const catUuid = catSlugToUuid.get(cat.id);
+    if (!catUuid) {
+      console.error(`No UUID found for category slug: ${cat.id}`);
+      process.exit(1);
+    }
     for (let i = 0; i < cat.subCategories.length; i++) {
       const sub = cat.subCategories[i];
       subcategoryRows.push({
-        id: sub.id,
-        category_id: cat.id,
+        slug: sub.id,
+        category_id: catUuid,
         org_id: orgId,
         name: sub.name,
         is_visual: sub.isVisual,
@@ -190,7 +206,7 @@ async function main() {
     const batch = subcategoryRows.slice(i, i + 50);
     const { error } = await supabase
       .from("subcategories")
-      .upsert(batch, { onConflict: "id" });
+      .upsert(batch, { onConflict: "org_id,slug" });
     if (error) {
       console.error(`Failed to upsert subcategories batch ${i}:`, error);
       process.exit(1);
@@ -198,9 +214,20 @@ async function main() {
   }
   console.log(`  Subcategories: ${subcategoryRows.length}`);
 
-  // 5. Options
+  // Fetch subcategory slug → UUID map for FK references
+  const { data: subLookup, error: subLookupErr } = await supabase
+    .from("subcategories")
+    .select("id, slug")
+    .eq("org_id", orgId);
+  if (subLookupErr || !subLookup) {
+    console.error("Failed to fetch subcategory UUIDs:", subLookupErr);
+    process.exit(1);
+  }
+  const subSlugToUuid = new Map(subLookup.map((s) => [s.slug, s.id]));
+
+  // 5. Options (slug-based upsert, subcategory_id is UUID)
   const optionRows: {
-    id: string;
+    slug: string;
     subcategory_id: string;
     org_id: string;
     name: string;
@@ -215,11 +242,16 @@ async function main() {
 
   for (const cat of categories) {
     for (const sub of cat.subCategories) {
+      const subUuid = subSlugToUuid.get(sub.id);
+      if (!subUuid) {
+        console.error(`No UUID found for subcategory slug: ${sub.id}`);
+        process.exit(1);
+      }
       for (let i = 0; i < sub.options.length; i++) {
         const opt = sub.options[i];
         optionRows.push({
-          id: opt.id,
-          subcategory_id: sub.id,
+          slug: opt.id,
+          subcategory_id: subUuid,
           org_id: orgId,
           name: opt.name,
           price: opt.price,
@@ -238,7 +270,7 @@ async function main() {
     const batch = optionRows.slice(i, i + 50);
     const { error } = await supabase
       .from("options")
-      .upsert(batch, { onConflict: "id" });
+      .upsert(batch, { onConflict: "org_id,slug" });
     if (error) {
       console.error(`Failed to upsert options batch ${i}:`, error);
       process.exit(1);
