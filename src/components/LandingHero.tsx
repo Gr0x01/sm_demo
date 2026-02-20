@@ -34,7 +34,7 @@ export function LandingHero({
             {orgName}
           </h2>
           <h1 className="text-4xl md:text-5xl font-bold leading-tight text-[var(--color-navy)] mb-4">
-            See Your Kitchen <span className="text-[var(--color-accent)]">Before You Choose</span>
+            See Your Kitchen <span className="text-[var(--color-accent)]">Before You&nbsp;Choose</span>
           </h1>
           <p className="text-lg text-gray-500">
             {planName} Plan &mdash; {community}
@@ -84,7 +84,7 @@ export function LandingHero({
         </div>
 
         <p className="mt-6 text-sm text-gray-400">
-          Real pricing &bull; AI-powered kitchen visualization
+          Pick your finishes. See your home come to life.
         </p>
       </div>
     </div>
