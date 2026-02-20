@@ -204,3 +204,28 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 - Pass 2 prompt includes both positive constraints (range remains clearly present, single-oven, no backguard) and negative constraints (no edits to island-front cabinetry / below island countertop plane).
 - Cache version was bumped so stale pre-fix outputs are never reused for diagnosis.
 **Trade-off**: Adds complexity and one extra generation pass for this specific case, but removes the "either oven or island-front correctness" failure mode.
+
+## D47: Anonymous sessions replace BUYER_ID hack
+**Context**: SM demo used a hardcoded `BUYER_ID = "may-baten"` constant and a `buyer_selections` table. This doesn't scale to multi-tenant — every visitor would share the same row.
+**Decision**: Replace with anonymous `buyer_sessions` rows. Each visitor gets a unique session, stored in a cookie scoped to `/{orgSlug}/{floorplanSlug}`. No auth required for buyers. SM demo now uses the same flow as all V1 builders.
+**Trade-off**: More complex session lifecycle (cookie read → load → create) but works for all orgs identically.
+
+## D48: Server-side price calculation for buyer sessions
+**Context**: Auto-save could trust the client-sent total price, or compute it server-side.
+**Decision**: Server computes `total_price` from `selections + quantities + categories` via the existing `calculateTotal` function. Client still computes locally for instant display, but the DB value is authoritative. Uses `getCategoriesForFloorplan` (floorplan-scoped) for accuracy.
+**Trade-off**: One extra query per save (cached categories), but ensures admin dashboard reports are accurate and not client-manipulable.
+
+## D49: Resume token architecture — no session merging
+**Context**: When a buyer saves their email, they could get a merged session (combining anonymous + any previous email-linked session) or keep separate sessions.
+**Decision**: No merging. Each `save-email` call attaches the email + a new `crypto.randomBytes(32).toString('hex')` token to the current session only. Multiple saves from the same email create independent sessions. Resume-by-email returns the most recently updated session.
+**Trade-off**: Simpler logic, no data loss from merge conflicts. Slightly more DB rows. Admin dashboard shows all sessions.
+
+## D50: generation_count deferred to Workstream D
+**Context**: The `buyer_sessions` schema includes `generation_count` but Workstream C has no cap or counter logic.
+**Decision**: Column exists in schema (avoids a future migration), but zero application code reads or writes it. All counter incrementing, cap enforcement, and UI messaging are owned by Workstream D.
+**Trade-off**: Column is technically unused in C, but prevents a schema migration when D ships.
+
+## D51: Resend for transactional email
+**Context**: Need to send resume links to buyers. Options: Resend, SendGrid, SES, Postmark.
+**Decision**: Resend. Simple API, good DX, generous free tier (100 emails/day). Lazy-initialized client singleton to avoid build-time failures when `RESEND_API_KEY` is not set. Fire-and-forget — save succeeds even if email delivery fails.
+**Trade-off**: External dependency, but email is table-stakes for buyer persistence.

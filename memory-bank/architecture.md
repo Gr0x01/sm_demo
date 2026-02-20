@@ -37,7 +37,8 @@ Supabase
   │           steps, step_sections, step_ai_config (multi-tenant schema)
   ├── Table: step_photos (multiple photos per step, hero flag, quality check, spatial hints)
   ├── Table: generated_images (cache — now includes step_id + model columns)
-  ├── Table: buyer_selections (per-buyer selection persistence)
+  ├── Table: buyer_sessions (anonymous + email-saved buyer sessions, replaces buyer_selections)
+  ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, kept for reference)
   ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
   ├── Storage bucket: kitchen-images ({selections_hash}.png)
   ├── Storage bucket: swatches ({orgId}/swatches/{subcatId}/{uuid}.{ext})
@@ -64,7 +65,7 @@ Supabase
 - Proxy maps subdomains → path-based routes internally
 - No Next.js middleware — subdomain resolution at proxy layer
 
-**Buyer access model**: Open page, no auth required. Hardcoded buyer ID for demo. Selections persisted to `buyer_selections` table.
+**Buyer access model**: Open page, no auth required. Anonymous session created on first visit, persisted via cookie (`finch_session_{orgSlug}_{fpSlug}`). Selections auto-saved to `buyer_sessions` table. Optional email save generates resume token + sends link via Resend. Token resume supports cross-org redirect detection.
 
 ## Cache Flow
 
@@ -215,6 +216,8 @@ src/
 │   │       ├── floorplans/page.tsx # Floorplan list + CRUD
 │   │       ├── floorplans/[id]/page.tsx  # Step editor (dnd-kit reorder, sections)
 │   │       ├── floorplans/[id]/photos/page.tsx  # Photo management per step
+│   │       ├── buyers/page.tsx     # Buyer session list
+│   │       ├── buyers/[id]/page.tsx # Buyer session detail (read-only)
 │   │       └── images/             # Generated image management (server+client split)
 │   └── api/
 │       ├── admin/
@@ -229,11 +232,18 @@ src/
 │       │   ├── reorder/route.ts    # Bulk sort_order update (categories, subcategories, options, steps, step_photos)
 │       │   ├── scope/route.ts      # Floorplan scoping (GET/POST)
 │       │   ├── generate-descriptor/route.ts  # AI descriptor generation
-│       │   └── images/route.ts     # Authenticated GET/DELETE for image cache
+│       │   ├── images/route.ts     # Authenticated GET/DELETE for image cache
+│       │   └── buyer-sessions/route.ts # GET — admin session list (authenticateAdminRequest)
+│       ├── buyer-sessions/
+│       │   ├── route.ts            # POST — create anonymous session
+│       │   ├── [sessionId]/route.ts # GET — load by ID, PUT — auto-save (server price calc)
+│       │   ├── [sessionId]/save-email/route.ts # POST — attach email + send resume link
+│       │   ├── resume/[token]/route.ts # GET — token-based resume
+│       │   └── resume-by-email/route.ts # POST — email-based resume (rate-limited)
 │       ├── generate/
 │       │   ├── route.ts            # POST — fetches AI config from DB, generates image
 │       │   └── check/route.ts      # POST — cache check, validates against DB
-│       └── selections/[buyerId]/route.ts
+│       └── selections/[buyerId]/route.ts  # DEPRECATED — replaced by buyer-sessions
 ├── components/
 │   ├── LandingHero.tsx
 │   ├── UpgradePicker.tsx        # Main container — all data via props (no static imports)
@@ -246,7 +256,8 @@ src/
 │   ├── CompactOptionList.tsx    # Tight single-line rows for non-visual options
 │   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
 │   ├── GenerateButton.tsx
-│   └── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
+│   ├── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
+│   └── SaveSelectionsModal.tsx # Email save + resume-by-email modal
 ├── components/admin/
 │   ├── OptionTree.tsx       # Full CRUD tree with drag reorder, inline edit, swatch upload
 │   ├── SwatchUpload.tsx     # Swatch image upload to Supabase Storage
@@ -271,6 +282,8 @@ src/
 │   ├── options-data.ts      # Static seed source (no longer imported at runtime)
 │   ├── step-config.ts       # Static seed source (no longer imported at runtime)
 │   ├── pricing.ts           # Price calculation (accepts categories as param)
+│   ├── buyer-session.ts     # Session helpers (mapRowToPublicSession, validateEmail, SESSION_COLUMNS)
+│   ├── email.ts             # Resend email utility (sendResumeEmail, lazy-initialized client)
 │   └── generate.ts          # Prompt construction (accepts optionLookup, spatialHints, sceneDescription)
 └── types/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
@@ -319,6 +332,8 @@ public/
 **Option Tree UI** (`src/components/admin/OptionTree.tsx`): Full CRUD tree with drag reorder (dnd-kit), inline price edit, swatch upload, AI descriptor generation, floorplan scope popovers.
 
 **Floorplan Pipeline UI**: FloorplanList (card grid) → FloorplanEditor (step list with dnd-kit, accordion detail with sections/subcategory assignment) → PhotoManager (step tabs, photo cards with quality badges, spatial hint generation, hero toggle).
+
+**Buyer Dashboard**: `/admin/[orgSlug]/buyers` lists all buyer sessions (email, floorplan, total price, selections count, last active, status). `/admin/[orgSlug]/buyers/[id]` shows read-only session detail with selections grouped by step. Uses user-scoped Supabase client (not service role). Excludes anonymous sessions >30 days.
 
 **Cache invalidation**: `invalidateOrgCache(orgId, opts?)` supports optional `orgSlug`, `floorplanId`, `floorplanSlug` to bust buyer-facing cache tags (`org:{slug}`, `steps:{floorplanId}`, `floorplan:{orgId}:{floorplanSlug}`, `categories:{orgId}`).
 

@@ -67,7 +67,7 @@ We're the only product that combines:
 
 ### Pricing
 
-#### Finch Starter — $149/floor plan/mo
+#### Finch Essentials — $149/floor plan/mo
 Builder does the setup. We provide the platform.
 
 - Builder uploads own room photos
@@ -77,9 +77,9 @@ Builder does the setup. We provide the platform.
 - Docs + email support
 - **Persistent in-app upsell**: "Want us to handle setup? $1,500 one-time" — we load their full upgrade catalog, source swatch images, write spatial descriptions, and tune prompts. No photography. Builder provides room photos. ~4-6 hours of work.
 
-**Note on Starter quality risk:** Builders uploading bad photos get bad AI output and blame the product. The $1,500 setup upsell is the default recommendation — self-serve is the entry point, not the goal. Consider a photo quality gate (reject low-res/dark uploads with retake guidance). In this market, word of mouth is everything — one bad experience travels fast.
+**Note on Essentials quality risk:** Builders uploading bad photos get bad AI output and blame the product. The $1,500 setup upsell is the default recommendation — self-serve is the entry point, not the goal. Consider a photo quality gate (reject low-res/dark uploads with retake guidance). In this market, word of mouth is everything — one bad experience travels fast.
 
-#### Finch Pro — $299/floor plan/mo
+#### Finch Concierge — $299/floor plan/mo
 We handle everything. Buyers see instant results.
 
 - Professional photography if needed*
@@ -116,7 +116,7 @@ For early adopters / case study builders. Goal is proof and testimonial, not rev
 | **Done-For-You Setup** | **Waived** (we eat ~$1-2K in hard costs) |
 | **Floor plans included** | **3 best-selling plans** |
 | **First 3 months** | **Free** |
-| **After 3 months** | Standard Pro pricing: $299/floor plan/mo |
+| **After 3 months** | Standard Concierge pricing: $299/floor plan/mo |
 | **Want more plans?** | $299/floor plan/mo + $1,500 setup each |
 
 **The pitch**: "I'll set up your 3 best-selling floor plans for free — professional photography, full option catalog, AI visualization, everything. You use it for 3 months. If it's not working, you walk away. No setup fee, no commitment."
@@ -131,7 +131,7 @@ No free trial. Instead, a public demo on the landing page where builders can:
 - Test AI visualization against a curated set of upgrades we select (e.g., 3 cabinet colors, 3 countertops, 2 backsplashes)
 - See the quality of the output with zero commitment
 
-**Why this beats a trial:** No signup friction, no expiration anxiety, no risk of bad self-serve output souring them. They see Pro-quality results on *their* photo immediately. The CTA after the demo is "Ready to set this up for your floor plans?" — funnels to Starter signup or Pro conversation.
+**Why this beats a trial:** No signup friction, no expiration anxiety, no risk of bad self-serve output souring them. They see Concierge-quality results on *their* photo immediately. The CTA after the demo is "Ready to set this up for your floor plans?" — funnels to Essentials signup or Concierge conversation.
 
 #### Pricing Principles
 - **No volume discounts published.** Handle ad hoc if a 10+ plan builder asks.
@@ -139,7 +139,7 @@ No free trial. Instead, a public demo on the landing page where builders can:
 - **"Floor plan" not "plan"** everywhere — avoids confusion with pricing tiers.
 - **Setup fees off the pricing page.** Monthly price is the headline. Setup discussed in sales conversation.
 - **Landing page demo** is the top of funnel — no trial, no signup. Upload a photo, see it work.
-- **Starter CTA: "Get Started"** (self-serve, low friction). **Pro CTA: "Talk to Us"** (high-touch).
+- **Essentials CTA: "Get Started"** (self-serve, low friction). **Concierge CTA: "Talk to Us"** (high-touch).
 - **Position as ROI, not cost.** "Buyers who see their upgrades buy 35% more" is the headline. Not "AI-generated kitchen visualization."
 - **vs Zonda:** "Zonda Envision is built for the top 50 builders in America. Finch is built for everyone else." Don't be "cheap Zonda" — be "Zonda results for builders Zonda ignores."
 
@@ -153,21 +153,21 @@ Unlimited seats on all tiers. No per-seat charges. Roles control access:
 | **Admin** | Edit options/pricing, upload photos, manage floor plans | Design center manager |
 | **Viewer** | Analytics, buyer activity, read-only | VP of Sales, sales agents |
 
-Both Starter and Pro get all three roles. Keep it simple — seat-based pricing adds friction and these builder teams are small (3-5 people max).
+Both Essentials and Concierge get all three roles. Keep it simple — seat-based pricing adds friction and these builder teams are small (3-5 people max).
 
 ### Example Deals
 
-**Stone Martin-sized (~15 floor plans, ~500 homes/year) — Pro**
+**Stone Martin-sized (~15 floor plans, ~500 homes/year) — Concierge**
 - Setup: $2,500 + 14 x $1,500 = $23,500
 - Monthly: 15 x $299 = $4,485/mo ($53.8K/yr)
 - **Year 1 total: ~$77K**
 
-**Lowder-sized (~10 floor plans, ~200 homes/year) — Pro**
+**Lowder-sized (~10 floor plans, ~200 homes/year) — Concierge**
 - Setup: $2,500 + 9 x $1,500 = $16,000
 - Monthly: 10 x $299 = $2,990/mo ($35.9K/yr)
 - **Year 1 total: ~$52K**
 
-**Craftway-sized (~3 floor plans on Pro, ~50 homes/year)**
+**Craftway-sized (~3 floor plans on Concierge, ~50 homes/year)**
 - Setup: $2,500 + 2 x $1,500 = $5,500
 - Monthly: 3 x $299 = $897/mo ($10.8K/yr)
 - **Year 1 total: ~$16K**
@@ -180,25 +180,25 @@ Both Starter and Pro get all three roles. Keep it simple — seat-based pricing 
 - **Easy yes** — zero risk, zero upfront, walk away if it doesn't work
 - **Expansion**: remaining plans at $299/mo + $1,500 setup each
 
-**Small builder trying Starter (~3 floor plans, takes $1,500 setup upsell)**
+**Small builder trying Essentials (~3 floor plans, takes $1,500 setup upsell)**
 - Setup: $1,500 one-time (we load their catalog, no photography)
 - Monthly: 3 x $149 = $447/mo ($5.4K/yr)
 - **Year 1 total: ~$6.9K**
 
-**Small builder trying Starter (~3 floor plans, pure DIY)**
+**Small builder trying Essentials (~3 floor plans, pure DIY)**
 - Setup: $0
 - Monthly: 3 x $149 = $447/mo ($5.4K/yr)
 - **Year 1 total: ~$5.4K**
 
-**"Just let me try one floor plan" — Starter**
+**"Just let me try one floor plan" — Essentials**
 - Monthly: $149/mo ($1.8K/yr)
 - **Lowest possible entry point**
 
 ### Revenue Projections — Growth Over Time
 
-Assumes self-serve-first: majority Starter, handful of Pro from local outreach.
+Assumes self-serve-first: majority Essentials, handful of Concierge from local outreach.
 
-| Starter Builders | Pro Builders | Avg Plans | Monthly Revenue | Annual Revenue |
+| Essentials Builders | Concierge Builders | Avg Plans | Monthly Revenue | Annual Revenue |
 |-----------------|-------------|-----------|----------------|----------------|
 | 3 | 1 | 3 | $1,638 | $20K |
 | 8 | 2 | 3 | $5,364 | $64K |
@@ -206,13 +206,13 @@ Assumes self-serve-first: majority Starter, handful of Pro from local outreach.
 | 50 | 5 | 3 | $26,835 | $322K |
 | 100 | 5 | 3 | $49,185 | $590K |
 
-*Plus setup fees: Starter upsells (~50% take rate on $1,500) + Pro setups ($2,500-5,500 each)*
+*Plus setup fees: Essentials upsells (~50% take rate on $1,500) + Concierge setups ($2,500-5,500 each)*
 
 ### Capacity & Scaling — Self-Serve-First
 
-Self-serve changes the scaling math dramatically. Starter builders mostly onboard themselves — your time per Starter builder is near-zero unless they take the $1,500 setup upsell (4-6 hrs). Pro is still 20 hrs each but there are fewer of them.
+Self-serve changes the scaling math dramatically. Essentials builders mostly onboard themselves — your time per Essentials builder is near-zero unless they take the $1,500 setup upsell (4-6 hrs). Concierge is still 20 hrs each but there are fewer of them.
 
-| Starter | Pro | Setup Hrs/mo | Maintenance/mo | Monthly Rev | Hours Left |
+| Essentials | Concierge | Setup Hrs/mo | Maintenance/mo | Monthly Rev | Hours Left |
 |---------|-----|-------------|---------------|-------------|------------|
 | 3 | 1 | ~10 | 4-6 hrs | $1.6K | ~55 hrs |
 | 8 | 2 | ~12 | 6-10 hrs | $5.4K | ~45 hrs |
@@ -220,16 +220,16 @@ Self-serve changes the scaling math dramatically. Starter builders mostly onboar
 | 50 | 5 | ~20 | 12-16 hrs | $26.8K | ~30 hrs |
 | 100 | 5 | ~20 | 16-20 hrs | $49.2K | ~30 hrs |
 
-**The ceiling is much higher solo.** 100 Starter builders is manageable because they self-serve. The bottleneck is Pro onboarding (20 hrs each) and maintenance, not total builder count. Hire when Pro demand outpaces your capacity (~8-10 Pro builders).
+**The ceiling is much higher solo.** 100 Essentials builders is manageable because they self-serve. The bottleneck is Concierge onboarding (20 hrs each) and maintenance, not total builder count. Hire when Concierge demand outpaces your capacity (~8-10 Concierge builders).
 
-**Key scaling lever:** Invest in self-serve onboarding quality — guided setup wizard, photo quality gates, templates, good docs. Every improvement to self-serve compounds across all Starter builders. Pro onboarding optimization matters less when it's only 5-10 builders.
+**Key scaling lever:** Invest in self-serve onboarding quality — guided setup wizard, photo quality gates, templates, good docs. Every improvement to self-serve compounds across all Essentials builders. Concierge onboarding optimization matters less when it's only 5-10 builders.
 
 
 ### Builder ROI — Why the Tool Pays for Itself
 
 **Key stat**: Zonda Envision reports buyers spend **35% more on upgrades** when they can visualize their choices. Even at conservative estimates, the math is overwhelming.
 
-**Stone Martin-sized (~500 homes/year, ~$10K avg upgrades, 15 plans on Pro)**
+**Stone Martin-sized (~500 homes/year, ~$10K avg upgrades, 15 plans on Concierge)**
 Current upgrade revenue: ~$5M/year | Annual tool cost: ~$53.8K
 
 *Regional context: In the AL/GA market, $42K in upgrades is considered extremely high. Most Stone Martin buyers spend $8-12K in upgrades. One frugal buyer (investment property, intentionally minimizing) went from $5,200 → $7,290 after using the tool — a $2,090 lift (40%) from someone actively trying NOT to spend more. Typical buyers spending $10K would likely see even larger lifts since they're already willing to spend on their home.*
@@ -239,7 +239,7 @@ Current upgrade revenue: ~$5M/year | Annual tool cost: ~$53.8K
 | 50% | $2,000 (conservative) | $500K | $53.8K | **$446K** | 9.3x |
 | 75% | $2,000 (conservative) | $750K | $53.8K | **$696K** | 13.9x |
 
-**Small AL/GA builder (~50 homes/year, ~$8K avg upgrades, 3 plans on Pro)**
+**Small AL/GA builder (~50 homes/year, ~$8K avg upgrades, 3 plans on Concierge)**
 Current upgrade revenue: ~$400K/year | Annual tool cost: ~$10.8K
 
 | Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
@@ -247,9 +247,9 @@ Current upgrade revenue: ~$400K/year | Annual tool cost: ~$10.8K
 | 50% | $1,200 (typical) | $30K | $10.8K | **$19.2K** | 2.8x |
 | 75% | $2,000 (conservative) | $75K | $10.8K | **$64.2K** | 6.9x |
 
-With the new pricing, small builders on 3 Pro plans pay ~$10.8K/yr — well within ROI range even at conservative adoption. The **Founding Partner program** (3 months free) lets them see actual results before committing.
+With the new pricing, small builders on 3 Concierge plans pay ~$10.8K/yr — well within ROI range even at conservative adoption. The **Founding Partner program** (3 months free) lets them see actual results before committing.
 
-**Small builder on Starter (~3 plans, DIY)**
+**Small builder on Essentials (~3 plans, DIY)**
 Annual tool cost: ~$5.4K
 
 | Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
@@ -257,7 +257,7 @@ Annual tool cost: ~$5.4K
 | 50% | $1,200 (typical) | $30K | $5.4K | **$24.6K** | 5.6x |
 | 75% | $2,000 (conservative) | $75K | $5.4K | **$69.6K** | 13.9x |
 
-Starter's lower cost makes the ROI math easy — if the builder can provide decent photos and the output quality holds up.
+Essentials's lower cost makes the ROI math easy — if the builder can provide decent photos and the output quality holds up.
 
 ### Beyond Revenue — The Full Value Case
 
@@ -280,11 +280,11 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 **The pitch isn't just "you'll sell more upgrades."** It's: your buyers will be happier with what they chose, your team spends less time hand-holding, and they spend more. The before-and-after is a buyer flipping through a PDF in a design center vs. sitting on their couch with their spouse seeing their actual kitchen with the options they're choosing.
 
 ### Handling Objections
-- **"That's a lot upfront"** — Try Starter at $149/floor plan/mo, no setup fee. Or start with one Pro floor plan ($2,500 setup + $299/mo) and prove the ROI.
+- **"That's a lot upfront"** — Try Essentials at $149/floor plan/mo, no setup fee. Or start with one Concierge floor plan ($2,500 setup + $299/mo) and prove the ROI.
 - **"Only some of my buyers would use this"** — ROI tables above account for 50% adoption and the math still works.
 - **"Why does setup cost $2,500?"** — Professional photography, full option catalog transcription, AI prompt tuning, 3,000+ pre-generated room images, and QA. It's a 2-3 week build-out — real work, real deliverable. Comparable to what you'd pay for a Matterport tour.
 - **"What am I paying $299/mo for?"** — 24/7 platform access, instant AI visualization for every buyer session, image cache maintenance, option/pricing updates, priority support, and an admin dashboard for your team.
-- **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, Starter is $149/mo for one floor plan.
+- **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, Essentials is $149/mo for one floor plan.
 
 ### Cost Structure
 
@@ -295,7 +295,7 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 - 8 plans (Craftway-sized builder) = **400 hours** (~17 days 24/7)
 - At API pricing ($0.04-0.15/image): **$120-450 per plan, $960-3,600 for 8 plans**
 
-**Hard costs per builder onboarding (Pro, 8 plans):**
+**Hard costs per builder onboarding (Concierge, 8 plans):**
 
 | Item | API Pricing | GPU Rental |
 |------|------------|------------|
@@ -346,6 +346,7 @@ The current architecture supports multi-tenant with minimal changes:
 3. **Buyer identification**: already has buyerId-based selection persistence
 4. **White-label**: swap logo, colors, builder name
 5. **Admin dashboard**: manage builders, view analytics, monitor cache
+6. **Buyer accounts (future)**: logged-in buyer page showing sessions across multiple builders using Finch. Design buyer auth with multi-builder in mind from the start. Not needed until market density makes cross-builder overlap likely (~year 2+).
 
 ### Pre-Generation Strategy
 For each builder's floor plan portfolio:
@@ -386,36 +387,36 @@ Highlights:
 - No upfront capital — spin up when needed, shut down when done
 - **Must have before onboarding any builder** — API margins don't work at scale
 
-### Phase 3: Launch Self-Serve + Local Pro Sales (Q3-Q4 2026)
-- **Online**: Landing page with interactive demo → Starter signups
-- **In Alabama**: Knock doors, HBA events, local networking → Pro deals
+### Phase 3: Launch Self-Serve + Local Concierge Sales (Q3-Q4 2026)
+- **Online**: Landing page with interactive demo → Essentials signups
+- **In Alabama**: Knock doors, HBA events, local networking → Concierge deals
 - Use founding partner results as proof: "Here's what it did for [builder]"
 - Demo the actual tool (not a pitch deck) — show their competitor using it
-- **2026 exit target: 5-10 Starter + 1-2 Pro = $25-50K Year 1**
+- **2026 exit target: 5-10 Essentials + 1-2 Concierge = $25-50K Year 1**
 
 ### Phase 4: Scale Self-Serve (2027)
 - Invest in self-serve onboarding quality (guided wizard, photo gates, templates)
 - Expand beyond AL/GA — self-serve is geography-independent
 - Attend Southeast Building Conference (SEBC), International Builders' Show (IBS)
-- Pro stays local/regional — it requires hands-on work
-- Starter scales nationally through landing page, content marketing, HBA directories
-- **Target: 50+ Starter builders + 5 Pro = $322K/yr**
+- Concierge stays local/regional — it requires hands-on work
+- Essentials scales nationally through landing page, content marketing, HBA directories
+- **Target: 50+ Essentials builders + 5 Concierge = $322K/yr**
 
 ## Sales Approach
 
 ### Two Channels
 
-**Self-serve (Starter)** — scales without you
-- Landing page demo converts to Starter signups
+**Self-serve (Essentials)** — scales without you
+- Landing page demo converts to Essentials signups
 - In-app $1,500 setup upsell converts DIY builders who hit friction
 - Content marketing, HBA directory listings, SEO
 - Geography-independent — any production builder in the US
 
-**Local sales (Pro)** — high-touch, high-value
+**Local sales (Concierge)** — high-touch, high-value
 - Knock doors in Alabama when you're on the ground
 - HBA events, design center visits, builder meetups
 - Use SM demo + founding partner results as proof
-- Pro deals are local/regional — requires coordinating photography
+- Concierge deals are local/regional — requires coordinating photography
 
 ### The One-Liner
 **"I help builders increase upgrade revenue with an AI-powered visualizer that lets buyers see their selections before they commit. It costs a fraction of what the big platforms charge and I can have you up and running in weeks."**

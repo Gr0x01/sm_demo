@@ -36,9 +36,9 @@ export const categories: Category[] = [
         categoryId: "appliances",
         isVisual: true,
         options: [
-          { id: "range-ge-included-freestanding", name: "GE Included Gas Freestanding Range", price: 0, swatchUrl: "/swatches/appliances/GE-30-INCH-FREE-STANDING-GAS-RANGE-Photoroom.jpg", swatchColor: "#C8C8C8", promptDescriptor: "standard GE gas freestanding range with front controls" },
-          { id: "range-ge-gas-slide-in", name: "GE Gas Slide In Range", price: 500, swatchUrl: "/swatches/appliances/GE-30-INCH-SLIDE-IN-FRONT-CONTROL-GAS-RANGE-Photoroom.jpg", swatchColor: "#C8C8C8", promptDescriptor: "GE stainless steel gas slide-in range with seamless cooktop", nudge: "Most popular cooking upgrade" },
-          { id: "range-ge-gas-slide-in-convection", name: "GE Gas Slide In Convection Range", price: 800, swatchUrl: "/swatches/appliances/GE-30-INCH-SLIDE-IN-FRONT-CONTROL-CONVECTION-GAS-RANGE-Photoroom-(3).jpg", swatchColor: "#C8C8C8", promptDescriptor: "GE stainless steel gas slide-in convection range with professional styling" },
+          { id: "range-ge-included-freestanding", name: "GE Included Gas Freestanding Range", price: 0, swatchUrl: "/swatches/appliances/GE-30-INCH-FREE-STANDING-GAS-RANGE-Photoroom.jpg", swatchColor: "#C8C8C8", promptDescriptor: "standard GE gas freestanding range with raised backguard panel behind the burners and front controls" },
+          { id: "range-ge-gas-slide-in", name: "GE Gas Slide In Range", price: 500, swatchUrl: "/swatches/appliances/GE-30-INCH-SLIDE-IN-FRONT-CONTROL-GAS-RANGE-Photoroom.jpg", swatchColor: "#C8C8C8", promptDescriptor: "GE stainless steel gas slide-in range — NO backguard, no raised back panel, the cooktop sits flush and level with the countertop on all sides, backsplash is visible directly behind the range", nudge: "Most popular cooking upgrade" },
+          { id: "range-ge-gas-slide-in-convection", name: "GE Gas Slide In Convection Range", price: 800, swatchUrl: "/swatches/appliances/GE-30-INCH-SLIDE-IN-FRONT-CONTROL-CONVECTION-GAS-RANGE-Photoroom-(3).jpg", swatchColor: "#C8C8C8", promptDescriptor: "GE stainless steel gas slide-in convection range — NO backguard, no raised back panel, the cooktop sits flush and level with the countertop on all sides, backsplash is visible directly behind the range" },
         ],
       },
     ],

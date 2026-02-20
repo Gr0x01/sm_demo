@@ -2,7 +2,7 @@
 
 ## Context
 
-Multi-tenant foundation is done (schema, routing, theming, caching, data layer). V1 product spec written (`v1-product.md`). Domain is `withfin.ch`. Now executing on multiple fronts: refining the homepage, tuning the SM demo, and building Workstream A (builder admin).
+Multi-tenant foundation is done (schema, routing, theming, caching, data layer). V1 product spec written (`v1-product.md`). Domain is `withfin.ch`. Workstreams A, B, and C complete. Now executing on multiple fronts: refining the homepage, tuning the SM demo, and building Workstream D (gallery visualization).
 
 ## Active Workstreams
 
@@ -51,8 +51,22 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [x] Security: path traversal protection, tenant boundary on all mutations, orphan storage cleanup
 - [x] Cache invalidation extended with floorplanId/floorplanSlug tags
 
+### 6. V1 Workstream C: Buyer Save (Email-Only) ✅
+**Depends on A (admin auth).** Anonymous session persistence, email save with resume link, builder dashboard.
+- [x] `buyer_sessions` table with RLS, updated_at trigger, resume token index, email index
+- [x] Anonymous session creation + cookie persistence (`finch_session_{orgSlug}_{fpSlug}`)
+- [x] Auto-save selections (debounced PUT with server-side price calculation)
+- [x] Email save with resume token (`crypto.randomBytes(32)`) + Resend transactional email
+- [x] Token-based resume (GET by token, cross-org redirect detection)
+- [x] Email-based resume (rate-limited, non-enumerating 404s)
+- [x] SaveSelectionsModal component (save + resume flows)
+- [x] DemoPageClient session lifecycle (cookie → load → create, replaces `BUYER_ID` hack)
+- [x] Admin buyer dashboard (list + detail pages, user-scoped Supabase client)
+- [x] pg_cron cleanup for anonymous sessions >30 days
+- [x] Security: ownership verification on all session routes, resume token not leaked in responses, input validation, generic error messages
+- [x] `generation_count` column in schema (reserved for Workstream D — no app code reads/writes it)
+
 ### Upcoming (not started)
-- **Workstream C**: Buyer save + magic link (backend is independent, dashboard needs A)
 - **Workstream D**: Gallery visualization (depends on B + C)
 - **Workstream E**: Branding controls (depends on A, small)
 

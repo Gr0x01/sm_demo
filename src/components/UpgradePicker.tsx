@@ -10,7 +10,8 @@ import { StepContent } from "./StepContent";
 import { PriceTracker } from "./PriceTracker";
 import { SidebarPanel } from "./SidebarPanel";
 import { SyncModal } from "./SyncModal";
-import { ChevronRight } from "lucide-react";
+import { SaveSelectionsModal } from "./SaveSelectionsModal";
+import { ChevronRight, Save } from "lucide-react";
 import type { ContractPhase } from "@/lib/contract-phase";
 
 const SKIP_FOR_GENERATION = new Set([
@@ -50,7 +51,17 @@ const ALWAYS_SEND = new Set([
 
 interface UpgradePickerProps {
   onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrls: Record<string, string> }) => void;
-  buyerId?: string;
+  saveUrl?: string;
+  orgId: string;
+  floorplanId: string;
+  initialSelections?: Record<string, string> | null;
+  initialQuantities?: Record<string, number> | null;
+  sessionId?: string;
+  buyerEmail?: string;
+  orgSlug: string;
+  floorplanSlug: string;
+  onSessionSaved: (email: string, resumeToken: string) => void;
+  onSessionResumed: (session: { id: string; selections: Record<string, string>; quantities: Record<string, number> }) => void;
   contractPhase: ContractPhase;
   onNavigateHome: () => void;
   orgName: string;
@@ -108,7 +119,17 @@ function stableStringify(obj: Record<string, string>): string {
 
 export function UpgradePicker({
   onFinish,
-  buyerId,
+  saveUrl,
+  orgId,
+  floorplanId,
+  initialSelections,
+  initialQuantities,
+  sessionId,
+  buyerEmail,
+  orgSlug,
+  floorplanSlug,
+  onSessionSaved,
+  onSessionResumed,
   contractPhase,
   onNavigateHome,
   orgName,
@@ -302,68 +323,66 @@ export function UpgradePicker({
     document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
   }, [headerHeight]);
 
-  // Load selections from API on mount, then check for cached generated image
-  useEffect(() => {
-    if (!buyerId) return;
-    fetch(`/api/selections/${buyerId}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then(async (data) => {
-        if (data && Object.keys(data.selections).length > 0) {
-          dispatch({
-            type: "LOAD_SELECTIONS",
-            selections: data.selections,
-            quantities: data.quantities ?? {},
-          });
+  const [showSaveModal, setShowSaveModal] = useState(false);
 
-          const mergedSelections = { ...defaultSelections, ...data.selections };
-          const modelParam = new URLSearchParams(window.location.search).get("model");
-          for (const step of steps) {
-            if (!step.showGenerateButton) continue;
-            const stepSelections = getStepVisualSelections(step, mergedSelections);
-            console.log(`[cache-check] Step "${step.id}": ${Object.keys(stepSelections).length} visual selections`, stepSelections);
-            if (Object.keys(stepSelections).length === 0) {
-              console.log(`[cache-check] Step "${step.id}": SKIPPED (no selections differ from baseline)`);
-              continue;
-            }
-            try {
-              const checkRes = await fetch("/api/generate/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ selections: stepSelections, ...(modelParam ? { model: modelParam } : {}) }),
-              });
-              if (checkRes.ok) {
-                const { imageUrl } = await checkRes.json();
-                console.log(`[cache-check] Step "${step.id}": ${imageUrl ? "HIT" : "MISS"}`);
-                if (imageUrl) {
-                  dispatch({
-                    type: "GENERATION_COMPLETE",
-                    stepId: step.id,
-                    imageUrl,
-                    selectionsSnapshot: stableStringify(stepSelections),
-                  });
-                }
+  // Load initial selections from parent (session restore), then check for cached generated images
+  useEffect(() => {
+    if (initialSelections === undefined) return; // not ready yet
+    if (hasLoadedRef.current) return;
+
+    async function loadAndCheckCache() {
+      if (initialSelections && Object.keys(initialSelections).length > 0) {
+        dispatch({
+          type: "LOAD_SELECTIONS",
+          selections: initialSelections,
+          quantities: initialQuantities ?? {},
+        });
+
+        const mergedSelections = { ...defaultSelections, ...initialSelections };
+        const modelParam = new URLSearchParams(window.location.search).get("model");
+        for (const step of steps) {
+          if (!step.showGenerateButton) continue;
+          const stepSelections = getStepVisualSelections(step, mergedSelections);
+          if (Object.keys(stepSelections).length === 0) continue;
+          try {
+            const checkRes = await fetch("/api/generate/check", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ selections: stepSelections, ...(modelParam ? { model: modelParam } : {}) }),
+            });
+            if (checkRes.ok) {
+              const { imageUrl } = await checkRes.json();
+              if (imageUrl) {
+                dispatch({
+                  type: "GENERATION_COMPLETE",
+                  stepId: step.id,
+                  imageUrl,
+                  selectionsSnapshot: stableStringify(stepSelections),
+                });
               }
-            } catch {
-              // Non-critical
             }
+          } catch {
+            // Non-critical
           }
         }
-        hasLoadedRef.current = true;
-      })
-      .catch(() => {
-        hasLoadedRef.current = true;
-      });
-  }, [buyerId, steps, defaultSelections, getStepVisualSelections]);
+      }
+      hasLoadedRef.current = true;
+    }
+
+    loadAndCheckCache();
+  }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections]);
 
   // Auto-save selections (debounced 1s)
   useEffect(() => {
-    if (!buyerId || !hasLoadedRef.current) return;
+    if (!saveUrl || !hasLoadedRef.current) return;
     if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      fetch(`/api/selections/${buyerId}`, {
+      fetch(saveUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          org_id: orgId,
+          floorplan_id: floorplanId,
           selections: state.selections,
           quantities: state.quantities,
         }),
@@ -372,7 +391,7 @@ export function UpgradePicker({
     return () => {
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
-  }, [buyerId, state.selections, state.quantities]);
+  }, [saveUrl, orgId, floorplanId, state.selections, state.quantities]);
 
   const activeStep = steps.find((s) => s.id === activeStepId) || steps[0];
   const activeStepIndex = steps.findIndex((s) => s.id === activeStepId);
@@ -635,8 +654,18 @@ export function UpgradePicker({
             />
           </div>
 
-          {/* Finish — right */}
-          <div className="w-auto shrink-0 flex justify-end">
+          {/* Save + Finish — right */}
+          <div className="w-auto shrink-0 flex items-center gap-1 justify-end">
+            {sessionId && (
+              <button
+                onClick={() => setShowSaveModal(true)}
+                className="inline-flex items-center gap-1.5 px-2 py-1 text-sm text-gray-500 hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+                title={buyerEmail ? "Saved" : "Save My Selections"}
+              >
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline">{buyerEmail ? "Saved" : "Save"}</span>
+              </button>
+            )}
             <button
               onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
               className="inline-flex items-center gap-1.5 px-1 py-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
@@ -713,6 +742,28 @@ export function UpgradePicker({
           previewSummary={activeSelectionSummary}
         />
       </div>
+
+      {/* Save selections modal */}
+      {showSaveModal && sessionId && (
+        <SaveSelectionsModal
+          sessionId={sessionId}
+          orgId={orgId}
+          floorplanId={floorplanId}
+          onClose={() => setShowSaveModal(false)}
+          onSaved={(email, resumeToken) => {
+            onSessionSaved(email, resumeToken);
+          }}
+          onResumed={(session) => {
+            onSessionResumed(session);
+            dispatch({
+              type: "LOAD_SELECTIONS",
+              selections: session.selections,
+              quantities: session.quantities,
+            });
+            setShowSaveModal(false);
+          }}
+        />
+      )}
 
       {/* Sync hardware modal */}
       {syncPrompt && (

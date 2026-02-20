@@ -19,15 +19,15 @@ const faqs = [
   },
   {
     q: "What does a pilot look like?",
-    a: "We set up your 2 best-selling floor plans at no cost. You use Finch for 90 days with real buyers. We measure upgrade revenue together. If the numbers work, we expand to your full catalog at standard pricing. If they don't, you walk away with zero obligation.",
+    a: "We set up your 3 best-selling floor plans at no cost. You use Finch for 90 days with real buyers. We measure upgrade revenue together. If the numbers work, we expand to your full catalog at standard pricing. If they don't, you walk away with zero obligation.",
   },
   {
     q: "Do we need to change our sales process?",
     a: "No. Finch fits into your existing design appointment flow. Buyers use a visual tool, and your team gets a clean priced export.",
   },
   {
-    q: "What's the difference between Starter and Pro?",
-    a: "Starter: you upload photos and manage your catalog. Pro: we handle everything — option transcription, thousands of pre-generated images, and if your existing photos need improvement, we coordinate professional photography. We'll assess what you have during onboarding.",
+    q: "What's the difference between Essentials and Concierge?",
+    a: "Essentials: you upload photos and manage your catalog. Concierge: we handle everything — option transcription, thousands of pre-generated images, and if your existing photos need improvement, we coordinate professional photography. We'll assess what you have during onboarding.",
   },
   {
     q: "Can this work with our current design center software?",
@@ -576,7 +576,7 @@ export default function LandingPage() {
             style={revealStyle(90)}
             className="border border-slate-200 bg-white p-8 flex flex-col"
           >
-            <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-3">Starter</p>
+            <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-3">Essentials</p>
             <div className="flex items-baseline gap-1 mb-1">
               <span className="text-5xl md:text-6xl leading-none tracking-tight text-slate-900" style={{ fontVariantNumeric: "tabular-nums" }}>$149</span>
               <span className="text-base text-slate-400">/floor plan/mo</span>
@@ -599,7 +599,7 @@ export default function LandingPage() {
             </ul>
 
             <a
-              href="mailto:hello@finchweb.io?subject=Finch Starter"
+              href="mailto:hello@finchweb.io?subject=Finch Essentials"
               className="block text-center px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-400 hover:bg-slate-50 transition-colors"
             >
               Get Started
@@ -612,7 +612,7 @@ export default function LandingPage() {
             style={revealStyle(160)}
             className="border-2 border-slate-900 bg-white p-8 flex flex-col relative"
           >
-            <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-3">Pro</p>
+            <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-3">Concierge</p>
             <p className="text-2xl md:text-3xl leading-tight tracking-tight text-slate-900 mb-1">Done for you.</p>
             <p className="text-sm text-slate-500 mb-6">We handle everything. Buyers see results instantly.</p>
 
@@ -632,7 +632,7 @@ export default function LandingPage() {
             </ul>
 
             <a
-              href="mailto:hello@finchweb.io?subject=Finch Pro"
+              href="mailto:hello@finchweb.io?subject=Finch Concierge"
               className="block text-center px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
               Talk to Us
@@ -650,10 +650,10 @@ export default function LandingPage() {
             <div className="flex-1">
               <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-2">Founding Partners</p>
               <h3 className="text-xl md:text-2xl leading-tight tracking-[-0.01em] text-slate-900 mb-2">
-                2 Pro floor plans. Setup waived. 3 months free.
+                3 Concierge floor plans. Setup waived. 3 months free.
               </h3>
               <p className="text-sm text-slate-600 leading-relaxed">
-                We configure your 2 best-selling plans on Pro at no cost. You use it for 90 days with real buyers. If upgrade revenue goes up, we expand to your full catalog. If it doesn&apos;t, you walk away.
+                We configure your 3 best-selling plans on Concierge at no cost. You use it for 90 days with real buyers. If upgrade revenue goes up, we expand to your full catalog. If it doesn&apos;t, you walk away.
               </p>
             </div>
             <div className="shrink-0">

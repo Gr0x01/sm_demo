@@ -24,6 +24,8 @@ export default async function DemoPage({
 
   return (
     <DemoPageClient
+      orgId={org.id}
+      orgSlug={orgSlug}
       orgName={org.name}
       orgTheme={{
         primaryColor: org.primary_color || "#1b2d4e",
@@ -31,6 +33,8 @@ export default async function DemoPage({
         accentColor: org.accent_color || "#2767b1",
         logoUrl: org.logo_url,
       }}
+      floorplanId={floorplan.id}
+      floorplanSlug={floorplanSlug}
       floorplanName={floorplan.name}
       community={floorplan.community ?? ""}
       categories={categories}

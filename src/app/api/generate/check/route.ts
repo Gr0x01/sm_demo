@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { hashSelections } from "@/lib/generate";
+import { GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getVisualSubCategoryIdsFromDb } from "@/lib/db-queries";
 
@@ -39,7 +39,11 @@ export async function POST(request: Request) {
 
     // Include model in hash to match /api/generate
     const modelName = model === "gpt-5.2" ? "gpt-5.2" : "gpt-image-1.5";
-    const selectionsHash = hashSelections({ ...visualSelections, _model: modelName });
+    const selectionsHash = hashSelections({
+      ...visualSelections,
+      _model: modelName,
+      _cacheVersion: GENERATION_CACHE_VERSION,
+    });
 
     const { data: cached } = await supabase
       .from("generated_images")
