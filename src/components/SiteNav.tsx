@@ -16,8 +16,8 @@ interface SiteNavProps {
 }
 
 const DEFAULT_CTA = {
-  label: "Book a Demo",
-  href: "mailto:hello@finchweb.io?subject=Finch Demo",
+  label: "Try It",
+  href: "/demo",
 };
 
 export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
