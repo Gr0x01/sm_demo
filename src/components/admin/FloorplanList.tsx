@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Pencil, Check, X, Loader2, Copy, Upload, ImageIcon } from "lucide-react";
+import { Plus, Loader2, Upload, ImageIcon, X, ArrowRight, Search } from "lucide-react";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 
 interface FloorplanItem {
@@ -13,6 +13,9 @@ interface FloorplanItem {
   community: string | null;
   is_active: boolean;
   cover_image_path: string | null;
+  created_at: string | null;
+  step_count: number;
+  photo_count: number;
 }
 
 async function apiCall(url: string, method: string, body: Record<string, unknown>) {
@@ -38,6 +41,35 @@ function getCoverUrl(supabaseUrl: string, path: string) {
   return `${supabaseUrl}/storage/v1/object/public/rooms/${path}`;
 }
 
+function formatCreatedDate(value: string | null) {
+  if (!value) return "Unknown";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
+function isInteractiveTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  return !!target.closest("a,button,input,textarea,select,label,[role='button'],[data-no-row-nav='true']");
+}
+
+function mergeFloorplanState(
+  incoming: Partial<FloorplanItem> & { id: string },
+  fallback?: FloorplanItem
+): FloorplanItem {
+  return {
+    id: incoming.id,
+    name: incoming.name ?? fallback?.name ?? "Untitled Floorplan",
+    slug: incoming.slug ?? fallback?.slug ?? "",
+    community: incoming.community ?? fallback?.community ?? null,
+    is_active: incoming.is_active ?? fallback?.is_active ?? false,
+    cover_image_path: incoming.cover_image_path ?? fallback?.cover_image_path ?? null,
+    created_at: incoming.created_at ?? fallback?.created_at ?? null,
+    step_count: incoming.step_count ?? fallback?.step_count ?? 0,
+    photo_count: incoming.photo_count ?? fallback?.photo_count ?? 0,
+  };
+}
+
 function CoverImageCell({
   coverSrc,
   isUploading,
@@ -60,16 +92,24 @@ function CoverImageCell({
         {isAdmin && !isUploading && (
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/cover:opacity-100 transition-opacity flex items-center justify-center gap-2">
             <button
-              onClick={() => inputRef.current?.click()}
+              data-no-row-nav="true"
+              onClick={(e) => {
+                e.stopPropagation();
+                inputRef.current?.click();
+              }}
               className="text-white/80 hover:text-white p-1"
-              title="Replace"
+              title="Replace cover"
             >
               <Upload className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={onRemove}
+              data-no-row-nav="true"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
               className="text-white/80 hover:text-white p-1"
-              title="Remove"
+              title="Remove cover"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -77,7 +117,11 @@ function CoverImageCell({
               ref={inputRef}
               type="file"
               accept="image/jpeg,image/png,image/webp"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) onUpload(file);
+                e.target.value = "";
+              }}
               className="hidden"
             />
           </div>
@@ -100,7 +144,9 @@ function CoverImageCell({
   }
 
   return (
-    <div className="relative w-24 shrink-0 aspect-[16/10] bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-slate-400 transition-colors"
+    <div
+      data-no-row-nav="true"
+      className="relative w-24 shrink-0 aspect-[16/10] bg-slate-50 border border-dashed border-slate-300 flex items-center justify-center cursor-pointer hover:border-slate-400 transition-colors"
       onClick={() => inputRef.current?.click()}
     >
       {isUploading ? (
@@ -112,7 +158,11 @@ function CoverImageCell({
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onUpload(file);
+          e.target.value = "";
+        }}
         className="hidden"
       />
     </div>
@@ -126,14 +176,10 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
   const [addName, setAddName] = useState("");
   const [addCommunity, setAddCommunity] = useState("");
   const [adding, setAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editCommunity, setEditCommunity] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [coverCacheBust, setCoverCacheBust] = useState<Record<string, number>>({});
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
 
   const handleAdd = useCallback(async () => {
     if (!addName.trim()) return;
@@ -144,7 +190,7 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
         name: addName.trim(),
         community: addCommunity.trim() || undefined,
       });
-      setFloorplans((prev) => [...prev, data]);
+      setFloorplans((prev) => [...prev, mergeFloorplanState(data)]);
       setAddName("");
       setAddCommunity("");
       setShowAdd(false);
@@ -156,54 +202,25 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
     }
   }, [addName, addCommunity, orgId, router]);
 
-  const handleUpdate = useCallback(async (fp: FloorplanItem) => {
-    setSaving(true);
-    try {
-      const data = await apiCall(`/api/admin/floorplans/${fp.id}`, "PATCH", {
-        org_id: orgId,
-        name: editName.trim() || fp.name,
-        community: editCommunity.trim() || null,
-      });
-      setFloorplans((prev) => prev.map((f) => (f.id === fp.id ? data : f)));
-      setEditingId(null);
-      router.refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update");
-    } finally {
-      setSaving(false);
-    }
-  }, [editName, editCommunity, orgId, router]);
-
   const handleToggleActive = useCallback(async (fp: FloorplanItem) => {
     try {
       const data = await apiCall(`/api/admin/floorplans/${fp.id}`, "PATCH", {
         org_id: orgId,
         is_active: !fp.is_active,
       });
-      setFloorplans((prev) => prev.map((f) => (f.id === fp.id ? data : f)));
+      setFloorplans((prev) =>
+        prev.map((current) => (current.id === fp.id ? mergeFloorplanState(data, current) : current))
+      );
       router.refresh();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to toggle");
     }
   }, [orgId, router]);
 
-  const handleDuplicate = useCallback(async (fp: FloorplanItem) => {
-    setDuplicatingId(fp.id);
-    try {
-      const data = await apiCall(`/api/admin/floorplans/${fp.id}/duplicate`, "POST", { org_id: orgId });
-      setFloorplans((prev) => [...prev, data]);
-      router.refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to duplicate");
-    } finally {
-      setDuplicatingId(null);
-    }
-  }, [orgId, router]);
-
   const handleCoverUpload = useCallback(async (fp: FloorplanItem, file: File) => {
     if (!file.type.startsWith("image/")) return;
-    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
-    if (file.size > MAX_SIZE) {
+    const maxSize = 5 * 1024 * 1024; // 5 MB
+    if (file.size > maxSize) {
       alert("Cover image must be under 5 MB.");
       return;
     }
@@ -213,7 +230,6 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
       const ext = file.name.split(".").pop() || "jpg";
       const storagePath = `${orgId}/floorplans/${fp.id}.${ext}`;
 
-      // Delete old file if path differs (e.g. extension changed)
       if (fp.cover_image_path && fp.cover_image_path !== storagePath) {
         await supabase.storage.from("rooms").remove([fp.cover_image_path]).catch(() => {});
       }
@@ -223,12 +239,13 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
         .upload(storagePath, file, { upsert: true });
       if (uploadError) throw uploadError;
 
-      // Save path to DB
       const data = await apiCall(`/api/admin/floorplans/${fp.id}`, "PATCH", {
         org_id: orgId,
         cover_image_path: storagePath,
       });
-      setFloorplans((prev) => prev.map((f) => (f.id === fp.id ? data : f)));
+      setFloorplans((prev) =>
+        prev.map((current) => (current.id === fp.id ? mergeFloorplanState(data, current) : current))
+      );
       setCoverCacheBust((prev) => ({ ...prev, [fp.id]: Date.now() }));
       router.refresh();
     } catch (err) {
@@ -242,14 +259,14 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
     if (!fp.cover_image_path) return;
     setUploadingId(fp.id);
     try {
-      // Null the DB reference first — if this fails, the file is still intact
       const data = await apiCall(`/api/admin/floorplans/${fp.id}`, "PATCH", {
         org_id: orgId,
         cover_image_path: null,
       });
-      setFloorplans((prev) => prev.map((f) => (f.id === fp.id ? data : f)));
+      setFloorplans((prev) =>
+        prev.map((current) => (current.id === fp.id ? mergeFloorplanState(data, current) : current))
+      );
 
-      // Then delete the storage file (best-effort — orphan is harmless)
       const supabase = createSupabaseBrowser();
       await supabase.storage.from("rooms").remove([fp.cover_image_path]).catch(() => {});
       router.refresh();
@@ -260,37 +277,67 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
     }
   }, [orgId, router]);
 
-  const handleDelete = useCallback(async (fp: FloorplanItem) => {
-    if (!confirm(`Delete "${fp.name}"? This will remove all steps and photos.`)) return;
-    setDeletingId(fp.id);
-    try {
-      await apiCall(`/api/admin/floorplans/${fp.id}`, "DELETE", { org_id: orgId });
-      setFloorplans((prev) => prev.filter((f) => f.id !== fp.id));
-      router.refresh();
-    } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete");
-    } finally {
-      setDeletingId(null);
-    }
-  }, [orgId, router]);
+  const filteredFloorplans = floorplans.filter((fp) => {
+    if (statusFilter === "active" && !fp.is_active) return false;
+    if (statusFilter === "inactive" && fp.is_active) return false;
+    if (!searchQuery.trim()) return true;
+    const needle = searchQuery.toLowerCase();
+    return fp.name.toLowerCase().includes(needle) || (fp.community ?? "").toLowerCase().includes(needle);
+  });
 
   return (
     <div className="space-y-3">
-      {floorplans.map((fp) => {
-        const isEditing = editingId === fp.id;
-        const isDeleting = deletingId === fp.id;
+      <div className="flex flex-col md:flex-row gap-2 md:items-center md:justify-between">
+        <p className="text-xs text-slate-500">
+          Click a floorplan row to open setup. Edit and delete actions are inside the floorplan page.
+        </p>
+        <div className="flex items-center gap-2">
+          <label className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-1/2 -translate-y-1/2" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-white border border-slate-300 pl-7 pr-2 py-1 text-xs text-slate-900 min-w-44"
+              placeholder="Search floorplans"
+            />
+          </label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as "all" | "active" | "inactive")}
+            className="bg-white border border-slate-300 px-2 py-1 text-xs text-slate-900"
+          >
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+
+      {filteredFloorplans.map((fp) => {
         const isUploading = uploadingId === fp.id;
-        const isBusy = adding || saving || !!deletingId || !!duplicatingId;
         const coverSrc = fp.cover_image_path
           ? `${getCoverUrl(supabaseUrl, fp.cover_image_path)}?t=${coverCacheBust[fp.id] || ""}`
           : null;
+        const detailHref = `/admin/${orgSlug}/floorplans/${fp.id}`;
 
         return (
           <div
             key={fp.id}
-            className="bg-slate-50 border border-slate-200 p-4 flex gap-4"
+            className="bg-slate-50 border border-slate-200 p-4 flex gap-4 hover:border-slate-300 transition-colors cursor-pointer"
+            role="link"
+            tabIndex={0}
+            onClick={(e) => {
+              if (isInteractiveTarget(e.target)) return;
+              router.push(detailHref);
+            }}
+            onKeyDown={(e) => {
+              if (isInteractiveTarget(e.target)) return;
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                router.push(detailHref);
+              }
+            }}
           >
-            {/* Cover image thumbnail */}
             <CoverImageCell
               coverSrc={coverSrc}
               isUploading={isUploading}
@@ -299,103 +346,49 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin, su
               onRemove={() => handleCoverRemove(fp)}
             />
 
-            {/* Content */}
             <div className="flex-1 min-w-0 flex items-center gap-4">
-              {isEditing ? (
-                <div className="flex-1 flex items-center gap-2">
-                  <input
-                    value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
-                    className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 flex-1"
-                    placeholder="Name"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleUpdate(fp);
-                      if (e.key === "Escape") setEditingId(null);
-                    }}
-                  />
-                  <input
-                    value={editCommunity}
-                    onChange={(e) => setEditCommunity(e.target.value)}
-                    className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 w-40"
-                    placeholder="Community"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleUpdate(fp);
-                      if (e.key === "Escape") setEditingId(null);
-                    }}
-                  />
-                  <button
-                    onClick={() => handleUpdate(fp)}
-                    disabled={saving}
-                    className="text-emerald-700 hover:text-emerald-600 p-1"
-                  >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  </button>
-                  <button onClick={() => setEditingId(null)} className="text-slate-500 hover:text-slate-900 p-1">
-                    <X className="w-4 h-4" />
-                  </button>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-slate-900">{fp.name}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                  <span className="bg-slate-200/70 px-2 py-0.5">
+                    Community: {fp.community || "Not set"}
+                  </span>
+                  <span className="bg-slate-200/70 px-2 py-0.5">Steps: {fp.step_count}</span>
+                  <span className="bg-slate-200/70 px-2 py-0.5">Photos: {fp.photo_count}</span>
+                  <span className="bg-slate-200/70 px-2 py-0.5">Created: {formatCreatedDate(fp.created_at)}</span>
                 </div>
-              ) : (
-                <>
-                  <div className="flex-1 min-w-0">
-                    <Link
-                      href={`/admin/${orgSlug}/floorplans/${fp.id}`}
-                      className="text-sm font-medium text-slate-900 hover:text-slate-700 transition-colors"
-                    >
-                      {fp.name}
-                    </Link>
-                    {fp.community && (
-                      <span className="text-xs text-slate-500 ml-2">{fp.community}</span>
-                    )}
-                  </div>
+              </div>
 
-                  <button
-                    onClick={() => handleToggleActive(fp)}
-                    className={`text-xs px-2 py-0.5 border transition-colors ${
-                      fp.is_active
-                        ? "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
-                        : "border-slate-300 text-slate-500 hover:bg-slate-100"
-                    }`}
-                  >
-                    {fp.is_active ? "Active" : "Inactive"}
-                  </button>
+              <button
+                data-no-row-nav="true"
+                onClick={() => handleToggleActive(fp)}
+                className={`text-xs px-2 py-0.5 border transition-colors ${
+                  fp.is_active
+                    ? "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                    : "border-slate-300 text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                {fp.is_active ? "Active" : "Inactive"}
+              </button>
 
-                  {isAdmin && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingId(fp.id);
-                          setEditName(fp.name);
-                          setEditCommunity(fp.community || "");
-                        }}
-                        disabled={isBusy}
-                        className="text-slate-500 hover:text-slate-900 p-1 disabled:opacity-40"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDuplicate(fp)}
-                        disabled={isBusy}
-                        className="text-slate-500 hover:text-slate-900 p-1 disabled:opacity-40"
-                        title="Duplicate"
-                      >
-                        {duplicatingId === fp.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(fp)}
-                        disabled={isBusy}
-                        className="text-slate-500 hover:text-red-600 p-1 disabled:opacity-40"
-                      >
-                        {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                      </button>
-                    </div>
-                  )}
-                </>
-              )}
+              <Link
+                data-no-row-nav="true"
+                href={detailHref}
+                className="text-xs text-slate-700 hover:text-slate-900 border border-slate-300 hover:border-slate-400 px-2.5 py-1 inline-flex items-center gap-1"
+              >
+                Open setup
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
           </div>
         );
       })}
+
+      {filteredFloorplans.length === 0 && (
+        <div className="bg-slate-50 border border-dashed border-slate-300 p-5 text-center text-sm text-slate-500">
+          No floorplans match your filters.
+        </div>
+      )}
 
       {isAdmin && (
         <>

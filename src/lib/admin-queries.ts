@@ -50,7 +50,7 @@ export const getAdminOptionTree = cache((orgId: string) =>
 const _getAdminStepsForFloorplan = async (
   floorplanId: string,
   orgId: string
-): Promise<(AdminStep & { photo_count: number })[]> => {
+): Promise<(AdminStep & { photo_count: number; preview_image_path: string | null })[]> => {
   const supabase = getServiceClient();
   const { data: steps, error } = await supabase
     .from("steps")
@@ -59,7 +59,7 @@ const _getAdminStepsForFloorplan = async (
       hero_image, hero_variant, show_generate_button,
       scene_description, also_include_ids, photo_baseline,
       spatial_hints, sort_order, sections,
-      step_photos ( id )
+      step_photos ( id, image_path )
     `)
     .eq("floorplan_id", floorplanId)
     .eq("org_id", orgId)
@@ -72,6 +72,10 @@ const _getAdminStepsForFloorplan = async (
     sections: (s.sections as AdminStep["sections"]) ?? [],
     also_include_ids: s.also_include_ids ?? [],
     photo_count: Array.isArray(s.step_photos) ? s.step_photos.length : 0,
+    preview_image_path:
+      Array.isArray(s.step_photos) && s.step_photos.length > 0
+        ? ((s.step_photos[0] as { image_path?: string }).image_path ?? null)
+        : null,
     step_photos: undefined,
   }));
 };
@@ -174,12 +178,42 @@ const _getAdminFloorplans = async (orgId: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("floorplans")
-    .select("id, name, slug, community, is_active, cover_image_path")
+    .select(`
+      id,
+      name,
+      slug,
+      community,
+      is_active,
+      cover_image_path,
+      created_at,
+      steps (
+        id,
+        step_photos ( id )
+      )
+    `)
     .eq("org_id", orgId)
     .order("name");
 
   if (error || !data) return [];
-  return data;
+  return data.map((floorplan) => {
+    const steps = Array.isArray(floorplan.steps) ? floorplan.steps : [];
+    const photo_count = steps.reduce((total, step) => {
+      const photos = Array.isArray(step.step_photos) ? step.step_photos.length : 0;
+      return total + photos;
+    }, 0);
+
+    return {
+      id: floorplan.id,
+      name: floorplan.name,
+      slug: floorplan.slug,
+      community: floorplan.community,
+      is_active: floorplan.is_active,
+      cover_image_path: floorplan.cover_image_path,
+      created_at: floorplan.created_at,
+      step_count: steps.length,
+      photo_count,
+    };
+  });
 };
 
 export const getAdminFloorplans = cache((orgId: string) =>

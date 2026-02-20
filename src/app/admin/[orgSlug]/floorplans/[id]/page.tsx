@@ -29,6 +29,7 @@ export default async function AdminFloorplanDetailPage({
     getAdminStepsForFloorplan(floorplanId, auth.orgId),
     getAdminOptionTree(auth.orgId),
   ]);
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
   // Flatten subcategories for section assignment
   const allSubcategories = categories.flatMap((cat) =>
@@ -65,6 +66,7 @@ export default async function AdminFloorplanDetailPage({
             orgSlug={orgSlug}
             isAdmin={auth.role === "admin"}
             allSubcategories={allSubcategories}
+            supabaseUrl={supabaseUrl}
           />
         </div>
       </div>
