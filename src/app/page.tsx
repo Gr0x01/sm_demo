@@ -6,6 +6,7 @@ import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 
 const HOMEPAGE_NAV_LINKS = [
+  { label: "Try It", href: "/demo" },
   { label: "How It Works", href: "#compare" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
@@ -354,12 +355,6 @@ export default function LandingPage() {
                 >
                   Try It Live
                 </Link>
-                <a
-                  href="#contact"
-                  className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-400 hover:bg-slate-50 transition-colors"
-                >
-                  Book a Walkthrough
-                </a>
               </div>
 
             </div>
@@ -394,6 +389,7 @@ export default function LandingPage() {
                 { label: "BACKSPLASH — Herringbone Glacier", price: "$425" },
                 { label: "COUNTERTOP — Calacatta Venice", price: "$2,450" },
                 { label: "HARDWARE — Dominique Gold Pulls", price: "$300" },
+                { label: "FAUCET — Colfax Brushed Gold", price: "$375" },
                 { label: "ISLAND — Admiral Blue", price: "$200" },
               ].map((item, i) => (
                 <div key={i} className="flex justify-between text-[11px] font-mono">
@@ -403,7 +399,7 @@ export default function LandingPage() {
               ))}
               <div className="border-t border-slate-200 mt-3 pt-2 flex justify-between text-[11px] font-mono">
                 <span className="text-slate-500 font-semibold">TOTAL UPGRADES</span>
-                <span className="text-slate-700 font-semibold">+$3,375</span>
+                <span className="text-slate-700 font-semibold">+$3,750</span>
               </div>
             </div>
           </div>
@@ -429,6 +425,7 @@ export default function LandingPage() {
                     { label: "BACKSPLASH — Herringbone Glacier", price: "$425" },
                     { label: "COUNTERTOP — Calacatta Venice", price: "$2,450" },
                     { label: "HARDWARE — Dominique Gold Pulls", price: "$300" },
+                    { label: "FAUCET — Colfax Brushed Gold", price: "$375" },
                     { label: "ISLAND — Admiral Blue", price: "$200" },
                   ].map((item, i) => (
                     <div key={i} className="flex justify-between text-xs font-mono">
@@ -438,7 +435,7 @@ export default function LandingPage() {
                   ))}
                   <div className="border-t border-slate-200 mt-3 pt-2 flex justify-between text-xs font-mono">
                     <span className="text-slate-500 font-semibold">TOTAL UPGRADES</span>
-                    <span className="text-slate-700 font-semibold">+$3,375</span>
+                    <span className="text-slate-700 font-semibold">+$3,750</span>
                   </div>
                 </div>
               </div>
@@ -522,23 +519,23 @@ export default function LandingPage() {
           {[
             {
               n: "01",
-              title: "Send floor plans and pricing",
-              desc: "Your current options list is enough to start.",
+              title: "Upload your floor plans and\u00a0pricing",
+              desc: "Your current options list and a few room photos. No special formatting — what you already have is\u00a0enough.",
             },
             {
               n: "02",
-              title: "Get a branded buyer flow",
-              desc: "Aligned to your communities and finish packages.",
+              title: "Customize your buyer\u00a0experience",
+              desc: "Map your finishes, pricing, and brand to an interactive picker. Aligned to your communities and floor\u00a0plans.",
             },
             {
               n: "03",
-              title: "Buyers choose visually",
-              desc: "Decisions happen in context, not line items.",
+              title: "Buyers pick upgrades\u00a0visually",
+              desc: "They see their kitchen with the options they\u2019re considering — not a line item on a price\u00a0sheet.",
             },
             {
               n: "04",
-              title: "Receive priced exports",
-              desc: "Clear handoff for sales and operations teams.",
+              title: "Get priced selections\u00a0back",
+              desc: "Every session exports a priced selection sheet. Ready for your sales team, no re-entry\u00a0needed.",
             },
           ].map((step, index) => (
             <div key={step.n} data-reveal style={revealStyle(90 + index * 70)}>
@@ -547,6 +544,15 @@ export default function LandingPage() {
               <p className="text-sm text-slate-500 leading-relaxed">{step.desc}</p>
             </div>
           ))}
+        </div>
+
+        <div data-reveal style={revealStyle(370)} className="text-center mt-12">
+          <p className="text-sm text-slate-500 mb-2">
+            No software to learn. No data entry. No IT.
+          </p>
+          <p className="text-sm text-slate-400">
+            Want us to handle setup? We can load your catalog, source swatches, and pre-generate images so buyers see results instantly.
+          </p>
         </div>
       </Section>
 
@@ -721,22 +727,19 @@ export default function LandingPage() {
           className="max-w-3xl mx-auto text-center"
         >
           <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Next Step</p>
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
-            Your 2 best-selling plans.
-            <br />
-            No setup cost. 90 days to prove it.
+          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5 text-balance">
+            See what your buyers would see.
           </h2>
-          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto">
-            We configure Finch for your top floor plans — your options, your pricing, your brand. You use it for 90 days. If upgrade revenue goes up, we talk about the rest of your catalog. If it doesn&apos;t, you walk away.
+          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
+            Upload a kitchen photo, pick finishes, and watch the room change. Takes 60 seconds.
           </p>
-          <a
-            href="mailto:hello@finchweb.io"
+          <Link
+            href="/demo"
             className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
-            Book a 15-Minute Walkthrough
-          </a>
-          <p className="text-sm text-slate-500 mt-4">Now onboarding first builders in Alabama and Georgia. 15 minutes. No commitment.</p>
-          <p className="text-xs text-slate-400 mt-2">Or email us directly: hello@finchweb.io</p>
+            Try the Demo
+          </Link>
+          <p className="text-xs text-slate-400 mt-4">Questions? hello@finchweb.io</p>
         </div>
       </section>
 
