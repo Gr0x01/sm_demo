@@ -115,12 +115,12 @@ export function DemoViewer({
   }, [generatedImageUrl]);
 
   return (
-    <div className="relative bg-slate-100 border border-slate-200 overflow-hidden aspect-[3/2]">
+    <div className="relative w-full aspect-[3/2] lg:aspect-auto lg:h-[min(56vh,620px)] bg-slate-100 border border-slate-200 overflow-hidden">
       {displayUrl ? (
         <img
           src={displayUrl}
           alt={phase === "result" ? "AI-generated kitchen visualization" : "Uploaded kitchen photo"}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover lg:object-contain"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
@@ -135,30 +135,30 @@ export function DemoViewer({
           style={{ opacity: isGenerating ? 1 : 0 }}
         >
           {/* Label */}
-          <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 mb-5">
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-600 mb-5">
             Generating your visualization
           </p>
 
           {/* Progress bar — smooth shimmer, not a spinner */}
-          <div className="w-48 h-0.5 bg-slate-200 overflow-hidden mb-6">
-            <div className="h-full w-1/3 bg-slate-500 animate-[progress-slide_2s_ease-in-out_infinite]" />
+          <div className="w-56 h-1 bg-slate-200 overflow-hidden mb-8">
+            <div className="h-full w-1/3 bg-slate-600 animate-[progress-slide_2s_ease-in-out_infinite]" />
           </div>
 
           {/* Staged message */}
           <div
-            className="text-center max-w-md transition-opacity duration-400"
+            className="text-center max-w-lg transition-opacity duration-400"
             style={{ opacity: stageFading ? 0 : 1 }}
           >
             {stage.label !== "Generating" && (
-              <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 mb-2">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500 mb-3">
                 {stage.label}
               </p>
             )}
-            <p className="text-sm font-medium text-slate-800 leading-snug">
+            <p className="text-lg font-semibold text-slate-900 leading-snug">
               {stage.headline}
             </p>
             {stage.body && (
-              <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              <p className="text-base text-slate-600 mt-3 leading-relaxed">
                 {stage.body}
               </p>
             )}

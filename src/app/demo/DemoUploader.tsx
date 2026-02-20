@@ -12,7 +12,7 @@ interface DemoUploaderProps {
 }
 
 /** Resize and center-crop image to 1536x1024 (3:2) to match generation output */
-function resizeImage(file: File): Promise<{ dataUrl: string; width: number; height: number }> {
+function resizeImage(file: File): Promise<{ dataUrl: string; width: number; height: number; srcWidth: number; srcHeight: number }> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
@@ -43,7 +43,13 @@ function resizeImage(file: File): Promise<{ dataUrl: string; width: number; heig
       canvas.height = targetH;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, targetW, targetH);
-      resolve({ dataUrl: canvas.toDataURL("image/jpeg", 0.85), width: targetW, height: targetH });
+      resolve({
+        dataUrl: canvas.toDataURL("image/jpeg", 0.85),
+        width: targetW,
+        height: targetH,
+        srcWidth: img.width,
+        srcHeight: img.height,
+      });
     };
     img.onerror = () => reject(new Error("Failed to load image"));
     img.src = URL.createObjectURL(file);
@@ -81,10 +87,10 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
     setIsValidating(true);
 
     try {
-      const { dataUrl, width, height } = await resizeImage(file);
+      const { dataUrl, srcWidth, srcHeight } = await resizeImage(file);
 
       // Reject portrait orientation — output is always landscape (3:2)
-      if (height > width) {
+      if (srcHeight > srcWidth) {
         setRejection("Please use a landscape (horizontal) photo. Portrait photos don't work well with our visualization engine.");
         setIsValidating(false);
         return;
@@ -162,7 +168,7 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
           className="hidden"
         />
 
-        <div className="flex flex-col items-center justify-center py-16 px-6">
+        <div className="flex flex-col items-center justify-center py-12 sm:py-14 md:py-16 px-6">
           {isValidating && previewUrl ? (
             <>
               <img src={previewUrl} alt="Preview" className="max-h-48 mb-4 object-contain" />

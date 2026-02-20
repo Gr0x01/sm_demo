@@ -54,12 +54,12 @@ export function DemoPickerPanel({ selections, sceneAnalysis, onSelect }: DemoPic
     : null;
 
   return (
-    <div className="bg-white border border-slate-200 p-5">
-      <p className="text-xs uppercase tracking-[0.16em] text-slate-400 mb-4">
+    <div className="bg-white border border-slate-200 p-4 md:p-5">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-slate-400 mb-4">
         Choose your finishes
       </p>
       {(kitchenTypeLabel || cameraAngleLabel || sceneAnalysis?.visibleSurfaces) && (
-        <div className="mb-4 px-3 py-2 border border-slate-200 bg-slate-50">
+        <div className="mb-4 px-3 py-2.5 border border-slate-200 bg-slate-50">
           <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500">Photo analysis</p>
           <p className="mt-1 text-xs text-slate-700">
             {kitchenTypeLabel ? `Layout: ${kitchenTypeLabel}. ` : ""}
@@ -81,7 +81,7 @@ export function DemoPickerPanel({ selections, sceneAnalysis, onSelect }: DemoPic
           disabled={unavailableSubCategoryIds.has(sub.id)}
           disabledReason={DISABLED_REASON_BY_SUBCATEGORY[sub.id]}
           disableZoom
-          gridClassName="grid grid-cols-3 sm:grid-cols-5 gap-3"
+          gridClassName="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-2.5"
           onSelect={(optionId) => onSelect(sub.id, optionId)}
         />
       ))}

@@ -37,8 +37,8 @@ export function SwatchGrid({ subCategory, selectedOptionId, disabled = false, di
 
   return (
     <>
-      <div className="mb-5 last:mb-0">
-        <h4 className={`text-sm font-semibold mb-2.5 px-0.5 ${disabled ? "text-gray-400" : "text-gray-600"}`}>
+      <div className="mb-6 last:mb-0">
+        <h4 className={`text-sm font-semibold mb-2 px-0.5 ${disabled ? "text-gray-400" : "text-gray-700"}`}>
           {subCategory.name}
         </h4>
         {disabled && disabledReason && (
@@ -54,14 +54,14 @@ export function SwatchGrid({ subCategory, selectedOptionId, disabled = false, di
                 type="button"
                 onClick={() => onSelect(option.id)}
                 disabled={disabled}
-                className={`group relative flex flex-col items-center overflow-hidden border-2 transition-all duration-150 ${
+                className={`group relative flex h-full flex-col items-center overflow-hidden border transition-all duration-150 ${
                   disabled
                     ? "cursor-not-allowed opacity-50 border-gray-200 bg-gray-50"
                     : "cursor-pointer"
                 } ${
                   isSelected
-                    ? "border-[var(--color-accent)] shadow-md bg-blue-50/50"
-                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white active:scale-[0.97]"
+                    ? "border-[var(--color-accent)] shadow-sm bg-blue-50/50"
+                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white active:scale-[0.98]"
                 }`}
               >
                 {/* Swatch image or color block */}
@@ -123,11 +123,11 @@ export function SwatchGrid({ subCategory, selectedOptionId, disabled = false, di
                 </div>
 
                 {/* Label — name + price beneath every swatch */}
-                <div className="w-full px-1.5 py-1.5 text-center">
-                  <p className="text-[11px] font-medium text-[var(--color-navy)] leading-tight truncate">
+                <div className="w-full border-t border-slate-100 px-1.5 py-1.5 text-center">
+                  <p className="text-[11px] font-medium text-[var(--color-navy)] leading-tight max-h-[2.2em] overflow-hidden">
                     {getShortName(option.name)}
                   </p>
-                  <p className={`text-[10px] mt-0.5 ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
+                  <p className={`text-[10px] font-medium mt-0.5 ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
                     {formatPrice(option.price)}
                   </p>
                 </div>
