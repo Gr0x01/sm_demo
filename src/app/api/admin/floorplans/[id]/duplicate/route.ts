@@ -4,6 +4,7 @@ import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { invalidateOrgCache } from "@/lib/admin-cache";
 import { slugify } from "@/lib/slugify";
 import { getServiceClient } from "@/lib/supabase";
+import { MAX_STEPS_PER_FLOORPLAN } from "@/lib/step-limits";
 
 const duplicateSchema = z.object({ org_id: z.string() });
 
@@ -36,6 +37,20 @@ export async function POST(
       return NextResponse.json({ error: "Floorplan not found" }, { status: 404 });
     }
 
+    const { data: sourceSteps } = await supabase
+      .from("steps")
+      .select("*")
+      .eq("floorplan_id", id)
+      .eq("org_id", orgId)
+      .order("sort_order", { ascending: true });
+
+    if ((sourceSteps?.length ?? 0) > MAX_STEPS_PER_FLOORPLAN) {
+      return NextResponse.json(
+        { error: `Source floorplan exceeds maximum ${MAX_STEPS_PER_FLOORPLAN} steps` },
+        { status: 409 }
+      );
+    }
+
     // 2. Generate slug + insert new floorplan
     const newName = `${source.name} (Copy)`;
     const baseSlug = slugify(newName);
@@ -63,19 +78,11 @@ export async function POST(
       return NextResponse.json({ error: fpErr?.message ?? "Failed to create floorplan" }, { status: 500 });
     }
 
-    // 3. Fetch source steps
-    const { data: sourceSteps } = await supabase
-      .from("steps")
-      .select("*")
-      .eq("floorplan_id", id)
-      .eq("org_id", orgId)
-      .order("sort_order", { ascending: true });
-
     const serviceClient = getServiceClient();
     const stepIdMap = new Map<string, string>(); // old step ID -> new step ID
 
     // 4. Clone each step + its photos
-    for (const step of sourceSteps ?? []) {
+    for (const [index, step] of (sourceSteps ?? []).entries()) {
       try {
         const stepBaseSlug = slugify(step.name);
         const { data: stepSlug } = await supabase.rpc("generate_unique_slug", {
@@ -93,8 +100,8 @@ export async function POST(
             floorplan_id: newFp.id,
             name: step.name,
             subtitle: step.subtitle,
-            number: step.number,
-            sort_order: step.sort_order,
+            number: index + 1,
+            sort_order: index,
             show_generate_button: step.show_generate_button,
             scene_description: step.scene_description,
             also_include_ids: step.also_include_ids,

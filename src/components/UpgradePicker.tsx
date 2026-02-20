@@ -14,7 +14,7 @@ import { SyncModal } from "./SyncModal";
 import { SaveSelectionsModal } from "./SaveSelectionsModal";
 import { GalleryView } from "./GalleryView";
 import { StepPhotoGrid } from "./StepPhotoGrid";
-import { ChevronRight, Save } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import type { ContractPhase } from "@/lib/contract-phase";
 
 const SKIP_FOR_GENERATION = new Set([
@@ -770,18 +770,18 @@ export function UpgradePicker({
             {sessionId && (
               <button
                 onClick={() => setShowSaveModal(true)}
-                className="inline-flex items-center gap-1.5 px-2 py-1 text-sm text-gray-500 hover:text-[var(--color-navy)] transition-colors cursor-pointer"
-                title={buyerEmail ? "Saved" : "Save My Selections"}
+                className="inline-flex items-center px-2 py-1 text-sm text-gray-500 hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+                title={buyerEmail ? "Link sent" : "Save & continue later"}
               >
-                <Save className="w-4 h-4" />
-                <span className="hidden sm:inline">{buyerEmail ? "Saved" : "Save"}</span>
+                <span className="hidden sm:inline">{buyerEmail ? "Link sent" : "Save & continue later"}</span>
+                <span className="sm:hidden">{buyerEmail ? "Saved" : "Save"}</span>
               </button>
             )}
             <button
               onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
               className="inline-flex items-center gap-1.5 px-1 py-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
             >
-              Finish
+              Review & Finish
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>

@@ -61,7 +61,7 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    step.number
+                    i + 1
                   )}
                 </div>
                 <span
@@ -80,7 +80,7 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
       {/* Mobile: compact nav with dots */}
       <div className="sm:hidden">
         <div className="flex items-center justify-center gap-2">
-          {steps.map((step) => {
+          {steps.map((step, i) => {
             const isActive = step.id === activeStepId;
             const isComplete = completionMap[step.id] && !isActive;
 
@@ -104,7 +104,7 @@ export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: St
                       <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                     </svg>
                   ) : (
-                    step.number
+                    i + 1
                   )}
                 </div>
               </button>

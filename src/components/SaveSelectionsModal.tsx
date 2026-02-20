@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Mail, Check, Loader2 } from "lucide-react";
+import { X, Check, Loader2 } from "lucide-react";
 
 type ModalState = "prompt" | "saving" | "saved" | "resume-prompt" | "resume-loading" | "resume-not-found";
 
@@ -96,7 +96,7 @@ export function SaveSelectionsModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
-            {state === "saved" ? "Selections Saved" : state.startsWith("resume") ? "Resume Selections" : "Save Your Selections"}
+            {state === "saved" ? "Link Sent" : state.startsWith("resume") ? "Resume Selections" : "Save Your Progress"}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Close">
             <X className="w-5 h-5" />
@@ -109,7 +109,7 @@ export function SaveSelectionsModal({
           {(state === "prompt" || state === "saving") && (
             <>
               <p className="text-sm text-gray-600 mb-4">
-                Enter your email to save your selections. We&apos;ll send you a link to pick up where you left off.
+                Enter your email and we&apos;ll send a secure link so you can continue anytime.
               </p>
               <div className="flex gap-2">
                 <input
@@ -127,7 +127,7 @@ export function SaveSelectionsModal({
                   disabled={state === "saving"}
                   className="px-4 py-2 bg-[var(--color-navy)] text-white text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
                 >
-                  {state === "saving" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                  {state === "saving" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Send me a link"}
                 </button>
               </div>
               {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
@@ -147,8 +147,8 @@ export function SaveSelectionsModal({
                 <Check className="w-6 h-6 text-green-600" />
               </div>
               <p className="text-sm text-gray-600">
-                We&apos;ve sent a resume link to <strong>{email.trim().toLowerCase()}</strong>.
-                Check your inbox to pick up where you left off.
+                We&apos;ve sent a secure sign-in link to <strong>{email.trim().toLowerCase()}</strong>.
+                Check your inbox to continue later.
               </p>
               <button
                 onClick={onClose}
@@ -181,7 +181,7 @@ export function SaveSelectionsModal({
                   disabled={state === "resume-loading"}
                   className="px-4 py-2 bg-[var(--color-navy)] text-white text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer disabled:opacity-50"
                 >
-                  {state === "resume-loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+                  {state === "resume-loading" ? <Loader2 className="w-4 h-4 animate-spin" /> : "Find my link"}
                 </button>
               </div>
               {error && <p className="text-sm text-red-600 mt-2">{error}</p>}

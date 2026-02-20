@@ -25,6 +25,7 @@ import {
   ChevronDown, ChevronRight, Camera, Image,
 } from "lucide-react";
 import type { AdminStep } from "@/types";
+import { MAX_STEPS_PER_FLOORPLAN } from "@/lib/step-limits";
 
 interface FloorplanDetail {
   id: string;
@@ -67,6 +68,7 @@ interface FloorplanEditorProps {
 
 function SortableStep({
   step,
+  displayNumber,
   orgId,
   orgSlug,
   floorplanId,
@@ -78,6 +80,7 @@ function SortableStep({
   allSubcategories,
 }: {
   step: AdminStep & { photo_count: number };
+  displayNumber: number;
   orgId: string;
   orgSlug: string;
   floorplanId: string;
@@ -194,7 +197,7 @@ function SortableStep({
         ) : (
           <>
             <div className="flex-1 min-w-0">
-              <span className="text-xs text-slate-500 mr-2">#{step.number}</span>
+              <span className="text-xs text-slate-500 mr-2">#{displayNumber}</span>
               <span className="text-sm font-medium text-slate-900">{step.name}</span>
               {step.subtitle && <span className="text-xs text-slate-500 ml-2">{step.subtitle}</span>}
             </div>
@@ -304,6 +307,7 @@ export function FloorplanEditor({
   const [showAdd, setShowAdd] = useState(false);
   const [addName, setAddName] = useState("");
   const [adding, setAdding] = useState(false);
+  const atMaxSteps = steps.length >= MAX_STEPS_PER_FLOORPLAN;
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -343,14 +347,13 @@ export function FloorplanEditor({
   }, [steps, orgId, router]);
 
   const handleAdd = useCallback(async () => {
-    if (!addName.trim()) return;
+    if (!addName.trim() || atMaxSteps) return;
     setAdding(true);
     try {
       const data = await apiCall("/api/admin/steps", "POST", {
         org_id: orgId,
         floorplan_id: floorplan.id,
         name: addName.trim(),
-        number: steps.length + 1,
         sort_order: steps.length,
       });
       setSteps((prev) => [...prev, { ...data, sections: data.sections ?? [], also_include_ids: data.also_include_ids ?? [], photo_count: 0 }]);
@@ -362,7 +365,7 @@ export function FloorplanEditor({
     } finally {
       setAdding(false);
     }
-  }, [addName, orgId, floorplan.id, steps.length, router]);
+  }, [addName, atMaxSteps, orgId, floorplan.id, steps.length, router]);
 
   return (
     <div className="space-y-4">
@@ -376,14 +379,19 @@ export function FloorplanEditor({
         </Link>
       </div>
 
+      <div className="text-xs text-slate-500">
+        {steps.length}/{MAX_STEPS_PER_FLOORPLAN} steps
+      </div>
+
       {/* Step list */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
           <div className="space-y-2">
-            {steps.map((step) => (
+            {steps.map((step, index) => (
               <SortableStep
                 key={step.id}
                 step={step}
+                displayNumber={index + 1}
                 orgId={orgId}
                 orgSlug={orgSlug}
                 floorplanId={floorplan.id}
@@ -415,12 +423,18 @@ export function FloorplanEditor({
         <>
           {showAdd ? (
             <div className="bg-slate-50 border border-slate-200 p-4 space-y-3">
+              {atMaxSteps && (
+                <p className="text-xs text-amber-700">
+                  Maximum {MAX_STEPS_PER_FLOORPLAN} steps per floorplan. Combine sections within a step to simplify navigation.
+                </p>
+              )}
               <input
                 value={addName}
                 onChange={(e) => setAddName(e.target.value)}
                 className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 w-full"
                 placeholder="Step name (e.g. Kitchen)"
                 autoFocus
+                disabled={atMaxSteps}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleAdd();
                   if (e.key === "Escape") setShowAdd(false);
@@ -429,7 +443,7 @@ export function FloorplanEditor({
               <div className="flex gap-2">
                 <button
                   onClick={handleAdd}
-                  disabled={adding || !addName.trim()}
+                  disabled={adding || !addName.trim() || atMaxSteps}
                   className="bg-slate-900 text-white px-3 py-1 text-sm font-medium hover:bg-slate-800 disabled:opacity-50"
                 >
                   {adding ? "Creating..." : "Add Step"}
@@ -443,12 +457,20 @@ export function FloorplanEditor({
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              <Plus className="w-4 h-4" /> Add step
-            </button>
+            <div className="space-y-2">
+              <button
+                onClick={() => setShowAdd(true)}
+                disabled={atMaxSteps}
+                className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-4 h-4" /> Add step
+              </button>
+              {atMaxSteps && (
+                <p className="text-xs text-amber-700">
+                  Maximum {MAX_STEPS_PER_FLOORPLAN} steps per floorplan. Combine sections within a step to simplify navigation.
+                </p>
+              )}
+            </div>
           )}
         </>
       )}
