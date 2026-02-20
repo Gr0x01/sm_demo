@@ -27,7 +27,7 @@ const faqs = [
   },
   {
     q: "What's the difference between Starter and Pro?",
-    a: "Starter: you upload photos and manage your catalog. Pro: we handle everything — professional photography, option transcription, and thousands of pre-generated images so buyers see results instantly. Most builders start with Pro.",
+    a: "Starter: you upload photos and manage your catalog. Pro: we handle everything — option transcription, thousands of pre-generated images, and if your existing photos need improvement, we coordinate professional photography. We'll assess what you have during onboarding.",
   },
   {
     q: "Can this work with our current design center software?",
@@ -404,7 +404,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="relative aspect-[4/3] bg-slate-100">
-            <Image src="/home-hero-generated.png" alt="AI-generated kitchen visualization" fill className="object-cover" />
+            <Image src="/home-hero-generated.png" alt="Kitchen upgrade visualization" fill className="object-cover" />
           </div>
           <div className="p-4 text-center">
             <p className="text-sm font-semibold text-slate-900">What buyers see with Finch</p>
@@ -451,7 +451,7 @@ export default function LandingPage() {
             className="bg-white border border-slate-200 shadow-sm overflow-hidden"
           >
             <div className="aspect-[4/3] relative bg-slate-100">
-              <Image src="/home-hero-generated.png" alt="AI-generated kitchen visualization" fill className="object-cover" />
+              <Image src="/home-hero-generated.png" alt="Kitchen upgrade visualization" fill className="object-cover" />
             </div>
             <div className="p-4 text-center">
               <p className="text-sm font-semibold text-slate-900">What buyers see with Finch</p>
@@ -586,7 +586,8 @@ export default function LandingPage() {
             <ul className="space-y-3 mb-8 flex-1">
               {[
                 "Upload your own room photos",
-                "On-demand AI generation",
+                "On-demand visualizations",
+                "500 generations/floor plan/mo",
                 "Admin dashboard for option and pricing updates",
                 "Email support",
               ].map((item) => (
@@ -617,9 +618,9 @@ export default function LandingPage() {
 
             <ul className="space-y-3 mb-8 flex-1">
               {[
-                "Professional photography coordinated by us",
+                "Professional photography coordinated by us*",
                 "Full option and pricing transcription",
-                "5,000+ pre-generated images per floor plan",
+                "3,000+ pre-generated images per floor plan",
                 "Instant results for buyers — no wait time",
                 "Priority support",
               ].map((item) => (

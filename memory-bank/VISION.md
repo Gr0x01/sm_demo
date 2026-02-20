@@ -72,37 +72,39 @@ Builder does the setup. We provide the platform.
 
 - Builder uploads own room photos
 - On-demand AI generation (~60 second wait per image)
-- **1,000 generations/floor plan/mo** (enough to build cache + serve buyers)
+- **500 generations/floor plan/mo** (plenty for buyer sessions + cache building; ~$125 cost at $0.25/gen)
 - Admin dashboard for option/pricing updates
 - Docs + email support
-- **Optional one-time setup: $500-750** — we scrape their upgrade options and swatch images from their website/suppliers and load them. Takes ~1-3 hours. Builder just adds room photos after.
+- **Persistent in-app upsell**: "Want us to handle setup? $1,500 one-time" — we load their full upgrade catalog, source swatch images, write spatial descriptions, and tune prompts. No photography. Builder provides room photos. ~4-6 hours of work.
 
-**Note on Starter quality risk:** Builders uploading bad photos get bad AI output and blame the product. The optional setup is the default recommendation. Consider a photo quality gate (reject low-res/dark uploads with retake guidance). In this market, word of mouth is everything — one bad experience travels fast.
+**Note on Starter quality risk:** Builders uploading bad photos get bad AI output and blame the product. The $1,500 setup upsell is the default recommendation — self-serve is the entry point, not the goal. Consider a photo quality gate (reject low-res/dark uploads with retake guidance). In this market, word of mouth is everything — one bad experience travels fast.
 
 #### Finch Pro — $299/floor plan/mo
 We handle everything. Buyers see instant results.
 
-- Professional photography coordinated by us (included in setup)
+- Professional photography if needed*
 - Full option/pricing transcription from builder's PDF sheets
 - Swatch image sourcing across all visual categories
 - Custom spatial descriptions and prompt engineering per room
-- Pre-generation of ~5,000 images per floor plan (instant results for buyers)
+- Pre-generation of ~3,000 images per floor plan (instant results for buyers)
 - QA'd for 98%+ accuracy
+- 3,000 generations/floor plan/mo (internal soft cap, not advertised — abuse prevention only)
 - Priority support
 - Admin dashboard for builder's team
 - **Done-For-You Setup: $2,500 first floor plan, $1,500 each additional**
 
 **Done-For-You Setup includes** (~20 hours of skilled work):
-- Professional room photography coordination ($500-1,000)
 - Option/pricing transcription from builder's sheets (often messy PDFs → structured data)
 - Swatch image sourcing (cabinets, countertops, backsplash, flooring, faucets, sinks, hardware, appliances)
 - Custom spatial hints per room (e.g., "fridge in alcove left, range in cutout, sink under window")
 - Prompt descriptors per upgrade option
-- AI pre-generation (~5,000 images/floor plan) via GPU batch
+- AI pre-generation (~3,000 images/floor plan) via GPU batch
 - QA review, prompt tuning, regeneration of bad outputs
 - Configuration, branding, testing
 
-**Frame as a deliverable, not a fee:** "Professional photography, full option catalog setup, AI prompt tuning, and 5,000+ pre-generated room images. Your tool is ready within 5-7 business days."
+***Photography:** Evaluate during sales conversation. If their existing photos are clean, well-lit, and minimal distortion — use them. If not, add ~$1K to the quote for professional photography. Don't show this as a separate line item on pricing — just bake it into the setup quote when needed.*
+
+**Frame as a deliverable, not a fee:** "Full option catalog setup, AI prompt tuning, and 3,000+ pre-generated room images. Your tool is ready within 5-7 business days."
 
 **New floor plans after initial setup:** $1,500 each (partially reusable swatch/photography work). Typically live within 5 business days.
 
@@ -121,22 +123,37 @@ For early adopters / case study builders. Goal is proof and testimonial, not rev
 
 **Explicitly state the value:** "Our Done-For-You Setup is normally $2,500 per floor plan. As a founding partner, we're waiving that entirely. In exchange, we'd love a testimonial and the ability to reference you as a customer."
 
-**Why**: First non-SM builder is worth more as a case study than revenue. 3 plans keeps hard costs manageable (~$500-700 with GPU) while covering the majority of their sales volume. After 3 months of results, they'll want remaining plans added — at full price.
+**Why**: First non-SM builder is worth more as a case study than revenue. 3 plans keeps hard costs manageable (~$75 GPU rental + photography if needed) while covering the majority of their sales volume. After 3 months of results, they'll want remaining plans added — at full price.
 
-#### 14-Day Trial
-- 1 floor plan, 50 generations
-- Full functionality, no watermark
-- Growth hacker recommends white-gloving every trial (spend 2 hours setting it up properly so they see Pro-quality output). Converts at 2-3x the rate of self-service trials.
-- Don't over-invest in trial automation yet. First 2-3 deals are handshake deals. Trial matters at builder #5+.
+#### Interactive Demo (Replaces Trial)
+No free trial. Instead, a public demo on the landing page where builders can:
+- Upload their own room photo
+- Test AI visualization against a curated set of upgrades we select (e.g., 3 cabinet colors, 3 countertops, 2 backsplashes)
+- See the quality of the output with zero commitment
+
+**Why this beats a trial:** No signup friction, no expiration anxiety, no risk of bad self-serve output souring them. They see Pro-quality results on *their* photo immediately. The CTA after the demo is "Ready to set this up for your floor plans?" — funnels to Starter signup or Pro conversation.
 
 #### Pricing Principles
 - **No volume discounts published.** Handle ad hoc if a 10+ plan builder asks.
 - **No annual pricing yet.** Need flexibility to raise prices once we have ROI data. Revisit at 5+ builders.
 - **"Floor plan" not "plan"** everywhere — avoids confusion with pricing tiers.
 - **Setup fees off the pricing page.** Monthly price is the headline. Setup discussed in sales conversation.
-- **Starter CTA: "Start Trial"** (self-serve, low friction). **Pro CTA: "Talk to Us"** (high-touch).
+- **Landing page demo** is the top of funnel — no trial, no signup. Upload a photo, see it work.
+- **Starter CTA: "Get Started"** (self-serve, low friction). **Pro CTA: "Talk to Us"** (high-touch).
 - **Position as ROI, not cost.** "Buyers who see their upgrades buy 35% more" is the headline. Not "AI-generated kitchen visualization."
 - **vs Zonda:** "Zonda Envision is built for the top 50 builders in America. Finch is built for everyone else." Don't be "cheap Zonda" — be "Zonda results for builders Zonda ignores."
+
+### Team & Roles
+
+Unlimited seats on all tiers. No per-seat charges. Roles control access:
+
+| Role | Can do | Typical user |
+|------|--------|-------------|
+| **Owner** | Billing, account settings, everything | Whoever signs the contract |
+| **Admin** | Edit options/pricing, upload photos, manage floor plans | Design center manager |
+| **Viewer** | Analytics, buyer activity, read-only | VP of Sales, sales agents |
+
+Both Starter and Pro get all three roles. Keep it simple — seat-based pricing adds friction and these builder teams are small (3-5 people max).
 
 ### Example Deals
 
@@ -159,14 +176,19 @@ For early adopters / case study builders. Goal is proof and testimonial, not rev
 - Setup: **waived**
 - First 3 months: **free**
 - Months 4-12: 3 x $299 = $897/mo x 9 = $8.1K
-- **Year 1 total: ~$8.1K** (they pay), ~$500-700 (we eat in hard costs w/ GPU)
+- **Year 1 total: ~$8.1K** (they pay), ~$125 GPU + photography (we eat in hard costs)
 - **Easy yes** — zero risk, zero upfront, walk away if it doesn't work
 - **Expansion**: remaining plans at $299/mo + $1,500 setup each
 
-**Small builder trying Starter (~3 floor plans, DIY)**
-- Setup: $500 (optional, we load their options)
+**Small builder trying Starter (~3 floor plans, takes $1,500 setup upsell)**
+- Setup: $1,500 one-time (we load their catalog, no photography)
 - Monthly: 3 x $149 = $447/mo ($5.4K/yr)
-- **Year 1 total: ~$5.9K**
+- **Year 1 total: ~$6.9K**
+
+**Small builder trying Starter (~3 floor plans, pure DIY)**
+- Setup: $0
+- Monthly: 3 x $149 = $447/mo ($5.4K/yr)
+- **Year 1 total: ~$5.4K**
 
 **"Just let me try one floor plan" — Starter**
 - Monthly: $149/mo ($1.8K/yr)
@@ -174,31 +196,33 @@ For early adopters / case study builders. Goal is proof and testimonial, not rev
 
 ### Revenue Projections — Growth Over Time
 
-Assumes mix of Starter and Pro builders, weighted toward Pro.
+Assumes self-serve-first: majority Starter, handful of Pro from local outreach.
 
-| Active Builders | Avg Plans | Avg $/plan | Monthly Revenue | Annual Revenue |
-|----------------|-----------|-----------|----------------|----------------|
-| 2 | 4 | $250 | $2,000 | $24K |
-| 3 | 5 | $250 | $3,750 | $45K |
-| 5 | 5 | $260 | $6,500 | $78K |
-| 8 | 6 | $270 | $12,960 | $156K |
-| 10 | 6 | $275 | $16,500 | $198K |
+| Starter Builders | Pro Builders | Avg Plans | Monthly Revenue | Annual Revenue |
+|-----------------|-------------|-----------|----------------|----------------|
+| 3 | 1 | 3 | $1,638 | $20K |
+| 8 | 2 | 3 | $5,364 | $64K |
+| 20 | 3 | 3 | $11,610 | $139K |
+| 50 | 5 | 3 | $26,835 | $322K |
+| 100 | 5 | 3 | $49,185 | $590K |
 
-*Plus setup fees: 5 Pro builders/yr x ~$5,500 avg = ~$27.5K additional*
+*Plus setup fees: Starter upsells (~50% take rate on $1,500) + Pro setups ($2,500-5,500 each)*
 
-### Capacity & Scaling — Solo Operator Limits
+### Capacity & Scaling — Self-Serve-First
 
-| Active Builders | Maintenance/mo | Onboard Capacity | Monthly Rev | Hours Left for Sales/Product |
-|----------------|---------------|-----------------|-------------|------------------------------|
-| 2 | 4-8 hrs | 2/mo | $2K | ~60 hrs |
-| 3 | 6-12 hrs | 1-2/mo | $3.8K | ~50 hrs |
-| 5 | 10-20 hrs | 1/mo | $6.5K | ~30 hrs |
-| 8 | 16-32 hrs | Maybe 1/mo | $13K | ~20 hrs |
-| 10 | 20-40 hrs | Stretched | $16.5K | ~10 hrs |
+Self-serve changes the scaling math dramatically. Starter builders mostly onboard themselves — your time per Starter builder is near-zero unless they take the $1,500 setup upsell (4-6 hrs). Pro is still 20 hrs each but there are fewer of them.
 
-**The hire point: ~6-8 builders.** At $13K+/mo ($156K+/yr) a part-time ops person for maintenance and option updates is affordable and frees you to sell and onboard. Before that, automate what you can (admin dashboard, self-serve option edits) to stretch solo capacity.
+| Starter | Pro | Setup Hrs/mo | Maintenance/mo | Monthly Rev | Hours Left |
+|---------|-----|-------------|---------------|-------------|------------|
+| 3 | 1 | ~10 | 4-6 hrs | $1.6K | ~55 hrs |
+| 8 | 2 | ~12 | 6-10 hrs | $5.4K | ~45 hrs |
+| 20 | 3 | ~15 | 8-12 hrs | $11.6K | ~40 hrs |
+| 50 | 5 | ~20 | 12-16 hrs | $26.8K | ~30 hrs |
+| 100 | 5 | ~20 | 16-20 hrs | $49.2K | ~30 hrs |
 
-**Key scaling lever:** Every hour shaved off the 20-hour Pro onboarding doubles capacity ceiling. Invest product time in reducing onboarding — templates, auto-transcription, photo validation — before anything else.
+**The ceiling is much higher solo.** 100 Starter builders is manageable because they self-serve. The bottleneck is Pro onboarding (20 hrs each) and maintenance, not total builder count. Hire when Pro demand outpaces your capacity (~8-10 Pro builders).
+
+**Key scaling lever:** Invest in self-serve onboarding quality — guided setup wizard, photo quality gates, templates, good docs. Every improvement to self-serve compounds across all Starter builders. Pro onboarding optimization matters less when it's only 5-10 builders.
 
 
 ### Builder ROI — Why the Tool Pays for Itself
@@ -258,41 +282,49 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 ### Handling Objections
 - **"That's a lot upfront"** — Try Starter at $149/floor plan/mo, no setup fee. Or start with one Pro floor plan ($2,500 setup + $299/mo) and prove the ROI.
 - **"Only some of my buyers would use this"** — ROI tables above account for 50% adoption and the math still works.
-- **"Why does setup cost $2,500?"** — Professional photography, full option catalog transcription, AI prompt tuning, 5,000+ pre-generated room images, and QA. It's a 2-3 week build-out — real work, real deliverable. Comparable to what you'd pay for a Matterport tour.
+- **"Why does setup cost $2,500?"** — Professional photography, full option catalog transcription, AI prompt tuning, 3,000+ pre-generated room images, and QA. It's a 2-3 week build-out — real work, real deliverable. Comparable to what you'd pay for a Matterport tour.
 - **"What am I paying $299/mo for?"** — 24/7 platform access, instant AI visualization for every buyer session, image cache maintenance, option/pricing updates, priority support, and an admin dashboard for your team.
-- **"I just want to try it"** — Starter is $149/mo for one floor plan. Upload a photo and see it work today. 14-day trial available.
+- **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, Starter is $149/mo for one floor plan.
 
 ### Cost Structure
 
-**Pre-generation is non-negotiable.** Each image takes ~60 seconds to generate. Buyers won't wait — the tool must feel instant. That means ~5,000 pre-cached images per plan.
+**Pre-generation is non-negotiable.** Each image takes ~60 seconds to generate. Buyers won't wait — the tool must feel instant. That means ~3,000 pre-cached images per plan (covers 80%+ of common combos; long-tail generates on-demand).
 
 **The pre-cache math:**
-- 5,000 images x 60 sec = **83 hours of generation per plan**
-- 8 plans (Craftway-sized builder) = **667 hours** (~28 days 24/7)
-- At API pricing ($0.04-0.15/image): **$200-750 per plan, $1,600-6,000 for 8 plans**
+- 3,000 images x 60 sec = **50 hours of generation per plan**
+- 8 plans (Craftway-sized builder) = **400 hours** (~17 days 24/7)
+- At API pricing ($0.04-0.15/image): **$120-450 per plan, $960-3,600 for 8 plans**
 
-**Hard costs per builder onboarding:**
+**Hard costs per builder onboarding (Pro, 8 plans):**
 
-| Item | API Pricing | GPU Pricing |
-|------|------------|-------------|
+| Item | API Pricing | GPU Rental |
+|------|------------|------------|
 | Your time (20 hrs) | — | — |
-| Photography | $500-1,000 | $500-1,000 |
-| Pre-generation (8 plans x 5K) | $1,600-6,000 | ~$40 |
+| Photography (if needed) | ~$1,000 | ~$1,000 |
+| Pre-generation (8 plans x 3K) | $960-3,600 | ~$200 |
 | Hosting/infra | ~$45/mo | ~$45/mo |
-| **Total hard costs** | **$2,100-7,000** | **$540-1,040** |
+| **Total hard costs** | **$1,000-4,600** | **$245-1,245** |
 
 **Option A: API-based**
 - Generation: ~$0.04-0.15/image
 - Works for first builder but margins are thin on smaller builder deals
 - Rate limits and 60s generation time make batch pre-gen slow
 
-**Option B: Self-hosted GPU**
-- RTX PRO 6000 workstation: ~$10-13K one-time
-- Generation cost: ~$0.001/image (electricity only)
-- No rate limits — can parallelize, run overnight batches
-- Break-even: basically one small builder onboarding in saved API costs
+**Option B: Cloud GPU rental (recommended)**
+- RTX A6000 on-demand: ~$0.49/hr (RunPod, Hyperstack)
+- RTX A6000 dedicated monthly: ~$350-365/mo
+- Pre-gen one floor plan (50 hrs): ~$25 on-demand
+- Pre-gen 8 plans (400 hrs): ~$200 on-demand
+- No hardware risk, no maintenance, cancel anytime
 
-**Recommended path**: Get GPU before first non-SM builder onboarding. The pre-generation costs on API pricing eat most of the margin on smaller builder deals. A $4K setup fee with $4-6K in API generation costs is underwater. With GPU, that same deal has $3K+ margin.
+**Why rent beats buy:**
+- New RTX A6000: $6,850-9,000 purchase price
+- 24/7 rental for 2 years: ~$8,400-8,760 — roughly the same cost
+- But: no depreciation, no maintenance, no upfront capital, can scale up/down
+- At low volume (< 5 builders): on-demand hourly is far cheaper than dedicated
+- At high volume (5+ builders onboarding regularly): dedicated monthly makes sense
+
+**Recommended path**: Use on-demand GPU rental from day one. Spin up for batch pre-generation, shut down when done. A full floor plan pre-gen costs ~$41. Only move to dedicated monthly when onboarding cadence justifies it (~2+ plans/month). Never buy hardware.
 
 ## Technical Architecture
 
@@ -318,7 +350,7 @@ The current architecture supports multi-tenant with minimal changes:
 ### Pre-Generation Strategy
 For each builder's floor plan portfolio:
 - Identify top 5 visual subcategories (countertop, cabinet color, backsplash, flooring, cabinet style)
-- Pre-generate top 8-12 options per subcategory = **~5,000-15,000 images per plan**
+- Pre-generate top 8-12 options per subcategory = **~3,000 images per plan**
 - Cost: ~$200-600/plan at API pricing, or near-zero with GPU
 - Result: **instant visualization for 80-90% of buyer selections**
 
@@ -347,24 +379,43 @@ Highlights:
 - Founding Partner deal: 3 plans, setup waived, 3 months free
 - Measure upgrade revenue impact, get testimonial / case study
 
-### Phase 3: Second Builder — First Paying Customer (Q3-Q4 2026)
-- Use founding partner's results to close second builder on Starter or Pro
+### Phase 1.5: GPU Rental Setup (Before First Non-SM Builder)
+- Set up on-demand GPU rental (RunPod or Hyperstack, RTX A6000 at ~$0.49/hr)
+- Pre-generation on API is ~$200-750 per plan and takes weeks of continuous generation
+- On-demand GPU drops that to ~$25/plan and enables overnight batch generation
+- No upfront capital — spin up when needed, shut down when done
+- **Must have before onboarding any builder** — API margins don't work at scale
+
+### Phase 3: Launch Self-Serve + Local Pro Sales (Q3-Q4 2026)
+- **Online**: Landing page with interactive demo → Starter signups
+- **In Alabama**: Knock doors, HBA events, local networking → Pro deals
+- Use founding partner results as proof: "Here's what it did for [builder]"
 - Demo the actual tool (not a pitch deck) — show their competitor using it
-- HBA events, local networking (Greater Montgomery HBA, GBAHB)
-- **2026 exit target: 2 builders, 3+ plans each = $25-50K Year 1**
+- **2026 exit target: 5-10 Starter + 1-2 Pro = $25-50K Year 1**
 
-### Phase 1.5: GPU Investment (Before First Non-SM Builder)
-- Acquire self-hosted GPU (RTX PRO 6000 or equivalent, ~$10-13K)
-- Pre-generation on API is ~$4-6K per small builder and takes weeks of continuous generation
-- GPU drops that to ~$40 and enables overnight batch generation
-- **Must have before onboarding smaller builders** — API margins don't work at that price point
-
-### Phase 4: Expand & Scale (2027)
-- Expand existing builders to more plans (natural upsell)
-- Onboard 3-5 total builders
+### Phase 4: Scale Self-Serve (2027)
+- Invest in self-serve onboarding quality (guided wizard, photo gates, templates)
+- Expand beyond AL/GA — self-serve is geography-independent
 - Attend Southeast Building Conference (SEBC), International Builders' Show (IBS)
+- Pro stays local/regional — it requires hands-on work
+- Starter scales nationally through landing page, content marketing, HBA directories
+- **Target: 50+ Starter builders + 5 Pro = $322K/yr**
 
 ## Sales Approach
+
+### Two Channels
+
+**Self-serve (Starter)** — scales without you
+- Landing page demo converts to Starter signups
+- In-app $1,500 setup upsell converts DIY builders who hit friction
+- Content marketing, HBA directory listings, SEO
+- Geography-independent — any production builder in the US
+
+**Local sales (Pro)** — high-touch, high-value
+- Knock doors in Alabama when you're on the ground
+- HBA events, design center visits, builder meetups
+- Use SM demo + founding partner results as proof
+- Pro deals are local/regional — requires coordinating photography
 
 ### The One-Liner
 **"I help builders increase upgrade revenue with an AI-powered visualizer that lets buyers see their selections before they commit. It costs a fraction of what the big platforms charge and I can have you up and running in weeks."**
