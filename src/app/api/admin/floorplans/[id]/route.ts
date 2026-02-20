@@ -10,6 +10,7 @@ const updateSchema = z.object({
   community: z.string().nullable().optional(),
   price_sheet_label: z.string().nullable().optional(),
   is_active: z.boolean().optional(),
+  cover_image_path: z.string().nullable().optional(),
 });
 
 export async function PATCH(
@@ -28,13 +29,20 @@ export async function PATCH(
     if ("error" in auth) return auth.error;
 
     const { supabase, orgId } = auth;
-    const { name, community, price_sheet_label, is_active } = parsed.data;
+    const { name, community, price_sheet_label, is_active, cover_image_path } = parsed.data;
 
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.name = name;
     if (community !== undefined) updates.community = community;
     if (price_sheet_label !== undefined) updates.price_sheet_label = price_sheet_label;
     if (is_active !== undefined) updates.is_active = is_active;
+    if (cover_image_path !== undefined) {
+      // Validate path is scoped to this org (prevent cross-org references)
+      if (cover_image_path !== null && !cover_image_path.startsWith(`${orgId}/`)) {
+        return NextResponse.json({ error: "Invalid cover image path" }, { status: 400 });
+      }
+      updates.cover_image_path = cover_image_path;
+    }
 
     const { data, error } = await supabase
       .from("floorplans")
@@ -68,10 +76,10 @@ export async function DELETE(
 
     const { supabase, orgId } = auth;
 
-    // Fetch floorplan slug for cache invalidation before deleting
+    // Fetch floorplan slug + cover image for cleanup before deleting
     const { data: fp } = await supabase
       .from("floorplans")
-      .select("slug")
+      .select("slug, cover_image_path")
       .eq("id", id)
       .eq("org_id", orgId)
       .single();
@@ -104,6 +112,14 @@ export async function DELETE(
           console.error("[floorplan-delete] Storage cleanup error:", err);
         });
       }
+    }
+
+    // Clean up cover image from storage (best-effort)
+    if (fp.cover_image_path) {
+      const serviceClient = getServiceClient();
+      await serviceClient.storage.from("rooms").remove([fp.cover_image_path]).catch((err: unknown) => {
+        console.error("[floorplan-delete] Cover image cleanup error:", err);
+      });
     }
 
     // Delete floorplan row (CASCADE handles steps + step_photos)

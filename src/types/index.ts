@@ -99,6 +99,7 @@ export interface AdminFloorplan {
   community: string | null;
   price_sheet_label: string | null;
   is_active: boolean;
+  cover_image_path: string | null;
 }
 
 export interface AdminStepSection {

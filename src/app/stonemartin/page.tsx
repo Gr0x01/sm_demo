@@ -1,21 +1,33 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ResumeSavedDesignLink } from "./ResumeSavedDesignLink";
+import { getOrgBySlug, getFloorplansForOrg } from "@/lib/db-queries";
 
 const SM_NAVY = "#1B2A4A";
 const SM_GOLD = "#C5A572";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
-const floorplans = [
-  { name: "The Kinkade", slug: "kinkade", image: "/floorplans/kinkade.webp", active: true },
-  { name: "The Cunningham", slug: "cunningham", image: "/floorplans/cunningham.webp", active: false },
-  { name: "The Filmore", slug: "filmore", image: "/floorplans/filmore.webp", active: false },
-  { name: "The Overton", slug: "overton", image: "/floorplans/overton.webp", active: false },
-  { name: "The Rosewood", slug: "rosewood", image: "/floorplans/rosewood.webp", active: false },
-  { name: "The Sherfield", slug: "sherfield", image: "/floorplans/sherfield.webp", active: false },
-  { name: "The Sutherland", slug: "sutherland", image: "/floorplans/sutherland.webp", active: false },
-];
+function getCoverImageUrl(coverPath: string | null): string | null {
+  if (coverPath) {
+    return `${SUPABASE_URL}/storage/v1/object/public/rooms/${coverPath}`;
+  }
+  return null;
+}
 
-export default function StoneMartin() {
+// Static fallback images for existing SM floorplans (transition period)
+const STATIC_COVERS: Record<string, string> = {
+  kinkade: "/floorplans/kinkade.webp",
+  cunningham: "/floorplans/cunningham.webp",
+  filmore: "/floorplans/filmore.webp",
+  overton: "/floorplans/overton.webp",
+  rosewood: "/floorplans/rosewood.webp",
+  sherfield: "/floorplans/sherfield.webp",
+  sutherland: "/floorplans/sutherland.webp",
+};
+
+export default async function StoneMartin() {
+  const org = await getOrgBySlug("stonemartin");
+  const floorplans = org ? await getFloorplansForOrg(org.id) : [];
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
@@ -71,25 +83,48 @@ export default function StoneMartin() {
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {floorplans.map((fp) => {
+              const dbCover = getCoverImageUrl(fp.cover_image_path);
+              const staticCover = STATIC_COVERS[fp.slug] ?? null;
+              const imageSrc = dbCover ?? staticCover;
+
               const card = (
                 <div className="group relative overflow-hidden border border-slate-200 bg-white">
                   <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
-                    <Image
-                      src={fp.image}
-                      alt={fp.name}
-                      fill
-                      className={`object-cover transition-transform duration-300 ${
-                        fp.active
-                          ? "group-hover:scale-[1.03]"
-                          : "grayscale opacity-50"
-                      }`}
-                    />
+                    {dbCover ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={dbCover}
+                        alt={fp.name}
+                        className={`absolute inset-0 w-full h-full object-cover transition-transform duration-300 ${
+                          fp.is_active
+                            ? "group-hover:scale-[1.03]"
+                            : "grayscale opacity-50"
+                        }`}
+                      />
+                    ) : imageSrc ? (
+                      <Image
+                        src={imageSrc}
+                        alt={fp.name}
+                        fill
+                        className={`object-cover transition-transform duration-300 ${
+                          fp.is_active
+                            ? "group-hover:scale-[1.03]"
+                            : "grayscale opacity-50"
+                        }`}
+                      />
+                    ) : (
+                      <div className={`absolute inset-0 flex items-center justify-center ${
+                        fp.is_active ? "" : "grayscale opacity-50"
+                      }`}>
+                        <span className="text-slate-300 text-xs uppercase tracking-wider">No image</span>
+                      </div>
+                    )}
                   </div>
                   <div className="p-4 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{fp.name}</p>
                     </div>
-                    {fp.active && (
+                    {fp.is_active && (
                       <span
                         className="shrink-0 w-2 h-2"
                         style={{ backgroundColor: SM_GOLD }}
@@ -99,7 +134,7 @@ export default function StoneMartin() {
                 </div>
               );
 
-              if (fp.active) {
+              if (fp.is_active) {
                 return (
                   <Link
                     key={fp.slug}

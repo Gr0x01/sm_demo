@@ -53,6 +53,27 @@ export const getFloorplan = cache((orgId: string, floorplanSlug: string) =>
   })(orgId, floorplanSlug)
 );
 
+// ---------- Floorplans list for org landing page ----------
+
+const _getFloorplansForOrg = async (orgId: string) => {
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("floorplans")
+    .select("id, name, slug, is_active, cover_image_path")
+    .eq("org_id", orgId)
+    .order("name");
+
+  if (error || !data) return [];
+  return data;
+};
+
+export const getFloorplansForOrg = cache((orgId: string) =>
+  unstable_cache(_getFloorplansForOrg, ["floorplans-for-org", orgId], {
+    revalidate: REVALIDATE_SECONDS,
+    tags: [`floorplans:${orgId}`],
+  })(orgId)
+);
+
 // ---------- Categories with options (single nested select) ----------
 
 const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => {
@@ -215,7 +236,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
       id, slug, number, name, subtitle, hero_image, hero_variant,
       show_generate_button, scene_description, also_include_ids, photo_baseline,
       sort_order, sections, spatial_hints,
-      step_photos ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline )
+      step_photos!step_photos_org_match ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline )
     `)
     .eq("floorplan_id", floorplanId)
     .order("sort_order");

@@ -1,15 +1,18 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { cache } from "react";
+import { unstable_cache } from "next/cache";
+import { getServiceClient } from "./supabase";
 import type { AdminCategory, AdminStep, AdminStepPhoto } from "@/types";
 
-/**
- * Fetches the full category → subcategory → option tree for admin views.
- * Receives the user-scoped Supabase client (RLS enforced).
- * No caching — admin always sees live data.
- */
-export async function getAdminOptionTree(
-  supabase: SupabaseClient,
-  orgId: string
-): Promise<AdminCategory[]> {
+// Admin queries use service-role client + unstable_cache with org-scoped tags.
+// Auth is already verified by getAuthenticatedUser() in each page/route before calling these.
+// Mutations call invalidateOrgCache() to bust relevant tags.
+
+const REVALIDATE = 86400; // 24h — mutations bust via tags
+
+// ---------- Option Tree (categories → subcategories → options) ----------
+
+const _getAdminOptionTree = async (orgId: string): Promise<AdminCategory[]> => {
+  const supabase = getServiceClient();
   const { data: cats, error } = await supabase
     .from("categories")
     .select(`
@@ -33,16 +36,22 @@ export async function getAdminOptionTree(
         options: (sub.options ?? []).sort((a, b) => a.sort_order - b.sort_order),
       })),
   }));
-}
+};
 
-/**
- * Fetches steps for a floorplan with photo count per step.
- */
-export async function getAdminStepsForFloorplan(
-  supabase: SupabaseClient,
+export const getAdminOptionTree = cache((orgId: string) =>
+  unstable_cache(_getAdminOptionTree, ["admin-option-tree", orgId], {
+    revalidate: REVALIDATE,
+    tags: [`admin:categories:${orgId}`],
+  })(orgId)
+);
+
+// ---------- Steps for floorplan (with photo count) ----------
+
+const _getAdminStepsForFloorplan = async (
   floorplanId: string,
   orgId: string
-): Promise<(AdminStep & { photo_count: number })[]> {
+): Promise<(AdminStep & { photo_count: number })[]> => {
+  const supabase = getServiceClient();
   const { data: steps, error } = await supabase
     .from("steps")
     .select(`
@@ -65,16 +74,27 @@ export async function getAdminStepsForFloorplan(
     photo_count: Array.isArray(s.step_photos) ? s.step_photos.length : 0,
     step_photos: undefined,
   }));
-}
+};
 
-/**
- * Fetches steps with nested step_photos for a floorplan.
- */
-export async function getAdminStepPhotos(
-  supabase: SupabaseClient,
+export const getAdminStepsForFloorplan = cache(
+  (floorplanId: string, orgId: string) =>
+    unstable_cache(
+      _getAdminStepsForFloorplan,
+      ["admin-steps", floorplanId, orgId],
+      {
+        revalidate: REVALIDATE,
+        tags: [`admin:steps:${floorplanId}`],
+      }
+    )(floorplanId, orgId)
+);
+
+// ---------- Steps with nested photos ----------
+
+const _getAdminStepPhotos = async (
   floorplanId: string,
   orgId: string
-): Promise<(AdminStep & { step_photos: AdminStepPhoto[] })[]> {
+): Promise<(AdminStep & { step_photos: AdminStepPhoto[] })[]> => {
+  const supabase = getServiceClient();
   const { data: steps, error } = await supabase
     .from("steps")
     .select(`
@@ -102,21 +122,69 @@ export async function getAdminStepPhotos(
       (a, b) => a.sort_order - b.sort_order
     ),
   }));
-}
+};
 
-/**
- * Fetches floorplans for an org (used in scope UI).
- */
-export async function getAdminFloorplans(
-  supabase: SupabaseClient,
-  orgId: string
-) {
+export const getAdminStepPhotos = cache(
+  (floorplanId: string, orgId: string) =>
+    unstable_cache(_getAdminStepPhotos, ["admin-step-photos", floorplanId, orgId], {
+      revalidate: REVALIDATE,
+      tags: [`admin:steps:${floorplanId}`],
+    })(floorplanId, orgId)
+);
+
+// ---------- All steps for org (options page grouping) ----------
+
+type StepSummary = {
+  name: string;
+  floorplan_name: string;
+  floorplan_id: string;
+  sort_order: number;
+  sections: { subcategory_ids: string[] }[];
+};
+
+const _getAdminAllStepsForOrg = async (orgId: string): Promise<StepSummary[]> => {
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("steps")
+    .select("name, sort_order, floorplan_id, sections, floorplans!inner(name)")
+    .eq("org_id", orgId)
+    .order("sort_order");
+
+  if (error || !data) return [];
+
+  return data.map((s: Record<string, unknown>) => ({
+    name: s.name as string,
+    floorplan_name: (s.floorplans as { name: string }).name,
+    floorplan_id: s.floorplan_id as string,
+    sort_order: s.sort_order as number,
+    sections: (s.sections as { subcategory_ids: string[] }[]) ?? [],
+  }));
+};
+
+export const getAdminAllStepsForOrg = cache((orgId: string) =>
+  unstable_cache(_getAdminAllStepsForOrg, ["admin-all-steps", orgId], {
+    revalidate: REVALIDATE,
+    tags: [`admin:steps-all:${orgId}`],
+  })(orgId)
+);
+
+// ---------- Floorplans for org ----------
+
+const _getAdminFloorplans = async (orgId: string) => {
+  const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("floorplans")
-    .select("id, name, slug, community, is_active")
+    .select("id, name, slug, community, is_active, cover_image_path")
     .eq("org_id", orgId)
     .order("name");
 
   if (error || !data) return [];
   return data;
-}
+};
+
+export const getAdminFloorplans = cache((orgId: string) =>
+  unstable_cache(_getAdminFloorplans, ["admin-floorplans", orgId], {
+    revalidate: REVALIDATE,
+    tags: [`admin:floorplans:${orgId}`],
+  })(orgId)
+);

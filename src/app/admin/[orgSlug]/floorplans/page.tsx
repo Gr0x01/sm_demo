@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { createSupabaseServer } from "@/lib/supabase-server";
 import { getAdminFloorplans } from "@/lib/admin-queries";
 import { FloorplanList } from "@/components/admin/FloorplanList";
 
@@ -13,8 +12,7 @@ export default async function AdminFloorplansPage({
   const auth = await getAuthenticatedUser(orgSlug);
   if (!auth) redirect("/admin/login");
 
-  const supabase = await createSupabaseServer();
-  const floorplans = await getAdminFloorplans(supabase, auth.orgId);
+  const floorplans = await getAdminFloorplans(auth.orgId);
 
   return (
     <div className="p-6 md:p-8">
@@ -33,6 +31,7 @@ export default async function AdminFloorplansPage({
             orgId={auth.orgId}
             orgSlug={orgSlug}
             isAdmin={auth.role === "admin"}
+            supabaseUrl={process.env.NEXT_PUBLIC_SUPABASE_URL!}
           />
         </div>
       </div>
