@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Check, Loader2 } from "lucide-react";
 
 type ModalState = "prompt" | "saving" | "saved" | "resume-prompt" | "resume-loading" | "resume-not-found";
@@ -25,6 +25,18 @@ export function SaveSelectionsModal({
   const [state, setState] = useState<ModalState>("prompt");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [visible, setVisible] = useState(false);
+  const backdropRef = useRef<HTMLDivElement>(null);
+
+  // Animate in on mount
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 200);
+  };
 
   const handleSave = async () => {
     const trimmed = email.trim();
@@ -91,14 +103,22 @@ export function SaveSelectionsModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-      <div className="bg-white w-full max-w-md shadow-xl">
+    <div
+      ref={backdropRef}
+      onClick={(e) => e.target === backdropRef.current && handleClose()}
+      className={`fixed inset-0 z-50 flex items-center justify-center px-4 transition-colors duration-200 ${
+        visible ? "bg-black/50" : "bg-black/0"
+      }`}
+    >
+      <div className={`bg-white w-full max-w-md shadow-xl transition-all duration-200 ${
+        visible ? "opacity-100 scale-100" : "opacity-0 scale-95"
+      }`}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900">
             {state === "saved" ? "Link Sent" : state.startsWith("resume") ? "Resume Selections" : "Save Your Progress"}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Close">
+          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 cursor-pointer" aria-label="Close">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -151,7 +171,7 @@ export function SaveSelectionsModal({
                 Check your inbox to continue later.
               </p>
               <button
-                onClick={onClose}
+                onClick={handleClose}
                 className="mt-4 px-6 py-2 bg-[var(--color-navy)] text-white text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
               >
                 Continue Browsing

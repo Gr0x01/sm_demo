@@ -14,7 +14,6 @@ import { SyncModal } from "./SyncModal";
 import { SaveSelectionsModal } from "./SaveSelectionsModal";
 import { GalleryView } from "./GalleryView";
 import { StepPhotoGrid } from "./StepPhotoGrid";
-import { ChevronRight } from "lucide-react";
 import type { ContractPhase } from "@/lib/contract-phase";
 
 const SKIP_FOR_GENERATION = new Set([
@@ -740,20 +739,14 @@ export function UpgradePicker({
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[72px] sm:min-h-[64px] flex items-center gap-2 sm:gap-4">
           {/* Logo — left, links back to landing */}
-          <button
-            onClick={onNavigateHome}
-            className="flex items-center gap-2 sm:gap-3 w-16 sm:w-auto shrink-0 cursor-pointer hover:opacity-70 transition-opacity"
-          >
-            {logoUrl && <img src={logoUrl} alt={orgName} className="h-6 sm:h-5" />}
-            <div className="hidden sm:block text-left">
-              <h1 className="text-sm font-bold text-[var(--color-navy)]">
-                {planName} Plan
-              </h1>
-              <p className="text-[10px] text-gray-400">
-                {community}
-              </p>
-            </div>
-          </button>
+          <div className="w-48 shrink-0 flex items-center">
+            <button
+              onClick={onNavigateHome}
+              className="cursor-pointer hover:opacity-70 transition-opacity"
+            >
+              {logoUrl && <img src={logoUrl} alt={orgName} className="h-6 sm:h-5" />}
+            </button>
+          </div>
 
           {/* Step nav — center */}
           <div className="flex-1 min-w-0 flex items-center justify-center">
@@ -766,23 +759,20 @@ export function UpgradePicker({
           </div>
 
           {/* Save + Finish — right */}
-          <div className="w-auto shrink-0 flex items-center gap-1 justify-end">
+          <div className="w-48 shrink-0 flex items-center gap-2 justify-end">
             {sessionId && (
               <button
                 onClick={() => setShowSaveModal(true)}
-                className="inline-flex items-center px-2 py-1 text-sm text-gray-500 hover:text-[var(--color-navy)] transition-colors cursor-pointer"
-                title={buyerEmail ? "Link sent" : "Save & continue later"}
+                className="px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
               >
-                <span className="hidden sm:inline">{buyerEmail ? "Link sent" : "Save & continue later"}</span>
-                <span className="sm:hidden">{buyerEmail ? "Saved" : "Save"}</span>
+                Save
               </button>
             )}
             <button
               onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
-              className="inline-flex items-center gap-1.5 px-1 py-1 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+              className="px-3 py-1.5 text-sm font-semibold bg-[var(--color-navy)] text-white hover:opacity-90 transition-opacity cursor-pointer"
             >
               Review & Finish
-              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
