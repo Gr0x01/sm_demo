@@ -90,6 +90,11 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [x] Admin login Suspense fix for `useSearchParams()`
 - [x] SM demo path completely unchanged (no photos → existing hero/generate flow)
 
+### 8. Floorplan Onboarding: Skeleton Steps + Duplicate ✅
+- [x] Auto-populate 5 skeleton steps on floorplan creation (Set Your Style, Design Your Kitchen, Primary Bath, Secondary Spaces, Finishing Touches)
+- [x] Duplicate floorplan API (`POST /api/admin/floorplans/[id]/duplicate`) — clones steps, sections, photos (storage copy), remaps `also_include_ids`
+- [x] Duplicate button in FloorplanList UI (Copy icon between edit/delete, global busy guard)
+
 ### Upcoming (not started)
 - **Workstream E**: Branding controls (depends on A, small)
 

@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Pencil, Check, X, Loader2 } from "lucide-react";
+import { Plus, Trash2, Pencil, Check, X, Loader2, Copy } from "lucide-react";
 // Subset of FloorplanItem returned by getFloorplanItems query
 interface FloorplanItem {
   id: string;
@@ -43,6 +43,7 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
   const [editCommunity, setEditCommunity] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
 
   const handleAdd = useCallback(async () => {
     if (!addName.trim()) return;
@@ -96,6 +97,19 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
     }
   }, [orgId, router]);
 
+  const handleDuplicate = useCallback(async (fp: FloorplanItem) => {
+    setDuplicatingId(fp.id);
+    try {
+      const data = await apiCall(`/api/admin/floorplans/${fp.id}/duplicate`, "POST", { org_id: orgId });
+      setFloorplans((prev) => [...prev, data]);
+      router.refresh();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to duplicate");
+    } finally {
+      setDuplicatingId(null);
+    }
+  }, [orgId, router]);
+
   const handleDelete = useCallback(async (fp: FloorplanItem) => {
     if (!confirm(`Delete "${fp.name}"? This will remove all steps and photos.`)) return;
     setDeletingId(fp.id);
@@ -115,6 +129,7 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
       {floorplans.map((fp) => {
         const isEditing = editingId === fp.id;
         const isDeleting = deletingId === fp.id;
+        const isBusy = adding || saving || !!deletingId || !!duplicatingId;
 
         return (
           <div
@@ -188,14 +203,23 @@ export function FloorplanList({ floorplans: initial, orgId, orgSlug, isAdmin }: 
                         setEditName(fp.name);
                         setEditCommunity(fp.community || "");
                       }}
-                      className="text-slate-500 hover:text-slate-900 p-1"
+                      disabled={isBusy}
+                      className="text-slate-500 hover:text-slate-900 p-1 disabled:opacity-40"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
+                      onClick={() => handleDuplicate(fp)}
+                      disabled={isBusy}
+                      className="text-slate-500 hover:text-slate-900 p-1 disabled:opacity-40"
+                      title="Duplicate"
+                    >
+                      {duplicatingId === fp.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
                       onClick={() => handleDelete(fp)}
-                      disabled={isDeleting}
-                      className="text-slate-500 hover:text-red-600 p-1"
+                      disabled={isBusy}
+                      className="text-slate-500 hover:text-red-600 p-1 disabled:opacity-40"
                     >
                       {isDeleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                     </button>
