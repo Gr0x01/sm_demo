@@ -5,11 +5,12 @@ import { invalidateOrgCache } from "@/lib/admin-cache";
 
 const reorderSchema = z.object({
   org_id: z.string(),
-  table: z.enum(["categories", "subcategories", "options", "steps"]),
+  table: z.enum(["categories", "subcategories", "options", "steps", "step_photos"]),
   items: z.array(z.object({
     id: z.string(),
     sort_order: z.number().int(),
   })),
+  floorplan_id: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
     if ("error" in auth) return auth.error;
 
     const { supabase, orgId } = auth;
-    const { table, items } = parsed.data;
+    const { table, items, floorplan_id } = parsed.data;
 
     const { error } = await supabase.rpc("reorder_items", {
       p_table: table,
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    invalidateOrgCache(orgId);
+    invalidateOrgCache(orgId, { floorplanId: floorplan_id });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });

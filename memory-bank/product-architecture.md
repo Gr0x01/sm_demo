@@ -29,7 +29,7 @@ We do everything. Builder sends us:
 - Brand assets (logo, colors)
 
 We deliver:
-- Fully configured upgrade picker at `{builder-slug}.upgradeviz.com` (or similar)
+- Fully configured upgrade picker at `{builder-slug}.withfin.ch`
 - Pre-generated key combos for instant demo
 - Ongoing: update prices when they change, add new floorplans
 
@@ -106,8 +106,9 @@ Central admin: service_role key bypasses RLS for cross-org operations
 organizations
   ├── floorplans                    (Kinkade, McClain, etc.)
   │     ├── steps                   (Set Your Style, Design Your Kitchen, etc.)
-  │     │     ├── step_sections     (Cabinets, Flooring, etc.)
-  │     │     ├── step_photo        (base room photo + spatial hints + baselines)
+  │     │     ├── step_sections     (Cabinets, Flooring, etc. — stored as sections jsonb on steps)
+  │     │     ├── step_photos       (multiple room photos per step, hero flag, quality check, spatial hints)
+  │     │     ├── step_ai_config    (spatial hints, baselines, high-impact IDs — legacy, being replaced by step_photos)
   │     │     └── step_high_impacts (which subcategories send swatch images)
   │     └── generated_images        (cached AI outputs)
   │
@@ -146,40 +147,49 @@ floorplans (
 )
 
 -- Categories (per org — different builders have different upgrade categories)
+-- UUID PK + slug column. Buyer-facing code maps slug → id. UNIQUE(org_id, slug).
 categories (
-  id uuid PK,
+  id uuid PK DEFAULT gen_random_uuid(),
   org_id uuid FK → organizations,
+  slug text NOT NULL,               -- "cabinets" (human-readable, buyer-facing)
   name text,                        -- "CABINETS"
-  sort_order int
+  sort_order int,
+  UNIQUE(org_id, slug)
 )
 
 -- Subcategories
 subcategories (
-  id uuid PK,
-  category_id uuid FK → categories,
+  id uuid PK DEFAULT gen_random_uuid(),
+  category_id uuid FK → categories ON DELETE CASCADE,
   org_id uuid FK → organizations,
+  slug text NOT NULL,               -- "kitchen-cabinet-color" (buyer-facing)
   name text,                        -- "Kitchen Cabinet Color"
-  slug text,                        -- "kitchen-cabinet-color"
   is_visual boolean DEFAULT false,
   is_additive boolean DEFAULT false,
   unit_label text,                  -- "outlet", "pack"
   max_quantity int,
-  sort_order int
+  sort_order int,
+  floorplan_ids uuid[] DEFAULT '{}', -- empty = all floorplans
+  UNIQUE(org_id, slug)
 )
 
 -- Options
 options (
-  id uuid PK,
-  subcategory_id uuid FK → subcategories,
+  id uuid PK DEFAULT gen_random_uuid(),
+  subcategory_id uuid FK → subcategories ON DELETE CASCADE,
   org_id uuid FK → organizations,
+  slug text NOT NULL,               -- "cabinet-oxford" (buyer-facing)
   name text,                        -- "Oxford"
-  price decimal(10,2),
+  price integer,                    -- whole dollars ($0 = included)
+  description text,                 -- optional rich description
   prompt_descriptor text,           -- "Oxford shaker-style cabinet doors..."
   swatch_url text,                  -- URL in Supabase Storage
   swatch_color text,                -- hex fallback
   nudge text,                       -- "Most popular"
   is_default boolean DEFAULT false, -- pre-selected ($0 included option)
-  sort_order int
+  sort_order int,
+  floorplan_ids uuid[] DEFAULT '{}', -- empty = all floorplans
+  UNIQUE(org_id, slug)
 )
 
 -- Steps (per floorplan — different floorplans may have different room layouts)
@@ -251,23 +261,23 @@ buyer_sessions (
 
 ### Buyer-Facing
 ```
-upgradeviz.com/{org-slug}/{floorplan-slug}
+{org-slug}.withfin.ch/{floorplan-slug}
   → Full upgrade picker for that floorplan
 
 Example:
-upgradeviz.com/stone-martin/kinkade
-upgradeviz.com/stone-martin/mcclain
-upgradeviz.com/oak-haven/sycamore
+stone-martin.withfin.ch/kinkade
+stone-martin.withfin.ch/mcclain
+oak-haven.withfin.ch/sycamore
 ```
 
 ### Admin
 ```
-upgradeviz.com/admin                    → Central admin (us) — all orgs
-upgradeviz.com/admin/{org-slug}         → Builder admin — their org only
-upgradeviz.com/admin/{org-slug}/floorplans
-upgradeviz.com/admin/{org-slug}/upgrades
-upgradeviz.com/admin/{org-slug}/photos
-upgradeviz.com/admin/{org-slug}/analytics
+admin.withfin.ch                        → Central admin (us) — all orgs
+{org-slug}.withfin.ch/admin             → Builder admin — their org only
+{org-slug}.withfin.ch/admin/floorplans
+{org-slug}.withfin.ch/admin/upgrades
+{org-slug}.withfin.ch/admin/photos
+{org-slug}.withfin.ch/admin/analytics
 ```
 
 ---
@@ -348,34 +358,38 @@ The component architecture (UpgradePicker, SidebarPanel, SwatchGrid, etc.) is re
 
 ## Migration Path: Demo → Product
 
-### Phase 1: Database-Backed Data (Keep Single Tenant)
-Move Stone Martin data from TypeScript to Supabase tables. Keep the same UI. Prove the data layer works.
-- Create all tables above
-- Write a migration script that reads `options-data.ts` + `step-config.ts` and inserts into Supabase
-- Update the picker to fetch from Supabase instead of importing static data
-- Update `/api/generate` to read step_ai_config from DB
+### Phase 1: Database-Backed Data ✅
+- All tables created, seed script migrates static TS data to Supabase
+- Picker fetches from Supabase, `/api/generate` reads AI config from DB
 
-### Phase 2: Multi-Tenant Routing
-- Add `organizations` + `floorplans` tables
-- Dynamic routing: `/{org-slug}/{floorplan-slug}`
-- Org-scoped theming (logo, colors)
+### Phase 2: Multi-Tenant Routing ✅
+- `organizations` + `floorplans` tables with dynamic routing
+- Org-scoped theming (logo, colors via CSS custom properties)
 - RLS policies on all tables
 
-### Phase 3: Central Admin
-- Build the central admin dashboard
-- Org CRUD, floorplan CRUD
-- Ability to onboard a new builder by entering their data through the admin UI (replaces editing TypeScript)
+### Phase 3: Builder Admin (Workstream A) ✅
+- Supabase Auth email/password with `org_users` join table
+- Full category/subcategory/option CRUD with drag reorder
+- UUID PKs + slug column (buyer-facing compatibility)
+- Floorplan scoping (category junction table + array columns on sub/opt)
+- AI prompt descriptor generation, swatch upload
+- Security: auth on all routes, ownership validation, verified storage deletes
 
-### Phase 4: Builder Admin
-- Supabase Auth for builder users
-- Builder-scoped admin views
-- Upgrade CRUD (prices, options, swatches)
-- Analytics dashboard
+### Phase 4: Floorplan & Photo Pipeline (Workstream B) ✅
+- `step_photos` table with RLS, composite FK (org_id consistency), partial unique index (one hero per step)
+- `rooms` storage bucket (public read, org-scoped admin upload/delete)
+- `swap_hero_photo` RPC for atomic hero swap
+- Floorplan CRUD (create/edit/delete, slug generation, active toggle, storage cleanup on delete)
+- Step CRUD (create/edit/delete, dnd-kit reorder, sections as jsonb with subcategory assignment)
+- Photo upload (20MB limit, 1024x1024 min, path validation `{orgId}/rooms/{stepId}/`, orphan cleanup)
+- Photo quality check (Gemini 2.5 Flash vision via `sharp` resize + `generateObject`)
+- Spatial hint AI generation (Gemini 2.5 Flash via `generateText`, client-side persist)
+- Photo management UI: step tabs, quality badges, spatial hint textarea, hero toggle, photo baseline
+- Security: path traversal protection, tenant boundary on all mutations, `runtime = "nodejs"` on vision routes
 
 ### Phase 5: Self-Serve Tooling (Future)
 - CSV/spreadsheet bulk import for upgrades
 - Photo upload with guided annotation workflow
-- AI-assisted prompt descriptor generation
 - Step wizard template builder
 - Onboarding flow for new builders
 
@@ -401,7 +415,7 @@ Not needed for setup service model. Worth building when self-serve launches.
 
 ## Open Questions
 
-1. **Domain strategy**: Subdomains (`stone-martin.upgradeviz.com`) vs paths (`upgradeviz.com/stone-martin`)? Paths are simpler (no wildcard DNS/SSL). Subdomains feel more premium.
+1. ~~**Domain strategy**~~: Resolved. Subdomains on withfin.ch — `{org-slug}.withfin.ch/{floorplan-slug}`. Wildcard DNS + SSL via Vercel.
 
 2. **Pricing model**: Per-floorplan? Per-generation? Flat monthly? Need to figure out unit economics — gpt-image-1.5 costs ~$0.10-0.20 per generation.
 

@@ -11,7 +11,11 @@ Browser (Next.js client)
   │     ├── All option/step/config data passed as props from server component
   │     ├── Price calculation (client-side, instant)
   │     └── Visual change detection (did a visual sub-category change?)
-  ├── /admin — Admin dashboard (no-auth, demo only)
+  ├── /admin — Admin root (redirects to org dashboard)
+  ├── /admin/login — Email/password login (Supabase Auth)
+  ├── /admin/[orgSlug] — Org dashboard (authenticated)
+  ├── /admin/[orgSlug]/options — Category/subcategory/option tree CRUD
+  ├── /admin/[orgSlug]/images — Generated image cache management
   └── /api/* — API routes
 
 Server (Next.js API route)
@@ -31,10 +35,13 @@ Server (Next.js API route)
 Supabase
   ├── Tables: organizations, floorplans, categories, subcategories, options,
   │           steps, step_sections, step_ai_config (multi-tenant schema)
+  ├── Table: step_photos (multiple photos per step, hero flag, quality check, spatial hints)
   ├── Table: generated_images (cache — now includes step_id + model columns)
   ├── Table: buyer_selections (per-buyer selection persistence)
-  └── Storage bucket: kitchen-images
-        └── {selections_hash}.png
+  ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
+  ├── Storage bucket: kitchen-images ({selections_hash}.png)
+  ├── Storage bucket: swatches ({orgId}/swatches/{subcatId}/{uuid}.{ext})
+  └── Storage bucket: rooms ({orgId}/rooms/{stepId}/{uuid}.{ext}) — public read, admin upload
 ```
 
 **Data flow**: All option/step/AI-config data lives in Supabase. The server component in `page.tsx` fetches via `src/lib/db-queries.ts` and passes to client components as props. API routes also fetch from DB. Static TypeScript files (`options-data.ts`, `step-config.ts`) remain as seed source but are no longer imported at runtime.
@@ -156,15 +163,22 @@ State shape:
    - Input: room photo + swatch images (array of files)
    - Prompt includes upgrade list + spatial placement rules + perspective-locking
    - Output: 1536x1024 PNG, quality "high"
-5. Upload to Supabase Storage, upsert cache row
-6. Return image URL to client
-7. Client displays in StepHero (per-step, not shared)
+5. Optional targeted pass-2 refine for known failure modes (masked, object-only correction)
+6. Upload to Supabase Storage, upsert cache row
+7. Return image URL to client
+8. Client displays in StepHero (per-step, not shared)
 
 **Image approach**: OpenAI image editing via `images.edit` endpoint. Sends base room photo + individually attached swatch images for selected visual items. Prompt lines explicitly map each item to `swatch #N` in deterministic order, so the model can bind the correct material to the correct surface.
 
-**Prompt strategy**: "Surgical precision" pattern — lead with "change ONLY these surfaces", followed by upgrade list and hard constraints ("do NOT add, remove, or reposition anything"). Includes explicit object-count and cabinet-geometry preservation, plus subcategory-triggered invariants for known failure points (sink/faucet orientation, refrigerator alcove, range cutout/type, island vs perimeter cabinet boundaries).
+**Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Includes object-count/cabinet-geometry preservation plus known failure guards (sink/faucet orientation, refrigerator alcove, range cutout/type, island vs perimeter cabinet boundaries).
 
 **`input_fidelity: "high"`**: Added to the `images.edit` call to maximize preservation of base image details (hardware, pulls, fixtures). Default is "low". Costs ~$0.04-0.06 extra per request.
+
+**Conditional pass-2 refine**: For stubborn failures, run a second masked `images.edit` pass on the generated result with a narrow object-only prompt and `input_fidelity: "low"` (to allow geometry change in the masked region only). Current usage: slide-in range backguard correction on kitchen-close hero.
+
+**Cache semantic versioning**: Generation hash includes `_cacheVersion` so prompt/pipeline changes do not serve stale outputs. Bump `GENERATION_CACHE_VERSION` whenever generation semantics change.
+
+**Reliability playbook**: See `generation-reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
 
 **GPT-5.2 test path**: Add `&model=gpt-5.2` to URL to use GPT-5.2 via Responses API instead of gpt-image-1.5. Uses `image_generation` tool. Better detail preservation but different API pattern. Cache hash includes model name to prevent collisions. Admin page shows model tag on cached images.
 
@@ -191,9 +205,31 @@ src/
 │   │   ├── page.tsx               # Server component — fetches all data from Supabase
 │   │   ├── DemoPageClient.tsx     # Client wrapper (LandingHero → picker → summary)
 │   │   └── layout.tsx             # Demo layout — builder-specific metadata
-│   ├── admin/page.tsx              # Admin UI — view/delete cached generated images
+│   ├── admin/
+│   │   ├── page.tsx                # Admin root — redirects to org
+│   │   ├── login/page.tsx          # Login page (Supabase Auth)
+│   │   └── [orgSlug]/
+│   │       ├── layout.tsx          # Admin layout with sidebar
+│   │       ├── page.tsx            # Org dashboard
+│   │       ├── options/page.tsx    # Option tree CRUD
+│   │       ├── floorplans/page.tsx # Floorplan list + CRUD
+│   │       ├── floorplans/[id]/page.tsx  # Step editor (dnd-kit reorder, sections)
+│   │       ├── floorplans/[id]/photos/page.tsx  # Photo management per step
+│   │       └── images/             # Generated image management (server+client split)
 │   └── api/
-│       ├── admin/images/route.ts   # GET all cached images, DELETE single or all
+│       ├── admin/
+│       │   ├── categories/         # POST, [id] PATCH/DELETE
+│       │   ├── subcategories/      # POST, [id] PATCH/DELETE
+│       │   ├── options/            # POST, [id] PATCH/DELETE
+│       │   ├── floorplans/         # POST, [id] PATCH/DELETE (+ storage cleanup on delete)
+│       │   ├── steps/              # POST, [id] PATCH/DELETE (sections as jsonb)
+│       │   ├── step-photos/        # POST, [id] PATCH/DELETE (hero swap via RPC)
+│       │   ├── photo-check/route.ts # Vision quality check (Gemini Flash, sharp resize)
+│       │   ├── spatial-hint/route.ts # AI spatial layout description (Gemini Flash)
+│       │   ├── reorder/route.ts    # Bulk sort_order update (categories, subcategories, options, steps, step_photos)
+│       │   ├── scope/route.ts      # Floorplan scoping (GET/POST)
+│       │   ├── generate-descriptor/route.ts  # AI descriptor generation
+│       │   └── images/route.ts     # Authenticated GET/DELETE for image cache
 │       ├── generate/
 │       │   ├── route.ts            # POST — fetches AI config from DB, generates image
 │       │   └── check/route.ts      # POST — cache check, validates against DB
@@ -211,15 +247,33 @@ src/
 │   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
 │   ├── GenerateButton.tsx
 │   └── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
+├── components/admin/
+│   ├── OptionTree.tsx       # Full CRUD tree with drag reorder, inline edit, swatch upload
+│   ├── SwatchUpload.tsx     # Swatch image upload to Supabase Storage
+│   ├── FloorplanScopePopover.tsx  # Floorplan scope toggle UI
+│   ├── AdminSidebar.tsx     # Admin navigation sidebar
+│   ├── FloorplanList.tsx    # Floorplan card list with inline edit, active toggle, add form
+│   ├── FloorplanEditor.tsx  # Step list with dnd-kit reorder, accordion detail, section editor
+│   ├── StepSectionEditor.tsx # Section CRUD with searchable subcategory assignment
+│   ├── RoomPhotoUpload.tsx  # Photo upload (20MB limit, 1024x1024 min, orphan cleanup)
+│   ├── PhotoManager.tsx     # Step tabs, photo cards, quality check, spatial hints
+│   └── PhotoQualityBadge.tsx # Color-coded pass/warn/fail badge with tooltip
 ├── lib/
-│   ├── db-queries.ts        # All Supabase queries — org, floorplan, categories, steps, AI config
+│   ├── db-queries.ts        # Buyer-facing queries (slug → id mapping for buyer types)
+│   ├── admin-queries.ts     # Admin queries (user-scoped, no cache, returns UUID id + slug)
+│   ├── admin-auth.ts        # API route auth helper (authenticateAdminRequest)
+│   ├── admin-cache.ts       # invalidateOrgCache for mutation cache busting
+│   ├── auth.ts              # getAuthenticatedUser(orgSlug), getUserOrgs()
+│   ├── slugify.ts           # Text → slug conversion
+│   ├── supabase.ts          # Service role client + cache helpers
+│   ├── supabase-server.ts   # SSR client (@supabase/ssr)
+│   ├── supabase-browser.ts  # Browser client (@supabase/ssr)
 │   ├── options-data.ts      # Static seed source (no longer imported at runtime)
 │   ├── step-config.ts       # Static seed source (no longer imported at runtime)
 │   ├── pricing.ts           # Price calculation (accepts categories as param)
-│   ├── generate.ts          # Prompt construction (accepts optionLookup, spatialHints, sceneDescription)
-│   └── supabase.ts          # Supabase client + cache helpers
+│   └── generate.ts          # Prompt construction (accepts optionLookup, spatialHints, sceneDescription)
 └── types/
-    └── index.ts
+    └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
 
 scripts/
 └── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
@@ -244,12 +298,31 @@ public/
     └── sinks/
 ```
 
-## Admin Page
+## Admin System
 
-`/admin` — no-auth admin page (demo only) for managing the generated image cache.
-- View all cached images with their selection combos, hashes, timestamps
-- Delete individual entries or all at once (removes both DB row + storage file)
-- API: `GET /api/admin/images` (list all), `DELETE /api/admin/images` (single or bulk)
+**Auth**: Supabase Auth email/password. `org_users` join table maps users → orgs with role (`admin`/`viewer`). Middleware refreshes tokens on `/admin/*` routes. `authenticateAdminRequest()` helper validates auth + org membership on all API routes.
+
+**Routing**: `/admin/[orgSlug]/...` — org-scoped admin pages. Server components gate with `getAuthenticatedUser(orgSlug)`.
+
+**CRUD API routes** (`/api/admin/{entity}`):
+- `categories`, `subcategories`, `options` — POST (create with slug generation), PATCH, DELETE
+- `floorplans` — POST (create with slug), PATCH, DELETE (+ storage cleanup for all step photos)
+- `steps` — POST (verify floorplan ownership), PATCH (sections as jsonb full replacement), DELETE (+ storage cleanup)
+- `step-photos` — POST (path validation: `{orgId}/rooms/{stepId}/`), PATCH (hero swap via `swap_hero_photo` RPC), DELETE (DB first, then storage)
+- `photo-check` — POST: Gemini 2.5 Flash vision quality check (sharp resize to 1536px, pass/warn/fail)
+- `spatial-hint` — POST: Gemini 2.5 Flash spatial layout description (does NOT auto-persist; client saves via PATCH)
+- `reorder` — bulk sort_order update via `reorder_items` RPC (tables: categories, subcategories, options, steps, step_photos)
+- `scope` — floorplan scoping (category junction table + floorplan_ids array columns)
+- `generate-descriptor` — AI prompt descriptor generation (Gemini Flash)
+- `images` — authenticated GET/DELETE for generated image cache (org-scoped, verified storage deletes)
+
+**Option Tree UI** (`src/components/admin/OptionTree.tsx`): Full CRUD tree with drag reorder (dnd-kit), inline price edit, swatch upload, AI descriptor generation, floorplan scope popovers.
+
+**Floorplan Pipeline UI**: FloorplanList (card grid) → FloorplanEditor (step list with dnd-kit, accordion detail with sections/subcategory assignment) → PhotoManager (step tabs, photo cards with quality badges, spatial hint generation, hero toggle).
+
+**Cache invalidation**: `invalidateOrgCache(orgId, opts?)` supports optional `orgSlug`, `floorplanId`, `floorplanSlug` to bust buyer-facing cache tags (`org:{slug}`, `steps:{floorplanId}`, `floorplan:{orgId}:{floorplanSlug}`, `categories:{orgId}`).
+
+**Key design**: Categories/subcategories/options have UUID PKs + `slug` text column. Buyer-facing queries map `slug → id` (zero downstream changes). Admin uses UUID `id` + `slug`. `UNIQUE(org_id, slug)` prevents cross-org collisions. `generate_unique_slug` RPC checks slug column with 100-iteration safety cap.
 
 ## Analytics
 

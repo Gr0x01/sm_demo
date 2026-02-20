@@ -16,7 +16,7 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 **SM is NOT a target customer** — they use BuilderLinq. The demo proves the concept to builders who don't have sophisticated tools.
 
 ### Finch Product (Building Now)
-- Landing page at finchweb.io (or similar)
+- Landing page at withfin.ch
 - Multi-tenant architecture for onboarding multiple builders
 - Builder demos: lighter than SM (same bones, less exhaustive data entry)
 - See `product-architecture.md` for the multi-tenant plan
@@ -29,14 +29,14 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 |---------|---------|
 | **Next.js 16** | App framework |
 | **OpenAI (gpt-image-1.5)** | Image generation (via images.edit) |
-| **Supabase** | Database + Storage (image cache now, multi-tenant later) |
+| **Supabase** | Database (multi-tenant, RLS) + Storage (swatches, generated images) + Auth (admin) |
 | **Tailwind CSS v4** | Styling |
 | **Vercel** | Hosting |
 
 ## Commands
 
 ```bash
-npm run dev          # local dev
+npm run dev -p 3003  # local dev (port 3003)
 npm run build        # production build
 ```
 
@@ -56,7 +56,9 @@ SUPABASE_SERVICE_ROLE_KEY=   # Supabase service role (server-side only)
 | `phases/current.md` | Starting work (ALWAYS) |
 | `product.md` | Working on the SM demo or buyer-facing UI |
 | `architecture.md` | Working on SM demo backend/API/image pipeline |
-| `product-architecture.md` | Building multi-tenant product infrastructure |
+| `generation-reliability-playbook.md` | Fixing image-generation failures quickly (prompt/mask/cache tactics) |
+| `product-architecture.md` | Multi-tenant schema, UUID PK design, migration path |
+| `v1-product.md` | V1 spec: option CRUD, floorplans, buyer save, branding, gallery viz, workstreams. Workstreams A+B complete. |
 | `landing-page.md` | Building the marketing site |
 | `VISION.md` | Business strategy, pricing, GTM, competitive landscape |
 | `decisions.md` | Understanding "why" behind choices |

@@ -85,6 +85,62 @@ export interface AdminCategory {
   subcategories: AdminSubcategory[];
 }
 
+// ---------- Admin floorplan/step/photo types ----------
+
+export interface AdminFloorplan {
+  id: string;
+  org_id: string;
+  name: string;
+  slug: string;
+  community: string | null;
+  price_sheet_label: string | null;
+  is_active: boolean;
+}
+
+export interface AdminStepSection {
+  title: string;
+  subcategory_ids: string[];
+  sort_order: number;
+}
+
+export interface AdminStepPhoto {
+  id: string;
+  step_id: string;
+  org_id: string;
+  image_path: string;
+  label: string;
+  is_hero: boolean;
+  sort_order: number;
+  check_result: "pass" | "warn" | "fail" | null;
+  check_feedback: string | null;
+  check_raw_response: Record<string, unknown> | null;
+  checked_at: string | null;
+  spatial_hint: string | null;
+  photo_baseline: string | null;
+  created_at: string;
+}
+
+export interface AdminStep {
+  id: string;
+  slug: string;
+  org_id: string;
+  floorplan_id: string;
+  number: number;
+  name: string;
+  subtitle: string | null;
+  hero_image: string | null;
+  hero_variant: string | null;
+  show_generate_button: boolean;
+  scene_description: string | null;
+  also_include_ids: string[];
+  photo_baseline: Record<string, string> | null;
+  spatial_hints: Record<string, string> | null;
+  sort_order: number;
+  sections: AdminStepSection[];
+  step_photos?: AdminStepPhoto[];
+  photo_count?: number;
+}
+
 // ---------- Selection types ----------
 
 export type SelectionAction =
@@ -95,3 +151,32 @@ export type SelectionAction =
   | { type: "GENERATION_COMPLETE"; stepId: string; imageUrl: string; selectionsSnapshot: string }
   | { type: "GENERATION_ERROR"; stepId: string; error: string }
   | { type: "CLEAR_SELECTIONS" };
+
+// ---------- Buyer session types ----------
+
+export interface BuyerSession {
+  id: string;
+  orgId: string;
+  floorplanId: string;
+  buyerEmail: string | null;
+  resumeToken: string | null;
+  selections: Record<string, string>;
+  quantities: Record<string, number>;
+  totalPrice: number;
+  generationCount: number;
+  status: 'in_progress' | 'submitted';
+  submittedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BuyerSessionSummary {
+  id: string;
+  buyerEmail: string | null;
+  floorplanName: string;
+  totalPrice: number;
+  selectionCount: number;
+  generationCount: number;
+  status: 'in_progress' | 'submitted';
+  updatedAt: string;
+}

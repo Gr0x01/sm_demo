@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { AdminCategory } from "@/types";
+import type { AdminCategory, AdminStep, AdminStepPhoto } from "@/types";
 
 /**
  * Fetches the full category → subcategory → option tree for admin views.
@@ -32,6 +32,75 @@ export async function getAdminOptionTree(
         ...sub,
         options: (sub.options ?? []).sort((a, b) => a.sort_order - b.sort_order),
       })),
+  }));
+}
+
+/**
+ * Fetches steps for a floorplan with photo count per step.
+ */
+export async function getAdminStepsForFloorplan(
+  supabase: SupabaseClient,
+  floorplanId: string,
+  orgId: string
+): Promise<(AdminStep & { photo_count: number })[]> {
+  const { data: steps, error } = await supabase
+    .from("steps")
+    .select(`
+      id, slug, org_id, floorplan_id, number, name, subtitle,
+      hero_image, hero_variant, show_generate_button,
+      scene_description, also_include_ids, photo_baseline,
+      spatial_hints, sort_order, sections,
+      step_photos ( id )
+    `)
+    .eq("floorplan_id", floorplanId)
+    .eq("org_id", orgId)
+    .order("sort_order");
+
+  if (error || !steps) return [];
+
+  return steps.map((s) => ({
+    ...s,
+    sections: (s.sections as AdminStep["sections"]) ?? [],
+    also_include_ids: s.also_include_ids ?? [],
+    photo_count: Array.isArray(s.step_photos) ? s.step_photos.length : 0,
+    step_photos: undefined,
+  }));
+}
+
+/**
+ * Fetches steps with nested step_photos for a floorplan.
+ */
+export async function getAdminStepPhotos(
+  supabase: SupabaseClient,
+  floorplanId: string,
+  orgId: string
+): Promise<(AdminStep & { step_photos: AdminStepPhoto[] })[]> {
+  const { data: steps, error } = await supabase
+    .from("steps")
+    .select(`
+      id, slug, org_id, floorplan_id, number, name, subtitle,
+      hero_image, hero_variant, show_generate_button,
+      scene_description, also_include_ids, photo_baseline,
+      spatial_hints, sort_order, sections,
+      step_photos (
+        id, step_id, org_id, image_path, label, is_hero,
+        sort_order, check_result, check_feedback, check_raw_response,
+        checked_at, spatial_hint, photo_baseline, created_at
+      )
+    `)
+    .eq("floorplan_id", floorplanId)
+    .eq("org_id", orgId)
+    .order("sort_order");
+
+  if (error || !steps) return [];
+
+  return steps.map((s) => ({
+    ...s,
+    sections: (s.sections as AdminStep["sections"]) ?? [],
+    also_include_ids: s.also_include_ids ?? [],
+    step_photos: ((s.step_photos as AdminStepPhoto[]) ?? []).sort(
+      (a, b) => a.sort_order - b.sort_order
+    ),
   }));
 }
 
