@@ -264,8 +264,17 @@ export function DemoPageClient({
             setPage("picker");
           }}
           orgName={orgName}
+          orgSlug={orgSlug}
           planName={floorplanName}
           community={community}
+          floorplanSlug={floorplanSlug}
+          orgId={orgId}
+          floorplanId={floorplanId}
+          onResumed={(session) => {
+            handleSessionResumed(session);
+            setToast("Welcome back! Your selections have been restored.");
+            setPage("picker");
+          }}
         />
       </div>
     );
