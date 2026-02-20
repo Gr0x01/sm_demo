@@ -8,6 +8,7 @@ import { DemoViewer } from "./DemoViewer";
 import { GenerationCounter } from "./GenerationCounter";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
+import { useTrack } from "@/hooks/useTrack";
 
 type DemoPhase = "picking" | "generating" | "result";
 
@@ -40,6 +41,7 @@ const SS_GENERATED = "finch_demo_generated_url";
 const SS_HISTORY = "finch_demo_history";
 
 export function DemoClient() {
+  const track = useTrack();
   const [phase, setPhase] = useState<DemoPhase>("picking");
   const [uploadedPhoto, setUploadedPhoto] = useState<UploadedPhoto | null>(null);
   const [selections, setSelections] = useState<Record<string, string>>({});
@@ -50,6 +52,8 @@ export function DemoClient() {
   const [error, setError] = useState<string | null>(null);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const previewSectionRef = useRef<HTMLDivElement | null>(null);
+  const selectionsRef = useRef(selections);
+  selectionsRef.current = selections;
 
   // Restore session from sessionStorage + cookies on mount
   useEffect(() => {
@@ -111,7 +115,11 @@ export function DemoClient() {
     setPhase("picking");
     setGeneratedImageUrl(null);
     setError(null);
-  }, []);
+    track("demo_photo_uploaded", {
+      kitchenType: photo.sceneAnalysis?.kitchenType,
+      hasIsland: photo.sceneAnalysis?.hasIsland,
+    });
+  }, [track]);
 
   const handleSelectionChange = useCallback((subCategoryId: string, optionId: string) => {
     setSelections((prev) => {
@@ -119,12 +127,15 @@ export function DemoClient() {
       sessionStorage.setItem(SS_SELECTIONS, JSON.stringify(next));
       return next;
     });
+    const current = selectionsRef.current;
+    const isNew = !(subCategoryId in current);
+    track("demo_selection_changed", { subCategoryId, selectedCount: Object.keys(current).length + (isNew ? 1 : 0) });
     // If we were viewing a result, go back to picking
     if (generatedImageUrl) {
       sessionStorage.removeItem(SS_GENERATED);
       setPhase("picking");
     }
-  }, [generatedImageUrl]);
+  }, [generatedImageUrl, track]);
 
   const handleGenerate = useCallback(async () => {
     if (!uploadedPhoto || isGenerating) return;
@@ -189,14 +200,22 @@ export function DemoClient() {
           sessionStorage.setItem(SS_HISTORY, JSON.stringify(next));
           return next;
         });
+
+        if (newCount >= 5) {
+          track("demo_cap_reached", { generationsUsed: newCount });
+        }
       }
+
+      track("demo_generation_completed", { cacheHit: !!genData.cacheHit, generationsUsed: genData.cacheHit ? generationsUsed : generationsUsed + 1 });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
       setPhase("picking");
+      track("demo_generation_failed", { error: message });
     } finally {
       setIsGenerating(false);
     }
-  }, [uploadedPhoto, selections, isGenerating, generationsUsed]);
+  }, [uploadedPhoto, selections, isGenerating, generationsUsed, track]);
 
   const handleRecallGeneration = useCallback((index: number) => {
     const entry = generationHistory[index];
@@ -335,6 +354,7 @@ export function DemoClient() {
                   )}
                   <a
                     href="mailto:hello@finchweb.io?subject=Finch Demo Interest"
+                    onClick={() => track("demo_cta_clicked", { trigger: atCap ? "cap" : "result" })}
                     className="inline-block px-8 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                   >
                     Book a Walkthrough

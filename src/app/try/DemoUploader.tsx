@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
+import { useTrack } from "@/hooks/useTrack";
 
 interface DemoUploaderProps {
   onPhotoAccepted: (photo: {
@@ -66,6 +67,7 @@ async function hashDataUrl(dataUrl: string): Promise<string> {
 }
 
 export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
+  const track = useTrack();
   const [isDragOver, setIsDragOver] = useState(false);
   const [isValidating, setIsValidating] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -75,11 +77,13 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
   const processFile = useCallback(async (file: File) => {
     if (!file.type.startsWith("image/")) {
       setRejection("Please upload an image file (JPEG, PNG, or WebP).");
+      track("demo_photo_rejected", { reason: "invalid_type" });
       return;
     }
 
     if (file.size > 20 * 1024 * 1024) {
       setRejection("Image is too large. Please use a file under 20MB.");
+      track("demo_photo_rejected", { reason: "too_large" });
       return;
     }
 
@@ -92,6 +96,7 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
       // Reject portrait orientation — output is always landscape (3:2)
       if (srcHeight > srcWidth) {
         setRejection("Please use a landscape (horizontal) photo. Portrait photos don't work well with our visualization engine.");
+        track("demo_photo_rejected", { reason: "portrait" });
         setIsValidating(false);
         return;
       }
@@ -109,6 +114,7 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
 
       if (!data.accepted) {
         setRejection(data.reason || "This doesn't appear to be a kitchen photo. Please try a different image.");
+        track("demo_photo_rejected", { reason: "not_kitchen" });
         setPreviewUrl(null);
         setIsValidating(false);
         return;
@@ -133,7 +139,7 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
     } finally {
       setIsValidating(false);
     }
-  }, [onPhotoAccepted]);
+  }, [onPhotoAccepted, track]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();

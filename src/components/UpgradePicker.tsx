@@ -4,6 +4,7 @@ import { useReducer, useCallback, useMemo, useState, useEffect, useRef } from "r
 import type { SelectionState, SelectionAction, SubCategory, Category } from "@/types";
 import { calculateTotal } from "@/lib/pricing";
 import type { StepConfig } from "@/lib/step-config";
+import { useTrack } from "@/hooks/useTrack";
 import { StepNav } from "./StepNav";
 import { StepHero } from "./StepHero";
 import { StepContent } from "./StepContent";
@@ -145,6 +146,8 @@ export function UpgradePicker({
   syncPairs,
   generationCap,
 }: UpgradePickerProps) {
+  const track = useTrack({ orgSlug, floorplanSlug, sessionId });
+
   const visualSubCategoryIds = useMemo(
     () => getVisualSubCategoryIdsFromCategories(categories),
     [categories]
@@ -310,6 +313,8 @@ export function UpgradePicker({
     errors: {},
   }));
 
+  const allStepsRef = useRef(steps);
+
   const [activeStepId, setActiveStepIdRaw] = useState(() => {
     if (typeof window === "undefined") return steps[0].id;
     const params = new URLSearchParams(window.location.search);
@@ -323,7 +328,10 @@ export function UpgradePicker({
     const url = new URL(window.location.href);
     url.searchParams.set("step", stepId);
     window.history.pushState({}, "", url.toString());
-  }, []);
+    const idx = allStepsRef.current.findIndex((s) => s.id === stepId);
+    const step = allStepsRef.current[idx];
+    if (step) track("step_viewed", { stepName: step.name, stepIndex: idx });
+  }, [track]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -472,6 +480,7 @@ export function UpgradePicker({
     () => hasAnyPhotos ? [...steps, galleryStep] : steps,
     [steps, hasAnyPhotos, galleryStep]
   );
+  allStepsRef.current = allSteps;
 
   const activeStep = allSteps.find((s) => s.id === activeStepId) || allSteps[0];
   const activeStepIndex = allSteps.findIndex((s) => s.id === activeStepId);
@@ -513,6 +522,7 @@ export function UpgradePicker({
   const handleSelect = useCallback(
     (subCategoryId: string, optionId: string) => {
       dispatch({ type: "SELECT_OPTION", subCategoryId, optionId });
+      track("option_selected", { subCategoryId, optionId });
 
       const partner = getSyncPartnerFromPairs(subCategoryId, syncPairs);
       if (!partner) return;
@@ -540,7 +550,7 @@ export function UpgradePicker({
         label: partner.label,
       });
     },
-    [state.selections, syncPairs, subCategoryMap]
+    [state.selections, syncPairs, subCategoryMap, track]
   );
 
   const handleSetQuantity = useCallback(
@@ -557,6 +567,7 @@ export function UpgradePicker({
   const handleGeneratePhoto = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig) => {
     if (state.generatingPhotoKeys.has(photoKey)) return;
     dispatch({ type: "START_GENERATING_PHOTO", photoKey });
+    track("generation_started", { stepName: step.name, photoKey });
 
     const visualSelections = getPhotoVisualSelections(step, state.selections);
     const selectionsSnapshot = stableStringify(visualSelections);
@@ -595,14 +606,17 @@ export function UpgradePicker({
         generatedImageId: data.generatedImageId,
       });
 
+      track("generation_completed", { stepName: step.name, cacheHit: !!data.cacheHit, creditsUsed: data.creditsUsed });
+
       if (data.creditsUsed !== undefined) {
         dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: message });
+      track("generation_failed", { stepName: step.name, error: message });
     }
-  }, [state.selections, state.generatingPhotoKeys, orgSlug, floorplanSlug, sessionId, getPhotoVisualSelections]);
+  }, [state.selections, state.generatingPhotoKeys, orgSlug, floorplanSlug, sessionId, getPhotoVisualSelections, track]);
 
   const handleGenerateAll = useCallback(async () => {
     // Collect all photos across all steps that need generation
@@ -635,6 +649,7 @@ export function UpgradePicker({
     if (!generatedImageId || !sessionId) return;
 
     dispatch({ type: "SET_FEEDBACK", photoKey, vote });
+    track("feedback_given", { vote, photoKey });
 
     if (vote === -1) {
       dispatch({ type: "REMOVE_GENERATED_IMAGE", photoKey });
@@ -654,7 +669,7 @@ export function UpgradePicker({
     } catch {
       // Non-critical — feedback is best-effort
     }
-  }, [state.generatedImageIds, sessionId, orgSlug]);
+  }, [state.generatedImageIds, sessionId, orgSlug, track]);
 
   const handleClearSelections = useCallback(() => {
     dispatch({ type: "CLEAR_SELECTIONS" });

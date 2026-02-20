@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
+import { useTrack } from "@/hooks/useTrack";
 
 const HOMEPAGE_NAV_LINKS = [
   { label: "Try It", href: "/try" },
@@ -39,13 +40,16 @@ const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
 });
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function FaqItem({ q, a, onOpen }: { q: string; a: string; onOpen?: () => void }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className="border-b border-slate-200">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          if (!open && onOpen) onOpen();
+          setOpen(!open);
+        }}
         className="w-full flex items-center justify-between py-5 text-left cursor-pointer"
       >
         <span className="text-base font-semibold text-slate-900">{q}</span>
@@ -82,6 +86,7 @@ function Section({
 function EditableNumber({
   value,
   onChange,
+  onCommit,
   prefix = "",
   suffix = "",
   min = 0,
@@ -91,6 +96,7 @@ function EditableNumber({
 }: {
   value: number;
   onChange: (n: number) => void;
+  onCommit?: (n: number) => void;
   prefix?: string;
   suffix?: string;
   min?: number;
@@ -106,6 +112,7 @@ function EditableNumber({
     const parsed = parseInt(draft.replace(/[^0-9]/g, ""), 10);
     if (!isNaN(parsed) && parsed >= min && parsed <= max) {
       onChange(parsed);
+      onCommit?.(parsed);
     } else {
       setDraft(String(value));
     }
@@ -169,6 +176,7 @@ function EditableNumber({
 
 /* ─── ROI Calculator ─── */
 function RoiCalculator() {
+  const track = useTrack();
   const [homes, setHomes] = useState(200);
   const [spend, setSpend] = useState(12000);
   const [liftPct, setLiftPct] = useState(15);
@@ -196,6 +204,7 @@ function RoiCalculator() {
           <EditableNumber
             value={spend}
             onChange={setSpend}
+            onCommit={(v) => track("roi_calculator_changed", { field: "spend", value: v })}
             prefix="$"
             min={1000}
             max={100000}
@@ -212,6 +221,7 @@ function RoiCalculator() {
           <EditableNumber
             value={homes}
             onChange={setHomes}
+            onCommit={(v) => track("roi_calculator_changed", { field: "homes", value: v })}
             min={10}
             max={10000}
             id="roi-homes"
@@ -227,6 +237,7 @@ function RoiCalculator() {
           <EditableNumber
             value={liftPct}
             onChange={setLiftPct}
+            onCommit={(v) => track("roi_calculator_changed", { field: "lift", value: v })}
             suffix="%"
             min={1}
             max={35}
@@ -255,10 +266,11 @@ function RoiCalculator() {
 }
 
 
-function HeroProofCard() {
+function HeroProofCard({ onClicked }: { onClicked?: () => void }) {
   return (
     <Link
       href="/stonemartin/kinkade"
+      onClick={onClicked}
       className="block w-full border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
     >
       <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
@@ -292,6 +304,8 @@ function HeroProofCard() {
 }
 
 export default function LandingPage() {
+  const track = useTrack();
+
   useEffect(() => {
     const elements = Array.from(
       document.querySelectorAll<HTMLElement>("[data-reveal]")
@@ -351,6 +365,7 @@ export default function LandingPage() {
               <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 mb-6">
                 <Link
                   href="/try"
+                  onClick={() => track("cta_clicked", { cta: "Try It Live", location: "hero" })}
                   className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                 >
                   Try It Live
@@ -360,7 +375,7 @@ export default function LandingPage() {
             </div>
 
             <div data-reveal style={revealStyle(180)} className="hidden md:block">
-              <HeroProofCard />
+              <HeroProofCard onClicked={() => track("proof_card_clicked")} />
             </div>
           </div>
         </div>
@@ -465,6 +480,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/try"
+            onClick={() => track("cta_clicked", { cta: "Try It Yourself", location: "compare" })}
             className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
             Try It Yourself
@@ -600,6 +616,7 @@ export default function LandingPage() {
 
             <a
               href="mailto:hello@finchweb.io?subject=Finch Essentials"
+              onClick={() => track("pricing_cta_clicked", { plan: "essentials" })}
               className="block text-center px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-400 hover:bg-slate-50 transition-colors"
             >
               Get Started
@@ -633,6 +650,7 @@ export default function LandingPage() {
 
             <a
               href="mailto:hello@finchweb.io?subject=Finch Concierge"
+              onClick={() => track("pricing_cta_clicked", { plan: "concierge" })}
               className="block text-center px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
               Talk to Us
@@ -659,6 +677,7 @@ export default function LandingPage() {
             <div className="shrink-0">
               <a
                 href="mailto:hello@finchweb.io?subject=Founding Partner Interest"
+                onClick={() => track("pricing_cta_clicked", { plan: "founding" })}
                 className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors whitespace-nowrap"
               >
                 Claim Your Spot
@@ -714,7 +733,7 @@ export default function LandingPage() {
           <div>
             {faqs.map((faq, index) => (
               <div key={faq.q} data-reveal style={revealStyle(90 + index * 70)}>
-                <FaqItem q={faq.q} a={faq.a} />
+                <FaqItem q={faq.q} a={faq.a} onOpen={() => track("faq_opened", { question: faq.q })} />
               </div>
             ))}
           </div>
@@ -736,6 +755,7 @@ export default function LandingPage() {
           </p>
           <Link
             href="/try"
+            onClick={() => track("cta_clicked", { cta: "Try the Demo", location: "contact" })}
             className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
             Try the Demo

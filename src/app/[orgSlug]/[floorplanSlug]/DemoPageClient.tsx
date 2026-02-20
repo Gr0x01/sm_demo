@@ -1,12 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { usePostHog } from "posthog-js/react";
 import { LandingHero } from "@/components/LandingHero";
 import { UpgradePicker } from "@/components/UpgradePicker";
 import { UpgradeSummary } from "@/components/UpgradeSummary";
 import type { ContractPhase } from "@/lib/contract-phase";
 import type { Category } from "@/types";
 import type { StepConfig } from "@/lib/step-config";
+import { useTrack } from "@/hooks/useTrack";
 
 type PageState = "landing" | "picker" | "summary";
 
@@ -106,6 +108,7 @@ export function DemoPageClient({
   syncPairs,
   generationCap,
 }: DemoPageClientProps) {
+  const posthog = usePostHog();
   const [page, setPageState] = useState<PageState>(getPageFromUrl);
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [contractPhase, setContractPhase] = useState<ContractPhase>("pre-contract");
@@ -117,6 +120,8 @@ export function DemoPageClient({
   const [sessionReady, setSessionReady] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const initRef = useRef(false);
+
+  const track = useTrack({ orgSlug, floorplanSlug, sessionId: buyerSession?.sessionId });
 
   const themeVars = useMemo(() => ({
     "--color-navy": orgTheme.primaryColor,
@@ -169,6 +174,7 @@ export function DemoPageClient({
             setInitialSelections(session.selections);
             setInitialQuantities(session.quantities);
             setSessionCookie(orgSlug, floorplanSlug, session.id);
+            track("session_resumed", { orgSlug, floorplanSlug, sessionId: session.id, method: "email_link" });
             setToast("Welcome back! Your selections have been restored.");
             // Clean resume param from URL
             const url = new URL(window.location.href);
@@ -196,6 +202,7 @@ export function DemoPageClient({
             });
             setInitialSelections(session.selections);
             setInitialQuantities(session.quantities);
+            track("session_resumed", { orgSlug, floorplanSlug, sessionId: session.id, method: "cookie" });
             setSessionReady(true);
             return;
           }
@@ -215,6 +222,7 @@ export function DemoPageClient({
           const { sessionId } = await res.json();
           setBuyerSession({ sessionId });
           setSessionCookie(orgSlug, floorplanSlug, sessionId);
+          track("session_started", { orgSlug, floorplanSlug, sessionId });
         }
       } catch {
         // Session creation failed — picker still works, just no persistence
@@ -242,7 +250,11 @@ export function DemoPageClient({
 
   const handleSessionSaved = useCallback((email: string, resumeToken: string) => {
     setBuyerSession((prev) => prev ? { ...prev, buyerEmail: email, resumeToken } : prev);
-  }, []);
+    if (posthog && buyerSession) {
+      posthog.identify(buyerSession.sessionId, { email });
+    }
+    track("email_saved", { orgSlug });
+  }, [posthog, track, orgSlug, buyerSession]);
 
   const handleSessionResumed = useCallback((session: { id: string; buyerEmail?: string | null; selections: Record<string, string>; quantities: Record<string, number> }) => {
     setBuyerSession((prev) => ({
@@ -305,6 +317,7 @@ export function DemoPageClient({
         onFinish={(data) => {
           setSummaryData(data);
           setPage("summary");
+          track("summary_viewed", { orgSlug, floorplanSlug });
         }}
         saveUrl={buyerSession ? `/api/buyer-sessions/${buyerSession.sessionId}` : undefined}
         orgId={orgId}
