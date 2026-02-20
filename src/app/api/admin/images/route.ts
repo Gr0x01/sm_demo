@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     const images = (data ?? []).map((row) => {
       const {
         data: { publicUrl },
-      } = supabase.storage.from("kitchen-images").getPublicUrl(row.image_path);
+      } = supabase.storage.from("generated-images").getPublicUrl(row.image_path);
 
       return { ...row, publicUrl };
     });
@@ -59,7 +59,7 @@ export async function DELETE(request: Request) {
 
       if (allRows && allRows.length > 0) {
         const paths = allRows.map((r) => r.image_path);
-        await supabase.storage.from("kitchen-images").remove(paths);
+        await supabase.storage.from("generated-images").remove(paths);
         await supabase
           .from("generated_images")
           .delete()
@@ -89,7 +89,7 @@ export async function DELETE(request: Request) {
     }
 
     // Delete storage file using the verified path from DB
-    await supabase.storage.from("kitchen-images").remove([row.image_path]);
+    await supabase.storage.from("generated-images").remove([row.image_path]);
 
     // Delete DB row
     const { error } = await supabase

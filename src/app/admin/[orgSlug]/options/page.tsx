@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { createSupabaseServer } from "@/lib/supabase-server";
-import { getAdminOptionTree, getAdminFloorplans } from "@/lib/admin-queries";
+import { getAdminOptionTree, getAdminFloorplans, getAdminAllStepsForOrg } from "@/lib/admin-queries";
 import { OptionTree } from "@/components/admin/OptionTree";
 
 export default async function AdminOptionsPage({
@@ -13,11 +12,37 @@ export default async function AdminOptionsPage({
   const auth = await getAuthenticatedUser(orgSlug);
   if (!auth) redirect("/admin/login");
 
-  const supabase = await createSupabaseServer();
-  const [categories, floorplans] = await Promise.all([
-    getAdminOptionTree(supabase, auth.orgId),
-    getAdminFloorplans(supabase, auth.orgId),
+  const [categories, floorplans, allSteps] = await Promise.all([
+    getAdminOptionTree(auth.orgId),
+    getAdminFloorplans(auth.orgId),
+    getAdminAllStepsForOrg(auth.orgId),
   ]);
+
+  // Build step groups: each step → set of category IDs whose subcategories appear in it
+  const multipleFloorplans = new Set(allSteps.map((s) => s.floorplan_id)).size > 1;
+  const assignedCategoryIds = new Set<string>();
+  const stepGroups: { label: string; categoryIds: string[] }[] = [];
+
+  for (const step of allSteps) {
+    const subSlugs = new Set(step.sections.flatMap((s) => s.subcategory_ids));
+    const catIds: string[] = [];
+    for (const cat of categories) {
+      if (cat.subcategories.some((sub) => subSlugs.has(sub.slug))) {
+        catIds.push(cat.id);
+        assignedCategoryIds.add(cat.id);
+      }
+    }
+    if (catIds.length > 0) {
+      const label = multipleFloorplans ? `${step.floorplan_name} — ${step.name}` : step.name;
+      stepGroups.push({ label, categoryIds: catIds });
+    }
+  }
+
+  // Categories not assigned to any step
+  const unassignedIds = categories.filter((c) => !assignedCategoryIds.has(c.id)).map((c) => c.id);
+  if (unassignedIds.length > 0) {
+    stepGroups.push({ label: "Unassigned", categoryIds: unassignedIds });
+  }
 
   const totalOptions = categories.reduce(
     (sum, cat) => sum + cat.subcategories.reduce((s, sub) => s + sub.options.length, 0),
@@ -43,6 +68,7 @@ export default async function AdminOptionsPage({
             orgSlug={orgSlug}
             isAdmin={auth.role === "admin"}
             floorplans={floorplans.map((fp) => ({ id: fp.id, name: fp.name }))}
+            stepGroups={stepGroups}
           />
         </div>
       </div>

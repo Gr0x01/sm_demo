@@ -11,13 +11,11 @@ Landing page exists, iterating on copy, layout, and visuals.
 - [ ] Copy and layout tweaks (ongoing)
 - [ ] Before/after visual (PDF sheet vs. Finch picker)
 - [ ] OG meta tags for link previews
-- [ ] PostHog analytics setup
+- [x] PostHog analytics setup
 - See `landing-page.md` for design doc
 
-### 2. Interactive Demo
-Building a lighter public demo on the landing page for builder prospects.
-- [ ] Demo UX and flow tweaks
-- See `v1-product.md` Section 5 for gallery viz direction
+### 2. Interactive Demo ✅
+Public demo on the landing page is complete.
 
 ### 3. SM Demo — Prompt Tuning
 The SM demo is the sales tool. AI generation prompts need refinement for better output quality.

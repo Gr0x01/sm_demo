@@ -38,15 +38,18 @@ async function apiCall(url: string, method: string, body: Record<string, unknown
 
 // ---------- Main Tree ----------
 
+export type StepGroup = { label: string; categoryIds: string[] };
+
 interface OptionTreeProps {
   categories: AdminCategory[];
   orgId: string;
   orgSlug: string;
   isAdmin: boolean;
   floorplans: { id: string; name: string }[];
+  stepGroups: StepGroup[];
 }
 
-export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAdmin, floorplans }: OptionTreeProps) {
+export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAdmin, floorplans, stepGroups }: OptionTreeProps) {
   void orgSlug;
   const [categories, setCategories] = useState(initialCategories);
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
@@ -328,37 +331,84 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
         />
       )}
 
-      {/* Tree */}
-      <DndContext id="cat-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryReorder}>
-        <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-1">
-            {categories.map((cat) => (
-              <SortableCategoryRow
-                key={cat.id}
-                category={cat}
-                isExpanded={expandedCats.has(cat.id)}
-                expandedSubs={expandedSubs}
-                onToggle={() => toggleCat(cat.id)}
-                onToggleSub={toggleSub}
-                isAdmin={isAdmin}
-                orgId={orgId}
-                floorplans={floorplans}
-                sensors={sensors}
-                onUpdate={handleUpdateCategory}
-                onDelete={handleDeleteCategory}
-                onAddSub={handleAddSubcategory}
-                onUpdateSub={handleUpdateSubcategory}
-                onDeleteSub={handleDeleteSubcategory}
-                onSubReorder={handleSubcategoryReorder}
-                onAddOption={handleAddOption}
-                onUpdateOption={handleUpdateOption}
-                onDeleteOption={handleDeleteOption}
-                onOptionReorder={handleOptionReorder}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
+      {/* Tree grouped by step */}
+      {stepGroups.length > 0 ? (
+        <div className="space-y-6">
+          {stepGroups.map((group) => {
+            const groupCats = group.categoryIds
+              .map((id) => categories.find((c) => c.id === id))
+              .filter(Boolean) as AdminCategory[];
+            if (groupCats.length === 0) return null;
+
+            return (
+              <div key={group.label}>
+                <h3 className="text-[11px] uppercase tracking-[0.16em] text-slate-400 font-semibold mb-2">{group.label}</h3>
+                <DndContext id={`cat-dnd-${group.label}`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryReorder}>
+                  <SortableContext items={groupCats.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+                    <div className="space-y-1">
+                      {groupCats.map((cat) => (
+                        <SortableCategoryRow
+                          key={cat.id}
+                          category={cat}
+                          isExpanded={expandedCats.has(cat.id)}
+                          expandedSubs={expandedSubs}
+                          onToggle={() => toggleCat(cat.id)}
+                          onToggleSub={toggleSub}
+                          isAdmin={isAdmin}
+                          orgId={orgId}
+                          floorplans={floorplans}
+                          sensors={sensors}
+                          onUpdate={handleUpdateCategory}
+                          onDelete={handleDeleteCategory}
+                          onAddSub={handleAddSubcategory}
+                          onUpdateSub={handleUpdateSubcategory}
+                          onDeleteSub={handleDeleteSubcategory}
+                          onSubReorder={handleSubcategoryReorder}
+                          onAddOption={handleAddOption}
+                          onUpdateOption={handleUpdateOption}
+                          onDeleteOption={handleDeleteOption}
+                          onOptionReorder={handleOptionReorder}
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <DndContext id="cat-dnd" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryReorder}>
+          <SortableContext items={categories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+            <div className="space-y-1">
+              {categories.map((cat) => (
+                <SortableCategoryRow
+                  key={cat.id}
+                  category={cat}
+                  isExpanded={expandedCats.has(cat.id)}
+                  expandedSubs={expandedSubs}
+                  onToggle={() => toggleCat(cat.id)}
+                  onToggleSub={toggleSub}
+                  isAdmin={isAdmin}
+                  orgId={orgId}
+                  floorplans={floorplans}
+                  sensors={sensors}
+                  onUpdate={handleUpdateCategory}
+                  onDelete={handleDeleteCategory}
+                  onAddSub={handleAddSubcategory}
+                  onUpdateSub={handleUpdateSubcategory}
+                  onDeleteSub={handleDeleteSubcategory}
+                  onSubReorder={handleSubcategoryReorder}
+                  onAddOption={handleAddOption}
+                  onUpdateOption={handleUpdateOption}
+                  onDeleteOption={handleDeleteOption}
+                  onOptionReorder={handleOptionReorder}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      )}
     </div>
   );
 }

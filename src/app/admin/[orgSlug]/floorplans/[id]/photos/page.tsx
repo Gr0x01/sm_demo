@@ -28,7 +28,7 @@ export default async function AdminPhotosPage({
 
   if (!floorplan) notFound();
 
-  const steps = await getAdminStepPhotos(supabase, floorplanId, auth.orgId);
+  const steps = await getAdminStepPhotos(floorplanId, auth.orgId);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 

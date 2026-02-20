@@ -31,7 +31,7 @@ export async function POST(request: Request) {
       const {
         data: { publicUrl },
       } = supabase.storage
-        .from("kitchen-images")
+        .from("demo-generated")
         .getPublicUrl(cached.image_path);
 
       return NextResponse.json({ imageUrl: publicUrl });

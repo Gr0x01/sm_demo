@@ -93,7 +93,7 @@ export async function POST(request: Request) {
         const {
           data: { publicUrl },
         } = supabase.storage
-          .from("kitchen-images")
+          .from("demo-generated")
           .getPublicUrl(cached.image_path);
 
         return NextResponse.json({ imageUrl: publicUrl, cacheHit: true });
@@ -147,7 +147,7 @@ export async function POST(request: Request) {
 
       // Upload result
       const { error: uploadError } = await supabase.storage
-        .from("kitchen-images")
+        .from("demo-generated")
         .upload(outputPath, outputBuffer, {
           contentType: "image/png",
           upsert: true,
@@ -186,7 +186,7 @@ export async function POST(request: Request) {
       const {
         data: { publicUrl },
       } = supabase.storage
-        .from("kitchen-images")
+        .from("demo-generated")
         .getPublicUrl(outputPath);
 
       return NextResponse.json({ imageUrl: publicUrl, cacheHit: false });

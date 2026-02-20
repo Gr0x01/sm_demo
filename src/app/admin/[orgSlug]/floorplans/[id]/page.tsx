@@ -15,7 +15,7 @@ export default async function AdminFloorplanDetailPage({
 
   const supabase = await createSupabaseServer();
 
-  // Fetch floorplan
+  // Fetch floorplan (user-scoped for ownership check)
   const { data: floorplan } = await supabase
     .from("floorplans")
     .select("id, org_id, name, slug, community, price_sheet_label, is_active")
@@ -26,8 +26,8 @@ export default async function AdminFloorplanDetailPage({
   if (!floorplan) notFound();
 
   const [steps, categories] = await Promise.all([
-    getAdminStepsForFloorplan(supabase, floorplanId, auth.orgId),
-    getAdminOptionTree(supabase, auth.orgId),
+    getAdminStepsForFloorplan(floorplanId, auth.orgId),
+    getAdminOptionTree(auth.orgId),
   ]);
 
   // Flatten subcategories for section assignment
