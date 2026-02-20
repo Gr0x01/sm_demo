@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
-import { ThumbsUp, ThumbsDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Expand } from "lucide-react";
 
 interface StepPhotoGridProps {
   step: StepConfig;
@@ -40,36 +40,92 @@ export function StepPhotoGrid({
   selections,
 }: StepPhotoGridProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-
-  if (!step.photos?.length) return null;
+  const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
+  const photos = step.photos ?? [];
 
   const currentFingerprint = stableStringify(getPhotoVisualSelections(step, selections));
 
   // Hero photo first, then rest
-  const sortedPhotos = [...step.photos].sort((a, b) => {
-    if (a.isHero && !b.isHero) return -1;
-    if (!a.isHero && b.isHero) return 1;
-    return a.sortOrder - b.sortOrder;
-  });
+  const sortedPhotos = useMemo(() => {
+    return [...photos].sort((a, b) => {
+      if (a.isHero && !b.isHero) return -1;
+      if (!a.isHero && b.isHero) return 1;
+      return a.sortOrder - b.sortOrder;
+    });
+  }, [photos]);
+
+  useEffect(() => {
+    if (sortedPhotos.length === 0) {
+      setActivePhotoId(null);
+      return;
+    }
+    if (!activePhotoId || !sortedPhotos.some((p) => p.id === activePhotoId)) {
+      setActivePhotoId(sortedPhotos[0].id);
+    }
+  }, [sortedPhotos, activePhotoId]);
+
+  const activePhoto =
+    sortedPhotos.find((p) => p.id === activePhotoId) ?? sortedPhotos[0];
+
+  if (!sortedPhotos.length) return null;
 
   return (
     <>
-      <div className="space-y-2">
-        {sortedPhotos.map((photo) => (
-          <PhotoCard
-            key={photo.id}
-            photo={photo}
-            generatedUrl={generatedImageUrls[photo.id] ?? null}
-            isGenerating={generatingPhotoKeys.has(photo.id)}
-            isStale={generatedWithSelections[photo.id] !== currentFingerprint && !!generatedWithSelections[photo.id]}
-            error={errors[photo.id] ?? null}
-            vote={feedbackVotes[photo.id] ?? null}
-            onGenerate={() => onGeneratePhoto(photo.id, photo.id, step)}
-            onFeedback={(vote) => onFeedback(photo.id, vote)}
+      <div className="space-y-2.5">
+        {activePhoto && (
+          <PhotoViewerCard
+            photo={activePhoto}
+            generatedUrl={generatedImageUrls[activePhoto.id] ?? null}
+            isGenerating={generatingPhotoKeys.has(activePhoto.id)}
+            isStale={generatedWithSelections[activePhoto.id] !== currentFingerprint && !!generatedWithSelections[activePhoto.id]}
+            error={errors[activePhoto.id] ?? null}
+            vote={feedbackVotes[activePhoto.id] ?? null}
+            onGenerate={() => onGeneratePhoto(activePhoto.id, activePhoto.id, step)}
+            onFeedback={(vote) => onFeedback(activePhoto.id, vote)}
             onZoom={(src) => setLightboxSrc(src)}
-            isHero={photo.isHero}
           />
-        ))}
+        )}
+
+        <div className="overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 min-w-max pr-1">
+            {sortedPhotos.map((photo) => {
+              const isActive = photo.id === activePhoto?.id;
+              const generatedUrl = generatedImageUrls[photo.id] ?? null;
+              const displayUrl = generatedUrl || photo.imageUrl;
+              const isGenerating = generatingPhotoKeys.has(photo.id);
+              const isStale = generatedWithSelections[photo.id] !== currentFingerprint && !!generatedWithSelections[photo.id];
+
+              return (
+                <button
+                  key={photo.id}
+                  onClick={() => setActivePhotoId(photo.id)}
+                  className={`relative w-[74px] h-[54px] shrink-0 overflow-hidden border transition-all cursor-pointer ${
+                    isActive
+                      ? "border-[var(--color-navy)] ring-1 ring-[var(--color-navy)]"
+                      : "border-gray-200 hover:border-gray-400"
+                  }`}
+                  title={photo.label}
+                >
+                  <img
+                    src={displayUrl}
+                    alt={photo.label}
+                    className="w-full h-full object-cover"
+                  />
+                  {isGenerating && (
+                    <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
+                      <LogoLoader className="w-4 h-auto text-[var(--color-navy)]" />
+                    </div>
+                  )}
+                  {isStale && generatedUrl && !isGenerating && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-amber-500 text-white text-[8px] font-bold text-center leading-3">
+                      NEW
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
       {lightboxSrc && (
         <ImageLightbox
@@ -92,10 +148,9 @@ interface PhotoCardProps {
   onGenerate: () => void;
   onFeedback: (vote: 1 | -1) => void;
   onZoom: (src: string) => void;
-  isHero: boolean;
 }
 
-function PhotoCard({
+function PhotoViewerCard({
   photo,
   generatedUrl,
   isGenerating,
@@ -105,13 +160,12 @@ function PhotoCard({
   onGenerate,
   onFeedback,
   onZoom,
-  isHero,
 }: PhotoCardProps) {
   const displayUrl = generatedUrl || photo.imageUrl;
   const hasGenerated = !!generatedUrl;
 
   return (
-    <div className={`relative overflow-hidden bg-gray-100 ${isHero ? "aspect-[4/3]" : "aspect-[16/10]"}`}>
+    <div className="relative overflow-hidden bg-gray-100 aspect-[16/10]">
       {/* Base/generated image */}
       <img
         src={displayUrl}
@@ -130,15 +184,25 @@ function PhotoCard({
 
       {/* Stale badge */}
       {isStale && hasGenerated && !isGenerating && (
-        <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5">
+        <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 z-10">
           OUTDATED
         </div>
       )}
 
+      <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
+        <button
+          onClick={(e) => { e.stopPropagation(); onZoom(displayUrl); }}
+          className="w-6 h-6 bg-black/60 text-white flex items-center justify-center hover:bg-black/75 transition-colors cursor-pointer"
+          title="View full size"
+        >
+          <Expand className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
       {/* Photo label */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 pt-4 pb-2">
         <div className="flex items-end justify-between gap-2">
-          <p className="text-xs font-medium text-white truncate">{photo.label}</p>
+          <p className="text-xs font-medium text-white truncate max-w-[52%]">{photo.label}</p>
 
           <div className="flex items-center gap-1 shrink-0">
             {/* Feedback buttons */}
