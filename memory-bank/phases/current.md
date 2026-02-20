@@ -2,7 +2,7 @@
 
 ## Context
 
-Multi-tenant foundation is done (schema, routing, theming, caching, data layer). V1 product spec written (`v1-product.md`). Domain is `withfin.ch`. Workstreams A, B, and C complete. Now executing on multiple fronts: refining the homepage, tuning the SM demo, and building Workstream D (gallery visualization).
+Multi-tenant foundation is done (schema, routing, theming, caching, data layer). V1 product spec written (`v1-product.md`). Domain is `withfin.ch`. All workstreams (A–D) complete. SM fully migrated to multi-tenant. Now executing on: homepage refinement, interactive demo, and prompt tuning.
 
 ## Active Workstreams
 
@@ -77,9 +77,9 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 **Depends on B + C.** Per-photo AI visualization, gallery view, thumbs up/down feedback, generation credit cap.
 - [x] DB migrations: `generation_cap_per_session` on orgs, `step_photo_id`/`buyer_session_id`/`selections_fingerprint` on `generated_images`, `generation_feedback` table, `reserve_generation_credit` + `refund_generation_credit` RPCs, `generated-images` storage bucket
 - [x] `StepPhoto` type on `StepConfig`, `step_photos` join in `getStepsWithConfig`, `getStepPhotoAiConfig` query
-- [x] `SwatchBufferResolver` callback in `buildEditPrompt` (Supabase Storage for multi-tenant, filesystem for SM)
+- [x] `SwatchBufferResolver` callback in `buildEditPrompt` (Supabase Storage for all tenants)
 - [x] `/api/generate/photo` — multi-tenant per-photo generation with ownership validation, DB-based dedup (`__pending__` placeholder rows), stale lock cleanup (5 min TTL), credit reservation after generation
-- [x] `/api/generate/photo/check` — multi-tenant cache check (filters `__pending__` rows)
+- [x] `/api/generate/photo/check` — multi-tenant per-photo cache check
 - [x] `/api/generate/photo/feedback` — thumbs up/down with credit refund/re-reserve, session-scoped image ownership
 - [x] Extended `SelectionState`/`SelectionAction` with per-photo keys, feedback, credits
 - [x] UpgradePicker: per-photo generation, gallery virtual step, Visualize All (max 3 concurrent), stale detection per photo, initial cache restore for multi-tenant photos on session resume
@@ -88,12 +88,22 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [x] `SidebarPanel` updated — photo grid replaces StepHero when step has photos, credits display
 - [x] Credits wired: `generationCap` from org → session response → page → client → picker
 - [x] Admin login Suspense fix for `useSearchParams()`
-- [x] SM demo path completely unchanged (no photos → existing hero/generate flow)
 
 ### 8. Floorplan Onboarding: Skeleton Steps + Duplicate ✅
 - [x] Auto-populate 5 skeleton steps on floorplan creation (Set Your Style, Design Your Kitchen, Primary Bath, Secondary Spaces, Finishing Touches)
 - [x] Duplicate floorplan API (`POST /api/admin/floorplans/[id]/duplicate`) — clones steps, sections, photos (storage copy), remaps `also_include_ids`
 - [x] Duplicate button in FloorplanList UI (Copy icon between edit/delete, global busy guard)
+
+### 9. SM Multi-Tenant Migration ✅
+Migrated Stone Martin from legacy single-tenant generation to full multi-tenant photo system.
+- [x] Migration script (`scripts/migrate-sm-storage.ts`): uploads room photos + swatches to Supabase Storage, creates `step_photos` rows, updates `swatch_url` to Storage URLs, sets generation cap to 100
+- [x] Deleted legacy routes: `/api/generate/route.ts`, `/api/generate/check/route.ts`
+- [x] Deleted `GenerateButton.tsx` (dead code)
+- [x] Cleaned UpgradePicker: removed `handleGenerate`, SM cache checks, added mobile `StepPhotoGrid`
+- [x] Cleaned SidebarPanel: removed `onGenerate` prop and legacy hero generate button
+- [x] Cleaned PriceTracker: removed `onGenerate`, `isGenerating`, `hasChanges`, `hasGeneratedPreview` props
+- [x] Cleaned generate.ts: removed filesystem swatch fallback, dead helpers (`solidColorPng`, `crc32`, `extractHexFromSvg`)
+- [x] Known regression: slide-in range two-pass refinement removed (was in legacy route only). Text invariants remain but masked pass-2 is gone. Test after migration.
 
 ### Upcoming (not started)
 - **Workstream E**: Branding controls (depends on A, small)
@@ -108,9 +118,10 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [x] Query optimization (4 queries/page, 0 on cache hit)
 - [x] V1 product spec (`v1-product.md`)
 
-### SM Demo (Complete — Maintenance Mode)
+### SM Demo (Fully Multi-Tenant)
 - [x] 5-step wizard, 350+ options, 166 swatches, AI kitchen viz
 - [x] Mobile UI, contract phase locking, generation reliability hardening
+- [x] Now uses multi-tenant `/api/generate/photo` path (same as all builders)
 
 ## Key References
 

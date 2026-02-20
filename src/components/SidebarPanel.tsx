@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { StepHero } from "./StepHero";
-import { GenerateButton } from "./GenerateButton";
 import { StepPhotoGrid } from "./StepPhotoGrid";
 
 function ClearButton({ onClear }: { onClear: () => void }) {
@@ -44,7 +43,6 @@ interface SidebarPanelProps {
   generatedImageUrl: string | null;
   isGenerating: boolean;
   error: string | null;
-  onGenerate: () => void;
   hasChanges: boolean;
   total: number;
   onContinue: () => void;
@@ -54,7 +52,6 @@ interface SidebarPanelProps {
   headerHeight: number;
   lockedSubCategoryIds?: Set<string>;
   onFinish: () => void;
-  // Multi-tenant per-photo props (optional — SM demo omits these)
   photos?: StepPhoto[];
   generatedImageUrls?: Record<string, string>;
   generatingPhotoKeys?: Set<string>;
@@ -73,7 +70,6 @@ export function SidebarPanel({
   generatedImageUrl,
   isGenerating,
   error,
-  onGenerate,
   hasChanges,
   total,
   onContinue,
@@ -204,37 +200,15 @@ export function SidebarPanel({
             </div>
           )}
         </>
-      ) : (
-        <>
-          {/* AI Image — steps 1-4 (SM demo path) */}
-          {showImage && (
-            <StepHero
-              key={step.id}
-              step={step}
-              generatedImageUrl={step.showGenerateButton ? generatedImageUrl : null}
-              isGenerating={step.showGenerateButton ? isGenerating : false}
-              compact
-            />
-          )}
-
-          {/* Generate button — steps 1-4 (SM demo path) */}
-          {step.showGenerateButton && (
-            <div>
-              <GenerateButton
-                onClick={onGenerate}
-                isGenerating={isGenerating}
-                hasChanges={hasChanges}
-                stepName={step.name}
-              />
-              {error && (
-                <div className="mt-2 bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
-                  {error}
-                </div>
-              )}
-            </div>
-          )}
-        </>
-      )}
+      ) : showImage ? (
+        <StepHero
+          key={step.id}
+          step={step}
+          generatedImageUrl={null}
+          isGenerating={false}
+          compact
+        />
+      ) : null}
 
       {/* Section quick-nav */}
       <nav className="border-t border-gray-200 pt-3">

@@ -265,6 +265,11 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 **Decision**: Check `step.photos?.length > 0` per step rather than a global `isMultiTenant` flag. Steps without photos fall back to existing SM-style hero image display. SidebarPanel renders StepPhotoGrid or StepHero based on this check.
 **Trade-off**: Mixed-mode steps within the same floorplan are possible (some photo-based, some hero-based). Fine for gradual migration.
 
+## D60: SM migrated to full multi-tenant generation
+**Context**: SM was using a legacy code path (`/api/generate`) that hardcoded `SM_ORG_SLUG`, read hero images from the filesystem, and had a slide-in range two-pass refinement. Meanwhile, the multi-tenant `/api/generate/photo` route was fully built. The only missing piece was `step_photos` rows for SM.
+**Decision**: Created `scripts/migrate-sm-storage.ts` to upload SM's static assets (room photos + swatches) to Supabase Storage and create `step_photos` rows. Once SM steps have photos, UpgradePicker automatically switches to the multi-tenant path (`step.photos?.length > 0`). Deleted legacy routes, `GenerateButton.tsx`, filesystem swatch fallback in `generate.ts`. Added mobile `StepPhotoGrid` to replace the removed mobile generate button.
+**Trade-off**: Slide-in range two-pass masked refinement is lost (only existed in legacy route). Text-based invariant rules remain. May need to implement pass-2 in the multi-tenant route later if results regress. SM generation cap raised to 100 (from 20) for sales demos.
+
 ## D54: Finch Demo sandbox org
 **Context**: Need a safe place for prospects and testers to explore the admin without touching Stone Martin's real data.
 **Decision**: Created "Finch Demo" org with slug `demo`. Owner (gr0x01@pm.me) is admin on both orgs. Login shows org picker when user has multiple orgs. Invite anyone to demo org without risk to SM data.

@@ -1,80 +1,5 @@
 import { createHash } from "crypto";
-import { deflateSync } from "zlib";
-import { readFile } from "fs/promises";
-import path from "path";
 import type { Option, SubCategory } from "@/types";
-
-/** Create a minimal 64x64 solid-color PNG from a hex string like "#D1CCC2". */
-function solidColorPng(hex: string): Buffer {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const size = 64;
-
-  // Build raw image data: each row starts with filter byte 0, then RGB triplets
-  const raw = Buffer.alloc(size * (1 + size * 3));
-  for (let y = 0; y < size; y++) {
-    const rowStart = y * (1 + size * 3);
-    raw[rowStart] = 0; // filter: none
-    for (let x = 0; x < size; x++) {
-      const px = rowStart + 1 + x * 3;
-      raw[px] = r;
-      raw[px + 1] = g;
-      raw[px + 2] = b;
-    }
-  }
-
-  const compressed = deflateSync(raw);
-
-  // Assemble PNG file
-  const signature = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-
-  function chunk(type: string, data: Buffer): Buffer {
-    const len = Buffer.alloc(4);
-    len.writeUInt32BE(data.length);
-    const typeB = Buffer.from(type, "ascii");
-    const crc = crc32(Buffer.concat([typeB, data]));
-    return Buffer.concat([len, typeB, data, crc]);
-  }
-
-  // IHDR
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);  // width
-  ihdr.writeUInt32BE(size, 4);  // height
-  ihdr[8] = 8;  // bit depth
-  ihdr[9] = 2;  // color type: RGB
-  ihdr[10] = 0; // compression
-  ihdr[11] = 0; // filter
-  ihdr[12] = 0; // interlace
-
-  return Buffer.concat([
-    signature,
-    chunk("IHDR", ihdr),
-    chunk("IDAT", compressed),
-    chunk("IEND", Buffer.alloc(0)),
-  ]);
-}
-
-/** CRC-32 for PNG chunks. */
-function crc32(buf: Buffer): Buffer {
-  let crc = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) {
-    crc ^= buf[i];
-    for (let j = 0; j < 8; j++) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-    }
-  }
-  crc ^= 0xffffffff;
-  const out = Buffer.alloc(4);
-  out.writeUInt32BE(crc >>> 0);
-  return out;
-}
-
-/** Extract the fill hex color from a simple SVG paint swatch. */
-function extractHexFromSvg(svg: string): string | null {
-  const match = svg.match(/fill="(#[0-9A-Fa-f]{6})"/);
-  return match ? match[1] : null;
-}
 
 export interface SwatchImage {
   label: string;
@@ -133,7 +58,7 @@ const INVARIANT_RULES_BY_OPTION_ID: Record<string, string[]> = {
 };
 
 /**
- * Resolve a swatch file to a Buffer. SM demo uses filesystem; multi-tenant uses Supabase Storage.
+ * Resolve a swatch URL to a Buffer (downloads from Supabase Storage).
  * Return null if the swatch can't be loaded.
  */
 export type SwatchBufferResolver = (swatchUrl: string) => Promise<{ buffer: Buffer; mediaType: string } | null>;
@@ -146,7 +71,7 @@ export type SwatchBufferResolver = (swatchUrl: string) => Promise<{ buffer: Buff
  * @param optionLookup Map of "subId:optId" → { option, subCategory }
  * @param spatialHints Map of subcategoryId → spatial hint text
  * @param sceneDescription Optional scene description for this step's hero image
- * @param resolveSwatchBuffer Optional callback to load swatch from Storage (multi-tenant). Omit for SM filesystem.
+ * @param resolveSwatchBuffer Callback to download swatch from Supabase Storage.
  */
 export async function buildEditPrompt(
   visualSelections: Record<string, string>,
@@ -201,57 +126,19 @@ export async function buildEditPrompt(
       ? `${subCategory.name}: ${option.name}${descriptorSuffix} → apply to ${hint}`
       : `${subCategory.name}: ${option.name}${descriptorSuffix}`;
 
-    if (option.swatchUrl) {
-      // Multi-tenant: use custom resolver if provided
-      if (resolveSwatchBuffer) {
-        try {
-          const resolved = await resolveSwatchBuffer(option.swatchUrl);
-          if (resolved) {
-            swatches.push({ label, buffer: resolved.buffer, mediaType: resolved.mediaType });
-            listLines.push(`${listIndex}. ${label} (use swatch #${swatchIndex})`);
-            swatchIndex += 1;
-            listIndex += 1;
-          } else {
-            listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
-            listIndex += 1;
-          }
-        } catch {
+    if (option.swatchUrl && resolveSwatchBuffer) {
+      try {
+        const resolved = await resolveSwatchBuffer(option.swatchUrl);
+        if (resolved) {
+          swatches.push({ label, buffer: resolved.buffer, mediaType: resolved.mediaType });
+          listLines.push(`${listIndex}. ${label} (use swatch #${swatchIndex})`);
+          swatchIndex += 1;
+          listIndex += 1;
+        } else {
           listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
           listIndex += 1;
         }
-        continue;
-      }
-
-      // SM demo: filesystem-based swatch loading
-      const ext = path.extname(option.swatchUrl).slice(1).toLowerCase();
-
-      try {
-        const swatchPath = path.join(process.cwd(), "public", option.swatchUrl);
-
-        if (ext === "svg") {
-          const svgContent = await readFile(swatchPath, "utf-8");
-          const hex = extractHexFromSvg(svgContent);
-          if (hex) {
-            const buffer = solidColorPng(hex);
-            swatches.push({ label, buffer, mediaType: "image/png" });
-            listLines.push(`${listIndex}. ${label} (use swatch #${swatchIndex})`);
-            swatchIndex += 1;
-            listIndex += 1;
-          } else {
-            listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
-            listIndex += 1;
-          }
-          continue;
-        }
-
-        const buffer = await readFile(swatchPath);
-        const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-        swatches.push({ label, buffer, mediaType });
-        listLines.push(`${listIndex}. ${label} (use swatch #${swatchIndex})`);
-        swatchIndex += 1;
-        listIndex += 1;
       } catch {
-        // Swatch file missing — fall back to text-only
         listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
         listIndex += 1;
       }

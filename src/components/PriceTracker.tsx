@@ -5,13 +5,9 @@ import { ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 
 interface PriceTrackerProps {
   total: number;
-  onGenerate?: () => void;
-  isGenerating?: boolean;
-  hasChanges?: boolean;
   stepName?: string;
   showGenerateButton?: boolean;
   error?: string | null;
-  hasGeneratedPreview?: boolean;
   previewImageUrl?: string | null;
   previewTitle?: string;
   previewSummary?: string[];
@@ -19,13 +15,9 @@ interface PriceTrackerProps {
 
 export function PriceTracker({
   total,
-  onGenerate,
-  isGenerating = false,
-  hasChanges = false,
   stepName,
   showGenerateButton = false,
   error,
-  hasGeneratedPreview = false,
   previewImageUrl = null,
   previewTitle,
   previewSummary = [],
@@ -47,9 +39,6 @@ export function PriceTracker({
     setIsExpanded(false);
   }, [stepName]);
 
-  const disabled = isGenerating || (hasGeneratedPreview && !hasChanges);
-  const label = stepName || "Room";
-  const labels = { action: `Generate ${label} Preview`, generating: `Generating ${label}...` };
   const canExpand = showGenerateButton && !!previewImageUrl;
 
   return (
@@ -79,23 +68,10 @@ export function PriceTracker({
                 </div>
               )}
 
-              <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="mt-3">
                 <p className="text-sm font-semibold text-[var(--color-navy)] truncate min-w-0">
                   {previewTitle ?? "Current room"}
                 </p>
-                {showGenerateButton && onGenerate && (
-                  <button
-                    onClick={onGenerate}
-                    disabled={disabled}
-                    className={`inline-flex items-center justify-center py-2 px-4 font-semibold text-sm transition-all duration-150 cursor-pointer shrink-0 ${
-                      disabled
-                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                        : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-hover)] active:scale-[0.98]"
-                    }`}
-                  >
-                    {isGenerating ? labels.generating : "Generate"}
-                  </button>
-                )}
               </div>
 
               {previewSummary.length > 0 && (
@@ -113,7 +89,7 @@ export function PriceTracker({
       )}
 
       <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-2.5">
-        {showGenerateButton && onGenerate ? (
+        {showGenerateButton ? (
           <>
             {canExpand && (
               <button

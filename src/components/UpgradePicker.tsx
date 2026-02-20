@@ -425,29 +425,7 @@ export function UpgradePicker({
                 // Non-critical
               }
             }
-            continue; // skip SM-style check for this step
-          }
-
-          // SM demo: check cache per step
-          try {
-            const checkRes = await fetch("/api/generate/check", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ selections: stepSelections, ...(modelParam ? { model: modelParam } : {}) }),
-            });
-            if (checkRes.ok) {
-              const { imageUrl } = await checkRes.json();
-              if (imageUrl) {
-                dispatch({
-                  type: "GENERATION_COMPLETE",
-                  stepId: step.id,
-                  imageUrl,
-                  selectionsSnapshot: stableStringify(stepSelections),
-                });
-              }
-            }
-          } catch {
-            // Non-critical
+            continue;
           }
         }
       }
@@ -571,36 +549,6 @@ export function UpgradePicker({
     },
     []
   );
-
-  const handleGenerate = useCallback(async () => {
-    if (state.generatingStepIds.has(activeStep.id)) return;
-    dispatch({ type: "START_GENERATING", stepId: activeStep.id });
-
-    const visualSelections = getStepVisualSelections(activeStep, state.selections);
-    const selectionsSnapshot = stableStringify(visualSelections);
-
-    try {
-      const modelParam = new URLSearchParams(window.location.search).get("model");
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          selections: visualSelections,
-          heroImage: activeStep.heroImage,
-          stepSlug: activeStep.id,
-          ...(modelParam ? { model: modelParam } : {}),
-        }),
-      });
-
-      if (!res.ok) throw new Error("Generation failed");
-
-      const data = await res.json();
-      dispatch({ type: "GENERATION_COMPLETE", stepId: activeStep.id, imageUrl: data.imageUrl, selectionsSnapshot });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Something went wrong";
-      dispatch({ type: "GENERATION_ERROR", stepId: activeStep.id, error: message });
-    }
-  }, [state.selections, state.generatingStepIds, activeStep, getStepVisualSelections]);
 
   // --- Per-photo generation (multi-tenant) ---
   // Reuse getStepVisualSelections — same logic applies per-photo (uses parent step's photoBaseline)
@@ -731,66 +679,6 @@ export function UpgradePicker({
     return currentSnapshot !== lastSnapshot;
   }, [activeStep, state.selections, state.generatedWithSelections, getStepVisualSelections]);
 
-  // When selections change to a combination we haven't generated in this session,
-  // check server cache — if it's a hit, restore instantly without requiring a click.
-  // Debounced (300ms) so rapid swatch clicks don't fire excessive requests.
-  // While checking, suppress hasChanges so the button doesn't flash "Visualize" → "Up to Date".
-  const [isCheckingCache, setIsCheckingCache] = useState(false);
-  const cacheCheckTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cacheCheckAbortRef = useRef<AbortController | null>(null);
-  useEffect(() => {
-    if (!activeStepHasChanges || !activeStep.showGenerateButton) return;
-    if (state.generatingStepIds.has(activeStep.id)) return;
-
-    const visualSelections = getStepVisualSelections(activeStep, state.selections);
-    if (Object.keys(visualSelections).length === 0) return;
-
-    const selectionsSnapshot = stableStringify(visualSelections);
-    const modelParam = new URLSearchParams(window.location.search).get("model");
-
-    // Abort any in-flight check and clear pending timer
-    cacheCheckAbortRef.current?.abort();
-    if (cacheCheckTimerRef.current) clearTimeout(cacheCheckTimerRef.current);
-
-    const controller = new AbortController();
-    cacheCheckAbortRef.current = controller;
-    setIsCheckingCache(true);
-
-    cacheCheckTimerRef.current = setTimeout(() => {
-      fetch("/api/generate/check", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          selections: visualSelections,
-          ...(modelParam ? { model: modelParam } : {}),
-        }),
-        signal: controller.signal,
-      })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.imageUrl) {
-            dispatch({
-              type: "GENERATION_COMPLETE",
-              stepId: activeStep.id,
-              imageUrl: data.imageUrl,
-              selectionsSnapshot,
-            });
-          }
-          setIsCheckingCache(false);
-        })
-        .catch(() => {
-          if (!controller.signal.aborted) setIsCheckingCache(false);
-        });
-    }, 300);
-
-    return () => {
-      controller.abort();
-      if (cacheCheckTimerRef.current) clearTimeout(cacheCheckTimerRef.current);
-    };
-  }, [activeStepHasChanges, activeStep, state.selections, state.generatingStepIds, getStepVisualSelections]);
-
-  // Suppress hasChanges while cache check is in flight — prevents button flash
-  const effectiveHasChanges = activeStepHasChanges && !isCheckingCache;
 
   // Preload all generated images so step switching is instant
   useEffect(() => {
@@ -896,8 +784,7 @@ export function UpgradePicker({
                 generatedImageUrl={state.generatedImageUrls[activeStep.id] ?? null}
                 isGenerating={isGeneratingThisStep}
                 error={state.errors[activeStep.id] ?? null}
-                onGenerate={handleGenerate}
-                hasChanges={effectiveHasChanges}
+                hasChanges={activeStepHasChanges}
                 total={total}
                 onContinue={handleContinue}
                 onClearSelections={handleClearSelections}
@@ -940,6 +827,29 @@ export function UpgradePicker({
               />
             ) : (
               <>
+                {/* Mobile-only: photo grid for steps with photos */}
+                {activeStep.photos?.length && (
+                  <div className="lg:hidden mb-5">
+                    <StepPhotoGrid
+                      step={activeStep}
+                      generatedImageUrls={state.generatedImageUrls}
+                      generatingPhotoKeys={state.generatingPhotoKeys}
+                      onGeneratePhoto={handleGeneratePhoto}
+                      onFeedback={handleFeedback}
+                      feedbackVotes={state.feedbackVotes}
+                      errors={state.errors}
+                      generatedWithSelections={state.generatedWithSelections}
+                      getPhotoVisualSelections={getPhotoVisualSelections}
+                      selections={state.selections}
+                    />
+                    {state.generationCredits && (
+                      <div className="text-xs text-gray-500 text-center mt-2">
+                        {state.generationCredits.total - state.generationCredits.used}/{state.generationCredits.total} visualizations remaining
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <StepContent
                   key={activeStepId}
                   step={activeStep}
@@ -970,13 +880,9 @@ export function UpgradePicker({
       <div className="lg:hidden">
         <PriceTracker
           total={total}
-          onGenerate={handleGenerate}
-          isGenerating={isGeneratingThisStep}
-          hasChanges={effectiveHasChanges}
           stepName={activeStep.name}
           showGenerateButton={!!activeStep.showGenerateButton}
           error={state.errors[activeStep.id] ?? null}
-          hasGeneratedPreview={!!activeGeneratedImageUrl}
           previewImageUrl={activePreviewImageUrl}
           previewTitle={activeStep.name}
           previewSummary={activeSelectionSummary}

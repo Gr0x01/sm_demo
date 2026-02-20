@@ -24,16 +24,7 @@ Browser (Next.js client)
   └── /api/* — API routes
 
 Server (Next.js API routes)
-  ├── POST /api/generate (SM demo path)
-  │     ├── Receives: selections + heroImage + stepSlug (+ optional model)
-  │     ├── Fetches spatial hints + scene description from Supabase (step_ai_config)
-  │     ├── Builds option lookup from Supabase (categories → subcategories → options)
-  │     ├── Hashes visual selections → check Supabase cache
-  │     ├── Cache HIT → return cached image URL instantly
-  │     ├── Cache MISS → generate via OpenAI images.edit → store → return URL
-  │     └── Returns: image URL + cache_hit boolean
-  │
-  └── POST /api/generate/photo (multi-tenant per-photo path)
+  └── POST /api/generate/photo (all tenants including SM)
         ├── Receives: orgSlug, floorplanSlug, stepPhotoId, selections, sessionId, model?
         ├── Validates ownership chain: org → floorplan → step → step_photo, session → org/floorplan
         ├── Hash includes _stepPhotoId + _model + _cacheVersion for global uniqueness
@@ -64,8 +55,8 @@ Supabase
   ├── RPC: refund_generation_credit(p_session_id) — atomic credit decrement (thumbs down)
   ├── RPC: get_auth_user_id_by_email(lookup_email) — service-role-only user lookup for invite flow
   ├── Trigger: link_pending_invites — on auth.users INSERT, links pending org_users by email
-  ├── Storage bucket: kitchen-images ({selections_hash}.png) — SM demo
-  ├── Storage bucket: generated-images ({orgId}/{hash}.png) — multi-tenant
+  ├── Storage bucket: kitchen-images ({selections_hash}.png) — legacy SM cache + /try demo
+  ├── Storage bucket: generated-images ({orgId}/{hash}.png) — all tenants including SM
   ├── Storage bucket: swatches ({orgId}/swatches/{subcatId}/{uuid}.{ext})
   └── Storage bucket: rooms ({orgId}/rooms/{stepId}/{uuid}.{ext}) — public read, admin upload
 ```
@@ -94,13 +85,7 @@ Supabase
 
 ## Cache Flow
 
-### SM Demo (per-step)
-1. User clicks "Visualize" → POST `/api/generate` with step's visual selections
-2. Hash: sorted selection keys + option IDs → SHA-256, truncated to 16 hex
-3. Cache check → hit returns Supabase Storage URL (~200ms), miss generates (~30-45s)
-4. On refresh: `/api/generate/check` checks per-step
-
-### Multi-Tenant (per-photo)
+### All Tenants (per-photo, including SM)
 1. User clicks "Visualize" on a photo card → POST `/api/generate/photo`
 2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
 3. Cache hit → free (no credit consumed), returns URL + `cacheHit: true`
@@ -127,9 +112,9 @@ page.tsx (flow state: "landing" | "picker" | "summary")
 │   │   └── StepNav (step circles with connector lines, 5 steps)
 │   ├── Two-Column Layout (desktop lg+)
 │   │   ├── SidebarPanel (sticky left, 340px)
-│   │   │   ├── StepPhotoGrid (multi-tenant: per-photo cards with generate/feedback/stale)
-│   │   │   │   OR StepHero + GenerateButton (SM demo: single hero per step)
-│   │   │   ├── Credits display (multi-tenant only)
+│   │   │   ├── StepPhotoGrid (per-photo cards with generate/feedback/stale)
+│   │   │   │   OR StepHero (display-only for steps without photos)
+│   │   │   ├── Credits display
 │   │   │   ├── Section quick-nav (IntersectionObserver-tracked active section)
 │   │   │   ├── Running total
 │   │   │   └── Continue button
@@ -138,8 +123,8 @@ page.tsx (flow state: "landing" | "picker" | "summary")
 │   │           ├── SwatchGrid (visual swatch grids)
 │   │           └── CompactOptionList (non-visual option rows)
 │   ├── Mobile Fallback (<lg)
-│   │   ├── StepHero (full-width)
-│   │   ├── GenerateButton
+│   │   ├── StepPhotoGrid (inline, above options)
+│   │   ├── Credits display
 │   │   ├── StepContent
 │   │   ├── Continue button
 │   │   └── PriceTracker (sticky bottom bar)
@@ -195,25 +180,24 @@ State shape:
 
 ## AI Image Generation Pipeline
 
-1. User clicks "Visualize" (available on steps 1-4, each step generates independently)
-2. Client sends POST to `/api/generate` with step's visual selections + heroImage + stepSlug
-3. Server builds edit prompt + loads swatch images for selected visual items (text-only fallback if swatch missing)
-4. Server calls OpenAI `images.edit` with `gpt-image-1.5`:
-   - Input: room photo + swatch images (array of files)
+1. User clicks "Visualize" on a photo card (available on steps with `step_photos`)
+2. Client sends POST to `/api/generate/photo` with orgSlug, floorplanSlug, stepPhotoId, selections, sessionId
+3. Server validates ownership chain (org → floorplan → step → step_photo, session → org/floorplan)
+4. Server builds edit prompt via `buildEditPrompt` + loads swatches from Supabase Storage via `SwatchBufferResolver`
+5. Server calls OpenAI `images.edit` with model (default `gpt-image-1.5`):
+   - Input: room photo from Storage + swatch images
    - Prompt includes upgrade list + spatial placement rules + perspective-locking
    - Output: 1536x1024 PNG, quality "high"
-5. Optional targeted pass-2 refine for known failure modes (masked, object-only correction)
-6. Upload to Supabase Storage, upsert cache row
-7. Return image URL to client
-8. Client displays in StepHero (per-step, not shared)
+6. Reserve credit via atomic RPC (after successful generation)
+7. Upload to `generated-images` bucket, upsert cache row
+8. Return image URL + credit info to client
+9. Client displays in StepPhotoGrid (per-photo cards with feedback)
 
 **Image approach**: OpenAI image editing via `images.edit` endpoint. Sends base room photo + individually attached swatch images for selected visual items. Prompt lines explicitly map each item to `swatch #N` in deterministic order, so the model can bind the correct material to the correct surface.
 
 **Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Includes object-count/cabinet-geometry preservation plus known failure guards (sink/faucet orientation, refrigerator alcove, range cutout/type, island vs perimeter cabinet boundaries).
 
 **`input_fidelity: "high"`**: Added to the `images.edit` call to maximize preservation of base image details (hardware, pulls, fixtures). Default is "low". Costs ~$0.04-0.06 extra per request.
-
-**Conditional pass-2 refine**: For stubborn failures, run a second masked `images.edit` pass on the generated result with a narrow object-only prompt and `input_fidelity: "low"` (to allow geometry change in the masked region only). Current usage: slide-in range backguard correction on kitchen-close hero.
 
 **Cache semantic versioning**: Generation hash includes `_cacheVersion` so prompt/pipeline changes do not serve stale outputs. Bump `GENERATION_CACHE_VERSION` whenever generation semantics change.
 
@@ -279,8 +263,6 @@ src/
 │       │   ├── resume/[token]/route.ts # GET — token-based resume
 │       │   └── resume-by-email/route.ts # POST — email-based resume (rate-limited)
 │       ├── generate/
-│       │   ├── route.ts            # POST — SM demo generation (fetches AI config from DB)
-│       │   ├── check/route.ts      # POST — SM demo cache check
 │       │   └── photo/
 │       │       ├── route.ts        # POST — multi-tenant per-photo generation (DB dedup, credits)
 │       │       ├── check/route.ts  # POST — multi-tenant per-photo cache check
@@ -289,7 +271,7 @@ src/
 ├── components/
 │   ├── LandingHero.tsx
 │   ├── UpgradePicker.tsx        # Main container — all data via props (no static imports)
-│   ├── SidebarPanel.tsx         # Sticky sidebar: image, generate, nav, total, continue
+│   ├── SidebarPanel.tsx         # Sticky sidebar: photo grid or hero, nav, total, continue
 │   ├── StepNav.tsx              # Step circles with connector lines
 │   ├── StepHero.tsx             # Room photo with AI overlay, compact mode for sidebar
 │   ├── StepContent.tsx          # Sections with section IDs for IntersectionObserver
@@ -297,7 +279,6 @@ src/
 │   ├── SwatchGrid.tsx           # Grid of tappable visual swatches
 │   ├── CompactOptionList.tsx    # Tight single-line rows for non-visual options
 │   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
-│   ├── GenerateButton.tsx
 │   ├── StepPhotoGrid.tsx        # Per-step photo cards (multi-tenant sidebar)
 │   ├── GalleryView.tsx          # Full gallery grid with Visualize All + credits
 │   ├── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
@@ -333,7 +314,8 @@ src/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
 
 scripts/
-└── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
+├── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
+└── migrate-sm-storage.ts    # Upload SM room photos + swatches to Storage, create step_photos
 
 public/
 ├── logo.svg                 # Stone Martin Builders logo (currentColor fill)
