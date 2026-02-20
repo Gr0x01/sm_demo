@@ -387,7 +387,18 @@ The component architecture (UpgradePicker, SidebarPanel, SwatchGrid, etc.) is re
 - Photo management UI: step tabs, quality badges, spatial hint textarea, hero toggle, photo baseline
 - Security: path traversal protection, tenant boundary on all mutations, `runtime = "nodejs"` on vision routes
 
-### Phase 5: Self-Serve Tooling (Future)
+### Phase 5: Gallery Visualization (Workstream D) ✅
+- `generation_cap_per_session` on organizations (default 20)
+- Extended `generated_images` with `step_photo_id`, `buyer_session_id`, `selections_fingerprint`
+- `generation_feedback` table (vote, credit_refunded, unique per session+image)
+- `reserve_generation_credit` + `refund_generation_credit` RPCs (atomic)
+- `generated-images` storage bucket (multi-tenant, replaces kitchen-images for new orgs)
+- Per-photo generation route with DB-based dedup, ownership validation, credit tracking
+- Thumbs up/down feedback with credit refund mechanics
+- Gallery virtual step with Visualize All + credits meter
+- Initial cache restore for multi-tenant photos on session resume
+
+### Phase 6: Self-Serve Tooling (Future)
 - CSV/spreadsheet bulk import for upgrades
 - Photo upload with guided annotation workflow
 - Step wizard template builder

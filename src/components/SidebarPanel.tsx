@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import type { StepConfig } from "@/lib/step-config";
+import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { StepHero } from "./StepHero";
 import { GenerateButton } from "./GenerateButton";
+import { StepPhotoGrid } from "./StepPhotoGrid";
 
 function ClearButton({ onClear }: { onClear: () => void }) {
   const [confirming, setConfirming] = useState(false);
@@ -53,6 +54,18 @@ interface SidebarPanelProps {
   headerHeight: number;
   lockedSubCategoryIds?: Set<string>;
   onFinish: () => void;
+  // Multi-tenant per-photo props (optional — SM demo omits these)
+  photos?: StepPhoto[];
+  generatedImageUrls?: Record<string, string>;
+  generatingPhotoKeys?: Set<string>;
+  onGeneratePhoto?: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
+  onFeedback?: (photoKey: string, vote: 1 | -1) => void;
+  feedbackVotes?: Record<string, 1 | -1>;
+  generationCredits?: { used: number; total: number } | null;
+  errors?: Record<string, string>;
+  generatedWithSelections?: Record<string, string>;
+  getPhotoVisualSelections?: (step: StepConfig, selections: Record<string, string>) => Record<string, string>;
+  selections?: Record<string, string>;
 }
 
 export function SidebarPanel({
@@ -70,6 +83,17 @@ export function SidebarPanel({
   headerHeight,
   lockedSubCategoryIds,
   onFinish,
+  photos,
+  generatedImageUrls,
+  generatingPhotoKeys,
+  onGeneratePhoto,
+  onFeedback,
+  feedbackVotes,
+  generationCredits,
+  errors,
+  generatedWithSelections,
+  getPhotoVisualSelections,
+  selections,
 }: SidebarPanelProps) {
   const [activeSectionTitle, setActiveSectionTitle] = useState<string>(
     step.sections[0]?.title ?? ""
@@ -146,6 +170,7 @@ export function SidebarPanel({
   }, []);
 
   const showImage = step.heroVariant !== "none";
+  const hasPhotos = !!photos?.length && !!onGeneratePhoto && !!generatedImageUrls && !!generatingPhotoKeys && !!onFeedback && !!feedbackVotes && !!errors && !!generatedWithSelections && !!getPhotoVisualSelections && !!selections;
 
   return (
     <div
@@ -157,32 +182,58 @@ export function SidebarPanel({
         overflowY: "auto",
       }}
     >
-      {/* AI Image — steps 1-4 */}
-      {showImage && (
-        <StepHero
-          key={step.id}
-          step={step}
-          generatedImageUrl={step.showGenerateButton ? generatedImageUrl : null}
-          isGenerating={step.showGenerateButton ? isGenerating : false}
-          compact
-        />
-      )}
-
-      {/* Generate button — steps 1-4 */}
-      {step.showGenerateButton && (
-        <div>
-          <GenerateButton
-            onClick={onGenerate}
-            isGenerating={isGenerating}
-            hasChanges={hasChanges}
-            stepName={step.name}
+      {/* Per-photo grid (multi-tenant) — replaces StepHero + GenerateButton */}
+      {hasPhotos ? (
+        <>
+          <StepPhotoGrid
+            step={step}
+            generatedImageUrls={generatedImageUrls}
+            generatingPhotoKeys={generatingPhotoKeys}
+            onGeneratePhoto={onGeneratePhoto}
+            onFeedback={onFeedback}
+            feedbackVotes={feedbackVotes}
+            errors={errors}
+            generatedWithSelections={generatedWithSelections}
+            getPhotoVisualSelections={getPhotoVisualSelections}
+            selections={selections}
           />
-          {error && (
-            <div className="mt-2 bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
-              {error}
+          {/* Credits display */}
+          {generationCredits && (
+            <div className="text-xs text-gray-500 text-center">
+              {generationCredits.total - generationCredits.used}/{generationCredits.total} visualizations remaining
             </div>
           )}
-        </div>
+        </>
+      ) : (
+        <>
+          {/* AI Image — steps 1-4 (SM demo path) */}
+          {showImage && (
+            <StepHero
+              key={step.id}
+              step={step}
+              generatedImageUrl={step.showGenerateButton ? generatedImageUrl : null}
+              isGenerating={step.showGenerateButton ? isGenerating : false}
+              compact
+            />
+          )}
+
+          {/* Generate button — steps 1-4 (SM demo path) */}
+          {step.showGenerateButton && (
+            <div>
+              <GenerateButton
+                onClick={onGenerate}
+                isGenerating={isGenerating}
+                hasChanges={hasChanges}
+                stepName={step.name}
+              />
+              {error && (
+                <div className="mt-2 bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+                  {error}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Section quick-nav */}

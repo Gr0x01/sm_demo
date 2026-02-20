@@ -23,31 +23,49 @@ Browser (Next.js client)
   ├── /admin/[orgSlug]/images — Generated image cache management
   └── /api/* — API routes
 
-Server (Next.js API route)
-  └── POST /api/generate
-        ├── Receives: selections + heroImage + stepSlug (+ optional model)
-        ├── Fetches spatial hints + scene description from Supabase (step_ai_config)
-        ├── Builds option lookup from Supabase (categories → subcategories → options)
-        ├── Hashes visual selections → check Supabase cache
-        ├── Cache HIT → return cached image URL instantly
+Server (Next.js API routes)
+  ├── POST /api/generate (SM demo path)
+  │     ├── Receives: selections + heroImage + stepSlug (+ optional model)
+  │     ├── Fetches spatial hints + scene description from Supabase (step_ai_config)
+  │     ├── Builds option lookup from Supabase (categories → subcategories → options)
+  │     ├── Hashes visual selections → check Supabase cache
+  │     ├── Cache HIT → return cached image URL instantly
+  │     ├── Cache MISS → generate via OpenAI images.edit → store → return URL
+  │     └── Returns: image URL + cache_hit boolean
+  │
+  └── POST /api/generate/photo (multi-tenant per-photo path)
+        ├── Receives: orgSlug, floorplanSlug, stepPhotoId, selections, sessionId, model?
+        ├── Validates ownership chain: org → floorplan → step → step_photo, session → org/floorplan
+        ├── Hash includes _stepPhotoId + _model + _cacheVersion for global uniqueness
+        ├── Cache HIT → return URL, skip credit reservation
         ├── Cache MISS:
-        │     ├── Build prompt + load swatch images (all selected visual items with swatches; text-only fallback if missing)
-        │     ├── Call OpenAI images.edit (gpt-image-1.5) with room photo + swatch images
-        │     ├── Store result in Supabase (image in Storage, metadata + step_id + model in table)
-        │     └── Return image URL
-        └── Returns: image URL + cache_hit boolean
+        │     ├── DB-based dedup via __pending__ placeholder row (cross-instance safe, 5 min TTL)
+        │     ├── Pre-check credit cap (non-mutating)
+        │     ├── Load base photo from Supabase Storage (rooms bucket)
+        │     ├── Build prompt via buildEditPrompt with Supabase Storage swatch resolver
+        │     ├── Call OpenAI images.edit with model: modelName (not hardcoded)
+        │     ├── Reserve credit AFTER successful generation (atomic RPC)
+        │     ├── Upload to generated-images bucket, upsert cache row
+        │     └── On failure: release __pending__ row so retries can proceed
+        ├── /check — cache check per photo (filters __pending__)
+        ├── /feedback — thumbs up/down, credit refund on thumbs down, session-scoped ownership
+        └── Returns: imageUrl, cacheHit, generatedImageId, creditsUsed, creditsTotal
 
 Supabase
-  ├── Tables: organizations, floorplans, categories, subcategories, options,
-  │           steps, step_sections, step_ai_config (multi-tenant schema)
+  ├── Tables: organizations (+ generation_cap_per_session), floorplans, categories,
+  │           subcategories, options, steps, step_sections, step_ai_config
   ├── Table: step_photos (multiple photos per step, hero flag, quality check, spatial hints)
-  ├── Table: generated_images (cache — now includes step_id + model columns)
-  ├── Table: buyer_sessions (anonymous + email-saved buyer sessions, replaces buyer_selections)
+  ├── Table: generated_images (cache — step_id, model, step_photo_id, buyer_session_id, selections_fingerprint)
+  ├── Table: generation_feedback (thumbs up/down per session per image, credit_refunded flag)
+  ├── Table: buyer_sessions (anonymous + email-saved, generation_count for credit tracking)
   ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, kept for reference)
   ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
+  ├── RPC: reserve_generation_credit(p_session_id, p_org_id) — atomic credit increment
+  ├── RPC: refund_generation_credit(p_session_id) — atomic credit decrement (thumbs down)
   ├── RPC: get_auth_user_id_by_email(lookup_email) — service-role-only user lookup for invite flow
   ├── Trigger: link_pending_invites — on auth.users INSERT, links pending org_users by email
-  ├── Storage bucket: kitchen-images ({selections_hash}.png)
+  ├── Storage bucket: kitchen-images ({selections_hash}.png) — SM demo
+  ├── Storage bucket: generated-images ({orgId}/{hash}.png) — multi-tenant
   ├── Storage bucket: swatches ({orgId}/swatches/{subcatId}/{uuid}.{ext})
   └── Storage bucket: rooms ({orgId}/rooms/{stepId}/{uuid}.{ext}) — public read, admin upload
 ```
@@ -76,14 +94,20 @@ Supabase
 
 ## Cache Flow
 
-1. User clicks "Visualize"
-2. Client sends step's visual selections to `/api/generate`
-3. Server creates deterministic hash of visual selections (sorted keys + option IDs → SHA-256, truncated to 16 hex)
-4. Query Supabase: `SELECT image_path FROM generated_images WHERE selections_hash = ?`
-5. If found → return Supabase Storage public URL (instant, ~200ms)
-6. If not found → generate via gpt-image-1.5 (30-45s) → upload PNG to Storage → upsert cache row → return URL
-7. Client receives image URL either way
-8. On page refresh: `/api/generate/check` checks cache per-step (each step's visual selections hashed independently)
+### SM Demo (per-step)
+1. User clicks "Visualize" → POST `/api/generate` with step's visual selections
+2. Hash: sorted selection keys + option IDs → SHA-256, truncated to 16 hex
+3. Cache check → hit returns Supabase Storage URL (~200ms), miss generates (~30-45s)
+4. On refresh: `/api/generate/check` checks per-step
+
+### Multi-Tenant (per-photo)
+1. User clicks "Visualize" on a photo card → POST `/api/generate/photo`
+2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
+3. Cache hit → free (no credit consumed), returns URL + `cacheHit: true`
+4. Cache miss → DB-based dedup (`__pending__` placeholder, 5 min stale TTL) → generate → reserve credit → upsert
+5. On refresh: `/api/generate/photo/check` checks per-photo, restores generated images + IDs
+6. Thumbs down → refunds credit via RPC, keeps cache row (other sessions can still hit it)
+7. "Visualize All" fires up to 3 concurrent, each atomically reserves credits via RPC
 
 ## Pre-generation Strategy
 
@@ -103,8 +127,9 @@ page.tsx (flow state: "landing" | "picker" | "summary")
 │   │   └── StepNav (step circles with connector lines, 5 steps)
 │   ├── Two-Column Layout (desktop lg+)
 │   │   ├── SidebarPanel (sticky left, 340px)
-│   │   │   ├── StepHero (compact 4:3 room photo, AI-generated image overlay)
-│   │   │   ├── GenerateButton (steps 1-4)
+│   │   │   ├── StepPhotoGrid (multi-tenant: per-photo cards with generate/feedback/stale)
+│   │   │   │   OR StepHero + GenerateButton (SM demo: single hero per step)
+│   │   │   ├── Credits display (multi-tenant only)
 │   │   │   ├── Section quick-nav (IntersectionObserver-tracked active section)
 │   │   │   ├── Running total
 │   │   │   └── Continue button
@@ -118,7 +143,8 @@ page.tsx (flow state: "landing" | "picker" | "summary")
 │   │   ├── StepContent
 │   │   ├── Continue button
 │   │   └── PriceTracker (sticky bottom bar)
-│   └── PriceTracker (mobile-only sticky bottom bar)
+│   ├── PriceTracker (mobile-only sticky bottom bar)
+│   └── GalleryView (virtual final step: all photos across steps, Visualize All, credits meter)
 └── UpgradeSummary (room images grid, upgrade table, PDF via window.print)
 ```
 
@@ -148,19 +174,24 @@ Single `useReducer` in UpgradePicker.
 State shape:
 ```typescript
 {
-  selections: Record<subCategoryId, optionId>,  // current picks
-  quantities: Record<subCategoryId, number>,     // for additive options
-  generatedImageUrls: Record<stepId, string>,    // per-step generated image URLs
-  isGenerating: boolean,
+  selections: Record<subCategoryId, optionId>,     // current picks
+  quantities: Record<subCategoryId, number>,        // for additive options
+  generatedImageUrls: Record<string, string>,       // stepId or photoKey → URL
+  generatingStepIds: Set<string>,                   // SM path: steps currently generating
+  generatingPhotoKeys: Set<string>,                 // multi-tenant: photos currently generating
   hasEverGenerated: boolean,
-  visualSelectionsChangedSinceLastGenerate: boolean,
-  error: string | null,
+  generatedWithSelections: Record<string, string>,  // key → selections fingerprint (stale detection)
+  generatedImageIds: Record<string, string>,        // key → generated_image DB id (for feedback)
+  feedbackVotes: Record<string, 1 | -1>,            // photoKey → thumbs vote
+  generationCredits: { used: number; total: number } | null,
+  errors: Record<string, string>,
 }
 ```
 
 - Default selections: all $0 (included) options pre-selected
 - Price computed as derived state: `sum of price for each selected option`
-- Selections auto-saved to Supabase per buyerId (debounced 1s)
+- Selections auto-saved to Supabase per session (debounced 1s)
+- Multi-tenant photos use `photoKey` (= `stepPhoto.id`), SM uses `stepId`
 
 ## AI Image Generation Pipeline
 
@@ -248,8 +279,12 @@ src/
 │       │   ├── resume/[token]/route.ts # GET — token-based resume
 │       │   └── resume-by-email/route.ts # POST — email-based resume (rate-limited)
 │       ├── generate/
-│       │   ├── route.ts            # POST — fetches AI config from DB, generates image
-│       │   └── check/route.ts      # POST — cache check, validates against DB
+│       │   ├── route.ts            # POST — SM demo generation (fetches AI config from DB)
+│       │   ├── check/route.ts      # POST — SM demo cache check
+│       │   └── photo/
+│       │       ├── route.ts        # POST — multi-tenant per-photo generation (DB dedup, credits)
+│       │       ├── check/route.ts  # POST — multi-tenant per-photo cache check
+│       │       └── feedback/route.ts # POST — thumbs up/down + credit refund
 │       └── selections/[buyerId]/route.ts  # DEPRECATED — replaced by buyer-sessions
 ├── components/
 │   ├── LandingHero.tsx
@@ -263,6 +298,8 @@ src/
 │   ├── CompactOptionList.tsx    # Tight single-line rows for non-visual options
 │   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
 │   ├── GenerateButton.tsx
+│   ├── StepPhotoGrid.tsx        # Per-step photo cards (multi-tenant sidebar)
+│   ├── GalleryView.tsx          # Full gallery grid with Visualize All + credits
 │   ├── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
 │   └── SaveSelectionsModal.tsx # Email save + resume-by-email modal
 ├── components/admin/

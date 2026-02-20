@@ -73,8 +73,24 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [x] Security: ownership verification on all session routes, resume token not leaked in responses, input validation, generic error messages
 - [x] `generation_count` column in schema (reserved for Workstream D — no app code reads/writes it)
 
+### 7. V1 Workstream D: Gallery Visualization ✅
+**Depends on B + C.** Per-photo AI visualization, gallery view, thumbs up/down feedback, generation credit cap.
+- [x] DB migrations: `generation_cap_per_session` on orgs, `step_photo_id`/`buyer_session_id`/`selections_fingerprint` on `generated_images`, `generation_feedback` table, `reserve_generation_credit` + `refund_generation_credit` RPCs, `generated-images` storage bucket
+- [x] `StepPhoto` type on `StepConfig`, `step_photos` join in `getStepsWithConfig`, `getStepPhotoAiConfig` query
+- [x] `SwatchBufferResolver` callback in `buildEditPrompt` (Supabase Storage for multi-tenant, filesystem for SM)
+- [x] `/api/generate/photo` — multi-tenant per-photo generation with ownership validation, DB-based dedup (`__pending__` placeholder rows), stale lock cleanup (5 min TTL), credit reservation after generation
+- [x] `/api/generate/photo/check` — multi-tenant cache check (filters `__pending__` rows)
+- [x] `/api/generate/photo/feedback` — thumbs up/down with credit refund/re-reserve, session-scoped image ownership
+- [x] Extended `SelectionState`/`SelectionAction` with per-photo keys, feedback, credits
+- [x] UpgradePicker: per-photo generation, gallery virtual step, Visualize All (max 3 concurrent), stale detection per photo, initial cache restore for multi-tenant photos on session resume
+- [x] `StepPhotoGrid` component — per-step photo cards in sidebar (hero first, stale badge, feedback, lightbox)
+- [x] `GalleryView` component — full gallery grid grouped by step, Visualize All, credits meter, cap-reached state
+- [x] `SidebarPanel` updated — photo grid replaces StepHero when step has photos, credits display
+- [x] Credits wired: `generationCap` from org → session response → page → client → picker
+- [x] Admin login Suspense fix for `useSearchParams()`
+- [x] SM demo path completely unchanged (no photos → existing hero/generate flow)
+
 ### Upcoming (not started)
-- **Workstream D**: Gallery visualization (depends on B + C)
 - **Workstream E**: Branding controls (depends on A, small)
 
 ## What's Done

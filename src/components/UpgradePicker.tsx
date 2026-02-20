@@ -11,6 +11,8 @@ import { PriceTracker } from "./PriceTracker";
 import { SidebarPanel } from "./SidebarPanel";
 import { SyncModal } from "./SyncModal";
 import { SaveSelectionsModal } from "./SaveSelectionsModal";
+import { GalleryView } from "./GalleryView";
+import { StepPhotoGrid } from "./StepPhotoGrid";
 import { ChevronRight, Save } from "lucide-react";
 import type { ContractPhase } from "@/lib/contract-phase";
 
@@ -72,6 +74,7 @@ interface UpgradePickerProps {
   steps: StepConfig[];
   contractLockedIds: string[];
   syncPairs: { a: string; b: string; label: string }[];
+  generationCap?: number;
 }
 
 function getDefaultSelectionsFromCategories(categories: Category[]): Record<string, string> {
@@ -140,6 +143,7 @@ export function UpgradePicker({
   steps,
   contractLockedIds,
   syncPairs,
+  generationCap,
 }: UpgradePickerProps) {
   const visualSubCategoryIds = useMemo(
     () => getVisualSubCategoryIdsFromCategories(categories),
@@ -226,12 +230,16 @@ export function UpgradePicker({
       case "GENERATION_COMPLETE": {
         const next = new Set(state.generatingStepIds);
         next.delete(action.stepId);
+        const nextImageIds = action.generatedImageId
+          ? { ...state.generatedImageIds, [action.stepId]: action.generatedImageId }
+          : state.generatedImageIds;
         return {
           ...state,
           generatingStepIds: next,
           generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
           hasEverGenerated: true,
           generatedWithSelections: { ...state.generatedWithSelections, [action.stepId]: action.selectionsSnapshot },
+          generatedImageIds: nextImageIds,
         };
       }
       case "CLEAR_SELECTIONS":
@@ -246,6 +254,43 @@ export function UpgradePicker({
         next.delete(action.stepId);
         return { ...state, generatingStepIds: next, errors: { ...state.errors, [action.stepId]: action.error } };
       }
+      case "START_GENERATING_PHOTO": {
+        const next = new Set(state.generatingPhotoKeys);
+        next.add(action.photoKey);
+        const nextErrors = { ...state.errors };
+        delete nextErrors[action.photoKey];
+        return { ...state, generatingPhotoKeys: next, errors: nextErrors };
+      }
+      case "PHOTO_GENERATION_COMPLETE": {
+        const next = new Set(state.generatingPhotoKeys);
+        next.delete(action.photoKey);
+        return {
+          ...state,
+          generatingPhotoKeys: next,
+          generatedImageUrls: { ...state.generatedImageUrls, [action.photoKey]: action.imageUrl },
+          hasEverGenerated: true,
+          generatedWithSelections: { ...state.generatedWithSelections, [action.photoKey]: action.selectionsSnapshot },
+          generatedImageIds: { ...state.generatedImageIds, [action.photoKey]: action.generatedImageId },
+        };
+      }
+      case "PHOTO_GENERATION_ERROR": {
+        const next = new Set(state.generatingPhotoKeys);
+        next.delete(action.photoKey);
+        return { ...state, generatingPhotoKeys: next, errors: { ...state.errors, [action.photoKey]: action.error } };
+      }
+      case "SET_FEEDBACK":
+        return { ...state, feedbackVotes: { ...state.feedbackVotes, [action.photoKey]: action.vote } };
+      case "REMOVE_GENERATED_IMAGE": {
+        const nextUrls = { ...state.generatedImageUrls };
+        delete nextUrls[action.photoKey];
+        const nextIds = { ...state.generatedImageIds };
+        delete nextIds[action.photoKey];
+        const nextSnaps = { ...state.generatedWithSelections };
+        delete nextSnaps[action.photoKey];
+        return { ...state, generatedImageUrls: nextUrls, generatedImageIds: nextIds, generatedWithSelections: nextSnaps };
+      }
+      case "SET_CREDITS":
+        return { ...state, generationCredits: { used: action.used, total: action.total } };
       default:
         return state;
     }
@@ -256,8 +301,12 @@ export function UpgradePicker({
     quantities: {},
     generatedImageUrls: {},
     generatingStepIds: new Set<string>(),
+    generatingPhotoKeys: new Set<string>(),
     hasEverGenerated: false,
     generatedWithSelections: {},
+    generatedImageIds: {},
+    feedbackVotes: {},
+    generationCredits: null,
     errors: {},
   }));
 
@@ -344,6 +393,42 @@ export function UpgradePicker({
           if (!step.showGenerateButton) continue;
           const stepSelections = getStepVisualSelections(step, mergedSelections);
           if (Object.keys(stepSelections).length === 0) continue;
+
+          // Multi-tenant: check cache per photo
+          if (step.photos?.length && orgSlug && floorplanSlug) {
+            for (const photo of step.photos) {
+              try {
+                const checkRes = await fetch("/api/generate/photo/check", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    orgSlug,
+                    floorplanSlug,
+                    stepPhotoId: photo.id,
+                    selections: stepSelections,
+                    ...(modelParam ? { model: modelParam } : {}),
+                  }),
+                });
+                if (checkRes.ok) {
+                  const { imageUrl, generatedImageId } = await checkRes.json();
+                  if (imageUrl) {
+                    dispatch({
+                      type: "PHOTO_GENERATION_COMPLETE",
+                      photoKey: photo.id,
+                      imageUrl,
+                      selectionsSnapshot: stableStringify(stepSelections),
+                      generatedImageId: generatedImageId ?? null,
+                    });
+                  }
+                }
+              } catch {
+                // Non-critical
+              }
+            }
+            continue; // skip SM-style check for this step
+          }
+
+          // SM demo: check cache per step
           try {
             const checkRes = await fetch("/api/generate/check", {
               method: "POST",
@@ -370,7 +455,7 @@ export function UpgradePicker({
     }
 
     loadAndCheckCache();
-  }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections]);
+  }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections, orgSlug, floorplanSlug]);
 
   // Auto-save selections (debounced 1s)
   useEffect(() => {
@@ -393,8 +478,25 @@ export function UpgradePicker({
     };
   }, [saveUrl, orgId, floorplanId, state.selections, state.quantities]);
 
-  const activeStep = steps.find((s) => s.id === activeStepId) || steps[0];
-  const activeStepIndex = steps.findIndex((s) => s.id === activeStepId);
+  // Build the gallery virtual step and the augmented steps array
+  const hasAnyPhotos = useMemo(() => steps.some(s => s.photos?.length), [steps]);
+  const galleryStep: StepConfig = useMemo(() => ({
+    id: "__gallery",
+    number: steps.length + 1,
+    name: "Gallery",
+    subtitle: "Review all your visualizations",
+    heroImage: "",
+    heroVariant: "none",
+    showGenerateButton: false,
+    sections: [],
+  }), [steps.length]);
+  const allSteps = useMemo(
+    () => hasAnyPhotos ? [...steps, galleryStep] : steps,
+    [steps, hasAnyPhotos, galleryStep]
+  );
+
+  const activeStep = allSteps.find((s) => s.id === activeStepId) || allSteps[0];
+  const activeStepIndex = allSteps.findIndex((s) => s.id === activeStepId);
 
   const total = useMemo(
     () => calculateTotal(state.selections, state.quantities, categories),
@@ -500,19 +602,125 @@ export function UpgradePicker({
     }
   }, [state.selections, state.generatingStepIds, activeStep, getStepVisualSelections]);
 
+  // --- Per-photo generation (multi-tenant) ---
+  // Reuse getStepVisualSelections — same logic applies per-photo (uses parent step's photoBaseline)
+  const getPhotoVisualSelections = getStepVisualSelections;
+
+  const handleGeneratePhoto = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig) => {
+    if (state.generatingPhotoKeys.has(photoKey)) return;
+    dispatch({ type: "START_GENERATING_PHOTO", photoKey });
+
+    const visualSelections = getPhotoVisualSelections(step, state.selections);
+    const selectionsSnapshot = stableStringify(visualSelections);
+
+    try {
+      const modelParam = new URLSearchParams(window.location.search).get("model");
+      const res = await fetch("/api/generate/photo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          orgSlug,
+          floorplanSlug,
+          stepPhotoId,
+          selections: visualSelections,
+          sessionId,
+          ...(modelParam ? { model: modelParam } : {}),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.error === "cap_reached") {
+          dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
+          dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "No visualizations remaining" });
+          return;
+        }
+        throw new Error(data.error || "Generation failed");
+      }
+
+      dispatch({
+        type: "PHOTO_GENERATION_COMPLETE",
+        photoKey,
+        imageUrl: data.imageUrl,
+        selectionsSnapshot,
+        generatedImageId: data.generatedImageId,
+      });
+
+      if (data.creditsUsed !== undefined) {
+        dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: message });
+    }
+  }, [state.selections, state.generatingPhotoKeys, orgSlug, floorplanSlug, sessionId, getPhotoVisualSelections]);
+
+  const handleGenerateAll = useCallback(async () => {
+    // Collect all photos across all steps that need generation
+    const pending: { photoKey: string; stepPhotoId: string; step: StepConfig }[] = [];
+    for (const step of steps) {
+      if (!step.photos?.length) continue;
+      const fingerprint = stableStringify(getPhotoVisualSelections(step, state.selections));
+      for (const photo of step.photos) {
+        const existing = state.generatedWithSelections[photo.id];
+        if (existing !== fingerprint && !state.generatingPhotoKeys.has(photo.id)) {
+          pending.push({ photoKey: photo.id, stepPhotoId: photo.id, step });
+        }
+      }
+    }
+
+    // Fire with max 3 concurrent
+    const concurrency = 3;
+    let i = 0;
+    async function runNext(): Promise<void> {
+      while (i < pending.length) {
+        const item = pending[i++];
+        await handleGeneratePhoto(item.photoKey, item.stepPhotoId, item.step);
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(concurrency, pending.length) }, () => runNext()));
+  }, [steps, state.selections, state.generatedWithSelections, state.generatingPhotoKeys, getPhotoVisualSelections, handleGeneratePhoto]);
+
+  const handleFeedback = useCallback(async (photoKey: string, vote: 1 | -1) => {
+    const generatedImageId = state.generatedImageIds[photoKey];
+    if (!generatedImageId || !sessionId) return;
+
+    dispatch({ type: "SET_FEEDBACK", photoKey, vote });
+
+    if (vote === -1) {
+      dispatch({ type: "REMOVE_GENERATED_IMAGE", photoKey });
+    }
+
+    try {
+      const res = await fetch("/api/generate/photo/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ generatedImageId, vote, sessionId, orgSlug }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
+      }
+    } catch {
+      // Non-critical — feedback is best-effort
+    }
+  }, [state.generatedImageIds, sessionId, orgSlug]);
+
   const handleClearSelections = useCallback(() => {
     dispatch({ type: "CLEAR_SELECTIONS" });
   }, []);
 
   const handleContinue = useCallback(() => {
-    if (activeStepIndex < steps.length - 1) {
-      setActiveStepId(steps[activeStepIndex + 1].id);
+    if (activeStepIndex < allSteps.length - 1) {
+      setActiveStepId(allSteps[activeStepIndex + 1].id);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [activeStepIndex, steps, setActiveStepId]);
+  }, [activeStepIndex, allSteps, setActiveStepId]);
 
-  const isLastStep = activeStepIndex >= steps.length - 1;
-  const nextStepName = isLastStep ? "" : steps[activeStepIndex + 1].name;
+  const isLastStep = activeStepIndex >= allSteps.length - 1;
+  const nextStepName = isLastStep ? "" : allSteps[activeStepIndex + 1].name;
   const isGeneratingThisStep = state.generatingStepIds.has(activeStep.id);
   const activeStepHasChanges = useMemo(() => {
     if (!activeStep.showGenerateButton) return false;
@@ -647,7 +855,7 @@ export function UpgradePicker({
           {/* Step nav — center */}
           <div className="flex-1 min-w-0 flex items-center justify-center">
             <StepNav
-              steps={steps}
+              steps={allSteps}
               activeStepId={activeStepId}
               completionMap={completionMap}
               onSelectStep={setActiveStepId}
@@ -681,46 +889,78 @@ export function UpgradePicker({
       <div className="max-w-7xl mx-auto px-4 py-5">
         <div className="flex gap-8">
           {/* Left Sidebar — desktop only */}
-          <div className="hidden lg:block">
-            <SidebarPanel
-              step={activeStep}
-              generatedImageUrl={state.generatedImageUrls[activeStep.id] ?? null}
-              isGenerating={isGeneratingThisStep}
-              error={state.errors[activeStep.id] ?? null}
-              onGenerate={handleGenerate}
-              hasChanges={effectiveHasChanges}
-              total={total}
-              onContinue={handleContinue}
-              onClearSelections={handleClearSelections}
-              isLastStep={isLastStep}
-              nextStepName={nextStepName}
-              headerHeight={headerHeight}
-              lockedSubCategoryIds={lockedSubCategoryIds}
-              onFinish={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
-            />
-          </div>
+          {activeStep.id !== "__gallery" && (
+            <div className="hidden lg:block">
+              <SidebarPanel
+                step={activeStep}
+                generatedImageUrl={state.generatedImageUrls[activeStep.id] ?? null}
+                isGenerating={isGeneratingThisStep}
+                error={state.errors[activeStep.id] ?? null}
+                onGenerate={handleGenerate}
+                hasChanges={effectiveHasChanges}
+                total={total}
+                onContinue={handleContinue}
+                onClearSelections={handleClearSelections}
+                isLastStep={isLastStep}
+                nextStepName={nextStepName}
+                headerHeight={headerHeight}
+                lockedSubCategoryIds={lockedSubCategoryIds}
+                onFinish={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
+                photos={activeStep.photos}
+                generatedImageUrls={state.generatedImageUrls}
+                generatingPhotoKeys={state.generatingPhotoKeys}
+                onGeneratePhoto={handleGeneratePhoto}
+                onFeedback={handleFeedback}
+                feedbackVotes={state.feedbackVotes}
+                generationCredits={state.generationCredits}
+                errors={state.errors}
+                generatedWithSelections={state.generatedWithSelections}
+                getPhotoVisualSelections={getPhotoVisualSelections}
+                selections={state.selections}
+              />
+            </div>
+          )}
 
-          {/* Right Column — scrollable options */}
+          {/* Right Column — scrollable options or gallery */}
           <div className="flex-1 min-w-0 pb-20 lg:pb-5">
-            <StepContent
-              key={activeStepId}
-              step={activeStep}
-              subCategoryMap={subCategoryMap}
-              selections={state.selections}
-              quantities={state.quantities}
-              onSelect={handleSelect}
-              onSetQuantity={handleSetQuantity}
-              lockedSubCategoryIds={lockedSubCategoryIds}
-            />
+            {activeStep.id === "__gallery" ? (
+              <GalleryView
+                steps={steps}
+                generatedImageUrls={state.generatedImageUrls}
+                generatingPhotoKeys={state.generatingPhotoKeys}
+                onGeneratePhoto={handleGeneratePhoto}
+                onGenerateAll={handleGenerateAll}
+                onFeedback={handleFeedback}
+                feedbackVotes={state.feedbackVotes}
+                generationCredits={state.generationCredits}
+                errors={state.errors}
+                generatedWithSelections={state.generatedWithSelections}
+                getPhotoVisualSelections={getPhotoVisualSelections}
+                selections={state.selections}
+              />
+            ) : (
+              <>
+                <StepContent
+                  key={activeStepId}
+                  step={activeStep}
+                  subCategoryMap={subCategoryMap}
+                  selections={state.selections}
+                  quantities={state.quantities}
+                  onSelect={handleSelect}
+                  onSetQuantity={handleSetQuantity}
+                  lockedSubCategoryIds={lockedSubCategoryIds}
+                />
 
-            {/* Mobile-only: Continue button */}
-            {!isLastStep && (
-              <button
-                onClick={handleContinue}
-                className="lg:hidden w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
-              >
-                Next Step &rarr;
-              </button>
+                {/* Mobile-only: Continue button */}
+                {!isLastStep && (
+                  <button
+                    onClick={handleContinue}
+                    className="lg:hidden w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+                  >
+                    Next Step &rarr;
+                  </button>
+                )}
+              </>
             )}
           </div>
         </div>

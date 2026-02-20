@@ -240,6 +240,31 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 **Decision**: Invite flow via `POST /api/admin/invite`. Inserts `org_users` row with `user_id=NULL`, `invited_email`, `invited_at`. Generic `link_pending_invites` trigger on `auth.users` INSERT matches by email and links the user. If invitee already has an auth account, `get_auth_user_id_by_email` RPC links them directly at invite time (no trigger needed). Invite email sent via Resend.
 **Trade-off**: Slightly more complex than hardcoded trigger, but scales to any number of builders and provides audit trail.
 
+## D55: Session-scoped feedback, not cache deletion
+**Context**: Thumbs down on a generated image could either delete the cache row or just record the vote.
+**Decision**: Thumbs down records feedback in a `generation_feedback` table, does NOT delete the `generated_images` cache row. Cache stays intact for other sessions. Credit refund tracked on the feedback row (`credit_refunded` boolean). Changing from thumbs-down to thumbs-up re-reserves the credit (only if cap allows).
+**Trade-off**: Slightly more complex than simple delete, but preserves cache for other users and enables analytics.
+
+## D56: Atomic credit reservation via Postgres RPC
+**Context**: "Visualize All" fires up to 3 concurrent generation requests. A read-then-write pattern could overspend the cap.
+**Decision**: `reserve_generation_credit` RPC atomically increments `generation_count` only if below the org's cap, returning the new count or NULL. Called AFTER successful OpenAI generation (prevents credit leak on AI failure). `refund_generation_credit` decrements with `GREATEST(0)`.
+**Trade-off**: Credit reserved after generation means the image exists even if reserve fails (cap hit between pre-check and now). We save the image anyway since it's already generated.
+
+## D57: DB-based dedup via __pending__ placeholder rows
+**Context**: In-memory `Set<string>` for duplicate prevention only works on a single serverless instance. Concurrent requests on different instances can generate duplicates.
+**Decision**: Insert a placeholder row (`image_path = "__pending__"`) into `generated_images` before generating. Postgres `UNIQUE(selections_hash)` prevents duplicates across instances. On success, upsert replaces placeholder. On failure, placeholder is cleaned up. Stale placeholders (>5 min, safely above `maxDuration: 120s`) are cleaned up before claiming.
+**Trade-off**: Extra DB round-trip per generation, but eliminates cross-instance duplicate work.
+
+## D58: Model passed through, not hardcoded
+**Context**: OpenAI releases new models every few months. Hardcoding `"gpt-image-1.5"` means a code change to test or swap models.
+**Decision**: Model name comes from request body (default: `"gpt-image-1.5"`), stored in cache hash so different models get separate cache entries. No dual API path (gpt-5.2 Responses API not implemented yet — will add when needed). Client can pass any model string.
+**Trade-off**: No validation on model names — bad model string will fail at OpenAI. Acceptable since this is only used internally.
+
+## D59: Per-step capability check, not global flag
+**Context**: Some steps have `step_photos` (multi-tenant per-photo generation) and others don't.
+**Decision**: Check `step.photos?.length > 0` per step rather than a global `isMultiTenant` flag. Steps without photos fall back to existing SM-style hero image display. SidebarPanel renders StepPhotoGrid or StepHero based on this check.
+**Trade-off**: Mixed-mode steps within the same floorplan are possible (some photo-based, some hero-based). Fine for gradual migration.
+
 ## D54: Finch Demo sandbox org
 **Context**: Need a safe place for prospects and testers to explore the admin without touching Stone Martin's real data.
 **Decision**: Created "Finch Demo" org with slug `demo`. Owner (gr0x01@pm.me) is admin on both orgs. Login shows org picker when user has multiple orgs. Invite anyone to demo org without risk to SM data.

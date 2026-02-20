@@ -133,6 +133,12 @@ const INVARIANT_RULES_BY_OPTION_ID: Record<string, string[]> = {
 };
 
 /**
+ * Resolve a swatch file to a Buffer. SM demo uses filesystem; multi-tenant uses Supabase Storage.
+ * Return null if the swatch can't be loaded.
+ */
+export type SwatchBufferResolver = (swatchUrl: string) => Promise<{ buffer: Buffer; mediaType: string } | null>;
+
+/**
  * Build the edit prompt text and collect swatch images for ALL visual selections.
  * Every selection with a swatchUrl sends its image to the AI.
  * Returns { prompt, swatches } — the route assembles these into the multimodal message.
@@ -140,12 +146,14 @@ const INVARIANT_RULES_BY_OPTION_ID: Record<string, string[]> = {
  * @param optionLookup Map of "subId:optId" → { option, subCategory }
  * @param spatialHints Map of subcategoryId → spatial hint text
  * @param sceneDescription Optional scene description for this step's hero image
+ * @param resolveSwatchBuffer Optional callback to load swatch from Storage (multi-tenant). Omit for SM filesystem.
  */
 export async function buildEditPrompt(
   visualSelections: Record<string, string>,
   optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
   spatialHints: Record<string, string>,
   sceneDescription?: string | null,
+  resolveSwatchBuffer?: SwatchBufferResolver,
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const listLines: string[] = [];
   const swatches: SwatchImage[] = [];
@@ -194,6 +202,27 @@ export async function buildEditPrompt(
       : `${subCategory.name}: ${option.name}${descriptorSuffix}`;
 
     if (option.swatchUrl) {
+      // Multi-tenant: use custom resolver if provided
+      if (resolveSwatchBuffer) {
+        try {
+          const resolved = await resolveSwatchBuffer(option.swatchUrl);
+          if (resolved) {
+            swatches.push({ label, buffer: resolved.buffer, mediaType: resolved.mediaType });
+            listLines.push(`${listIndex}. ${label} (use swatch #${swatchIndex})`);
+            swatchIndex += 1;
+            listIndex += 1;
+          } else {
+            listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
+            listIndex += 1;
+          }
+        } catch {
+          listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
+          listIndex += 1;
+        }
+        continue;
+      }
+
+      // SM demo: filesystem-based swatch loading
       const ext = path.extname(option.swatchUrl).slice(1).toLowerCase();
 
       try {

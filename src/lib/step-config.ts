@@ -1,3 +1,14 @@
+export interface StepPhoto {
+  id: string;
+  imagePath: string;   // Supabase Storage path
+  imageUrl: string;    // Resolved public URL
+  label: string;
+  isHero: boolean;
+  sortOrder: number;
+  spatialHint: string | null;
+  photoBaseline: string | null;  // text description for AI prompt
+}
+
 export interface StepSection {
   title: string;
   subCategoryIds: string[];
@@ -16,6 +27,8 @@ export interface StepConfig {
   alsoIncludeIds?: string[];
   /** What's actually shown in the hero photo — selections matching these are NOT sent to the AI */
   photoBaseline?: Record<string, string>;
+  /** Per-photo data for multi-tenant gallery visualization (undefined for SM demo) */
+  photos?: StepPhoto[];
 }
 
 export const steps: StepConfig[] = [

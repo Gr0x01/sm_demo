@@ -2,7 +2,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { getServiceClient } from "./supabase";
 import type { Category, SubCategory, Option } from "@/types";
-import type { StepConfig, StepSection } from "./step-config";
+import type { StepConfig, StepSection, StepPhoto } from "./step-config";
 
 // ---------- Cross-request cache (Next.js data cache) ----------
 // These rarely change — revalidate every 5 minutes, bust via tags on admin update.
@@ -15,7 +15,7 @@ const _getOrgBySlug = async (slug: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, name, slug, logo_url, primary_color, secondary_color, accent_color")
+    .select("id, name, slug, logo_url, primary_color, secondary_color, accent_color, generation_cap_per_session")
     .eq("slug", slug)
     .single();
 
@@ -214,12 +214,19 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
     .select(`
       id, slug, number, name, subtitle, hero_image, hero_variant,
       show_generate_button, scene_description, also_include_ids, photo_baseline,
-      sort_order, sections, spatial_hints
+      sort_order, sections, spatial_hints,
+      step_photos ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline )
     `)
     .eq("floorplan_id", floorplanId)
     .order("sort_order");
 
   if (stepsErr || !dbSteps) return [];
+
+  // Resolve step_photos public URLs from Supabase Storage
+  const resolvePhotoUrl = (imagePath: string): string => {
+    const { data: { publicUrl } } = supabase.storage.from("rooms").getPublicUrl(imagePath);
+    return publicUrl;
+  };
 
   return dbSteps.map((s) => {
     const rawSections = (s.sections as { title: string; subcategory_ids: string[]; sort_order: number }[]) ?? [];
@@ -229,6 +236,26 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
         title: sec.title,
         subCategoryIds: sec.subcategory_ids,
       }));
+
+    // Map step_photos rows into StepPhoto[] (sorted, hero first)
+    type RawStepPhoto = {
+      id: string; image_path: string; label: string; is_hero: boolean;
+      sort_order: number; spatial_hint: string | null; photo_baseline: string | null;
+    };
+    const rawPhotos = ((s.step_photos ?? []) as RawStepPhoto[])
+      .sort((a, b) => a.sort_order - b.sort_order);
+    const photos: StepPhoto[] | undefined = rawPhotos.length > 0
+      ? rawPhotos.map((p): StepPhoto => ({
+          id: p.id,
+          imagePath: p.image_path,
+          imageUrl: resolvePhotoUrl(p.image_path),
+          label: p.label,
+          isHero: p.is_hero,
+          sortOrder: p.sort_order,
+          spatialHint: p.spatial_hint,
+          photoBaseline: p.photo_baseline,
+        }))
+      : undefined;
 
     return {
       id: s.slug,
@@ -241,6 +268,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
       sections,
       alsoIncludeIds: s.also_include_ids ?? [],
       photoBaseline: (s.photo_baseline as Record<string, string>) ?? undefined,
+      photos,
     };
   });
 };
@@ -293,6 +321,46 @@ export async function getStepAiConfig(stepSlug: string, floorplanId: string) {
     stepId: step.id,
     sceneDescription: step.scene_description as string | null,
     spatialHints: (step.spatial_hints as Record<string, string>) ?? {},
+  };
+}
+
+// ---------- Step photo AI config (multi-tenant generation routes) ----------
+
+export async function getStepPhotoAiConfig(stepPhotoId: string) {
+  const supabase = getServiceClient();
+
+  const { data: photo, error: photoErr } = await supabase
+    .from("step_photos")
+    .select("id, step_id, spatial_hint, photo_baseline, image_path")
+    .eq("id", stepPhotoId)
+    .single();
+
+  if (photoErr || !photo) return null;
+
+  const { data: step, error: stepErr } = await supabase
+    .from("steps")
+    .select("id, slug, scene_description, also_include_ids, photo_baseline, spatial_hints, sections, org_id, floorplan_id")
+    .eq("id", photo.step_id)
+    .single();
+
+  if (stepErr || !step) return null;
+
+  return {
+    stepId: step.id,
+    stepSlug: step.slug,
+    orgId: step.org_id as string,
+    floorplanId: step.floorplan_id as string,
+    sceneDescription: step.scene_description as string | null,
+    spatialHints: (step.spatial_hints as Record<string, string>) ?? {},
+    stepPhotoBaseline: (step.photo_baseline as Record<string, string>) ?? {},
+    alsoIncludeIds: (step.also_include_ids as string[]) ?? [],
+    sections: (step.sections as { title: string; subcategory_ids: string[]; sort_order: number }[]) ?? [],
+    photo: {
+      id: photo.id as string,
+      imagePath: photo.image_path as string,
+      spatialHint: photo.spatial_hint as string | null,
+      photoBaseline: photo.photo_baseline as string | null,
+    },
   };
 }
 
