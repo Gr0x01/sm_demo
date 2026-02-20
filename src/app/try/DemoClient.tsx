@@ -30,7 +30,7 @@ function getCookie(name: string): string | null {
 
 function setCookie(name: string, value: string, days = 30) {
   const expires = new Date(Date.now() + days * 86400000).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/demo; SameSite=Lax`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/try; SameSite=Lax`;
 }
 
 // sessionStorage keys
@@ -136,7 +136,7 @@ export function DemoClient() {
 
     try {
       // Check cache first
-      const checkRes = await fetch("/api/demo/check", {
+      const checkRes = await fetch("/api/try/check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -156,7 +156,7 @@ export function DemoClient() {
       }
 
       // Generate
-      const genRes = await fetch("/api/demo/generate", {
+      const genRes = await fetch("/api/try/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

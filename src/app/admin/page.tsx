@@ -5,7 +5,7 @@ import { SiteNav } from "@/components/SiteNav";
 
 const ADMIN_NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "Try It", href: "/demo" },
+  { label: "Try It", href: "/try" },
 ];
 
 function AdminScaffold({ children }: { children: React.ReactNode }) {

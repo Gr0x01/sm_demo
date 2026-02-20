@@ -41,8 +41,7 @@ function getSessionCookie(orgSlug: string, fpSlug: string): string | null {
 function setSessionCookie(orgSlug: string, fpSlug: string, sessionId: string): void {
   const name = getCookieName(orgSlug, fpSlug);
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  const path = `/${orgSlug}/${fpSlug}`;
-  document.cookie = `${name}=${encodeURIComponent(sessionId)}; Path=${path}; SameSite=Lax; Max-Age=${SESSION_COOKIE_MAX_AGE}${secure}`;
+  document.cookie = `${name}=${encodeURIComponent(sessionId)}; Path=/; SameSite=Lax; Max-Age=${SESSION_COOKIE_MAX_AGE}${secure}`;
 }
 
 /** Shift a hex color lighter (positive amount) or darker (negative). */

@@ -99,7 +99,7 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
       setPreviewUrl(dataUrl);
 
       // Validate with Gemini
-      const res = await fetch("/api/demo/validate-photo", {
+      const res = await fetch("/api/try/validate-photo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: dataUrl.split(",")[1] }),

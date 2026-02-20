@@ -17,7 +17,7 @@ interface SiteNavProps {
 
 const DEFAULT_CTA = {
   label: "Try It",
-  href: "/demo",
+  href: "/try",
 };
 
 export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {

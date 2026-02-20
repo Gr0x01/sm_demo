@@ -6,7 +6,7 @@ import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 
 const HOMEPAGE_NAV_LINKS = [
-  { label: "Try It", href: "/demo" },
+  { label: "Try It", href: "/try" },
   { label: "How It Works", href: "#compare" },
   { label: "Pricing", href: "#pricing" },
   { label: "FAQ", href: "#faq" },
@@ -350,7 +350,7 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 mb-6">
                 <Link
-                  href="/demo"
+                  href="/try"
                   className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                 >
                   Try It Live
@@ -464,7 +464,7 @@ export default function LandingPage() {
             This demo is configured to mirror real builder choices. Your version uses your plans, finishes, and pricing.
           </p>
           <Link
-            href="/demo"
+            href="/try"
             className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
             Try It Yourself
@@ -735,7 +735,7 @@ export default function LandingPage() {
             Upload a kitchen photo, pick finishes, and watch the room change. Takes 60 seconds.
           </p>
           <Link
-            href="/demo"
+            href="/try"
             className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
             Try the Demo

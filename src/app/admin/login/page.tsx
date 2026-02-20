@@ -91,7 +91,7 @@ function AdminLoginContent() {
       <SiteNav
         links={[
           { label: "Home", href: "/" },
-          { label: "Try It", href: "/demo" },
+          { label: "Try It", href: "/try" },
         ]}
         cta={{ label: "Builder Demo", href: "/stone-martin/kinkade" }}
       />
