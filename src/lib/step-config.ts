@@ -234,6 +234,7 @@ export const steps: StepConfig[] = [
     showGenerateButton: true,
     alsoIncludeIds: [
       "common-wall-paint",
+      "accent-color",
       "ceiling-paint",
       "trim-paint",
       "baseboard",

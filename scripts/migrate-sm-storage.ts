@@ -40,6 +40,8 @@ const ROOM_PHOTO_SPATIAL_HINTS: Record<string, string> = {
     "Double vanity and mirrors are on the left; shower zone is on the right. Vanity color/hardware/faucet edits apply only to the vanity assembly; mirror edits apply only above sinks. Keep tile confined to bathroom floor/shower surfaces and preserve shower glass geometry.",
   "primary-bath-shower.webp":
     "Shower is the focal area with large-format wall tile, distinct shower-floor mosaic, and glass entry. Keep rain head/hand shower in the same positions and preserve glass panel shape. Do not move tile materials into non-shower wall zones.",
+  "fireplace.png":
+    "Brick fireplace is the focal point on the center wall. Editable surfaces: mantel surround and style, accent area above the mantel, hearth/base brick or tile, and tile surround framing the firebox. Keep firebox opening shape and proportions fixed. Hardwood flooring runs throughout the room. Ceiling fan and chandelier remain in place — preserve positions. Windows flank the fireplace on both sides — preserve window positions and natural light. Wall paint and trim edits apply to surrounding walls. Flooring, baseboard, and crown edits apply to the room surfaces.",
   "primary-bedroom.webp":
     "Bedroom floor is carpet across the full room; keep transitions at doorways intact. Tray ceiling/crown/fan remain fixed in shape and placement. Wall/trim/door-style edits should not change room geometry or door locations.",
   "bath-closet.webp":
@@ -64,6 +66,15 @@ const ROOM_PHOTOS: {
     label: "Great Room",
     spatialHint: ROOM_PHOTO_SPATIAL_HINTS["greatroom-wide.webp"] ?? null,
     photoBaseline: null,
+  },
+  {
+    stepSlug: "set-your-style",
+    file: "fireplace.png",
+    isHero: false,
+    sortOrder: 1,
+    label: "Fireplace",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["fireplace.png"] ?? null,
+    photoBaseline: "This photo shows the great room of a new-construction home focused on a brick fireplace with a white painted mantel surround. The room has hardwood flooring, white walls, white trim, a ceiling fan, and a chandelier. Large windows flank the fireplace on both sides.",
   },
   {
     stepSlug: "design-your-kitchen",
