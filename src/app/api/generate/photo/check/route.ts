@@ -1,7 +1,22 @@
 import { NextResponse } from "next/server";
 import { GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
-import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig } from "@/lib/db-queries";
+import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGenerationPolicy } from "@/lib/db-queries";
+import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
+
+function buildPromptContextSignature(aiConfig: Awaited<ReturnType<typeof getStepPhotoAiConfig>>): string {
+  if (!aiConfig) return "";
+  const sortedSpatialHints = Object.entries(aiConfig.spatialHints ?? {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}:${v}`)
+    .join("|");
+  return [
+    `scene:${aiConfig.sceneDescription ?? ""}`,
+    `photoBaseline:${aiConfig.photo.photoBaseline ?? ""}`,
+    `photoSpatialHint:${aiConfig.photo.spatialHint ?? ""}`,
+    `spatialHints:${sortedSpatialHints}`,
+  ].join("||");
+}
 
 /**
  * Multi-tenant per-photo cache check.
@@ -28,11 +43,24 @@ export async function POST(request: Request) {
     }
 
     const modelName = (typeof model === "string" && model) ? model : "gpt-image-1.5";
+    const promptContextSignature = buildPromptContextSignature(aiConfig);
+    const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
+    const resolvedPolicy = resolvePhotoGenerationPolicy({
+      orgSlug,
+      floorplanSlug,
+      stepSlug: aiConfig.stepSlug,
+      stepPhotoId,
+      imagePath: aiConfig.photo.imagePath,
+      modelName,
+      selections,
+    }, dbPolicy);
     const selectionsHash = hashSelections({
       ...selections,
       _stepPhotoId: stepPhotoId,
       _model: modelName,
       _cacheVersion: GENERATION_CACHE_VERSION,
+      _promptPolicy: resolvedPolicy.policyKey,
+      _promptContext: promptContextSignature,
     });
 
     const supabase = getServiceClient();

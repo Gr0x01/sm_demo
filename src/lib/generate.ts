@@ -10,7 +10,13 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v7";
+export const GENERATION_CACHE_VERSION = "v8";
+
+export interface PromptPolicyOverrides {
+  invariantRulesAlways?: string[];
+  invariantRulesWhenSelected?: Record<string, string[]>;
+  invariantRulesWhenNotSelected?: Record<string, string[]>;
+}
 
 const INVARIANT_RULES_BY_SUBCATEGORY: Record<string, string[]> = {
   "kitchen-cabinet-color": [
@@ -71,6 +77,7 @@ export type SwatchBufferResolver = (swatchUrl: string) => Promise<{ buffer: Buff
  * @param optionLookup Map of "subId:optId" → { option, subCategory }
  * @param spatialHints Map of subcategoryId → spatial hint text
  * @param sceneDescription Optional scene description for this step's hero image
+ * @param photoSpatialHint Optional per-photo spatial guidance text
  * @param resolveSwatchBuffer Callback to download swatch from Supabase Storage.
  */
 export async function buildEditPrompt(
@@ -78,7 +85,9 @@ export async function buildEditPrompt(
   optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
   spatialHints: Record<string, string>,
   sceneDescription?: string | null,
+  photoSpatialHint?: string | null,
   resolveSwatchBuffer?: SwatchBufferResolver,
+  promptPolicyOverrides?: PromptPolicyOverrides,
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const listLines: string[] = [];
   const swatches: SwatchImage[] = [];
@@ -170,6 +179,17 @@ export async function buildEditPrompt(
   for (const rule of dynamicInvariantRules) {
     invariantRules.add(rule);
   }
+  for (const rule of promptPolicyOverrides?.invariantRulesAlways ?? []) {
+    invariantRules.add(rule);
+  }
+  for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenSelected ?? {})) {
+    if (!selectedSubIds.has(subId)) continue;
+    for (const rule of rules) invariantRules.add(rule);
+  }
+  for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenNotSelected ?? {})) {
+    if (selectedSubIds.has(subId)) continue;
+    for (const rule of rules) invariantRules.add(rule);
+  }
   const invariantBlock =
     invariantRules.size > 0
       ? `\nCRITICAL FIXED-GEOMETRY RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
@@ -187,7 +207,14 @@ export async function buildEditPrompt(
 - Keep each appliance in the same location, opening, perspective, and approximate footprint.`
     : "";
 
-  const sceneBlock = sceneDescription ? `SCENE: ${sceneDescription}\n\n` : "";
+  const sceneContextLines: string[] = [];
+  if (sceneDescription?.trim()) {
+    sceneContextLines.push(`SCENE: ${sceneDescription.trim()}`);
+  }
+  if (photoSpatialHint?.trim()) {
+    sceneContextLines.push(`PHOTO_LAYOUT: ${photoSpatialHint.trim()}`);
+  }
+  const sceneBlock = sceneContextLines.length > 0 ? `${sceneContextLines.join("\n")}\n\n` : "";
   const swatchMappingLine =
     swatches.length > 0
       ? `Swatch mapping: after the base room photo, attached swatches are ordered #1..#${swatches.length}.`
@@ -202,6 +229,7 @@ RULES:
 - For each item marked "(use swatch #N)", match that swatch's color, pattern, and texture EXACTLY on the specified surface.
 - For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
 - The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
+- If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.
 - Different rooms have different flooring. Tile stays in bathrooms. LVP/hardwood stays in closets, bedrooms, and hallways. Do NOT extend one flooring material into another room.
 - Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
 - Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.

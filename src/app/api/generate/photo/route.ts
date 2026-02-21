@@ -3,11 +3,33 @@ import OpenAI, { toFile } from "openai";
 import { buildEditPrompt, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
-import { getStepPhotoAiConfig, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
+import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
+import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 
 export const maxDuration = 120;
 
 const openai = new OpenAI();
+
+function buildPromptContextSignature(aiConfig: Awaited<ReturnType<typeof getStepPhotoAiConfig>>): string {
+  if (!aiConfig) return "";
+  const sortedSpatialHints = Object.entries(aiConfig.spatialHints ?? {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}:${v}`)
+    .join("|");
+  return [
+    `scene:${aiConfig.sceneDescription ?? ""}`,
+    `photoBaseline:${aiConfig.photo.photoBaseline ?? ""}`,
+    `photoSpatialHint:${aiConfig.photo.spatialHint ?? ""}`,
+    `spatialHints:${sortedSpatialHints}`,
+  ].join("||");
+}
+
+function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
+  const lines: string[] = [];
+  if (aiConfig.sceneDescription?.trim()) lines.push(aiConfig.sceneDescription.trim());
+  if (aiConfig.photo.photoBaseline?.trim()) lines.push(`PHOTO_BASELINE: ${aiConfig.photo.photoBaseline.trim()}`);
+  return lines.length > 0 ? lines.join("\n") : null;
+}
 
 /**
  * Claim a generation slot by inserting a placeholder row into generated_images.
@@ -105,11 +127,24 @@ export async function POST(request: Request) {
     }
 
     const modelName = (typeof model === "string" && model) ? model : "gpt-image-1.5";
+    const promptContextSignature = buildPromptContextSignature(aiConfig);
+    const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
+    const resolvedPolicy = resolvePhotoGenerationPolicy({
+      orgSlug,
+      floorplanSlug,
+      stepSlug: aiConfig.stepSlug,
+      stepPhotoId,
+      imagePath: aiConfig.photo.imagePath,
+      modelName,
+      selections,
+    }, dbPolicy);
     const selectionsHash = hashSelections({
       ...selections,
       _stepPhotoId: stepPhotoId,
       _model: modelName,
       _cacheVersion: GENERATION_CACHE_VERSION,
+      _promptPolicy: resolvedPolicy.policyKey,
+      _promptContext: promptContextSignature,
     });
 
     // --- Retry: delete existing cached image so we regenerate fresh ---
@@ -150,6 +185,8 @@ export async function POST(request: Request) {
       _stepPhotoId: stepPhotoId,
       _model: modelName,
       _cacheVersion: GENERATION_CACHE_VERSION,
+      _promptPolicy: resolvedPolicy.policyKey,
+      _promptContext: promptContextSignature,
     };
     const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId, selectionsJsonForClaim);
     if (claimResult === "in_progress") {
@@ -218,14 +255,17 @@ export async function POST(request: Request) {
     // --- Build prompt ---
     const optionLookup = await getOptionLookup(org.id);
     const spatialHints = { ...aiConfig.spatialHints };
-    const sceneDescription = aiConfig.photo.photoBaseline || aiConfig.sceneDescription;
+    const sceneDescription = buildSceneDescription(aiConfig);
+    const photoSpatialHint = aiConfig.photo.spatialHint;
 
     const { prompt, swatches } = await buildEditPrompt(
       selections,
       optionLookup,
       spatialHints,
       sceneDescription,
+      photoSpatialHint,
       resolveSwatchBuffer,
+      resolvedPolicy.promptOverrides,
     );
 
     // --- Generate image (filter out unsupported formats like SVG) ---
@@ -261,7 +301,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "No image was generated" }, { status: 500 });
     }
 
-    const outputBuffer = Buffer.from(generatedData.b64_json, "base64");
+    let outputBuffer = Buffer.from(generatedData.b64_json, "base64");
+    let promptForStorage = prompt;
+
+    if (resolvedPolicy.secondPass) {
+      try {
+        const secondPassInput = [
+          await toFile(outputBuffer, "first-pass.png", { type: "image/png" }),
+        ];
+        console.log(
+          `[generate/photo] Running second pass (${resolvedPolicy.secondPass.reason}) for photo ${stepPhotoId}`,
+        );
+        const secondPassResult = await openai.images.edit({
+          model: modelName,
+          image: secondPassInput,
+          prompt: resolvedPolicy.secondPass.prompt,
+          quality: "high",
+          size: "1536x1024",
+          input_fidelity: resolvedPolicy.secondPass.inputFidelity,
+        });
+        const secondPassData = secondPassResult.data?.[0];
+        if (secondPassData?.b64_json) {
+          outputBuffer = Buffer.from(secondPassData.b64_json, "base64");
+          promptForStorage = `${prompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
+        } else {
+          console.warn(
+            `[generate/photo] Second pass produced no image for photo ${stepPhotoId}; keeping first-pass output.`,
+          );
+        }
+      } catch (secondPassError) {
+        console.warn(
+          `[generate/photo] Second pass failed for photo ${stepPhotoId}; keeping first-pass output.`,
+          secondPassError,
+        );
+      }
+    }
 
     // --- Reserve credit AFTER successful generation (prevents credit leak on failure) ---
     const { data: newCount } = await supabase.rpc("reserve_generation_credit", {
@@ -306,9 +380,11 @@ export async function POST(request: Request) {
           _stepPhotoId: stepPhotoId,
           _model: modelName,
           _cacheVersion: GENERATION_CACHE_VERSION,
+          _promptPolicy: resolvedPolicy.policyKey,
+          _promptContext: promptContextSignature,
         },
         image_path: outputPath,
-        prompt,
+        prompt: promptForStorage,
         step_id: aiConfig.stepId,
         step_photo_id: stepPhotoId,
         buyer_session_id: sessionId,

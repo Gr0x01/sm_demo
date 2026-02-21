@@ -385,6 +385,51 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
   };
 }
 
+export interface StepPhotoGenerationPolicyRecord {
+  policyKey: string;
+  isActive: boolean;
+  policyJson: Record<string, unknown>;
+}
+
+/**
+ * Internal per-photo generation policy lookup.
+ * Returns null when no policy exists OR the table is not deployed yet.
+ */
+export async function getStepPhotoGenerationPolicy(
+  orgId: string,
+  stepPhotoId: string,
+): Promise<StepPhotoGenerationPolicyRecord | null> {
+  const supabase = getServiceClient();
+
+  const { data, error } = await supabase
+    .from("step_photo_generation_policies")
+    .select("policy_key, is_active, policy_json, updated_at")
+    .eq("org_id", orgId)
+    .eq("step_photo_id", stepPhotoId)
+    .eq("is_active", true)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    // Graceful fallback while this table is rolling out to environments.
+    if (error.code === "PGRST205") return null;
+    console.warn("[db-queries] step_photo_generation_policies lookup failed:", error.message);
+    return null;
+  }
+
+  if (!data) return null;
+
+  return {
+    policyKey: data.policy_key as string,
+    isActive: Boolean(data.is_active),
+    policyJson:
+      data.policy_json && typeof data.policy_json === "object"
+        ? (data.policy_json as Record<string, unknown>)
+        : {},
+  };
+}
+
 // ---------- Option lookup for prompt building ----------
 
 export async function getOptionLookup(orgId: string): Promise<Map<string, { option: Option; subCategory: SubCategory }>> {

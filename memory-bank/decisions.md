@@ -273,3 +273,21 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 ## D54: Finch Demo sandbox org
 **Context**: Need a safe place for prospects and testers to explore the admin without touching Stone Martin's real data.
 **Decision**: Created "Finch Demo" org with slug `demo`. Owner (gr0x01@pm.me) is admin on both orgs. Login shows org picker when user has multiple orgs. Invite anyone to demo org without risk to SM data.
+
+## D61: Internal per-photo generation policy layer (DB-backed)
+**Context**: Tenant/photo-specific fixes (Stone Martin kitchen fridge alcove, slide-in range refinement) were leaking into global prompt logic. This conflicts with multi-tenant architecture and Concierge setup quality standards.
+**Decision**: Add internal per-photo policy resolution for `/api/generate/photo` and `/api/generate/photo/check`.
+- New table: `step_photo_generation_policies` with `policy_json` (prompt overrides + optional second-pass config).
+- Resolver order: DB policy (active row) first, code fallback second.
+- Policy key participates in cache hash (`_promptPolicy`).
+**Trade-off**: More moving parts (policy schema + parser), but isolates tenant-specific behavior and keeps global defaults clean.
+
+## D62: Prompt context hash includes scene/hint inputs
+**Context**: Editing `scene_description`, `photo_baseline`, or `step_photos.spatial_hint` could still hit old cache entries when selections were unchanged.
+**Decision**: Add `_promptContext` to generation/check hash, built from:
+- `scene_description`
+- `step_photos.photo_baseline`
+- `step_photos.spatial_hint`
+- `steps.spatial_hints` map
+Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HINT`).
+**Trade-off**: More cache misses after prompt-context edits (expected), but behavior now matches operator intent and avoids stale outputs during tuning.

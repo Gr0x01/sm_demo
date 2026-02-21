@@ -4,7 +4,7 @@
  *
  * Usage: npx tsx scripts/migrate-sm-storage.ts
  *
- * Idempotent — checks for existing step_photos before inserting,
+ * Idempotent — updates existing step_photos in place and inserts missing rows,
  * uses upsert for Storage uploads, skips swatch_url if already a full URL.
  */
 
@@ -28,6 +28,24 @@ const supabase = createClient(url, key);
 const ORG_SLUG = "stonemartin";
 const FLOORPLAN_SLUG = "kinkade";
 
+/** Per-image spatial hints used by AI generation prompts. */
+const ROOM_PHOTO_SPATIAL_HINTS: Record<string, string> = {
+  "kitchen-close.webp":
+    "Large island dominates the foreground with sink + faucet on the island; keep sink cutout and faucet direction fixed. Perimeter cabinets, backsplash, and range are on the back wall; refrigerator stays in its alcove. Dishwasher remains next to the sink; do not alter cabinet panel geometry.",
+  "kitchen-greatroom.webp":
+    "View runs from kitchen into great room: island in midground, living area/fireplace beyond. Keep kitchen finishes confined to cabinets/counters/backsplash and keep great-room finishes on walls/fireplace/flooring. Maintain continuous plank-floor perspective and fixture positions.",
+  "greatroom-wide.webp":
+    "Great room is foreground, kitchen is background. Fireplace wall, trim, and paint are primary editable surfaces in the living area; kitchen cabinetry remains separate unless explicitly selected. Keep chandelier/fan positions and room layout unchanged.",
+  "primary-bath-vanity.webp":
+    "Double vanity and mirrors are on the left; shower zone is on the right. Vanity color/hardware/faucet edits apply only to the vanity assembly; mirror edits apply only above sinks. Keep tile confined to bathroom floor/shower surfaces and preserve shower glass geometry.",
+  "primary-bath-shower.webp":
+    "Shower is the focal area with large-format wall tile, distinct shower-floor mosaic, and glass entry. Keep rain head/hand shower in the same positions and preserve glass panel shape. Do not move tile materials into non-shower wall zones.",
+  "primary-bedroom.webp":
+    "Bedroom floor is carpet across the full room; keep transitions at doorways intact. Tray ceiling/crown/fan remain fixed in shape and placement. Wall/trim/door-style edits should not change room geometry or door locations.",
+  "bath-closet.webp":
+    "Split scene: bathroom zone (vanity/mirror/tub-shower) and adjacent closet zone (shelving/storage). Keep bathroom tile and fixtures confined to the bath side, and closet shelving edits confined to the closet side. Preserve doorway boundaries and mixed-surface transitions.",
+};
+
 /** Room photo config: step slug → photos to upload */
 const ROOM_PHOTOS: {
   stepSlug: string;
@@ -35,26 +53,61 @@ const ROOM_PHOTOS: {
   isHero: boolean;
   sortOrder: number;
   label: string;
+  spatialHint: string | null;
   photoBaseline: string | null;
 }[] = [
-  { stepSlug: "set-your-style", file: "greatroom-wide.webp", isHero: true, sortOrder: 0, label: "Great Room", photoBaseline: null },
-  { stepSlug: "design-your-kitchen", file: "kitchen-close.webp", isHero: true, sortOrder: 0, label: "Kitchen", photoBaseline: null },
-  { stepSlug: "primary-bath", file: "primary-bath-vanity.webp", isHero: true, sortOrder: 0, label: "Vanity", photoBaseline: null },
+  {
+    stepSlug: "set-your-style",
+    file: "greatroom-wide.webp",
+    isHero: true,
+    sortOrder: 0,
+    label: "Great Room",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["greatroom-wide.webp"] ?? null,
+    photoBaseline: null,
+  },
+  {
+    stepSlug: "design-your-kitchen",
+    file: "kitchen-close.webp",
+    isHero: true,
+    sortOrder: 0,
+    label: "Kitchen",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["kitchen-close.webp"] ?? null,
+    photoBaseline: null,
+  },
+  {
+    stepSlug: "primary-bath",
+    file: "primary-bath-vanity.webp",
+    isHero: true,
+    sortOrder: 0,
+    label: "Vanity",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["primary-bath-vanity.webp"] ?? null,
+    photoBaseline: null,
+  },
   {
     stepSlug: "primary-bath",
     file: "primary-bath-shower.webp",
     isHero: false,
     sortOrder: 1,
     label: "Shower",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["primary-bath-shower.webp"] ?? null,
     photoBaseline: "This photo shows a walk-in shower in a primary bathroom of a new-construction home. The shower has large format tile on the walls and floor, a glass entry panel, a showerhead, and a small mosaic tile accent on the shower floor. The bathroom floor outside the shower is also tiled.",
   },
-  { stepSlug: "secondary-spaces", file: "primary-bedroom.webp", isHero: true, sortOrder: 0, label: "Primary Bedroom", photoBaseline: null },
+  {
+    stepSlug: "secondary-spaces",
+    file: "primary-bedroom.webp",
+    isHero: true,
+    sortOrder: 0,
+    label: "Primary Bedroom",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["primary-bedroom.webp"] ?? null,
+    photoBaseline: null,
+  },
   {
     stepSlug: "secondary-spaces",
     file: "bath-closet.webp",
     isHero: false,
     sortOrder: 1,
     label: "Bath & Closet",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["bath-closet.webp"] ?? null,
     photoBaseline: "This photo shows a secondary bathroom and walk-in closet in a new-construction home. The bathroom has a vanity with a mirror, tile flooring, and a shower or tub. The closet has shelving. Walls are painted white with white trim.",
   },
 ];
@@ -165,18 +218,18 @@ async function main() {
   // ---------------------------------------------------------------
   console.log("\n--- Creating step_photos ---");
 
-  // Check existing step_photos for this org to avoid duplicates
+  // Check existing step_photos for this org so we can update in place when rerun
   const { data: existingPhotos } = await supabase
     .from("step_photos")
-    .select("step_id, image_path")
+    .select("id, step_id, image_path")
     .eq("org_id", orgId);
 
-  const existingPhotoKeys = new Set(
-    (existingPhotos ?? []).map((p) => `${p.step_id}:${p.image_path}`)
+  const existingPhotoByKey = new Map<string, string>(
+    (existingPhotos ?? []).map((p) => [`${p.step_id}:${p.image_path}`, p.id as string])
   );
 
   let insertedPhotos = 0;
-  let skippedPhotos = 0;
+  let updatedPhotos = 0;
 
   for (const photo of ROOM_PHOTOS) {
     const stepId = stepSlugToId.get(photo.stepSlug);
@@ -185,8 +238,25 @@ async function main() {
     const storagePath = `${orgId}/rooms/${stepId}/${photo.file}`;
     const key = `${stepId}:${storagePath}`;
 
-    if (existingPhotoKeys.has(key)) {
-      skippedPhotos++;
+    const existingId = existingPhotoByKey.get(key);
+    if (existingId) {
+      const { error: updateErr } = await supabase
+        .from("step_photos")
+        .update({
+          is_hero: photo.isHero,
+          sort_order: photo.sortOrder,
+          label: photo.label,
+          spatial_hint: photo.spatialHint,
+          photo_baseline: photo.photoBaseline,
+        })
+        .eq("id", existingId);
+
+      if (updateErr) {
+        console.error(`  Update failed for ${photo.file}:`, updateErr);
+      } else {
+        updatedPhotos++;
+        console.log(`  Updated: step_photo for ${photo.label} (${photo.stepSlug})`);
+      }
       continue;
     }
 
@@ -199,7 +269,7 @@ async function main() {
         is_hero: photo.isHero,
         sort_order: photo.sortOrder,
         label: photo.label,
-        spatial_hint: null,
+        spatial_hint: photo.spatialHint,
         photo_baseline: photo.photoBaseline,
       });
 
@@ -210,7 +280,7 @@ async function main() {
       console.log(`  Created: step_photo for ${photo.label} (${photo.stepSlug})`);
     }
   }
-  console.log(`  Inserted: ${insertedPhotos}, Skipped (existing): ${skippedPhotos}`);
+  console.log(`  Inserted: ${insertedPhotos}, Updated (existing): ${updatedPhotos}`);
 
   // ---------------------------------------------------------------
   // 1c. Upload swatches to `swatches` bucket

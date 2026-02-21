@@ -33,13 +33,15 @@ Server (Next.js API routes)
         │     ├── DB-based dedup via __pending__ placeholder row (cross-instance safe, 5 min TTL)
         │     ├── Pre-check credit cap (non-mutating)
         │     ├── Load base photo from Supabase Storage (rooms bucket)
-        │     ├── Build prompt via buildEditPrompt with Supabase Storage swatch resolver
+        │     ├── Resolve per-photo generation policy (DB-backed, internal-only; code fallback)
+        │     ├── Build prompt via buildEditPrompt with Supabase Storage swatch resolver + policy overrides
         │     ├── Call OpenAI images.edit with model: modelName (not hardcoded)
+        │     ├── Optional policy-driven second pass (e.g., slide-in range correction)
         │     ├── Reserve credit AFTER successful generation (atomic RPC)
         │     ├── Upload to generated-images bucket, upsert cache row
         │     └── On failure: release __pending__ row so retries can proceed
         ├── /check — cache check per photo (filters __pending__)
-        ├── /feedback — thumbs up/down, credit refund on thumbs down, session-scoped ownership
+        ├── /feedback — retry flow: refunds credit + deletes cached row, then client regenerates
         └── Returns: imageUrl, cacheHit, generatedImageId, creditsUsed, creditsTotal
 
 Supabase
@@ -47,12 +49,13 @@ Supabase
   │           subcategories, options, steps, step_sections, step_ai_config
   ├── Table: step_photos (multiple photos per step, hero flag, quality check, spatial hints)
   ├── Table: generated_images (cache — step_id, model, step_photo_id, buyer_session_id, selections_fingerprint)
-  ├── Table: generation_feedback (thumbs up/down per session per image, credit_refunded flag)
+  ├── Table: step_photo_generation_policies (internal-only per-photo prompt/second-pass policy JSON)
+  ├── Table: generation_feedback (retry tracking per session per image, credit_refunded flag)
   ├── Table: buyer_sessions (anonymous + email-saved, generation_count for credit tracking)
   ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, kept for reference)
   ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
   ├── RPC: reserve_generation_credit(p_session_id, p_org_id) — atomic credit increment
-  ├── RPC: refund_generation_credit(p_session_id) — atomic credit decrement (thumbs down)
+  ├── RPC: refund_generation_credit(p_session_id) — atomic credit decrement (retry)
   ├── RPC: get_auth_user_id_by_email(lookup_email) — service-role-only user lookup for invite flow
   ├── Trigger: link_pending_invites — on auth.users INSERT, links pending org_users by email
   ├── Storage bucket: kitchen-images ({selections_hash}.png) — legacy SM cache + /try demo
@@ -91,7 +94,7 @@ Supabase
 3. Cache hit → free (no credit consumed), returns URL + `cacheHit: true`
 4. Cache miss → DB-based dedup (`__pending__` placeholder, 5 min stale TTL) → generate → reserve credit → upsert
 5. On refresh: `/api/generate/photo/check` checks per-photo, restores generated images + IDs
-6. Thumbs down → refunds credit via RPC, keeps cache row (other sessions can still hit it)
+6. Retry → refunds credit via RPC, deletes cached row, then regenerates fresh
 7. "Visualize All" fires up to 3 concurrent, each atomically reserves credits via RPC
 
 ## Pre-generation Strategy
@@ -112,7 +115,7 @@ page.tsx (flow state: "landing" | "picker" | "summary")
 │   │   └── StepNav (step circles with connector lines, 5 steps)
 │   ├── Two-Column Layout (desktop lg+)
 │   │   ├── SidebarPanel (sticky left, 340px)
-│   │   │   ├── StepPhotoGrid (per-photo cards with generate/feedback/stale)
+│   │   │   ├── StepPhotoGrid (per-photo cards with generate/retry/stale)
 │   │   │   │   OR StepHero (display-only for steps without photos)
 │   │   │   ├── Credits display
 │   │   │   ├── Section quick-nav (IntersectionObserver-tracked active section)
@@ -167,7 +170,7 @@ State shape:
   hasEverGenerated: boolean,
   generatedWithSelections: Record<string, string>,  // key → selections fingerprint (stale detection)
   generatedImageIds: Record<string, string>,        // key → generated_image DB id (for feedback)
-  feedbackVotes: Record<string, 1 | -1>,            // photoKey → thumbs vote
+  retryingPhotoKeys: Set<string>,                     // photos currently retrying
   generationCredits: { used: number; total: number } | null,
   errors: Record<string, string>,
 }
@@ -191,15 +194,16 @@ State shape:
 6. Reserve credit via atomic RPC (after successful generation)
 7. Upload to `generated-images` bucket, upsert cache row
 8. Return image URL + credit info to client
-9. Client displays in StepPhotoGrid (per-photo cards with feedback)
+9. Client displays in StepPhotoGrid (per-photo cards with retry via ImageLightbox)
 
 **Image approach**: OpenAI image editing via `images.edit` endpoint. Sends base room photo + individually attached swatch images for selected visual items. Prompt lines explicitly map each item to `swatch #N` in deterministic order, so the model can bind the correct material to the correct surface.
 
-**Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Includes object-count/cabinet-geometry preservation plus known failure guards (sink/faucet orientation, refrigerator alcove, range cutout/type, island vs perimeter cabinet boundaries).
+**Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Base rules are global; tenant/photo-specific constraints are layered via per-photo policy overrides (DB-backed, internal-only), including optional second-pass refinements.
 
 **`input_fidelity: "high"`**: Added to the `images.edit` call to maximize preservation of base image details (hardware, pulls, fixtures). Default is "low". Costs ~$0.04-0.06 extra per request.
 
 **Cache semantic versioning**: Generation hash includes `_cacheVersion` so prompt/pipeline changes do not serve stale outputs. Bump `GENERATION_CACHE_VERSION` whenever generation semantics change.
+Generation hash also includes policy and prompt context inputs (`_promptPolicy`, `_promptContext`) so changes to per-photo hint/baseline/scene/policy invalidate stale cache entries.
 
 **Reliability playbook**: See `generation-reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
 
@@ -264,9 +268,9 @@ src/
 │       │   └── resume-by-email/route.ts # POST — email-based resume (rate-limited)
 │       ├── generate/
 │       │   └── photo/
-│       │       ├── route.ts        # POST — multi-tenant per-photo generation (DB dedup, credits)
+│       │       ├── route.ts        # POST — multi-tenant per-photo generation (DB dedup, credits, SVG swatch filtering)
 │       │       ├── check/route.ts  # POST — multi-tenant per-photo cache check
-│       │       └── feedback/route.ts # POST — thumbs up/down + credit refund
+│       │       └── feedback/route.ts # POST — retry flow: credit refund + cache row delete
 │       └── selections/[buyerId]/route.ts  # DEPRECATED — replaced by buyer-sessions
 ├── components/
 │   ├── LandingHero.tsx
@@ -279,7 +283,8 @@ src/
 │   ├── SwatchGrid.tsx           # Grid of tappable visual swatches
 │   ├── CompactOptionList.tsx    # Tight single-line rows for non-visual options
 │   ├── PriceTracker.tsx         # Sticky bottom bar (mobile only)
-│   ├── StepPhotoGrid.tsx        # Per-step photo cards (multi-tenant sidebar)
+│   ├── StepPhotoGrid.tsx        # Per-step photo cards (multi-tenant sidebar, lightbox on click)
+│   ├── ImageLightbox.tsx        # Full-screen lightbox with retry button (overlay gradient bar)
 │   ├── GalleryView.tsx          # Full gallery grid with Visualize All + credits
 │   ├── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
 │   └── SaveSelectionsModal.tsx # Email save + resume-by-email modal
@@ -309,13 +314,17 @@ src/
 │   ├── pricing.ts           # Price calculation (accepts categories as param)
 │   ├── buyer-session.ts     # Session helpers (mapRowToPublicSession, validateEmail, SESSION_COLUMNS)
 │   ├── email.ts             # Resend email utility (sendResumeEmail, lazy-initialized client)
-│   └── generate.ts          # Prompt construction (accepts optionLookup, spatialHints, sceneDescription)
+│   ├── generate.ts          # Prompt construction (accepts optionLookup, spatialHints, sceneDescription, policy overrides)
+│   └── photo-generation-policy.ts # Internal per-photo policy resolver (DB-backed + fallback)
 └── types/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
 
 scripts/
 ├── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
-└── migrate-sm-storage.ts    # Upload SM room photos + swatches to Storage, create step_photos
+├── migrate-sm-storage.ts    # Upload SM room photos + swatches to Storage, create step_photos
+├── seed-photo-policies.ts   # Seed internal per-photo generation policies (e.g., SM kitchen-close)
+└── sql/
+    └── 2026-02-21-step-photo-generation-policies.sql # Policy table migration
 
 public/
 ├── logo.svg                 # Stone Martin Builders logo (currentColor fill)

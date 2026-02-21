@@ -72,16 +72,19 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [x] `generation_count` column in schema (reserved for Workstream D — no app code reads/writes it)
 
 ### 7. V1 Workstream D: Gallery Visualization ✅
-**Depends on B + C.** Per-photo AI visualization, gallery view, thumbs up/down feedback, generation credit cap.
+**Depends on B + C.** Per-photo AI visualization, gallery view, retry flow, generation credit cap.
 - [x] DB migrations: `generation_cap_per_session` on orgs, `step_photo_id`/`buyer_session_id`/`selections_fingerprint` on `generated_images`, `generation_feedback` table, `reserve_generation_credit` + `refund_generation_credit` RPCs, `generated-images` storage bucket
 - [x] `StepPhoto` type on `StepConfig`, `step_photos` join in `getStepsWithConfig`, `getStepPhotoAiConfig` query
 - [x] `SwatchBufferResolver` callback in `buildEditPrompt` (Supabase Storage for all tenants)
-- [x] `/api/generate/photo` — multi-tenant per-photo generation with ownership validation, DB-based dedup (`__pending__` placeholder rows), stale lock cleanup (5 min TTL), credit reservation after generation
+- [x] `/api/generate/photo` — multi-tenant per-photo generation with ownership validation, DB-based dedup (`__pending__` placeholder rows), stale lock cleanup (5 min TTL), credit reservation after generation, SVG swatch filtering (JPEG/PNG/WebP only)
 - [x] `/api/generate/photo/check` — multi-tenant per-photo cache check
-- [x] `/api/generate/photo/feedback` — thumbs up/down with credit refund/re-reserve, session-scoped image ownership
-- [x] Extended `SelectionState`/`SelectionAction` with per-photo keys, feedback, credits
+- [x] Internal per-photo policy layer (DB-backed `step_photo_generation_policies` with code fallback): prompt invariant overrides + optional policy-driven pass-2 refinement
+- [x] Prompt context wiring completed: `step_photos.spatial_hint` now included in generation prompt context; cache hash includes prompt-context signature (`scene_description`, `photo_baseline`, `spatial_hint`, `spatial_hints`)
+- [x] `/api/generate/photo/feedback` — used by retry flow: refunds credit, deletes cached row, then regenerates
+- [x] Extended `SelectionState`/`SelectionAction` with per-photo keys, credits
 - [x] UpgradePicker: per-photo generation, gallery virtual step, Visualize All (max 3 concurrent), stale detection per photo, initial cache restore for multi-tenant photos on session resume
-- [x] `StepPhotoGrid` component — per-step photo cards in sidebar (hero first, stale badge, feedback, lightbox)
+- [x] Replaced thumbs up/down with retry button in `ImageLightbox` (overlay on bottom gradient bar) — feedback was vanity data with no actionable use
+- [x] `StepPhotoGrid` component — per-step photo cards in sidebar (hero first, stale badge, lightbox)
 - [x] `GalleryView` component — full gallery grid grouped by step, Visualize All, credits meter, cap-reached state
 - [x] `SidebarPanel` updated — photo grid replaces StepHero when step has photos, credits display
 - [x] Credits wired: `generationCap` from org → session response → page → client → picker
@@ -101,7 +104,7 @@ Migrated Stone Martin from legacy single-tenant generation to full multi-tenant 
 - [x] Cleaned SidebarPanel: removed `onGenerate` prop and legacy hero generate button
 - [x] Cleaned PriceTracker: removed `onGenerate`, `isGenerating`, `hasChanges`, `hasGeneratedPreview` props
 - [x] Cleaned generate.ts: removed filesystem swatch fallback, dead helpers (`solidColorPng`, `crc32`, `extractHexFromSvg`)
-- [x] Known regression: slide-in range two-pass refinement removed (was in legacy route only). Text invariants remain but masked pass-2 is gone. Test after migration.
+- [x] Restored reliability path: slide-in range second-pass refinement reintroduced via internal per-photo policy (Stone Martin kitchen-close)
 
 ### Upcoming (not started)
 - **Workstream E**: Branding controls (depends on A, small)
