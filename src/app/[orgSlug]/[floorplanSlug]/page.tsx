@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getOrgBySlug, getFloorplan, getCategoriesWithOptions, getStepsWithConfig } from "@/lib/db-queries";
+import { getOrgBySlug, getFloorplan, getCategoriesForFloorplan, getStepsWithConfig } from "@/lib/db-queries";
 import { isSubdomain } from "@/lib/subdomain";
 import { DemoPageClient } from "./DemoPageClient";
 
@@ -17,7 +17,7 @@ export default async function DemoPage({
   if (!floorplan) notFound();
 
   const [categories, steps] = await Promise.all([
-    getCategoriesWithOptions(org.id),
+    getCategoriesForFloorplan(org.id, floorplan.id),
     getStepsWithConfig(floorplan.id),
   ]);
 

@@ -11,7 +11,7 @@ interface QuantityStepperProps {
 
 export function QuantityStepper({ subCategory, quantity, onSetQuantity }: QuantityStepperProps) {
   // Additive subcategories have 2 options: "No Upgrade" ($0) and the add option ($X each)
-  const noUpgradeOption = subCategory.options.find((o) => o.price === 0);
+  const noUpgradeOption = subCategory.options.find((o) => o.isDefault) ?? subCategory.options.find((o) => o.price === 0);
   const addOption = subCategory.options.find((o) => o.price > 0);
 
   if (!noUpgradeOption || !addOption) return null;
@@ -30,7 +30,7 @@ export function QuantityStepper({ subCategory, quantity, onSetQuantity }: Quanti
 
   return (
     <div className="mb-4 last:mb-0">
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 px-0.5">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-navy)] mb-2 px-0.5">
         {subCategory.name}
       </h4>
       <div

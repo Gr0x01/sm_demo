@@ -67,9 +67,12 @@ export async function POST(
   const fpSlug = fp?.slug ?? "";
 
   // Build resume link matching the buyer's actual domain
-  const host = (await headers()).get("host") ?? "";
-  const subdomain = isSubdomainHost(host);
-  const origin = `https://${host}` || process.env.APP_URL || "https://withfin.ch";
+  const rawHost = (await headers()).get("host") ?? "";
+  const validHost = rawHost && /^[\w.-]+(:\d+)?$/.test(rawHost) ? rawHost : null;
+  const subdomain = isSubdomainHost(rawHost);
+  const origin = validHost
+    ? `https://${validHost}`
+    : (process.env.APP_URL || "https://withfin.ch");
   const resumeLink = subdomain
     ? `${origin}/${fpSlug}?resume=${resumeToken}`
     : `${origin}/${orgSlug}/${fpSlug}?resume=${resumeToken}`;

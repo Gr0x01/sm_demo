@@ -6,7 +6,6 @@ import { calculateTotal } from "@/lib/pricing";
 import type { StepConfig } from "@/lib/step-config";
 import { useTrack } from "@/hooks/useTrack";
 import { StepNav } from "./StepNav";
-import { StepHero } from "./StepHero";
 import { StepContent } from "./StepContent";
 import { PriceTracker } from "./PriceTracker";
 import { SidebarPanel } from "./SidebarPanel";
@@ -16,40 +15,6 @@ import { GalleryView } from "./GalleryView";
 import { StepPhotoGrid } from "./StepPhotoGrid";
 import type { ContractPhase } from "@/lib/contract-phase";
 
-const SKIP_FOR_GENERATION = new Set([
-  "fireplace-mantel",
-  "fireplace-mantel-accent",
-  "fireplace-hearth",
-  "fireplace-tile-surround",
-  "under-cabinet-lighting",
-  "carpet-color",
-  "bedroom-fan",
-  "door-window-casing",
-  "crown-options",
-]);
-
-/** Subcategories where we can't identify the photo baseline — always send whatever's selected */
-const ALWAYS_SEND = new Set([
-  // Paint & flooring — all options are free, can't tell what's in the photo
-  "accent-color",
-  "common-wall-paint",
-  "ceiling-paint",
-  "trim-paint",
-  "door-casing-color",
-  "main-area-flooring-color",
-  // Bath — mostly base/bone colored, multiple free options
-  "primary-bath-cabinet-color",
-  "bathroom-cabinet-hardware",
-  "primary-bath-mirrors",
-  "floor-tile-color",
-  "primary-shower",
-  "primary-shower-entry",
-  "bath-faucets",
-  "bath-hardware",
-  "secondary-bath-cabinet-color",
-  "secondary-bath-mirrors",
-  "secondary-shower",
-]);
 
 interface UpgradePickerProps {
   onFinish: (data: { selections: Record<string, string>; quantities: Record<string, number>; generatedImageUrls: Record<string, string> }) => void;
@@ -81,7 +46,7 @@ function getDefaultSelectionsFromCategories(categories: Category[]): Record<stri
   const selections: Record<string, string> = {};
   for (const category of categories) {
     for (const sub of category.subCategories) {
-      const defaultOption = sub.options.find((o) => o.price === 0);
+      const defaultOption = sub.options.find((o) => o.isDefault) ?? sub.options.find((o) => o.price === 0);
       if (defaultOption) {
         selections[sub.id] = defaultOption.id;
       }
@@ -182,20 +147,21 @@ export function UpgradePicker({
       const baseline = step.photoBaseline ?? {};
       const result: Record<string, string> = {};
       for (const [subId, optId] of Object.entries(allSelections)) {
+        const sub = subCategoryMap.get(subId);
+        const hint = sub?.generationHint;
         const baselineId = baseline[subId] ?? defaultSelections[subId];
-        const alwaysSend = ALWAYS_SEND.has(subId);
         if (
           visualSubCategoryIds.has(subId) &&
           stepSubCategoryIds.has(subId) &&
-          !SKIP_FOR_GENERATION.has(subId) &&
-          (alwaysSend || optId !== baselineId)
+          hint !== 'skip' &&
+          (hint === 'always_send' || optId !== baselineId)
         ) {
           result[subId] = optId;
         }
       }
       return result;
     },
-    [visualSubCategoryIds, defaultSelections]
+    [visualSubCategoryIds, defaultSelections, subCategoryMap]
   );
 
   function reducer(state: SelectionState, action: SelectionAction): SelectionState {
@@ -222,28 +188,6 @@ export function UpgradePicker({
           quantities: { ...action.quantities },
         };
       }
-      case "START_GENERATING": {
-        const next = new Set(state.generatingStepIds);
-        next.add(action.stepId);
-        const nextErrors = { ...state.errors };
-        delete nextErrors[action.stepId];
-        return { ...state, generatingStepIds: next, errors: nextErrors };
-      }
-      case "GENERATION_COMPLETE": {
-        const next = new Set(state.generatingStepIds);
-        next.delete(action.stepId);
-        const nextImageIds = action.generatedImageId
-          ? { ...state.generatedImageIds, [action.stepId]: action.generatedImageId }
-          : state.generatedImageIds;
-        return {
-          ...state,
-          generatingStepIds: next,
-          generatedImageUrls: { ...state.generatedImageUrls, [action.stepId]: action.imageUrl },
-          hasEverGenerated: true,
-          generatedWithSelections: { ...state.generatedWithSelections, [action.stepId]: action.selectionsSnapshot },
-          generatedImageIds: nextImageIds,
-        };
-      }
       case "CLEAR_SELECTIONS":
         return {
           ...state,
@@ -251,11 +195,6 @@ export function UpgradePicker({
           quantities: {},
           generatedWithSelections: {},
         };
-      case "GENERATION_ERROR": {
-        const next = new Set(state.generatingStepIds);
-        next.delete(action.stepId);
-        return { ...state, generatingStepIds: next, errors: { ...state.errors, [action.stepId]: action.error } };
-      }
       case "START_GENERATING_PHOTO": {
         const next = new Set(state.generatingPhotoKeys);
         next.add(action.photoKey);
@@ -280,8 +219,6 @@ export function UpgradePicker({
         next.delete(action.photoKey);
         return { ...state, generatingPhotoKeys: next, errors: { ...state.errors, [action.photoKey]: action.error } };
       }
-      case "SET_FEEDBACK":
-        return { ...state, feedbackVotes: { ...state.feedbackVotes, [action.photoKey]: action.vote } };
       case "REMOVE_GENERATED_IMAGE": {
         const nextUrls = { ...state.generatedImageUrls };
         delete nextUrls[action.photoKey];
@@ -302,12 +239,10 @@ export function UpgradePicker({
     selections: defaultSelections,
     quantities: {},
     generatedImageUrls: {},
-    generatingStepIds: new Set<string>(),
     generatingPhotoKeys: new Set<string>(),
     hasEverGenerated: false,
     generatedWithSelections: {},
     generatedImageIds: {},
-    feedbackVotes: {},
     generationCredits: null,
     errors: {},
   }));
@@ -344,13 +279,13 @@ export function UpgradePicker({
     const onPopState = () => {
       const params = new URLSearchParams(window.location.search);
       const s = params.get("step");
-      if (s && steps.some((step) => step.id === s)) {
+      if (s && allStepsRef.current.some((step) => step.id === s)) {
         setActiveStepIdRaw(s);
       }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
-  }, [steps]);
+  }, []);
 
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedRef = useRef(false);
@@ -766,17 +701,6 @@ export function UpgradePicker({
   }, [onFinish, state.selections, state.quantities, state.generatedImageUrls]);
 
   const isLastStep = activeStepIndex >= allSteps.length - 1;
-  const nextStepName = isLastStep ? "" : allSteps[activeStepIndex + 1].name;
-  const isGeneratingThisStep = state.generatingStepIds.has(activeStep.id);
-  const activeStepHasChanges = useMemo(() => {
-    if (!activeStep.showGenerateButton) return false;
-    const currentSnapshot = stableStringify(
-      getStepVisualSelections(activeStep, state.selections)
-    );
-    const lastSnapshot = state.generatedWithSelections[activeStep.id];
-    return currentSnapshot !== lastSnapshot;
-  }, [activeStep, state.selections, state.generatedWithSelections, getStepVisualSelections]);
-
 
   // Preload all generated images so step switching is instant
   useEffect(() => {
@@ -880,17 +804,11 @@ export function UpgradePicker({
             <div className="hidden lg:block">
               <SidebarPanel
                 step={activeStep}
-                generatedImageUrl={state.generatedImageUrls[activeStep.id] ?? null}
-                isGenerating={isGeneratingThisStep}
-                error={state.errors[activeStep.id] ?? null}
-                hasChanges={activeStepHasChanges}
                 total={total}
                 onContinue={handleContinue}
                 onClearSelections={handleClearSelections}
                 isLastStep={isLastStep}
-                nextStepName={nextStepName}
                 headerHeight={headerHeight}
-                lockedSubCategoryIds={lockedSubCategoryIds}
                 onFinish={handleFinish}
                 photos={activeStep.photos}
                 generatedImageUrls={state.generatedImageUrls}

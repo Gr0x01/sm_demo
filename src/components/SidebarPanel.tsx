@@ -40,17 +40,11 @@ function ClearButton({ onClear }: { onClear: () => void }) {
 
 interface SidebarPanelProps {
   step: StepConfig;
-  generatedImageUrl: string | null;
-  isGenerating: boolean;
-  error: string | null;
-  hasChanges: boolean;
   total: number;
   onContinue: () => void;
   onClearSelections: () => void;
   isLastStep: boolean;
-  nextStepName: string;
   headerHeight: number;
-  lockedSubCategoryIds?: Set<string>;
   onFinish: () => void;
   photos?: StepPhoto[];
   generatedImageUrls?: Record<string, string>;
@@ -66,17 +60,11 @@ interface SidebarPanelProps {
 
 export function SidebarPanel({
   step,
-  generatedImageUrl,
-  isGenerating,
-  error,
-  hasChanges,
   total,
   onContinue,
   onClearSelections,
   isLastStep,
-  nextStepName,
   headerHeight,
-  lockedSubCategoryIds,
   onFinish,
   photos,
   generatedImageUrls,

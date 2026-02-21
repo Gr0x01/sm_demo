@@ -84,8 +84,8 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
     .select(`
       id, slug, name, sort_order,
       subcategories (
-        id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order,
-        options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order )
+        id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, is_appliance,
+        options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default )
       )
     `)
     .eq("org_id", orgId)
@@ -99,11 +99,12 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
     subCategories: ((cat.subcategories ?? []) as {
       id: string; slug: string; name: string; category_id: string; is_visual: boolean;
       is_additive: boolean | null; unit_label: string | null; max_quantity: number | null;
-      sort_order: number;
+      sort_order: number; generation_hint: string | null; generation_rules: string[] | null;
+      is_appliance: boolean;
       options: {
         id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
         swatch_url: string | null; swatch_color: string | null; nudge: string | null;
-        sort_order: number;
+        sort_order: number; generation_rules: string[] | null; is_default: boolean;
       }[];
     }[])
       .sort((a, b) => a.sort_order - b.sort_order)
@@ -115,6 +116,9 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
         isAdditive: sub.is_additive || undefined,
         unitLabel: sub.unit_label ?? undefined,
         maxQuantity: sub.max_quantity ?? undefined,
+        generationHint: (sub.generation_hint as SubCategory['generationHint']) ?? undefined,
+        generationRules: sub.generation_rules ?? undefined,
+        isAppliance: sub.is_appliance || undefined,
         options: (sub.options ?? [])
           .sort((a, b) => a.sort_order - b.sort_order)
           .map((opt): Option => ({
@@ -125,6 +129,8 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
             swatchUrl: opt.swatch_url ?? undefined,
             swatchColor: opt.swatch_color ?? undefined,
             nudge: opt.nudge ?? undefined,
+            generationRules: opt.generation_rules ?? undefined,
+            isDefault: opt.is_default || undefined,
           })),
       })),
   }));
@@ -149,8 +155,8 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
       .select(`
         id, slug, name, sort_order,
         subcategories (
-          id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids,
-          options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, floorplan_ids )
+          id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids, generation_hint, generation_rules, is_appliance,
+          options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default )
         )
       `)
       .eq("org_id", orgId)
@@ -174,11 +180,12 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
   type RawSub = {
     id: string; slug: string; name: string; category_id: string; is_visual: boolean;
     is_additive: boolean | null; unit_label: string | null; max_quantity: number | null;
-    sort_order: number; floorplan_ids: string[];
+    sort_order: number; floorplan_ids: string[]; generation_hint: string | null; generation_rules: string[] | null;
+    is_appliance: boolean;
     options: {
       id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
       swatch_url: string | null; swatch_color: string | null; nudge: string | null;
-      sort_order: number; floorplan_ids: string[];
+      sort_order: number; floorplan_ids: string[]; generation_rules: string[] | null; is_default: boolean;
     }[];
   };
 
@@ -201,6 +208,9 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
           isAdditive: sub.is_additive || undefined,
           unitLabel: sub.unit_label ?? undefined,
           maxQuantity: sub.max_quantity ?? undefined,
+          generationHint: (sub.generation_hint as SubCategory['generationHint']) ?? undefined,
+          generationRules: sub.generation_rules ?? undefined,
+          isAppliance: sub.is_appliance || undefined,
           options: (sub.options ?? [])
             .filter((opt) => fitsFloorplan(opt.floorplan_ids))
             .sort((a, b) => a.sort_order - b.sort_order)
@@ -212,6 +222,8 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
               swatchUrl: opt.swatch_url ?? undefined,
               swatchColor: opt.swatch_color ?? undefined,
               nudge: opt.nudge ?? undefined,
+              generationRules: opt.generation_rules ?? undefined,
+              isDefault: opt.is_default || undefined,
             })),
         })),
     }))

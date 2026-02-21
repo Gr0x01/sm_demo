@@ -5,8 +5,9 @@
 ```
 Browser (Next.js client)
   ├── / — Finch landing page (static, server component)
+  ├── /[orgSlug] — Org landing page (1 floorplan → redirect, multiple → DB-driven chooser with org branding)
   ├── /[orgSlug]/[floorplanSlug] — Upgrade Picker (per-builder demo)
-  │     ├── page.tsx — async server component, fetches all data from Supabase
+  │     ├── page.tsx — async server component, fetches floorplan-scoped categories from Supabase
   │     ├── DemoPageClient.tsx — client wrapper (LandingHero → UpgradePicker → UpgradeSummary)
   │     ├── All option/step/config data passed as props from server component
   │     ├── Price calculation (client-side, instant)
@@ -52,7 +53,7 @@ Supabase
   ├── Table: step_photo_generation_policies (internal-only per-photo prompt/second-pass policy JSON)
   ├── Table: generation_feedback (retry tracking per session per image, credit_refunded flag)
   ├── Table: buyer_sessions (anonymous + email-saved, generation_count for credit tracking)
-  ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, kept for reference)
+  ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, API route deleted)
   ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
   ├── RPC: reserve_generation_credit(p_session_id, p_org_id) — atomic credit increment
   ├── RPC: refund_generation_credit(p_session_id) — atomic credit decrement (retry)
@@ -64,7 +65,7 @@ Supabase
   └── Storage bucket: rooms ({orgId}/rooms/{stepId}/{uuid}.{ext}) — public read, admin upload
 ```
 
-**Data flow**: All option/step/AI-config data lives in Supabase. The server component in `page.tsx` fetches via `src/lib/db-queries.ts` and passes to client components as props. API routes also fetch from DB. Static TypeScript files (`options-data.ts`, `step-config.ts`) remain as seed source but are no longer imported at runtime.
+**Data flow**: All option/step/AI-config data lives in Supabase. The server component in `page.tsx` fetches floorplan-scoped categories via `getCategoriesForFloorplan(orgId, floorplanId)` in `src/lib/db-queries.ts` and passes to client components as props. Org-wide `getCategoriesWithOptions` is used only by admin and prompt-building (needs all options). API routes also fetch from DB. Static TypeScript files (`options-data.ts`, `step-config.ts`) remain as seed source but are no longer imported at runtime.
 
 **Caching**: Query functions use `unstable_cache` (24h revalidation) for cross-request caching + React `cache()` for request-scoped dedup. First visitor hits DB (4 queries), subsequent visitors get cached results. Cache tags (`org:{slug}`, `categories:{orgId}`, `steps:{floorplanId}`) allow on-demand invalidation.
 
@@ -73,8 +74,9 @@ Supabase
 ## URL & Multi-Tenant Strategy
 
 **Internal routing** (Next.js paths):
-- `/` → Finch product landing page
-- `/[orgSlug]/[floorplanSlug]` → builder demo (e.g. `/stone-martin/kinkade`)
+- `/` → Finch product landing page (CTA links to `/demo`)
+- `/[orgSlug]` → org landing (single floorplan → redirect, multiple → chooser)
+- `/[orgSlug]/[floorplanSlug]` → builder demo (e.g. `/stonemartin/kinkade`)
 - `/admin` → static route, not caught by dynamic segments
 - `/api/*` → static routes, unaffected
 
@@ -166,19 +168,17 @@ State shape:
 {
   selections: Record<subCategoryId, optionId>,     // current picks
   quantities: Record<subCategoryId, number>,        // for additive options
-  generatedImageUrls: Record<string, string>,       // stepId or photoKey → URL
-  generatingStepIds: Set<string>,                   // SM path: steps currently generating
-  generatingPhotoKeys: Set<string>,                 // multi-tenant: photos currently generating
+  generatedImageUrls: Record<string, string>,       // photoKey → URL
+  generatingPhotoKeys: Set<string>,                 // photos currently generating
   hasEverGenerated: boolean,
   generatedWithSelections: Record<string, string>,  // key → selections fingerprint (stale detection)
-  generatedImageIds: Record<string, string>,        // key → generated_image DB id (for feedback)
-  retryingPhotoKeys: Set<string>,                     // photos currently retrying
+  generatedImageIds: Record<string, string>,        // key → generated_image DB id (for retry)
   generationCredits: { used: number; total: number } | null,
   errors: Record<string, string>,
 }
 ```
 
-- Default selections: all $0 (included) options pre-selected
+- Default selections: `is_default` DB column (authoritative), fallback to first $0 option
 - Price computed as derived state: `sum of price for each selected option`
 - Selections auto-saved to Supabase per session (debounced 1s)
 - Multi-tenant photos use `photoKey` (= `stepPhoto.id`), SM uses `stepId`
@@ -230,8 +230,10 @@ src/
 │   ├── page.tsx                    # Finch landing page (server component)
 │   ├── layout.tsx                  # Root layout — Finch branding
 │   ├── globals.css
-│   ├── [orgSlug]/[floorplanSlug]/
-│   │   ├── page.tsx               # Server component — fetches all data from Supabase
+│   ├── [orgSlug]/
+│   │   ├── page.tsx               # Org landing — redirect (1 fp) or chooser (multiple)
+│   │   └── [floorplanSlug]/
+│   │       ├── page.tsx           # Server component — fetches floorplan-scoped data
 │   │   ├── DemoPageClient.tsx     # Client wrapper (LandingHero → picker → summary)
 │   │   └── layout.tsx             # Demo layout — builder-specific metadata
 │   ├── admin/
@@ -273,7 +275,7 @@ src/
 │       │       ├── route.ts        # POST — multi-tenant per-photo generation (DB dedup, credits, SVG swatch filtering)
 │       │       ├── check/route.ts  # POST — multi-tenant per-photo cache check
 │       │       └── feedback/route.ts # POST — retry flow: credit refund + cache row delete
-│       └── selections/[buyerId]/route.ts  # DEPRECATED — replaced by buyer-sessions
+│       └── ... (selections/[buyerId] endpoint deleted — was deprecated)
 ├── components/
 │   ├── LandingHero.tsx
 │   ├── UpgradePicker.tsx        # Main container — all data via props (no static imports)
@@ -289,7 +291,8 @@ src/
 │   ├── ImageLightbox.tsx        # Full-screen lightbox with retry button (overlay gradient bar)
 │   ├── GalleryView.tsx          # Full gallery grid with Visualize All + credits
 │   ├── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
-│   └── SaveSelectionsModal.tsx # Email save + resume-by-email modal
+│   ├── SaveSelectionsModal.tsx # Email save + resume-by-email modal
+│   └── ResumeSavedDesignLink.tsx # Resume design modal (used by org landing page)
 ├── components/admin/
 │   ├── OptionTree.tsx       # Full CRUD tree with drag reorder, inline edit, swatch upload
 │   ├── SwatchUpload.tsx     # Swatch image upload to Supabase Storage

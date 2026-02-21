@@ -269,7 +269,7 @@ function RoiCalculator() {
 function HeroProofCard({ onClicked }: { onClicked?: () => void }) {
   return (
     <Link
-      href="/stonemartin/kinkade"
+      href="/demo"
       onClick={onClicked}
       className="block w-full border border-slate-200 bg-white shadow-sm overflow-hidden hover:shadow-md transition-shadow"
     >
