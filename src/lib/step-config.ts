@@ -229,7 +229,7 @@ export const steps: StepConfig[] = [
     number: 4,
     name: "Secondary Spaces",
     subtitle: "Bedroom, bath, laundry & powder room",
-    heroImage: "/rooms/primary-bedroom.webp",
+    heroImage: "/rooms/secondary-bedroom.webp",
     heroVariant: "full",
     showGenerateButton: true,
     alsoIncludeIds: [

@@ -43,9 +43,11 @@ const ROOM_PHOTO_SPATIAL_HINTS: Record<string, string> = {
   "fireplace.png":
     "Brick fireplace is the focal point on the center wall. Editable surfaces: mantel surround and style, accent area above the mantel, hearth/base brick or tile, and tile surround framing the firebox. Keep firebox opening shape and proportions fixed. Hardwood flooring runs throughout the room. Ceiling fan and chandelier remain in place — preserve positions. Windows flank the fireplace on both sides — preserve window positions and natural light. Wall paint and trim edits apply to surrounding walls. Flooring, baseboard, and crown edits apply to the room surfaces.",
   "primary-bedroom.webp":
-    "Bedroom floor is carpet across the full room; keep transitions at doorways intact. Tray ceiling/crown/fan remain fixed in shape and placement. Wall/trim/door-style edits should not change room geometry or door locations.",
+    "Primary bedroom with hardwood/LVP flooring throughout. Tray ceiling with crown molding and ceiling fan — keep ceiling shape and fan position fixed. Two windows on the right wall, doorway to bathroom on the left — preserve window and door positions. Wall paint, trim, baseboard, and door-style edits apply to visible surfaces. Flooring edits apply to the hardwood floor. Do not change room geometry.",
   "bath-closet.webp":
-    "Split scene: bathroom zone (vanity/mirror/tub-shower) and adjacent closet zone (shelving/storage). Keep bathroom tile and fixtures confined to the bath side, and closet shelving edits confined to the closet side. Preserve doorway boundaries and mixed-surface transitions.",
+    "Split scene: primary bathroom zone on the left (vanity with white cabinets, dark-framed mirror, vanity light fixture, towel rings, tile floor) and walk-in closet on the right (wire shelving, hardwood floor). A door in the center leads to the bedroom. Keep vanity/mirror/hardware edits confined to the bath side, and closet shelving edits confined to the closet side. Preserve doorway boundaries and mixed-surface transitions between tile and hardwood.",
+  "secondary-bedroom.webp":
+    "Carpeted secondary bedroom with dormer nook. Ceiling fan centered in main area; keep fan position fixed. Window is recessed in the dormer alcove — preserve window and dormer geometry. Carpet covers the entire floor. White baseboards run along all walls. Wall paint and trim edits apply to all wall surfaces. Do not alter room shape or dormer proportions.",
 };
 
 /** Room photo config: step slug → photos to upload */
@@ -104,22 +106,31 @@ const ROOM_PHOTOS: {
     photoBaseline: "This photo shows a walk-in shower in a primary bathroom of a new-construction home. The shower has large format tile on the walls and floor, a glass entry panel, a showerhead, and a small mosaic tile accent on the shower floor. The bathroom floor outside the shower is also tiled.",
   },
   {
-    stepSlug: "secondary-spaces",
+    stepSlug: "set-your-style",
     file: "primary-bedroom.webp",
-    isHero: true,
-    sortOrder: 0,
+    isHero: false,
+    sortOrder: 2,
     label: "Primary Bedroom",
     spatialHint: ROOM_PHOTO_SPATIAL_HINTS["primary-bedroom.webp"] ?? null,
-    photoBaseline: null,
+    photoBaseline: "This photo shows the primary bedroom of a new-construction home. The room has hardwood/LVP flooring, a tray ceiling with crown molding and a ceiling fan, white painted walls, white trim, and white baseboards. Two windows on the right wall and a doorway to the bathroom on the left.",
+  },
+  {
+    stepSlug: "primary-bath",
+    file: "bath-closet.webp",
+    isHero: false,
+    sortOrder: 2,
+    label: "Bath & Closet",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["bath-closet.webp"] ?? null,
+    photoBaseline: "This photo shows the primary bathroom and walk-in closet of a new-construction home. The bathroom side has a white vanity with cabinet hardware, a dark-framed mirror, a vanity light fixture, towel rings, and tile flooring. The closet side has wire shelving and hardwood flooring. A door in the center leads to the bedroom. Walls are painted white with white trim and dark door hardware.",
   },
   {
     stepSlug: "secondary-spaces",
-    file: "bath-closet.webp",
-    isHero: false,
-    sortOrder: 1,
-    label: "Bath & Closet",
-    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["bath-closet.webp"] ?? null,
-    photoBaseline: "This photo shows a secondary bathroom and walk-in closet in a new-construction home. The bathroom has a vanity with a mirror, tile flooring, and a shower or tub. The closet has shelving. Walls are painted white with white trim.",
+    file: "secondary-bedroom.webp",
+    isHero: true,
+    sortOrder: 0,
+    label: "Secondary Bedroom",
+    spatialHint: ROOM_PHOTO_SPATIAL_HINTS["secondary-bedroom.webp"] ?? null,
+    photoBaseline: null,
   },
 ];
 
@@ -228,6 +239,41 @@ async function main() {
   // 1b. Create step_photos rows
   // ---------------------------------------------------------------
   console.log("\n--- Creating step_photos ---");
+
+  // Build set of valid (step_id, image_path) keys from current config
+  const validPhotoKeys = new Set(
+    ROOM_PHOTOS.map((photo) => {
+      const stepId = stepSlugToId.get(photo.stepSlug);
+      const storagePath = `${orgId}/rooms/${stepId}/${photo.file}`;
+      return `${stepId}:${storagePath}`;
+    })
+  );
+
+  // Delete orphaned step_photos BEFORE inserting new ones (avoids unique constraint conflicts)
+  console.log("\n--- Cleaning up orphaned step_photos ---");
+  const { data: allPhotosForCleanup } = await supabase
+    .from("step_photos")
+    .select("id, step_id, image_path, label")
+    .eq("org_id", orgId);
+
+  let deletedOrphans = 0;
+  for (const photo of allPhotosForCleanup ?? []) {
+    const key = `${photo.step_id}:${photo.image_path}`;
+    if (!validPhotoKeys.has(key)) {
+      const { error: delErr } = await supabase
+        .from("step_photos")
+        .delete()
+        .eq("id", photo.id);
+
+      if (delErr) {
+        console.error(`  Delete failed for orphan ${photo.label} (${photo.id}):`, delErr);
+      } else {
+        deletedOrphans++;
+        console.log(`  Deleted orphan: ${photo.label} (step_id=${photo.step_id})`);
+      }
+    }
+  }
+  console.log(`  Deleted: ${deletedOrphans} orphaned step_photos`);
 
   // Check existing step_photos for this org so we can update in place when rerun
   const { data: existingPhotos } = await supabase

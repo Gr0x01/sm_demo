@@ -109,6 +109,16 @@ Migrated Stone Martin from legacy single-tenant generation to full multi-tenant 
 - [x] Cleaned generate.ts: removed filesystem swatch fallback, dead helpers (`solidColorPng`, `crc32`, `extractHexFromSvg`)
 - [x] Restored reliability path: slide-in range second-pass refinement reintroduced via internal per-photo policy (Stone Martin kitchen-close)
 
+### 10. SM Photo Placement Fix ✅
+Corrected room photo → step assignments for Kinkade floorplan.
+- [x] Moved `primary-bedroom.webp` from Step 4 → Step 1 (non-hero, sortOrder 2)
+- [x] Moved `bath-closet.webp` from Step 4 → Step 3 (non-hero, sortOrder 2)
+- [x] Added `secondary-bedroom.webp` as Step 4 hero (only photo)
+- [x] Updated `step-config.ts` heroImage fallback for Step 4
+- [x] Fixed spatial hints: primary bedroom was incorrectly described as carpeted (has hardwood/LVP), bath-closet referenced non-visible tub/shower
+- [x] Fixed photoBaseline descriptions to match actual photo contents
+- [x] Migration script cleanup order: orphan deletion now runs before inserts (avoids unique constraint conflicts)
+
 ### Upcoming (not started)
 - **Workstream E**: Branding controls (depends on A, small)
 
