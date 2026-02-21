@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash, Trash2, Pencil, Check, X, Sparkles, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash, Trash2, Pencil, Check, X } from "lucide-react";
 import { SwatchUpload } from "./SwatchUpload";
 import { FloorplanScopePopover } from "./FloorplanScopePopover";
 
@@ -761,13 +761,13 @@ const SortableOptionRow = memo(function SortableOptionRow({
   onDelete: (id: string) => Promise<void>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: option.id });
-  const [isDetailExpanded, setIsDetailExpanded] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(String(option.price));
   const descriptorPreview =
     option.description?.trim() ||
     option.prompt_descriptor?.trim() ||
-    "Click to expand this card and edit details.";
+    "Click to edit details.";
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -793,149 +793,246 @@ const SortableOptionRow = memo(function SortableOptionRow({
     setEditingPrice(false);
   };
 
-  const handleSaveField = async (field: string, value: unknown) => {
+  const handleSaveOption = async (updates: Record<string, unknown>) => {
     try {
-      await onUpdate(option.id, { [field]: value });
+      await onUpdate(option.id, updates);
     } catch (err) {
-      console.error("Field save failed:", err);
+      console.error("Option save failed:", err);
     }
   };
 
-  const toggleExpanded = () => setIsDetailExpanded((prev) => !prev);
+  const openEditor = () => setIsEditorOpen(true);
+  const closeEditor = () => setIsEditorOpen(false);
 
   return (
-    <div ref={setNodeRef} style={style} className="min-w-0">
-      <div className={`h-full overflow-hidden border border-neutral-800 bg-neutral-900 transition-colors ${isDetailExpanded ? "bg-neutral-900" : "hover:bg-neutral-800/20"}`}>
-        <div
-          className="cursor-pointer p-3 sm:p-4"
-          role="button"
-          tabIndex={0}
-          onClick={toggleExpanded}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              toggleExpanded();
-            }
-          }}
-        >
-          <div className="flex items-start gap-3">
-            {isAdmin && (
-              <div
-                {...attributes}
-                {...listeners}
-                onClick={(e) => e.stopPropagation()}
-                className="mt-1 border border-neutral-800 p-1 text-neutral-600 cursor-grab active:cursor-grabbing"
-              >
-                <GripVertical className="h-4 w-4" />
-              </div>
-            )}
-
-            <div className="h-16 w-16 shrink-0 overflow-hidden border border-neutral-700 bg-neutral-800">
-              {option.swatch_url ? (
-                <img src={option.swatch_url} alt="" className="h-full w-full object-cover" />
-              ) : option.swatch_color ? (
-                <div className="h-full w-full" style={{ backgroundColor: option.swatch_color }} />
-              ) : (
-                <div className="h-full w-full bg-neutral-800" />
-              )}
-            </div>
-
-            <div className="min-w-0 flex-1 pr-2">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="text-sm font-semibold text-neutral-200">{option.name}</span>
-                {option.is_default && (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-green-900/30 text-green-400 border border-green-800/50">default</span>
-                )}
-                {option.nudge && (
-                  <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/30 text-blue-400 border border-blue-800/50">{option.nudge}</span>
-                )}
-              </div>
-              <p className="mt-1 overflow-hidden text-xs leading-5 text-neutral-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
-                {descriptorPreview}
-              </p>
-            </div>
-
-            <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
-              {editingPrice ? (
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-neutral-500">$</span>
-                  <input
-                    value={priceValue}
-                    onChange={(e) => setPriceValue(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") handleSavePrice(); if (e.key === "Escape") setEditingPrice(false); }}
-                    autoFocus
-                    className="w-24 bg-neutral-800 border border-neutral-600 text-white text-sm px-1.5 py-0.5 font-mono text-right focus:outline-none focus:border-neutral-400"
-                  />
-                  <button onClick={handleSavePrice} className="text-green-400 hover:text-green-300"><Check className="w-3.5 h-3.5" /></button>
-                </div>
-              ) : isAdmin ? (
-                <button
-                  onClick={() => { setPriceValue(String(option.price)); setEditingPrice(true); }}
-                  className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums transition-colors ${option.price === 0 ? "text-green-500" : "text-neutral-300"} hover:border-neutral-500`}
+    <>
+      <div ref={setNodeRef} style={style} className="min-w-0">
+        <div className="h-full overflow-hidden border border-neutral-800 bg-neutral-900 transition-colors hover:bg-neutral-800/20">
+          <div
+            className="cursor-pointer p-3 sm:p-4"
+            role="button"
+            tabIndex={0}
+            onClick={openEditor}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                openEditor();
+              }
+            }}
+          >
+            <div className="flex items-start gap-3">
+              {isAdmin && (
+                <div
+                  {...attributes}
+                  {...listeners}
+                  onClick={(e) => e.stopPropagation()}
+                  className="mt-1 border border-neutral-800 p-1 text-neutral-600 cursor-grab active:cursor-grabbing"
                 >
-                  {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
-                </button>
-              ) : (
-                <span className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums ${option.price === 0 ? "text-green-500" : "text-neutral-300"}`}>
-                  {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
-                </span>
+                  <GripVertical className="h-4 w-4" />
+                </div>
               )}
-              <button
-                type="button"
-                onClick={toggleExpanded}
-                className="mt-2 inline-flex items-center justify-end gap-1 whitespace-nowrap text-[11px] text-neutral-500 hover:text-neutral-300"
-              >
-                <span>
-                  {isDetailExpanded ? (isAdmin ? "Hide editor" : "Hide details") : (isAdmin ? "Edit details" : "View details")}
-                </span>
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isDetailExpanded ? "rotate-180" : ""}`} />
-              </button>
+
+              <div className="h-16 w-16 shrink-0 overflow-hidden border border-neutral-700 bg-neutral-800">
+                {option.swatch_url ? (
+                  <img src={option.swatch_url} alt="" className="h-full w-full object-cover" />
+                ) : option.swatch_color ? (
+                  <div className="h-full w-full" style={{ backgroundColor: option.swatch_color }} />
+                ) : (
+                  <div className="h-full w-full bg-neutral-800" />
+                )}
+              </div>
+
+              <div className="min-w-0 flex-1 pr-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-sm font-semibold text-neutral-200">{option.name}</span>
+                  {option.is_default && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-green-900/30 text-green-400 border border-green-800/50">default</span>
+                  )}
+                  {option.nudge && (
+                    <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/30 text-blue-400 border border-blue-800/50">{option.nudge}</span>
+                  )}
+                </div>
+                <p className="mt-1 overflow-hidden text-xs leading-5 text-neutral-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                  {descriptorPreview}
+                </p>
+              </div>
+
+              <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
+                {editingPrice ? (
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-neutral-500">$</span>
+                    <input
+                      value={priceValue}
+                      onChange={(e) => setPriceValue(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleSavePrice(); if (e.key === "Escape") setEditingPrice(false); }}
+                      autoFocus
+                      className="w-24 bg-neutral-800 border border-neutral-600 text-white text-sm px-1.5 py-0.5 font-mono text-right focus:outline-none focus:border-neutral-400"
+                    />
+                    <button onClick={handleSavePrice} className="text-green-400 hover:text-green-300"><Check className="w-3.5 h-3.5" /></button>
+                  </div>
+                ) : isAdmin ? (
+                  <button
+                    onClick={() => { setPriceValue(String(option.price)); setEditingPrice(true); }}
+                    className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums transition-colors ${option.price === 0 ? "text-green-500" : "text-neutral-300"} hover:border-neutral-500`}
+                  >
+                    {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
+                  </button>
+                ) : (
+                  <span className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums ${option.price === 0 ? "text-green-500" : "text-neutral-300"}`}>
+                    {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center justify-between border-t border-neutral-800/50 px-3 py-2 text-[11px] text-neutral-500 sm:px-4">
-          <div>
-            {!option.prompt_descriptor && (
-              <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-400 border border-amber-800/50">not ready</span>
+          <div className="flex items-center justify-between border-t border-neutral-800/50 px-3 py-2 text-[11px] text-neutral-500 sm:px-4">
+            <div>
+              {!option.prompt_descriptor && (
+                <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-400 border border-amber-800/50">not ready</span>
+              )}
+            </div>
+            {isAdmin && (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={openEditor}
+                  className="inline-flex items-center justify-end gap-1 whitespace-nowrap text-[11px] text-neutral-500 hover:text-neutral-300"
+                >
+                  <span>Edit details</span>
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={() => { if (confirm(`Delete "${option.name}"?`)) onDelete(option.id); }}
+                  className="inline-flex items-center text-neutral-600 hover:text-red-400"
+                  title="Delete option"
+                  aria-label={`Delete ${option.name}`}
+                >
+                  <Trash className="h-3.5 w-3.5" />
+                </button>
+              </div>
             )}
           </div>
-          {isAdmin && (
-            <button
-              onClick={() => { if (confirm(`Delete "${option.name}"?`)) onDelete(option.id); }}
-              className="inline-flex items-center text-neutral-600 hover:text-red-400"
-              title="Delete option"
-              aria-label={`Delete ${option.name}`}
-            >
-              <Trash className="h-3.5 w-3.5" />
-            </button>
-          )}
         </div>
-
-        {isDetailExpanded && isAdmin && (
-          <OptionDetailPanel option={option} orgId={orgId} categoryName={categoryName} subcategoryName={subcategoryName} onSave={handleSaveField} />
-        )}
       </div>
-    </div>
+
+      {isEditorOpen && isAdmin && (
+        <OptionEditorModal
+          option={option}
+          orgId={orgId}
+          categoryName={categoryName}
+          subcategoryName={subcategoryName}
+          onSaveOption={handleSaveOption}
+          onDelete={onDelete}
+          onClose={closeEditor}
+        />
+      )}
+    </>
   );
 });
 
-// ---------- Option Detail Panel ----------
-
-function OptionDetailPanel({
+function OptionEditorModal({
   option,
   orgId,
   categoryName,
   subcategoryName,
-  onSave,
+  onSaveOption,
+  onDelete,
+  onClose,
 }: {
   option: AdminOption;
   orgId: string;
   categoryName: string;
   subcategoryName: string;
-  onSave: (field: string, value: unknown) => Promise<void>;
+  onSaveOption: (updates: Record<string, unknown>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+  onClose: () => void;
 }) {
+  const [draft, setDraft] = useState({
+    name: option.name,
+    price: String(option.price),
+    swatchColor: option.swatch_color ?? "",
+    nudge: option.nudge ?? "",
+    swatchUrl: option.swatch_url,
+    description: option.description ?? "",
+    promptDescriptor: option.prompt_descriptor ?? "",
+    isDefault: option.is_default,
+  });
+  const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    setDraft({
+      name: option.name,
+      price: String(option.price),
+      swatchColor: option.swatch_color ?? "",
+      nudge: option.nudge ?? "",
+      swatchUrl: option.swatch_url,
+      description: option.description ?? "",
+      promptDescriptor: option.prompt_descriptor ?? "",
+      isDefault: option.is_default,
+    });
+  }, [
+    option.id,
+    option.name,
+    option.price,
+    option.swatch_color,
+    option.nudge,
+    option.swatch_url,
+    option.description,
+    option.prompt_descriptor,
+    option.is_default,
+  ]);
+
+  const buildUpdates = () => {
+    const updates: Record<string, unknown> = {};
+    const normalizedName = draft.name.trim() || option.name;
+    const parsedPrice = Number.parseInt(draft.price, 10);
+    const normalizedPrice = Number.isFinite(parsedPrice) ? parsedPrice : option.price;
+    const normalizedSwatchColor = draft.swatchColor.trim() || null;
+    const normalizedNudge = draft.nudge.trim() || null;
+    const normalizedDescription = draft.description.trim() || null;
+    const normalizedPromptDescriptor = draft.promptDescriptor.trim() || null;
+    const normalizedSwatchUrl = draft.swatchUrl || null;
+
+    if (normalizedName !== option.name) updates.name = normalizedName;
+    if (normalizedPrice !== option.price) updates.price = normalizedPrice;
+    if (normalizedSwatchColor !== (option.swatch_color ?? null)) updates.swatch_color = normalizedSwatchColor;
+    if (normalizedNudge !== (option.nudge ?? null)) updates.nudge = normalizedNudge;
+    if (normalizedDescription !== (option.description ?? null)) updates.description = normalizedDescription;
+    if (normalizedPromptDescriptor !== (option.prompt_descriptor ?? null)) updates.prompt_descriptor = normalizedPromptDescriptor;
+    if (normalizedSwatchUrl !== (option.swatch_url ?? null)) updates.swatch_url = normalizedSwatchUrl;
+    if (draft.isDefault !== option.is_default) updates.is_default = draft.isDefault;
+
+    return updates;
+  };
+
+  const hasChanges = Object.keys(buildUpdates()).length > 0;
+
+  const requestClose = () => {
+    if (saving) return;
+    if (hasChanges && !confirm("Discard unsaved changes?")) return;
+    onClose();
+  };
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    const prevOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.body.style.overscrollBehavior = prevOverscroll;
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") requestClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [saving, hasChanges, onClose]);
 
   const handleGenerateDescriptor = async () => {
     setGenerating(true);
@@ -945,15 +1042,15 @@ function OptionDetailPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           org_id: orgId,
-          option_name: option.name,
-          option_description: option.description || undefined,
+          option_name: draft.name.trim() || option.name,
+          option_description: draft.description.trim() || undefined,
           subcategory_name: subcategoryName,
           category_name: categoryName,
         }),
       });
       const data = await res.json();
       if (data.descriptor) {
-        await onSave("prompt_descriptor", data.descriptor);
+        setDraft((prev) => ({ ...prev, promptDescriptor: String(data.descriptor).trim() }));
       }
     } catch {
       console.error("Failed to generate descriptor");
@@ -961,129 +1058,246 @@ function OptionDetailPanel({
       setGenerating(false);
     }
   };
+
+  const handleSave = async () => {
+    const updates = buildUpdates();
+    if (Object.keys(updates).length === 0) {
+      onClose();
+      return;
+    }
+    setSaving(true);
+    try {
+      await onSaveOption(updates);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div className="mx-3 mb-3 border border-neutral-800 bg-neutral-800/30 p-4 text-xs sm:mx-4">
-      <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
-        <EditableField label="Name" value={option.name} onSave={(v) => onSave("name", v)} />
-        <EditableField label="Price" value={String(option.price)} onSave={(v) => onSave("price", parseInt(v, 10) || 0)} type="number" />
-        <EditableField label="Swatch color" value={option.swatch_color ?? ""} onSave={(v) => onSave("swatch_color", v || null)} placeholder="#hex" />
-        <EditableField label="Nudge" value={option.nudge ?? ""} onSave={(v) => onSave("nudge", v || null)} placeholder="e.g. Most popular" />
-      </div>
-
-      <div className="mt-4">
-        <span className="mb-1 block text-neutral-500">Swatch image</span>
-        <SwatchUpload
-          orgId={orgId}
-          optionId={option.id}
-          currentUrl={option.swatch_url}
-          onUploaded={(url) => onSave("swatch_url", url)}
-          onRemoved={() => onSave("swatch_url", null)}
-        />
-      </div>
-
-      <div className="mt-4">
-        <EditableField label="Description" value={option.description ?? ""} onSave={(v) => onSave("description", v || null)} multiline placeholder="Optional description..." />
-      </div>
-      <div className="mt-4">
-        <div className="mb-1 flex items-center gap-2">
-          <span className="text-neutral-500">Prompt descriptor</span>
-          <button
-            onClick={handleGenerateDescriptor}
-            disabled={generating}
-            className="text-[10px] px-1.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors disabled:opacity-50 flex items-center gap-1"
-          >
-            {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-            {generating ? "Generating..." : "AI Generate"}
-          </button>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 sm:p-6">
+      <button
+        className="absolute inset-0 bg-slate-950/35 backdrop-blur-[1px]"
+        onClick={requestClose}
+        aria-label="Close editor"
+      />
+      <div className="relative z-[71] flex max-h-[calc(100vh-2.5rem)] w-full max-w-3xl flex-col overflow-hidden border border-slate-300 bg-white shadow-xl animate-fade-slide-in">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 sm:px-5">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-slate-500 font-semibold">Edit Option</p>
+            <p className="mt-1 truncate text-lg font-semibold text-slate-900">{draft.name || option.name}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={requestClose}
+              className="inline-flex items-center justify-center p-1 text-slate-500 hover:text-slate-900"
+              title="Close editor"
+              aria-label="Close editor"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
-        <EditableField value={option.prompt_descriptor ?? ""} onSave={(v) => onSave("prompt_descriptor", v || null)} multiline placeholder="AI descriptor for image generation..." />
-      </div>
 
-      <div className="flex items-center gap-4 pt-4">
-        <label className="flex items-center gap-2 text-neutral-400 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={option.is_default}
-            onChange={(e) => onSave("is_default", e.target.checked)}
-            className="accent-green-500"
+        <div className="overflow-y-auto p-4 sm:p-5">
+          <OptionDetailPanel
+            option={option}
+            orgId={orgId}
+            draft={draft}
+            setDraft={setDraft}
+            generating={generating}
+            onGenerateDescriptor={handleGenerateDescriptor}
           />
-          Default (included)
-        </label>
-      </div>
+        </div>
 
-      <div className="pt-2 text-neutral-600">
-        Slug: <span className="font-mono">{option.slug}</span>
+        <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-4 py-3 sm:px-5">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                if (confirm(`Delete "${option.name}"?`)) {
+                  await onDelete(option.id);
+                  onClose();
+                }
+              }}
+              className="inline-flex items-center gap-1 border border-red-200 px-2.5 py-1 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50"
+              title="Delete option"
+              aria-label={`Delete ${option.name}`}
+              disabled={saving || generating}
+            >
+              <span>Delete</span>
+            </button>
+            {!draft.promptDescriptor.trim() && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">not ready</span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={requestClose}
+              disabled={saving}
+              className="border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 hover:border-slate-400 disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!hasChanges || saving || generating}
+              className="border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs text-white hover:bg-slate-800 disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ---------- Editable Field ----------
+// ---------- Option Detail Panel ----------
 
-function EditableField({
-  label,
-  value,
-  onSave,
-  type = "text",
-  multiline = false,
-  placeholder,
+function OptionDetailPanel({
+  option,
+  orgId,
+  draft,
+  setDraft,
+  generating,
+  onGenerateDescriptor,
 }: {
-  label?: string;
-  value: string;
-  onSave: (value: string) => Promise<void>;
-  type?: string;
-  multiline?: boolean;
-  placeholder?: string;
+  option: AdminOption;
+  orgId: string;
+  draft: {
+    name: string;
+    price: string;
+    swatchColor: string;
+    nudge: string;
+    swatchUrl: string | null;
+    description: string;
+    promptDescriptor: string;
+    isDefault: boolean;
+  };
+  setDraft: React.Dispatch<React.SetStateAction<{
+    name: string;
+    price: string;
+    swatchColor: string;
+    nudge: string;
+    swatchUrl: string | null;
+    description: string;
+    promptDescriptor: string;
+    isDefault: boolean;
+  }>>;
+  generating: boolean;
+  onGenerateDescriptor: () => Promise<void>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [editValue, setEditValue] = useState(value);
-
-  const handleSave = useCallback(async () => {
-    try {
-      if (editValue !== value) {
-        await onSave(editValue);
-      }
-    } catch (err) {
-      console.error("Save failed:", err);
-    } finally {
-      setEditing(false);
-    }
-  }, [editValue, value, onSave]);
-
-  if (editing) {
-    const inputProps = {
-      value: editValue,
-      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setEditValue(e.target.value),
-      onKeyDown: (e: React.KeyboardEvent) => {
-        if (e.key === "Enter" && !multiline) {
-          (e.currentTarget as HTMLElement).blur(); // triggers onBlur -> handleSave (single path)
-        }
-        if (e.key === "Escape") { setEditValue(value); setEditing(false); }
-      },
-      onBlur: handleSave,
-      autoFocus: true,
-      placeholder,
-      className: "w-full bg-neutral-800 border border-neutral-600 text-white text-xs px-2 py-1 focus:outline-none focus:border-neutral-400",
-    };
-
-    return (
-      <div>
-        {label && <span className="text-neutral-500 block mb-1">{label}</span>}
-        {multiline ? (
-          <textarea {...inputProps} rows={2} />
-        ) : (
-          <input {...inputProps} type={type} />
-        )}
-      </div>
-    );
-  }
-
   return (
-    <div className="cursor-pointer group border border-transparent px-1 py-1 transition-colors hover:border-neutral-700 hover:bg-neutral-900/40" onClick={() => { setEditValue(value); setEditing(true); }}>
-      {label && <span className="block text-neutral-500">{label}</span>}
-      <span className={`text-neutral-300 group-hover:text-white transition-colors ${label ? "mt-0.5 block" : "block"}`}>
-        {value || <span className="text-neutral-600 italic">{placeholder || "empty"}</span>}
-      </span>
+    <div className="space-y-4 text-sm text-slate-900">
+      <div className="border border-slate-200 bg-slate-50 p-4">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Core Fields</p>
+        <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          <div>
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 mb-1">Name</span>
+            <input
+              value={draft.name}
+              onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
+              className="w-full bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 mb-1">Price</span>
+            <input
+              type="number"
+              value={draft.price}
+              onChange={(e) => setDraft((prev) => ({ ...prev, price: e.target.value }))}
+              className="w-full bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 mb-1">Swatch color</span>
+            <input
+              value={draft.swatchColor}
+              onChange={(e) => setDraft((prev) => ({ ...prev, swatchColor: e.target.value }))}
+              placeholder="#hex"
+              className="w-full bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+            />
+          </div>
+          <div>
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 mb-1">Nudge</span>
+            <input
+              value={draft.nudge}
+              onChange={(e) => setDraft((prev) => ({ ...prev, nudge: e.target.value }))}
+              placeholder="e.g. Most popular"
+              className="w-full bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="border border-slate-200 bg-slate-50 p-4">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Swatch</p>
+        <SwatchUpload
+          orgId={orgId}
+          optionId={option.id}
+          currentUrl={draft.swatchUrl}
+          onUploaded={(url) => setDraft((prev) => ({ ...prev, swatchUrl: url }))}
+          onRemoved={() => setDraft((prev) => ({ ...prev, swatchUrl: null }))}
+        />
+      </div>
+
+      <div className="border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">Descriptions</p>
+        <div className="space-y-1">
+          <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500">Description</span>
+          <p className="text-xs leading-5 text-slate-500">
+            General display copy for this option. Use this for readable context; it is different from the AI prompt descriptor below.
+          </p>
+        </div>
+        <textarea
+          value={draft.description}
+          onChange={(e) => setDraft((prev) => ({ ...prev, description: e.target.value }))}
+          rows={2}
+          placeholder="Optional description..."
+          className="w-full resize-none bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+        />
+        <div className="space-y-1">
+          <span className="block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Prompt descriptor</span>
+          <p className="text-xs leading-5 text-slate-500">
+            Internal AI hint used for image generation accuracy (material, finish, style). Buyers do not see this text.
+          </p>
+        </div>
+        <div className="flex items-stretch gap-2">
+          <div className="flex-1">
+            <input
+              value={draft.promptDescriptor}
+              onChange={(e) => setDraft((prev) => ({ ...prev, promptDescriptor: e.target.value }))}
+              placeholder="AI descriptor for image generation..."
+              className="w-full bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+            />
+          </div>
+          <button
+            onClick={onGenerateDescriptor}
+            disabled={generating}
+            className="self-stretch shrink-0 border border-slate-300 bg-white px-3 text-[11px] font-medium text-slate-700 hover:border-slate-400 hover:text-slate-900 transition-colors disabled:opacity-50"
+          >
+            {generating ? "Generating..." : "Generate"}
+          </button>
+        </div>
+      </div>
+
+      <div className="border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={draft.isDefault}
+            onChange={(e) => setDraft((prev) => ({ ...prev, isDefault: e.target.checked }))}
+            className="accent-[var(--color-navy)]"
+          />
+          Default (included)
+        </label>
+        <div className="text-slate-500 text-xs">
+          Slug: <span className="font-mono text-slate-700">{option.slug}</span>
+        </div>
+      </div>
     </div>
   );
 }
