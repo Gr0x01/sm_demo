@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
+// Negative lookahead: paths that should NOT be rewritten on subdomains.
+// Excludes API routes, admin, framework paths, and any path whose first
+// segment contains a dot (static files like logo.svg, robots.txt, etc.)
 const PASSTHROUGH =
-  "(?!api|admin|_next|auth|try|favicon\\.ico|robots\\.txt|sitemap\\.xml)";
+  "(?!api|admin|_next|auth|try|floorplans|[^/]*\\.[^/]*)";
 
 const nextConfig: NextConfig = {
   images: {
