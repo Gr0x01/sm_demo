@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef, memo } from "react";
+import { useState, useCallback, useRef, memo, useEffect } from "react";
 import type { AdminCategory, AdminSubcategory, AdminOption } from "@/types";
 import {
   DndContext,
@@ -14,12 +14,13 @@ import {
 import {
   arrayMove,
   SortableContext,
+  rectSortingStrategy,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash2, Pencil, Check, X, Sparkles, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash, Trash2, Pencil, Check, X, Sparkles, Loader2 } from "lucide-react";
 import { SwatchUpload } from "./SwatchUpload";
 import { FloorplanScopePopover } from "./FloorplanScopePopover";
 
@@ -690,9 +691,9 @@ function SortableSubcategoryRow({
       </div>
 
       {isExpanded && (
-        <div className="border-t border-neutral-800/50">
+        <div className="border-t border-neutral-800/50 bg-neutral-800/20 py-3">
           {showAddOption && (
-            <div className="ml-6 px-3 py-2">
+            <div className="ml-6 px-3 pb-3">
               <AddOptionForm
                 onSubmit={async (name, price) => {
                   try {
@@ -707,19 +708,31 @@ function SortableSubcategoryRow({
             </div>
           )}
           <DndContext id={`opt-dnd-${subcategory.id}`} sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => onOptionReorder(subcategory.id, e)}>
-            <SortableContext items={subcategory.options.map((o) => o.id)} strategy={verticalListSortingStrategy}>
-              {subcategory.options.map((option) => (
-                <SortableOptionRow
-                  key={option.id}
-                  option={option}
-                  isAdmin={isAdmin}
-                  orgId={orgId}
-                  categoryName={categoryName}
-                  subcategoryName={subcategory.name}
-                  onUpdate={onUpdateOption}
-                  onDelete={onDeleteOption}
-                />
-              ))}
+            <SortableContext items={subcategory.options.map((o) => o.id)} strategy={rectSortingStrategy}>
+              <div className="ml-6 grid gap-3 px-3 sm:grid-cols-2 xl:grid-cols-3">
+                {subcategory.options.map((option) => (
+                  <SortableOptionRow
+                    key={option.id}
+                    option={option}
+                    isAdmin={isAdmin}
+                    orgId={orgId}
+                    categoryName={categoryName}
+                    subcategoryName={subcategory.name}
+                    onUpdate={onUpdateOption}
+                    onDelete={onDeleteOption}
+                  />
+                ))}
+                {isAdmin && subcategory.options.length === 0 && !showAddOption && (
+                  <button
+                    onClick={() => setShowAddOption(true)}
+                    className="h-44 border border-dashed border-neutral-600 bg-neutral-900/60 p-4 text-left text-neutral-500 transition-colors hover:border-neutral-500 hover:text-neutral-300"
+                  >
+                    <Plus className="mb-3 h-4 w-4" />
+                    <div className="text-sm font-medium">Add first option</div>
+                    <p className="mt-1 text-xs text-neutral-500">Create a visual card for this section.</p>
+                  </button>
+                )}
+              </div>
             </SortableContext>
           </DndContext>
         </div>
@@ -751,12 +764,22 @@ const SortableOptionRow = memo(function SortableOptionRow({
   const [isDetailExpanded, setIsDetailExpanded] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
   const [priceValue, setPriceValue] = useState(String(option.price));
+  const descriptorPreview =
+    option.description?.trim() ||
+    option.prompt_descriptor?.trim() ||
+    "Click to expand this card and edit details.";
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  useEffect(() => {
+    if (!editingPrice) {
+      setPriceValue(String(option.price));
+    }
+  }, [editingPrice, option.price]);
 
   const handleSavePrice = async () => {
     const newPrice = parseInt(priceValue, 10);
@@ -778,86 +801,121 @@ const SortableOptionRow = memo(function SortableOptionRow({
     }
   };
 
-  return (
-    <div ref={setNodeRef} style={style} className="ml-6 border-l border-neutral-800/50">
-      <div className="flex items-center gap-3 px-3 py-1.5 hover:bg-neutral-800/20 transition-colors">
-        {isAdmin && (
-          <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing">
-            <GripVertical className="w-3 h-3 text-neutral-700" />
-          </div>
-        )}
+  const toggleExpanded = () => setIsDetailExpanded((prev) => !prev);
 
-        {/* Swatch preview */}
+  return (
+    <div ref={setNodeRef} style={style} className="min-w-0">
+      <div className={`h-full overflow-hidden border border-neutral-800 bg-neutral-900 transition-colors ${isDetailExpanded ? "bg-neutral-900" : "hover:bg-neutral-800/20"}`}>
         <div
-          className="w-7 h-7 shrink-0 border border-neutral-700 overflow-hidden bg-neutral-800 cursor-pointer"
-          onClick={() => setIsDetailExpanded(!isDetailExpanded)}
+          className="cursor-pointer p-3 sm:p-4"
+          role="button"
+          tabIndex={0}
+          onClick={toggleExpanded}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleExpanded();
+            }
+          }}
         >
-          {option.swatch_url ? (
-            <img src={option.swatch_url} alt="" className="w-full h-full object-cover" />
-          ) : option.swatch_color ? (
-            <div className="w-full h-full" style={{ backgroundColor: option.swatch_color }} />
-          ) : (
-            <div className="w-full h-full bg-neutral-800" />
+          <div className="flex items-start gap-3">
+            {isAdmin && (
+              <div
+                {...attributes}
+                {...listeners}
+                onClick={(e) => e.stopPropagation()}
+                className="mt-1 border border-neutral-800 p-1 text-neutral-600 cursor-grab active:cursor-grabbing"
+              >
+                <GripVertical className="h-4 w-4" />
+              </div>
+            )}
+
+            <div className="h-16 w-16 shrink-0 overflow-hidden border border-neutral-700 bg-neutral-800">
+              {option.swatch_url ? (
+                <img src={option.swatch_url} alt="" className="h-full w-full object-cover" />
+              ) : option.swatch_color ? (
+                <div className="h-full w-full" style={{ backgroundColor: option.swatch_color }} />
+              ) : (
+                <div className="h-full w-full bg-neutral-800" />
+              )}
+            </div>
+
+            <div className="min-w-0 flex-1 pr-2">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-sm font-semibold text-neutral-200">{option.name}</span>
+                {option.is_default && (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-green-900/30 text-green-400 border border-green-800/50">default</span>
+                )}
+                {option.nudge && (
+                  <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/30 text-blue-400 border border-blue-800/50">{option.nudge}</span>
+                )}
+              </div>
+              <p className="mt-1 overflow-hidden text-xs leading-5 text-neutral-500 [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+                {descriptorPreview}
+              </p>
+            </div>
+
+            <div className="shrink-0 text-right" onClick={(e) => e.stopPropagation()}>
+              {editingPrice ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-neutral-500">$</span>
+                  <input
+                    value={priceValue}
+                    onChange={(e) => setPriceValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSavePrice(); if (e.key === "Escape") setEditingPrice(false); }}
+                    autoFocus
+                    className="w-24 bg-neutral-800 border border-neutral-600 text-white text-sm px-1.5 py-0.5 font-mono text-right focus:outline-none focus:border-neutral-400"
+                  />
+                  <button onClick={handleSavePrice} className="text-green-400 hover:text-green-300"><Check className="w-3.5 h-3.5" /></button>
+                </div>
+              ) : isAdmin ? (
+                <button
+                  onClick={() => { setPriceValue(String(option.price)); setEditingPrice(true); }}
+                  className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums transition-colors ${option.price === 0 ? "text-green-500" : "text-neutral-300"} hover:border-neutral-500`}
+                >
+                  {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
+                </button>
+              ) : (
+                <span className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums ${option.price === 0 ? "text-green-500" : "text-neutral-300"}`}>
+                  {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={toggleExpanded}
+                className="mt-2 inline-flex items-center justify-end gap-1 whitespace-nowrap text-[11px] text-neutral-500 hover:text-neutral-300"
+              >
+                <span>
+                  {isDetailExpanded ? (isAdmin ? "Hide editor" : "Hide details") : (isAdmin ? "Edit details" : "View details")}
+                </span>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isDetailExpanded ? "rotate-180" : ""}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-neutral-800/50 px-3 py-2 text-[11px] text-neutral-500 sm:px-4">
+          <div>
+            {!option.prompt_descriptor && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-400 border border-amber-800/50">not ready</span>
+            )}
+          </div>
+          {isAdmin && (
+            <button
+              onClick={() => { if (confirm(`Delete "${option.name}"?`)) onDelete(option.id); }}
+              className="inline-flex items-center text-neutral-600 hover:text-red-400"
+              title="Delete option"
+              aria-label={`Delete ${option.name}`}
+            >
+              <Trash className="h-3.5 w-3.5" />
+            </button>
           )}
         </div>
 
-        {/* Name */}
-        <span
-          className="text-sm text-neutral-300 truncate min-w-0 flex-1 cursor-pointer"
-          onClick={() => setIsDetailExpanded(!isDetailExpanded)}
-        >
-          {option.name}
-          {option.is_default && (
-            <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-green-900/30 text-green-400 border border-green-800/50">default</span>
-          )}
-          {option.nudge && (
-            <span className="ml-2 text-[10px] px-1.5 py-0.5 bg-blue-900/30 text-blue-400 border border-blue-800/50">{option.nudge}</span>
-          )}
-        </span>
-
-        {/* Price — click to edit */}
-        {editingPrice ? (
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-sm text-neutral-500">$</span>
-            <input
-              value={priceValue}
-              onChange={(e) => setPriceValue(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") handleSavePrice(); if (e.key === "Escape") setEditingPrice(false); }}
-              autoFocus
-              className="w-20 bg-neutral-800 border border-neutral-600 text-white text-sm px-1.5 py-0.5 font-mono text-right focus:outline-none focus:border-neutral-400"
-            />
-            <button onClick={handleSavePrice} className="text-green-400 hover:text-green-300"><Check className="w-3.5 h-3.5" /></button>
-          </div>
-        ) : (
-          <span
-            className={`text-sm font-mono tabular-nums shrink-0 cursor-pointer hover:text-white ${option.price === 0 ? "text-green-500" : "text-neutral-300"}`}
-            onClick={() => { if (isAdmin) { setPriceValue(String(option.price)); setEditingPrice(true); } }}
-          >
-            {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
-          </span>
-        )}
-
-        {/* Descriptor indicator */}
-        {option.prompt_descriptor ? (
-          <span className="text-[10px] text-neutral-500 shrink-0" title={option.prompt_descriptor}>AI</span>
-        ) : (
-          <span className="text-[10px] text-neutral-700 shrink-0">--</span>
-        )}
-
-        {isAdmin && (
-          <button
-            onClick={() => { if (confirm(`Delete "${option.name}"?`)) onDelete(option.id); }}
-            className="text-neutral-700 hover:text-red-400 p-1 shrink-0"
-          >
-            <Trash2 className="w-3 h-3" />
-          </button>
+        {isDetailExpanded && isAdmin && (
+          <OptionDetailPanel option={option} orgId={orgId} categoryName={categoryName} subcategoryName={subcategoryName} onSave={handleSaveField} />
         )}
       </div>
-
-      {/* Detail panel */}
-      {isDetailExpanded && isAdmin && (
-        <OptionDetailPanel option={option} orgId={orgId} categoryName={categoryName} subcategoryName={subcategoryName} onSave={handleSaveField} />
-      )}
     </div>
   );
 });
@@ -904,17 +962,16 @@ function OptionDetailPanel({
     }
   };
   return (
-    <div className="ml-10 mr-3 mb-2 p-3 bg-neutral-900 border border-neutral-800 space-y-3 text-xs">
-      <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+    <div className="mx-3 mb-3 border border-neutral-800 bg-neutral-800/30 p-4 text-xs sm:mx-4">
+      <div className="grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <EditableField label="Name" value={option.name} onSave={(v) => onSave("name", v)} />
-        <EditableField label="Price" value={String(option.price)} onSave={(v) => onSave("price", parseInt(v, 10))} type="number" />
+        <EditableField label="Price" value={String(option.price)} onSave={(v) => onSave("price", parseInt(v, 10) || 0)} type="number" />
         <EditableField label="Swatch color" value={option.swatch_color ?? ""} onSave={(v) => onSave("swatch_color", v || null)} placeholder="#hex" />
         <EditableField label="Nudge" value={option.nudge ?? ""} onSave={(v) => onSave("nudge", v || null)} placeholder="e.g. Most popular" />
       </div>
 
-      {/* Swatch upload */}
-      <div>
-        <span className="text-neutral-500 block mb-1">Swatch image</span>
+      <div className="mt-4">
+        <span className="mb-1 block text-neutral-500">Swatch image</span>
         <SwatchUpload
           orgId={orgId}
           optionId={option.id}
@@ -924,9 +981,11 @@ function OptionDetailPanel({
         />
       </div>
 
-      <EditableField label="Description" value={option.description ?? ""} onSave={(v) => onSave("description", v || null)} multiline placeholder="Optional description..." />
-      <div>
-        <div className="flex items-center gap-2 mb-1">
+      <div className="mt-4">
+        <EditableField label="Description" value={option.description ?? ""} onSave={(v) => onSave("description", v || null)} multiline placeholder="Optional description..." />
+      </div>
+      <div className="mt-4">
+        <div className="mb-1 flex items-center gap-2">
           <span className="text-neutral-500">Prompt descriptor</span>
           <button
             onClick={handleGenerateDescriptor}
@@ -937,10 +996,10 @@ function OptionDetailPanel({
             {generating ? "Generating..." : "AI Generate"}
           </button>
         </div>
-        <EditableField label="" value={option.prompt_descriptor ?? ""} onSave={(v) => onSave("prompt_descriptor", v || null)} multiline placeholder="AI descriptor for image generation..." />
+        <EditableField value={option.prompt_descriptor ?? ""} onSave={(v) => onSave("prompt_descriptor", v || null)} multiline placeholder="AI descriptor for image generation..." />
       </div>
 
-      <div className="flex items-center gap-4 pt-1">
+      <div className="flex items-center gap-4 pt-4">
         <label className="flex items-center gap-2 text-neutral-400 cursor-pointer">
           <input
             type="checkbox"
@@ -952,7 +1011,7 @@ function OptionDetailPanel({
         </label>
       </div>
 
-      <div className="text-neutral-600 pt-1">
+      <div className="pt-2 text-neutral-600">
         Slug: <span className="font-mono">{option.slug}</span>
       </div>
     </div>
@@ -969,7 +1028,7 @@ function EditableField({
   multiline = false,
   placeholder,
 }: {
-  label: string;
+  label?: string;
   value: string;
   onSave: (value: string) => Promise<void>;
   type?: string;
@@ -1009,7 +1068,7 @@ function EditableField({
 
     return (
       <div>
-        <span className="text-neutral-500 block mb-1">{label}</span>
+        {label && <span className="text-neutral-500 block mb-1">{label}</span>}
         {multiline ? (
           <textarea {...inputProps} rows={2} />
         ) : (
@@ -1020,9 +1079,9 @@ function EditableField({
   }
 
   return (
-    <div className="cursor-pointer group" onClick={() => { setEditValue(value); setEditing(true); }}>
-      <span className="text-neutral-500">{label}</span>
-      <span className="ml-2 text-neutral-300 group-hover:text-white transition-colors">
+    <div className="cursor-pointer group border border-transparent px-1 py-1 transition-colors hover:border-neutral-700 hover:bg-neutral-900/40" onClick={() => { setEditValue(value); setEditing(true); }}>
+      {label && <span className="block text-neutral-500">{label}</span>}
+      <span className={`text-neutral-300 group-hover:text-white transition-colors ${label ? "mt-0.5 block" : "block"}`}>
         {value || <span className="text-neutral-600 italic">{placeholder || "empty"}</span>}
       </span>
     </div>
@@ -1085,7 +1144,8 @@ function AddOptionForm({
   };
 
   return (
-    <div className="flex items-center gap-2 mb-2">
+    <div className="mb-2 border border-neutral-700 bg-neutral-900/70 p-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       <input
         value={name}
         onChange={(e) => setName(e.target.value)}
@@ -1114,6 +1174,7 @@ function AddOptionForm({
       <button onClick={onCancel} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900 transition-colors">
         Cancel
       </button>
+      </div>
     </div>
   );
 }
