@@ -72,7 +72,7 @@ export function GalleryView({
 
         <div className="flex items-center gap-3">
           {/* Credits meter */}
-          {generationCredits && (
+          {generationCredits && generationCredits.used >= generationCredits.total * 0.75 && (
             <div className="text-sm text-gray-500">
               <span className="font-semibold text-[var(--color-navy)]">
                 {generationCredits.total - generationCredits.used}

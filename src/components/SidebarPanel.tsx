@@ -191,7 +191,7 @@ export function SidebarPanel({
             selections={selections}
           />
           {/* Credits display */}
-          {generationCredits && (
+          {generationCredits && generationCredits.used >= generationCredits.total * 0.75 && (
             <div className="text-xs text-gray-500 text-center">
               {generationCredits.total - generationCredits.used}/{generationCredits.total} visualizations remaining
             </div>

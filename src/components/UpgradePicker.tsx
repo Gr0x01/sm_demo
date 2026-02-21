@@ -836,7 +836,7 @@ export function UpgradePicker({
                       getPhotoVisualSelections={getPhotoVisualSelections}
                       selections={state.selections}
                     />
-                    {state.generationCredits && (
+                    {state.generationCredits && state.generationCredits.used >= state.generationCredits.total * 0.75 && (
                       <div className="text-xs text-gray-500 text-center mt-2">
                         {state.generationCredits.total - state.generationCredits.used}/{state.generationCredits.total} visualizations remaining
                       </div>
