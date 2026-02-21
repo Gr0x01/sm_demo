@@ -13,10 +13,29 @@ export const maxDuration = 120;
 const openai = new OpenAI();
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
-  const lines: string[] = [];
-  if (aiConfig.sceneDescription?.trim()) lines.push(aiConfig.sceneDescription.trim());
-  if (aiConfig.photo.photoBaseline?.trim()) lines.push(`PHOTO_BASELINE: ${aiConfig.photo.photoBaseline.trim()}`);
-  return lines.length > 0 ? lines.join("\n") : null;
+  // Per-photo baseline text is the authoritative scene context when present.
+  if (aiConfig.photo.photoBaseline?.trim()) return aiConfig.photo.photoBaseline.trim();
+  if (aiConfig.sceneDescription?.trim()) return aiConfig.sceneDescription.trim();
+  return null;
+}
+
+function getPhotoScopedIds(
+  aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>,
+): Set<string> | null {
+  if (aiConfig.photo.subcategoryIds?.length) {
+    return new Set(aiConfig.photo.subcategoryIds);
+  }
+  return null;
+}
+
+function filterSpatialHints(
+  spatialHints: Record<string, string>,
+  allowedIds: Set<string> | null,
+): Record<string, string> {
+  if (!allowedIds) return { ...spatialHints };
+  return Object.fromEntries(
+    Object.entries(spatialHints).filter(([key]) => allowedIds.has(key)),
+  );
 }
 
 /**
@@ -115,21 +134,27 @@ export async function POST(request: Request) {
     }
 
     // --- Server-side per-photo selection scoping ---
-    // If the photo declares subcategoryIds, only allow those + step's alsoIncludeIds
-    let scopedSelections = selections;
-    if (aiConfig.photo.subcategoryIds?.length) {
-      const allowedIds = new Set([
-        ...aiConfig.photo.subcategoryIds,
-        ...aiConfig.alsoIncludeIds,
-      ]);
+    // If a photo declares subcategoryIds, that list is the full scope.
+    const photoScopedIds = getPhotoScopedIds(aiConfig);
+    let scopedSelections = selections as Record<string, string>;
+    if (photoScopedIds) {
       scopedSelections = Object.fromEntries(
-        Object.entries(selections as Record<string, string>).filter(([key]) => allowedIds.has(key))
+        Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
       );
     }
+    const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
+    const sceneDescription = buildSceneDescription(aiConfig);
 
     const modelName = (typeof model === "string" && model) ? model : IMAGE_MODEL;
     const optionLookup = await getOptionLookup(org.id);
-    const promptContextSignature = buildPromptContextSignature(aiConfig, scopedSelections, optionLookup);
+    const promptContextSignature = buildPromptContextSignature({
+      sceneDescription,
+      spatialHints,
+      photo: {
+        photoBaseline: aiConfig.photo.photoBaseline,
+        spatialHint: aiConfig.photo.spatialHint,
+      },
+    }, scopedSelections, optionLookup);
     const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
     const resolvedPolicy = resolvePhotoGenerationPolicy({
       orgSlug,
@@ -256,8 +281,6 @@ export async function POST(request: Request) {
     };
 
     // --- Build prompt ---
-    const spatialHints = { ...aiConfig.spatialHints };
-    const sceneDescription = buildSceneDescription(aiConfig);
     const photoSpatialHint = aiConfig.photo.spatialHint;
 
     const { prompt, swatches } = await buildEditPrompt(

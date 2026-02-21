@@ -10,7 +10,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v8";
+export const GENERATION_CACHE_VERSION = "v9";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -161,6 +161,9 @@ RULES:
 - If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.
 - Different rooms have different flooring. Tile stays in bathrooms. LVP/hardwood stays in closets, bedrooms, and hallways. Do NOT extend one flooring material into another room.
 - Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
+- In doorway or multi-room views, keep edits inside the explicitly targeted visible zone and do NOT propagate flooring/fixtures into adjacent rooms.
+- Never add televisions, media walls, built-ins, or extra cabinetry unless that exact item is explicitly selected in the list above.
+- Never convert bathroom fixture types (tub, vanity, shower, toilet) unless the selected options explicitly target that fixture and it is clearly visible.
 - Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.
 - Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
 - If an edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.

@@ -10,6 +10,7 @@ const updateSchema = z.object({
   is_hero: z.boolean().optional(),
   spatial_hint: z.string().nullable().optional(),
   photo_baseline: z.string().nullable().optional(),
+  subcategory_ids: z.array(z.string()).nullable().optional(),
   sort_order: z.number().int().optional(),
 });
 
@@ -29,7 +30,7 @@ export async function PATCH(
     if ("error" in auth) return auth.error;
 
     const { supabase, orgId } = auth;
-    const { label, is_hero, spatial_hint, photo_baseline, sort_order } = parsed.data;
+    const { label, is_hero, spatial_hint, photo_baseline, subcategory_ids, sort_order } = parsed.data;
 
     // If setting hero, do atomic swap via dedicated RPC
     if (is_hero === true) {
@@ -59,6 +60,7 @@ export async function PATCH(
     if (label !== undefined) updates.label = label;
     if (spatial_hint !== undefined) updates.spatial_hint = spatial_hint;
     if (photo_baseline !== undefined) updates.photo_baseline = photo_baseline;
+    if (subcategory_ids !== undefined) updates.subcategory_ids = subcategory_ids;
     if (sort_order !== undefined) updates.sort_order = sort_order;
     if (is_hero === false) updates.is_hero = false;
 

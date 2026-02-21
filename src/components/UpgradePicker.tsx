@@ -171,14 +171,11 @@ export function UpgradePicker({
     [filterVisualSelections]
   );
 
-  /** Per-photo scoped selections: if photo declares subcategoryIds, scope to those + alsoIncludeIds. */
+  /** Per-photo scoped selections: when present, photo.subcategoryIds is the complete scope. */
   const getPhotoVisualSelections = useCallback(
     (step: StepConfig, photo: StepPhoto | null, allSelections: Record<string, string>): Record<string, string> => {
       if (photo?.subcategoryIds?.length) {
-        const allowedIds = new Set([
-          ...photo.subcategoryIds,
-          ...(step.alsoIncludeIds ?? []),
-        ]);
+        const allowedIds = new Set(photo.subcategoryIds);
         return filterVisualSelections(allowedIds, allSelections, step.photoBaseline ?? {});
       }
       return getStepVisualSelections(step, allSelections);
@@ -664,8 +661,8 @@ export function UpgradePicker({
       }
     }
 
-    // Fire with max 3 concurrent
-    const concurrency = 3;
+    // Fire with max 20 concurrent
+    const concurrency = 20;
     let i = 0;
     async function runNext(): Promise<void> {
       while (i < pending.length) {

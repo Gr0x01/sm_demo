@@ -109,7 +109,7 @@ const _getAdminStepPhotos = async (
       step_photos (
         id, step_id, org_id, image_path, label, is_hero,
         sort_order, check_result, check_feedback, check_raw_response,
-        checked_at, spatial_hint, photo_baseline, created_at
+        checked_at, spatial_hint, photo_baseline, subcategory_ids, created_at
       )
     `)
     .eq("floorplan_id", floorplanId)

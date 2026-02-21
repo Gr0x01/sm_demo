@@ -30,6 +30,29 @@ function getPublicUrl(supabaseUrl: string, imagePath: string) {
   return `${supabaseUrl}/storage/v1/object/public/rooms/${imagePath}`;
 }
 
+function toSubcategoryScopeText(ids: string[] | null | undefined): string {
+  return (ids ?? []).join("\n");
+}
+
+function parseSubcategoryScopeText(value: string): string[] {
+  const seen = new Set<string>();
+  const parsed = value
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .filter((id) => {
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  return parsed;
+}
+
+function areStringArraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((v, i) => v === b[i]);
+}
+
 function PhotoCard({
   photo,
   orgId,
@@ -46,6 +69,7 @@ function PhotoCard({
   const [label, setLabel] = useState(photo.label);
   const [spatialHint, setSpatialHint] = useState(photo.spatial_hint || "");
   const [photoBaseline, setPhotoBaseline] = useState(photo.photo_baseline || "");
+  const [subcategoryScope, setSubcategoryScope] = useState(toSubcategoryScopeText(photo.subcategory_ids));
   const [checking, setChecking] = useState(false);
   const [generatingHint, setGeneratingHint] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -245,6 +269,31 @@ function PhotoCard({
           rows={2}
           placeholder="Baseline description of what's in the photo..."
         />
+      </div>
+
+      {/* Per-photo scope */}
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <label className="text-xs text-slate-600">Scoped Subcategory IDs</label>
+          {savingField === "subcategory_ids" && <Loader2 className="w-3 h-3 animate-spin text-slate-500" />}
+        </div>
+        <textarea
+          value={subcategoryScope}
+          onChange={(e) => setSubcategoryScope(e.target.value)}
+          onBlur={() => {
+            const parsed = parseSubcategoryScopeText(subcategoryScope);
+            const current = photo.subcategory_ids ?? [];
+            if (!areStringArraysEqual(parsed, current)) {
+              saveField("subcategory_ids", parsed.length > 0 ? parsed : null);
+            }
+          }}
+          className="w-full bg-white border border-slate-300 px-2 py-1 text-xs font-mono text-slate-900 resize-y"
+          rows={4}
+          placeholder={"one-subcategory-id-per-line\n(or comma-separated)"}
+        />
+        <p className="text-[11px] text-slate-500 mt-1">
+          If set, this is the full generation scope for this photo.
+        </p>
       </div>
     </div>
   );

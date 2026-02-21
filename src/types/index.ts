@@ -119,6 +119,7 @@ export interface AdminStepPhoto {
   label: string;
   is_hero: boolean;
   sort_order: number;
+  subcategory_ids: string[] | null;
   check_result: "pass" | "warn" | "fail" | null;
   check_feedback: string | null;
   check_raw_response: Record<string, unknown> | null;

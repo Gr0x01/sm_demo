@@ -168,6 +168,7 @@ export async function POST(
                 sort_order: photo.sort_order,
                 spatial_hint: photo.spatial_hint,
                 photo_baseline: photo.photo_baseline,
+                subcategory_ids: photo.subcategory_ids,
                 check_result: photo.check_result,
                 check_feedback: photo.check_feedback,
               });
