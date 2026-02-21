@@ -468,7 +468,7 @@ export function UpgradePicker({
   const galleryStep: StepConfig = useMemo(() => ({
     id: "__gallery",
     number: steps.length + 1,
-    name: "Gallery",
+    name: "Your Home",
     subtitle: "Review all your visualizations",
     heroImage: "",
     heroVariant: "none",

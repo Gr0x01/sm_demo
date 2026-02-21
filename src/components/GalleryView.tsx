@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StepConfig } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
-import { Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 
 interface GalleryViewProps {
   steps: StepConfig[];
@@ -28,6 +28,27 @@ function stableStringify(obj: Record<string, string>): string {
   return JSON.stringify(sorted);
 }
 
+type GalleryPhoto = NonNullable<StepConfig["photos"]>[number];
+
+interface GalleryItem {
+  step: StepConfig;
+  photo: GalleryPhoto;
+  generatedUrl: string | null;
+  isGenerating: boolean;
+  isStale: boolean;
+  hasGenerated: boolean;
+  displayUrl: string;
+  error: string | null;
+  isKitchen: boolean;
+}
+
+function isKitchenPhoto(step: StepConfig, photo: GalleryPhoto): boolean {
+  const haystack = `${step.id} ${step.name} ${photo.label}`.toLowerCase();
+  return haystack.includes("kitchen");
+}
+
+const SLIDESHOW_INTERVAL_MS = 4200;
+
 export function GalleryView({
   steps,
   generatedImageUrls,
@@ -43,6 +64,8 @@ export function GalleryView({
 }: GalleryViewProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxContext, setLightboxContext] = useState<{ photoId: string; step: StepConfig } | null>(null);
+  const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
 
   // Count pending photos (need generation or are stale)
   let pendingCount = 0;
@@ -60,6 +83,93 @@ export function GalleryView({
 
   const isAnyGenerating = generatingPhotoKeys.size > 0;
   const capReached = generationCredits ? generationCredits.used >= generationCredits.total : false;
+
+  const galleryItems: GalleryItem[] = useMemo(() => {
+    const items = stepsWithPhotos.flatMap((step) => {
+      const fingerprint = stableStringify(getPhotoVisualSelections(step, selections));
+
+      return step.photos!.map((photo) => {
+        const generatedUrl = generatedImageUrls[photo.id] ?? null;
+        const isGenerating = generatingPhotoKeys.has(photo.id);
+        const isStale =
+          generatedWithSelections[photo.id] !== fingerprint && !!generatedWithSelections[photo.id];
+        const hasGenerated = !!generatedUrl;
+
+        return {
+          step,
+          photo,
+          generatedUrl,
+          isGenerating,
+          isStale,
+          hasGenerated,
+          displayUrl: generatedUrl || photo.imageUrl,
+          error: errors[photo.id] ?? null,
+          isKitchen: isKitchenPhoto(step, photo),
+        };
+      });
+    });
+
+    return items.sort((a, b) => {
+      if (a.step.number !== b.step.number) return a.step.number - b.step.number;
+      if (a.photo.sortOrder !== b.photo.sortOrder) return a.photo.sortOrder - b.photo.sortOrder;
+      return a.photo.label.localeCompare(b.photo.label);
+    });
+  }, [
+    stepsWithPhotos,
+    getPhotoVisualSelections,
+    selections,
+    generatedImageUrls,
+    generatingPhotoKeys,
+    generatedWithSelections,
+    errors,
+  ]);
+
+  const preferredItem =
+    galleryItems.find((item) => item.isKitchen && item.hasGenerated && !item.isGenerating) ||
+    galleryItems.find((item) => item.isKitchen) ||
+    galleryItems.find((item) => item.hasGenerated && !item.isGenerating) ||
+    galleryItems[0] ||
+    null;
+
+  useEffect(() => {
+    if (!galleryItems.length) {
+      setActivePhotoId(null);
+      return;
+    }
+    if (activePhotoId && galleryItems.some((item) => item.photo.id === activePhotoId)) return;
+    setActivePhotoId(preferredItem?.photo.id ?? galleryItems[0].photo.id);
+  }, [galleryItems, activePhotoId, preferredItem]);
+
+  const activeItem =
+    galleryItems.find((item) => item.photo.id === activePhotoId) || preferredItem || null;
+  const canAnimate = galleryItems.length > 1;
+
+  const shiftActivePhoto = useCallback(
+    (direction: 1 | -1) => {
+      setActivePhotoId((currentId) => {
+        if (!galleryItems.length) return null;
+        const currentIndex = galleryItems.findIndex((item) => item.photo.id === currentId);
+        const baseIndex = currentIndex >= 0 ? currentIndex : 0;
+        const nextIndex = (baseIndex + direction + galleryItems.length) % galleryItems.length;
+        return galleryItems[nextIndex].photo.id;
+      });
+    },
+    [galleryItems]
+  );
+
+  useEffect(() => {
+    if (!canAnimate && isAutoPlaying) {
+      setIsAutoPlaying(false);
+    }
+  }, [canAnimate, isAutoPlaying]);
+
+  useEffect(() => {
+    if (!isAutoPlaying || !canAnimate) return;
+    const timer = window.setInterval(() => {
+      shiftActivePhoto(1);
+    }, SLIDESHOW_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [isAutoPlaying, canAnimate, shiftActivePhoto]);
 
   return (
     <div className="space-y-8">
@@ -86,13 +196,12 @@ export function GalleryView({
             <button
               onClick={onGenerateAll}
               disabled={isAnyGenerating || capReached}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
                 isAnyGenerating || capReached
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-hover)] active:scale-[0.98]"
+                  ? "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)]"
               }`}
             >
-              <Sparkles className="w-4 h-4" />
               Visualize All ({pendingCount})
             </button>
           )}
@@ -106,83 +215,176 @@ export function GalleryView({
         </div>
       )}
 
-      {/* Step groups */}
-      {stepsWithPhotos.map((step) => {
-        const fingerprint = stableStringify(getPhotoVisualSelections(step, selections));
-
-        return (
-          <div key={step.id}>
-            <h3 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-3">
-              {step.name}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {step.photos!.map((photo) => {
-                const generatedUrl = generatedImageUrls[photo.id] ?? null;
-                const isGenerating = generatingPhotoKeys.has(photo.id);
-                const isStale = generatedWithSelections[photo.id] !== fingerprint && !!generatedWithSelections[photo.id];
-                const hasGenerated = !!generatedUrl;
-                const displayUrl = generatedUrl || photo.imageUrl;
-                const error = errors[photo.id] ?? null;
+      {activeItem && (
+        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
+          <aside className="order-2 border border-slate-200 bg-white lg:order-1">
+            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Scenes
+              </span>
+              {canAnimate && (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => shiftActivePhoto(-1)}
+                    className="inline-flex h-6 w-6 items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    aria-label="Previous scene"
+                    title="Previous scene"
+                  >
+                    <ChevronLeft className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAutoPlaying((value) => !value)}
+                    className="inline-flex h-6 w-6 items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    aria-label={isAutoPlaying ? "Pause slideshow" : "Play slideshow"}
+                    title={isAutoPlaying ? "Pause slideshow" : "Play slideshow"}
+                  >
+                    {isAutoPlaying ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => shiftActivePhoto(1)}
+                    className="inline-flex h-6 w-6 items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer"
+                    aria-label="Next scene"
+                    title="Next scene"
+                  >
+                    <ChevronRight className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="max-h-[64vh] overflow-y-auto">
+              {galleryItems.map((item) => {
+                const isActive = item.photo.id === activeItem.photo.id;
+                const hasIssue = !!item.error && !item.isGenerating;
 
                 return (
-                  <div key={photo.id} className="relative overflow-hidden bg-gray-100 aspect-[4/3] group">
-                    <img
-                      src={displayUrl}
-                      alt={photo.label}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => { setLightboxSrc(displayUrl); setLightboxContext({ photoId: photo.id, step }); }}
-                    />
-
-                    {/* Generating overlay */}
-                    {isGenerating && (
-                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
-                        <LogoLoader className="w-10 h-auto text-[var(--color-navy)] mb-2" />
-                        <p className="text-xs font-medium text-[var(--color-navy)]">Visualizing...</p>
-                      </div>
-                    )}
-
-                    {/* Stale badge */}
-                    {isStale && hasGenerated && !isGenerating && (
-                      <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5">
-                        OUTDATED
-                      </div>
-                    )}
-
-                    {/* Bottom overlay */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 pt-6 pb-2">
-                      <div className="flex items-end justify-between gap-2">
-                        <p className="text-xs font-medium text-white truncate">{photo.label}</p>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {!isGenerating && (
-                            <button
-                              onClick={(e) => { e.stopPropagation(); hasGenerated && !isStale ? onRetry(photo.id, photo.id, step) : onGeneratePhoto(photo.id, photo.id, step); }}
-                              disabled={capReached}
-                              className={`px-2 py-1 text-[10px] font-semibold transition-colors cursor-pointer ${
-                                capReached
-                                  ? "bg-gray-400 text-white cursor-not-allowed"
-                                  : "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-hover)]"
-                              }`}
-                            >
-                              {hasGenerated && isStale ? "Update" : hasGenerated ? "Retry" : "Visualize"}
-                            </button>
-                          )}
+                  <button
+                    key={item.photo.id}
+                    onClick={() => {
+                      setActivePhotoId(item.photo.id);
+                      setIsAutoPlaying(false);
+                    }}
+                    className={`flex w-full items-center gap-3 border-l-2 px-2.5 py-2 text-left transition-colors cursor-pointer ${
+                      isActive
+                        ? "border-l-[var(--color-navy)] bg-slate-50"
+                        : "border-l-transparent hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="relative h-[56px] w-[74px] shrink-0 overflow-hidden bg-slate-100">
+                      <img
+                        src={item.displayUrl}
+                        alt={item.photo.label}
+                        className="h-full w-full object-cover"
+                      />
+                      {item.isGenerating && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-white/75">
+                          <LogoLoader className="h-auto w-4 text-[var(--color-navy)]" />
                         </div>
-                      </div>
+                      )}
                     </div>
-
-                    {/* Error */}
-                    {error && !isGenerating && (
-                      <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 max-w-[200px] truncate">
-                        {error}
-                      </div>
-                    )}
-                  </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-slate-900">
+                        {item.photo.label}
+                      </p>
+                      <p className="truncate text-[11px] text-slate-500">
+                        {item.step.name}
+                      </p>
+                      <p
+                        className={`truncate text-[11px] ${
+                          item.isGenerating
+                            ? "text-[var(--color-navy)]"
+                            : hasIssue
+                              ? "text-red-600"
+                              : item.isStale && item.hasGenerated
+                                ? "text-amber-700"
+                                : "text-slate-400"
+                        }`}
+                      >
+                        {item.isGenerating
+                          ? "Visualizing..."
+                          : hasIssue
+                            ? item.error
+                            : item.isStale && item.hasGenerated
+                              ? "Outdated"
+                              : "Ready"}
+                      </p>
+                    </div>
+                  </button>
                 );
               })}
             </div>
-          </div>
-        );
-      })}
+          </aside>
+
+          <section className="order-1 border border-slate-200 bg-white lg:order-2">
+            <div className="group relative aspect-[16/10] overflow-hidden bg-gray-100 lg:aspect-[16/9]">
+              <img
+                key={activeItem.photo.id}
+                src={activeItem.displayUrl}
+                alt={activeItem.photo.label}
+                className="h-full w-full cursor-pointer object-cover transition-transform duration-500 group-hover:scale-[1.02] animate-image-reveal"
+                onClick={() => {
+                  setLightboxSrc(activeItem.displayUrl);
+                  setLightboxContext({ photoId: activeItem.photo.id, step: activeItem.step });
+                }}
+              />
+
+              {activeItem.isGenerating && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/85 backdrop-blur-sm">
+                  <LogoLoader className="mb-2 h-auto w-10 text-[var(--color-navy)]" />
+                  <p className="text-xs font-medium text-[var(--color-navy)]">Visualizing...</p>
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-slate-200 bg-white px-3 py-2.5">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0 flex items-baseline gap-3">
+                  <p className="truncate text-base font-semibold text-slate-900">
+                    {activeItem.photo.label}
+                  </p>
+                  <p className="truncate text-sm text-slate-500">
+                    {activeItem.step.name}
+                  </p>
+                </div>
+
+                {!activeItem.isGenerating && (
+                  <button
+                    onClick={() => {
+                      if (activeItem.hasGenerated && !activeItem.isStale) {
+                        onRetry(activeItem.photo.id, activeItem.photo.id, activeItem.step);
+                      } else {
+                        onGeneratePhoto(activeItem.photo.id, activeItem.photo.id, activeItem.step);
+                      }
+                    }}
+                    disabled={capReached}
+                    className={`shrink-0 px-2.5 py-1.5 text-[11px] font-semibold transition-colors cursor-pointer ${
+                      capReached
+                        ? "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)]"
+                    }`}
+                  >
+                    {activeItem.hasGenerated && activeItem.isStale
+                      ? "Update"
+                      : activeItem.hasGenerated
+                        ? "Retry"
+                        : "Visualize"}
+                  </button>
+                )}
+              </div>
+              {(activeItem.isStale && activeItem.hasGenerated) || (activeItem.error && !activeItem.isGenerating) ? (
+                <p className="mt-1 truncate text-[11px] text-slate-500">
+                  {activeItem.isStale && activeItem.hasGenerated ? "Outdated" : ""}
+                  {activeItem.error && !activeItem.isGenerating
+                    ? `${activeItem.isStale && activeItem.hasGenerated ? " · " : ""}${activeItem.error}`
+                    : ""}
+                </p>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      )}
 
       {stepsWithPhotos.length === 0 && (
         <div className="text-center py-16 text-gray-400">
