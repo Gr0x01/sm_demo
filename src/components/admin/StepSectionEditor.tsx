@@ -106,7 +106,7 @@ export function StepSectionEditor({
               value={section.title}
               onChange={(e) => updateTitle(idx, e.target.value)}
               className="bg-white border border-slate-300 px-2 py-1 text-sm text-slate-900 flex-1"
-              placeholder="Section title"
+              placeholder="Group title"
             />
             <button onClick={() => removeSection(idx)} className="text-slate-500 hover:text-red-600 p-1">
               <Trash2 className="w-3.5 h-3.5" />
@@ -183,7 +183,7 @@ export function StepSectionEditor({
           onClick={addSection}
           className="flex items-center gap-1 text-xs text-slate-600 hover:text-slate-900"
         >
-          <Plus className="w-3.5 h-3.5" /> Add section
+          <Plus className="w-3.5 h-3.5" /> Add group
         </button>
 
         {dirty && (
@@ -193,7 +193,7 @@ export function StepSectionEditor({
             className="bg-slate-900 text-white px-3 py-1 text-xs font-medium hover:bg-slate-800 disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
-            Save sections
+            Save groups
           </button>
         )}
       </div>
