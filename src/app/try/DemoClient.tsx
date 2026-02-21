@@ -270,9 +270,9 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
         />
       )}
 
-      <main className={`flex-1 px-3 md:px-5 lg:px-6 pb-28 sm:pb-32 lg:pb-6 ${bare ? "py-0" : "py-4 md:py-6"}`}>
+      <main className={`flex-1 px-3 md:px-5 lg:px-6 pb-28 sm:pb-32 ${bare ? "py-0 lg:pb-0" : "py-4 md:py-6 lg:pb-6"}`}>
         <div className={`mx-auto w-full ${bare ? "max-w-7xl" : "max-w-[1660px]"}`}>
-          <div className={`grid grid-cols-1 ${bare ? "lg:grid-cols-[minmax(0,1.45fr)_1px_minmax(360px,1fr)] lg:min-h-screen" : "lg:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)] gap-4 md:gap-6"}`}>
+          <div className={`grid grid-cols-1 ${bare ? "lg:grid-cols-[minmax(0,1.45fr)_1px_minmax(360px,1fr)]" : "lg:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)] gap-4 md:gap-6"}`}>
             {/* Left: sticky viewer + controls */}
             <section className={`lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px-1.5rem)] lg:self-start demo-enter demo-enter-delay-1 ${bare ? "lg:pr-5 pt-4 md:pt-6" : ""} ${headerContent ? "lg:overflow-y-auto" : "lg:overflow-hidden"}`}>
               {headerContent}
@@ -344,7 +344,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
             {bare && <div className="hidden lg:block bg-slate-200" />}
 
             {/* Right: scrollable picker */}
-            <section className={`demo-enter demo-enter-delay-2 ${bare ? "lg:pl-5 pt-12 md:pt-18" : "lg:pr-1"}`}>
+            <section className={`demo-enter demo-enter-delay-2 ${bare ? "lg:pl-5 pt-4 md:pt-6 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto" : "lg:pr-1"}`}>
               <DemoPickerPanel
                 selections={selections}
                 sceneAnalysis={uploadedPhoto?.sceneAnalysis}
