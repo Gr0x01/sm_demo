@@ -248,7 +248,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
       id, slug, number, name, subtitle, hero_image, hero_variant,
       show_generate_button, scene_description, also_include_ids, photo_baseline,
       sort_order, sections, spatial_hints,
-      step_photos!step_photos_org_match ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline )
+      step_photos!step_photos_org_match ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline, subcategory_ids )
     `)
     .eq("floorplan_id", floorplanId)
     .order("sort_order");
@@ -274,6 +274,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
     type RawStepPhoto = {
       id: string; image_path: string; label: string; is_hero: boolean;
       sort_order: number; spatial_hint: string | null; photo_baseline: string | null;
+      subcategory_ids: string[] | null;
     };
     const rawPhotos = ((s.step_photos ?? []) as RawStepPhoto[])
       .sort((a, b) => a.sort_order - b.sort_order);
@@ -287,6 +288,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
           sortOrder: p.sort_order,
           spatialHint: p.spatial_hint,
           photoBaseline: p.photo_baseline,
+          subcategoryIds: p.subcategory_ids ?? null,
         }))
       : undefined;
 
@@ -364,7 +366,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
 
   const { data: photo, error: photoErr } = await supabase
     .from("step_photos")
-    .select("id, step_id, spatial_hint, photo_baseline, image_path")
+    .select("id, step_id, spatial_hint, photo_baseline, image_path, subcategory_ids")
     .eq("id", stepPhotoId)
     .single();
 
@@ -393,6 +395,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
       imagePath: photo.image_path as string,
       spatialHint: photo.spatial_hint as string | null,
       photoBaseline: photo.photo_baseline as string | null,
+      subcategoryIds: (photo.subcategory_ids as string[] | null) ?? null,
     },
   };
 }

@@ -114,9 +114,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    // --- Server-side per-photo selection scoping ---
+    // If the photo declares subcategoryIds, only allow those + step's alsoIncludeIds
+    let scopedSelections = selections;
+    if (aiConfig.photo.subcategoryIds?.length) {
+      const allowedIds = new Set([
+        ...aiConfig.photo.subcategoryIds,
+        ...aiConfig.alsoIncludeIds,
+      ]);
+      scopedSelections = Object.fromEntries(
+        Object.entries(selections as Record<string, string>).filter(([key]) => allowedIds.has(key))
+      );
+    }
+
     const modelName = (typeof model === "string" && model) ? model : IMAGE_MODEL;
     const optionLookup = await getOptionLookup(org.id);
-    const promptContextSignature = buildPromptContextSignature(aiConfig, selections, optionLookup);
+    const promptContextSignature = buildPromptContextSignature(aiConfig, scopedSelections, optionLookup);
     const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
     const resolvedPolicy = resolvePhotoGenerationPolicy({
       orgSlug,
@@ -125,10 +138,10 @@ export async function POST(request: Request) {
       stepPhotoId,
       imagePath: aiConfig.photo.imagePath,
       modelName,
-      selections,
+      selections: scopedSelections,
     }, dbPolicy);
     const selectionsHash = hashSelections({
-      ...selections,
+      ...scopedSelections,
       _stepPhotoId: stepPhotoId,
       _model: modelName,
       _cacheVersion: GENERATION_CACHE_VERSION,
@@ -170,7 +183,7 @@ export async function POST(request: Request) {
 
     // --- Double-click guard via DB placeholder row (cross-instance safe) ---
     const selectionsJsonForClaim = {
-      ...selections,
+      ...scopedSelections,
       _stepPhotoId: stepPhotoId,
       _model: modelName,
       _cacheVersion: GENERATION_CACHE_VERSION,
@@ -248,7 +261,7 @@ export async function POST(request: Request) {
     const photoSpatialHint = aiConfig.photo.spatialHint;
 
     const { prompt, swatches } = await buildEditPrompt(
-      selections,
+      scopedSelections,
       optionLookup,
       spatialHints,
       sceneDescription,
@@ -377,13 +390,13 @@ export async function POST(request: Request) {
     }
 
     // --- Cache the result (upsert replaces the __pending__ placeholder) ---
-    const selectionsFingerprint = hashSelections(selections);
+    const selectionsFingerprint = hashSelections(scopedSelections);
     const { data: upserted, error: upsertError } = await supabase
       .from("generated_images")
       .upsert({
         selections_hash: selectionsHash,
         selections_json: {
-          ...selections,
+          ...scopedSelections,
           _stepPhotoId: stepPhotoId,
           _model: modelName,
           _cacheVersion: GENERATION_CACHE_VERSION,

@@ -54,7 +54,7 @@ interface SidebarPanelProps {
   generationCredits?: { used: number; total: number } | null;
   errors?: Record<string, string>;
   generatedWithSelections?: Record<string, string>;
-  getPhotoVisualSelections?: (step: StepConfig, selections: Record<string, string>) => Record<string, string>;
+  getPhotoVisualSelections?: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
   selections?: Record<string, string>;
 }
 

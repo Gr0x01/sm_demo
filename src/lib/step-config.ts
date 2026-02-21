@@ -7,6 +7,7 @@ export interface StepPhoto {
   sortOrder: number;
   spatialHint: string | null;
   photoBaseline: string | null;  // text description for AI prompt
+  subcategoryIds?: string[] | null;  // scopes which selections are sent to AI for this photo
 }
 
 export interface StepSection {

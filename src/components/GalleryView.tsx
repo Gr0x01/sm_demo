@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { StepConfig } from "@/lib/step-config";
+import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
@@ -16,7 +16,7 @@ interface GalleryViewProps {
   generationCredits: { used: number; total: number } | null;
   errors: Record<string, string>;
   generatedWithSelections: Record<string, string>;
-  getPhotoVisualSelections: (step: StepConfig, selections: Record<string, string>) => Record<string, string>;
+  getPhotoVisualSelections: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
   selections: Record<string, string>;
 }
 
@@ -67,28 +67,15 @@ export function GalleryView({
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
 
-  // Count pending photos (need generation or are stale)
-  let pendingCount = 0;
   const stepsWithPhotos = steps.filter(s => s.photos?.length);
-
-  for (const step of stepsWithPhotos) {
-    const fingerprint = stableStringify(getPhotoVisualSelections(step, selections));
-    for (const photo of step.photos!) {
-      const existing = generatedWithSelections[photo.id];
-      if (existing !== fingerprint && !generatingPhotoKeys.has(photo.id)) {
-        pendingCount++;
-      }
-    }
-  }
 
   const isAnyGenerating = generatingPhotoKeys.size > 0;
   const capReached = generationCredits ? generationCredits.used >= generationCredits.total : false;
 
   const galleryItems: GalleryItem[] = useMemo(() => {
     const items = stepsWithPhotos.flatMap((step) => {
-      const fingerprint = stableStringify(getPhotoVisualSelections(step, selections));
-
       return step.photos!.map((photo) => {
+        const fingerprint = stableStringify(getPhotoVisualSelections(step, photo, selections));
         const generatedUrl = generatedImageUrls[photo.id] ?? null;
         const isGenerating = generatingPhotoKeys.has(photo.id);
         const isStale =
@@ -123,6 +110,11 @@ export function GalleryView({
     generatedWithSelections,
     errors,
   ]);
+
+  // Derive pending count from galleryItems (stale or never-generated, not currently generating)
+  const pendingCount = galleryItems.filter(
+    (item) => (item.isStale || !item.hasGenerated) && !item.isGenerating
+  ).length;
 
   const preferredItem =
     galleryItems.find((item) => item.isKitchen && item.hasGenerated && !item.isGenerating) ||

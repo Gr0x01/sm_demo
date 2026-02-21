@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
@@ -14,7 +14,7 @@ interface StepPhotoGridProps {
   onRetry: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
   errors: Record<string, string>;
   generatedWithSelections: Record<string, string>;
-  getPhotoVisualSelections: (step: StepConfig, selections: Record<string, string>) => Record<string, string>;
+  getPhotoVisualSelections: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
   selections: Record<string, string>;
 }
 
@@ -42,7 +42,11 @@ export function StepPhotoGrid({
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const photos = step.photos ?? [];
 
-  const currentFingerprint = stableStringify(getPhotoVisualSelections(step, selections));
+  // Per-photo fingerprint helper (scoped by photo.subcategoryIds when set)
+  const getFingerprint = useCallback(
+    (photo: StepPhoto) => stableStringify(getPhotoVisualSelections(step, photo, selections)),
+    [step, getPhotoVisualSelections, selections]
+  );
 
   // Hero photo first, then rest
   const sortedPhotos = useMemo(() => {
@@ -76,7 +80,7 @@ export function StepPhotoGrid({
             photo={activePhoto}
             generatedUrl={generatedImageUrls[activePhoto.id] ?? null}
             isGenerating={generatingPhotoKeys.has(activePhoto.id)}
-            isStale={generatedWithSelections[activePhoto.id] !== currentFingerprint && !!generatedWithSelections[activePhoto.id]}
+            isStale={generatedWithSelections[activePhoto.id] !== getFingerprint(activePhoto) && !!generatedWithSelections[activePhoto.id]}
             error={errors[activePhoto.id] ?? null}
             onGenerate={() => onGeneratePhoto(activePhoto.id, activePhoto.id, step)}
             onRetry={() => onRetry(activePhoto.id, activePhoto.id, step)}
@@ -91,7 +95,7 @@ export function StepPhotoGrid({
               const generatedUrl = generatedImageUrls[photo.id] ?? null;
               const displayUrl = generatedUrl || photo.imageUrl;
               const isGenerating = generatingPhotoKeys.has(photo.id);
-              const isStale = generatedWithSelections[photo.id] !== currentFingerprint && !!generatedWithSelections[photo.id];
+              const isStale = generatedWithSelections[photo.id] !== getFingerprint(photo) && !!generatedWithSelections[photo.id];
 
               return (
                 <button

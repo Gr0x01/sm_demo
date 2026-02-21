@@ -3,7 +3,7 @@
 import { useReducer, useCallback, useMemo, useState, useEffect, useRef } from "react";
 import type { SelectionState, SelectionAction, SubCategory, Category } from "@/types";
 import { calculateTotal } from "@/lib/pricing";
-import type { StepConfig } from "@/lib/step-config";
+import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { useTrack } from "@/hooks/useTrack";
 import { StepNav } from "./StepNav";
 import { StepContent } from "./StepContent";
@@ -137,14 +137,9 @@ export function UpgradePicker({
     [contractPhase, contractLockedIds]
   );
 
-  /** Extract the visual selections relevant to a step's generation (shared by generate + cache check). */
-  const getStepVisualSelections = useCallback(
-    (step: StepConfig, allSelections: Record<string, string>): Record<string, string> => {
-      const stepSubCategoryIds = new Set([
-        ...step.sections.flatMap((sec) => sec.subCategoryIds),
-        ...(step.alsoIncludeIds ?? []),
-      ]);
-      const baseline = step.photoBaseline ?? {};
+  /** Filter allSelections to only visual, non-skip, changed-from-baseline entries within allowedIds. */
+  const filterVisualSelections = useCallback(
+    (allowedIds: Set<string>, allSelections: Record<string, string>, baseline: Record<string, string>): Record<string, string> => {
       const result: Record<string, string> = {};
       for (const [subId, optId] of Object.entries(allSelections)) {
         const sub = subCategoryMap.get(subId);
@@ -152,7 +147,7 @@ export function UpgradePicker({
         const baselineId = baseline[subId] ?? defaultSelections[subId];
         if (
           visualSubCategoryIds.has(subId) &&
-          stepSubCategoryIds.has(subId) &&
+          allowedIds.has(subId) &&
           hint !== 'skip' &&
           (hint === 'always_send' || optId !== baselineId)
         ) {
@@ -162,6 +157,33 @@ export function UpgradePicker({
       return result;
     },
     [visualSubCategoryIds, defaultSelections, subCategoryMap]
+  );
+
+  /** Step-level visual selections (all step sections + alsoIncludeIds). */
+  const getStepVisualSelections = useCallback(
+    (step: StepConfig, allSelections: Record<string, string>): Record<string, string> => {
+      const allowedIds = new Set([
+        ...step.sections.flatMap((sec) => sec.subCategoryIds),
+        ...(step.alsoIncludeIds ?? []),
+      ]);
+      return filterVisualSelections(allowedIds, allSelections, step.photoBaseline ?? {});
+    },
+    [filterVisualSelections]
+  );
+
+  /** Per-photo scoped selections: if photo declares subcategoryIds, scope to those + alsoIncludeIds. */
+  const getPhotoVisualSelections = useCallback(
+    (step: StepConfig, photo: StepPhoto | null, allSelections: Record<string, string>): Record<string, string> => {
+      if (photo?.subcategoryIds?.length) {
+        const allowedIds = new Set([
+          ...photo.subcategoryIds,
+          ...(step.alsoIncludeIds ?? []),
+        ]);
+        return filterVisualSelections(allowedIds, allSelections, step.photoBaseline ?? {});
+      }
+      return getStepVisualSelections(step, allSelections);
+    },
+    [filterVisualSelections, getStepVisualSelections]
   );
 
   function reducer(state: SelectionState, action: SelectionAction): SelectionState {
@@ -342,10 +364,11 @@ export function UpgradePicker({
           const stepSelections = getStepVisualSelections(step, mergedSelections);
           if (Object.keys(stepSelections).length === 0) continue;
 
-          // Multi-tenant: check cache per photo
+          // Multi-tenant: check cache per photo (using per-photo scoped selections)
           if (step.photos?.length && orgSlug && floorplanSlug) {
             for (const photo of step.photos) {
               try {
+                const photoSelections = getPhotoVisualSelections(step, photo, mergedSelections);
                 const checkRes = await fetch("/api/generate/photo/check", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -353,7 +376,7 @@ export function UpgradePicker({
                     orgSlug,
                     floorplanSlug,
                     stepPhotoId: photo.id,
-                    selections: stepSelections,
+                    selections: photoSelections,
                     ...(modelParam ? { model: modelParam } : {}),
                   }),
                 });
@@ -364,7 +387,7 @@ export function UpgradePicker({
                       type: "PHOTO_GENERATION_COMPLETE",
                       photoKey: photo.id,
                       imageUrl,
-                      selectionsSnapshot: stableStringify(stepSelections),
+                      selectionsSnapshot: stableStringify(photoSelections),
                       generatedImageId: generatedImageId ?? null,
                     });
                   }
@@ -381,7 +404,7 @@ export function UpgradePicker({
     }
 
     loadAndCheckCache();
-  }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections, orgSlug, floorplanSlug]);
+  }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections, getPhotoVisualSelections, orgSlug, floorplanSlug]);
 
   // Auto-save selections (debounced 1s)
   useEffect(() => {
@@ -501,16 +524,13 @@ export function UpgradePicker({
     []
   );
 
-  // --- Per-photo generation (multi-tenant) ---
-  // Reuse getStepVisualSelections — same logic applies per-photo (uses parent step's photoBaseline)
-  const getPhotoVisualSelections = getStepVisualSelections;
-
   const handleGeneratePhoto = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig, opts?: { retry?: boolean }) => {
     if (state.generatingPhotoKeys.has(photoKey)) return;
     dispatch({ type: "START_GENERATING_PHOTO", photoKey });
     track("generation_started", { stepName: step.name, photoKey });
 
-    const visualSelections = getPhotoVisualSelections(step, state.selections);
+    const photo = step.photos?.find(p => p.id === stepPhotoId) ?? null;
+    const visualSelections = getPhotoVisualSelections(step, photo, state.selections);
     const selectionsSnapshot = stableStringify(visualSelections);
 
     try {
@@ -635,8 +655,8 @@ export function UpgradePicker({
     const pending: { photoKey: string; stepPhotoId: string; step: StepConfig }[] = [];
     for (const step of steps) {
       if (!step.photos?.length) continue;
-      const fingerprint = stableStringify(getPhotoVisualSelections(step, state.selections));
       for (const photo of step.photos) {
+        const fingerprint = stableStringify(getPhotoVisualSelections(step, photo, state.selections));
         const existing = state.generatedWithSelections[photo.id];
         if (existing !== fingerprint && !state.generatingPhotoKeys.has(photo.id)) {
           pending.push({ photoKey: photo.id, stepPhotoId: photo.id, step });

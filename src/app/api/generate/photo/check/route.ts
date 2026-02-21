@@ -45,9 +45,21 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: "not_found", imageUrl: null });
       }
 
+      // Server-side per-photo selection scoping (mirrors generate route)
+      let scopedSelections = selections;
+      if (aiConfig.photo.subcategoryIds?.length) {
+        const allowedIds = new Set([
+          ...aiConfig.photo.subcategoryIds,
+          ...aiConfig.alsoIncludeIds,
+        ]);
+        scopedSelections = Object.fromEntries(
+          Object.entries(selections as Record<string, string>).filter(([key]) => allowedIds.has(key))
+        );
+      }
+
       const modelName = (typeof model === "string" && model) ? model : IMAGE_MODEL;
       const optionLookup = await getOptionLookup(org.id);
-      const promptContextSignature = buildPromptContextSignature(aiConfig, selections, optionLookup);
+      const promptContextSignature = buildPromptContextSignature(aiConfig, scopedSelections, optionLookup);
       const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
       const resolvedPolicy = resolvePhotoGenerationPolicy({
         orgSlug,
@@ -56,10 +68,10 @@ export async function POST(request: Request) {
         stepPhotoId,
         imagePath: aiConfig.photo.imagePath,
         modelName,
-        selections,
+        selections: scopedSelections,
       }, dbPolicy);
       hash = hashSelections({
-        ...selections,
+        ...scopedSelections,
         _stepPhotoId: stepPhotoId,
         _model: modelName,
         _cacheVersion: GENERATION_CACHE_VERSION,
