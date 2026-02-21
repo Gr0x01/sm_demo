@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
-import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGenerationPolicy } from "@/lib/db-queries";
+import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup } from "@/lib/db-queries";
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL } from "@/lib/models";
 
@@ -46,7 +46,8 @@ export async function POST(request: Request) {
       }
 
       const modelName = (typeof model === "string" && model) ? model : IMAGE_MODEL;
-      const promptContextSignature = buildPromptContextSignature(aiConfig);
+      const optionLookup = await getOptionLookup(org.id);
+      const promptContextSignature = buildPromptContextSignature(aiConfig, selections, optionLookup);
       const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
       const resolvedPolicy = resolvePhotoGenerationPolicy({
         orgSlug,
