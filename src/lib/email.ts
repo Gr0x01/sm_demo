@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { buyerResumeEmail, adminInviteEmail } from "./email-templates";
+import { buyerResumeEmail, adminInviteEmail, pilotInterestNotification } from "./email-templates";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -66,6 +66,30 @@ export async function sendAdminInviteEmail(
     from,
     to,
     subject: `You've been invited to manage ${orgName} on Finch`,
+    html,
+    text,
+  });
+}
+
+export async function sendPilotInterestEmail(lead: {
+  name: string;
+  company: string;
+  email: string;
+  phone?: string;
+}) {
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!from) {
+    console.error("[email] Missing RESEND_FROM_EMAIL env var");
+    return;
+  }
+
+  const { html, text } = pilotInterestNotification(lead);
+
+  await getResend().emails.send({
+    from,
+    to: "hello@withfin.ch",
+    replyTo: lead.email,
+    subject: `Pilot interest: ${lead.company}`,
     html,
     text,
   });

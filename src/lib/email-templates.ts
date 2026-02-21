@@ -209,6 +209,56 @@ interface AdminInviteProps {
   orgSecondaryColor?: string | null;
 }
 
+// ---------------------------------------------------------------------------
+// 3. Pilot Interest Notification (internal)
+// ---------------------------------------------------------------------------
+
+interface PilotInterestProps {
+  name: string;
+  company: string;
+  email: string;
+  phone?: string;
+}
+
+export function pilotInterestNotification({
+  name,
+  company,
+  email,
+  phone,
+}: PilotInterestProps): { html: string; text: string } {
+  const content = [
+    microLabel("New Pilot Interest", DEFAULT_SECONDARY),
+    serifHeading("New lead from the website"),
+    infoCard(
+      `<p style="margin:0 0 6px 0;font-family:${BODY_FONT};font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:${TEXT_MUTED};">Contact Details</p>
+<p style="margin:0 0 4px 0;font-family:${BODY_FONT};font-size:14px;color:${TEXT_BODY};"><strong style="color:${TEXT_HEADING};">Name:</strong> ${esc(name)}</p>
+<p style="margin:0 0 4px 0;font-family:${BODY_FONT};font-size:14px;color:${TEXT_BODY};"><strong style="color:${TEXT_HEADING};">Company:</strong> ${esc(company)}</p>
+<p style="margin:0 0 4px 0;font-family:${BODY_FONT};font-size:14px;color:${TEXT_BODY};"><strong style="color:${TEXT_HEADING};">Email:</strong> <a href="mailto:${esc(email)}" style="color:${DEFAULT_SECONDARY};">${esc(email)}</a></p>
+${phone ? `<p style="margin:0;font-family:${BODY_FONT};font-size:14px;color:${TEXT_BODY};"><strong style="color:${TEXT_HEADING};">Phone:</strong> ${esc(phone)}</p>` : ""}`,
+      DEFAULT_SECONDARY
+    ),
+    ctaButton("Reply to Lead", `mailto:${esc(email)}`, DEFAULT_PRIMARY),
+  ].join("\n");
+
+  const html = wrapLayout({
+    preheader: `Pilot interest from ${company}`,
+    content,
+  });
+
+  const text = [
+    "NEW PILOT INTEREST",
+    "",
+    `Name: ${name}`,
+    `Company: ${company}`,
+    `Email: ${email}`,
+    ...(phone ? [`Phone: ${phone}`] : []),
+    "",
+    `Reply: mailto:${email}`,
+  ].join("\n");
+
+  return { html, text };
+}
+
 export function adminInviteEmail({
   orgName,
   role,
