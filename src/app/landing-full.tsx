@@ -652,14 +652,11 @@ export default function LandingPage() {
           style={revealStyle(330)}
           className="text-center max-w-3xl mx-auto"
         >
-          <p className="text-2xl md:text-3xl text-slate-800 leading-tight mb-3">
-            That&apos;s revenue your buyers already want to spend. They just need to see what they&apos;re&nbsp;getting.
-          </p>
-          <p className="text-base md:text-lg text-slate-600 mb-6">
-            Click any number above to test your own volume and option mix.
+          <p className="text-2xl md:text-3xl text-slate-800 leading-tight mb-6">
+            Buyers upgrade what they can see. The ones who can&apos;t picture it default to&nbsp;Standard.
           </p>
           <p className="text-xs text-slate-400 max-w-2xl mx-auto">
-            Industry benchmark: Zonda reports 35% lift with visualization across 225+ builder brands. In our first builder test, a buyer actively trying to minimize spend still chose 40% more after seeing their selections. We default to 15%.
+            Zonda reports 35% average lift with visualization across 225+ builder brands. In our first test, a buyer trying to hold the line on budget still chose 40% more after seeing their selections. We default to 15%.
           </p>
         </div>
       </Section>
