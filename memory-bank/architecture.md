@@ -326,6 +326,7 @@ src/
 
 scripts/
 ├── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
+├── seed-new-tenant.ts       # Seed a new builder org with starter structure (9 cats, 15 subcats, 15 defaults, 5 steps)
 ├── migrate-sm-storage.ts    # Upload SM room photos + swatches to Storage, create step_photos
 ├── seed-photo-policies.ts   # Seed internal per-photo generation policies (e.g., SM kitchen-close)
 └── sql/

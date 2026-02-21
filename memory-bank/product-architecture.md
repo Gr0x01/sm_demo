@@ -286,7 +286,7 @@ admin.withfin.ch                        → Central admin (us) — all orgs
 
 ### 1. Central Admin (Us)
 - Create/manage organizations
-- Onboard new builders (setup service path)
+- Onboard new builders via `seed-new-tenant.ts` (creates org + starter structure, then admin configures)
 - Configure AI settings, spatial labels, prompt descriptors
 - View all orgs, all analytics
 - Access: service_role or superadmin JWT

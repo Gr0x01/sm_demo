@@ -38,6 +38,7 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 ```bash
 npm run dev -p 3003  # local dev (port 3003)
 npm run build        # production build
+npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a new builder org
 ```
 
 ## Environment Variables
