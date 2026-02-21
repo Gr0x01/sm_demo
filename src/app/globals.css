@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem; /* offset for sticky nav */
+}
+
 :root {
   --color-navy: #1b2d4e;
   --color-navy-hover: #172742;
