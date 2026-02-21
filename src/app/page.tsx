@@ -746,19 +746,19 @@ export default function LandingPage() {
           style={revealStyle(20)}
           className="max-w-3xl mx-auto text-center"
         >
-          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Next Step</p>
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5 text-balance">
-            See what your buyers would see.
+          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">60 Seconds</p>
+          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
+            Your buyers can&apos;t upgrade what they can&apos;t see.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            Upload a kitchen photo, pick finishes, and watch the room change. Takes 60 seconds.
+            Upload your model home kitchen. Pick finishes. Watch the room change. This is how upgrades sell themselves.
           </p>
           <Link
             href="/try"
-            onClick={() => track("cta_clicked", { cta: "Try the Demo", location: "contact" })}
+            onClick={() => track("cta_clicked", { cta: "Try It With Your Photo", location: "contact" })}
             className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
           >
-            Try the Demo
+            Try It With Your Photo
           </Link>
           <p className="text-xs text-slate-400 mt-4">Questions? hello@finchweb.io</p>
         </div>

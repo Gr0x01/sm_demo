@@ -251,13 +251,20 @@ export function DemoClient() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col" style={{ "--color-accent": "#0f172a", "--color-navy": "#0f172a" } as React.CSSProperties}>
-      <SiteNav cta={{ label: "Book a Walkthrough", href: "mailto:hello@finchweb.io?subject=Demo Walkthrough" }} />
+      <SiteNav
+        links={[
+          { label: "How It Works", href: "/#compare" },
+          { label: "Pricing", href: "/#pricing" },
+          { label: "FAQ", href: "/#faq" },
+        ]}
+        cta={{ label: "Book a Walkthrough", href: "mailto:hello@finchweb.io?subject=Finch Demo Interest" }}
+      />
 
       <main className="flex-1 px-3 md:px-5 lg:px-6 py-4 md:py-6 pb-28 sm:pb-32 lg:pb-6">
         <div className="mx-auto w-full max-w-[1660px]">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)] gap-4 md:gap-6">
             {/* Left: sticky viewer + controls */}
-            <section className="lg:sticky lg:top-[72px] h-full demo-enter demo-enter-delay-1">
+            <section className="lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px-1.5rem)] lg:overflow-hidden lg:self-start demo-enter demo-enter-delay-1">
               <div className="h-full p-3 md:p-4 bg-white border border-slate-200 flex flex-col gap-4">
                 <div ref={previewSectionRef} className="flex-1 min-h-0">
                   {uploadedPhoto ? (
@@ -273,10 +280,10 @@ export function DemoClient() {
                         <div className="w-full max-w-2xl">
                           <div className="text-center mb-6">
                             <h1 className="text-2xl md:text-3xl leading-tight tracking-[-0.02em] text-slate-900 mb-2">
-                              See your kitchen transformed
+                              Start with your model home kitchen
                             </h1>
                             <p className="text-sm md:text-base text-slate-500">
-                              Drop a photo here, then pick finishes on the right.
+                              Upload a photo. Pick finishes. See the room change in seconds.
                             </p>
                           </div>
                           <DemoUploader onPhotoAccepted={handlePhotoAccepted} />
@@ -407,7 +414,7 @@ export function DemoClient() {
           {uploadedPhoto ? (
             <GenerationCounter used={generationsUsed} max={5} onRecall={handleRecallGeneration} />
           ) : (
-            <p className="text-xs text-slate-500">Upload a kitchen photo to start</p>
+            <p className="text-xs text-slate-500">Upload a model home photo to start</p>
           )}
         </div>
         <div className="px-3 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] grid grid-cols-2 gap-2">

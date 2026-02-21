@@ -11,8 +11,8 @@ interface NavLink {
 interface SiteNavProps {
   /** Navigation links — section anchors on homepage, page links on other pages */
   links?: NavLink[];
-  /** CTA button config */
-  cta?: { label: string; href: string };
+  /** CTA button config — pass null to hide */
+  cta?: { label: string; href: string } | null;
 }
 
 const DEFAULT_CTA = {
@@ -39,12 +39,14 @@ export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
               {link.label}
             </a>
           ))}
-          <a
-            href={cta.href}
-            className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-          >
-            {cta.label}
-          </a>
+          {cta && (
+            <a
+              href={cta.href}
+              className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+            >
+              {cta.label}
+            </a>
+          )}
         </div>
         {(links.length > 0) && (
           <button
@@ -71,12 +73,14 @@ export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
                   {link.label}
                 </a>
               ))}
-              <a
-                href={cta.href}
-                className="text-center px-4 py-2.5 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider"
-              >
-                {cta.label}
-              </a>
+              {cta && (
+                <a
+                  href={cta.href}
+                  className="text-center px-4 py-2.5 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider"
+                >
+                  {cta.label}
+                </a>
+              )}
             </div>
           </div>
         </div>

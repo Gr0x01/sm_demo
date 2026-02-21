@@ -153,6 +153,37 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
     if (file) processFile(file);
   }, [processFile]);
 
+  const handleUseSample = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isValidating) return;
+    track("demo_sample_photo_clicked");
+    setRejection(null);
+    setIsValidating(true);
+    try {
+      const res = await fetch("/sample-kitchen.jpg");
+      const blob = await res.blob();
+      const file = new File([blob], "sample-kitchen.jpg", { type: "image/jpeg" });
+      const { dataUrl } = await resizeImage(file);
+      const hash = await hashDataUrl(dataUrl);
+      onPhotoAccepted({
+        dataUrl,
+        hash,
+        sceneAnalysis: {
+          sceneDescription: "Modern model home kitchen with white shaker cabinets, light granite countertops, stainless steel appliances, hardwood flooring, and a large center island with pendant lights. Natural light from windows on the left.",
+          hasIsland: true,
+          kitchenType: "l-shape",
+          cameraAngle: "straight-on",
+          visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
+          spatialHints: { layout: "Island runs horizontally in the foreground. Upper and lower cabinets span the back wall with a range hood centered. Countertops wrap from left wall along the back. Hardwood flooring throughout." },
+        },
+      });
+    } catch {
+      setRejection("Failed to load sample photo. Please try uploading your own.");
+    } finally {
+      setIsValidating(false);
+    }
+  }, [isValidating, onPhotoAccepted, track]);
+
   return (
     <div className="space-y-4">
       <div
@@ -192,15 +223,37 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
               </svg>
               <p className="text-base font-medium text-slate-700 mb-1">
-                Drop a kitchen photo here
+                Drop a model home photo here
               </p>
               <p className="text-sm text-slate-400">
-                or click to browse. JPEG, PNG, or WebP.
+                or click to browse. Landscape, JPEG, PNG, or WebP.
               </p>
             </>
           )}
         </div>
       </div>
+
+      {/* Sample kitchen — alternative path */}
+      <button
+        type="button"
+        onClick={handleUseSample}
+        disabled={isValidating}
+        className="w-full flex items-center gap-4 px-4 py-3 border border-slate-200 bg-white hover:border-slate-400 hover:bg-slate-50 transition-colors text-left group disabled:opacity-50 disabled:pointer-events-none"
+      >
+        <img
+          src="/sample-kitchen.jpg"
+          alt="Sample kitchen"
+          className="w-20 h-14 object-cover border border-slate-200 shrink-0"
+        />
+        <div>
+          <p className="text-sm font-medium text-slate-700 group-hover:text-slate-900 transition-colors">
+            Start with this kitchen
+          </p>
+          <p className="text-xs text-slate-400">
+            No photo handy? Use ours.
+          </p>
+        </div>
+      </button>
 
       {rejection && (
         <div className="px-4 py-3 bg-amber-50 border border-amber-200 text-sm text-amber-800 flex items-start gap-3">
@@ -220,7 +273,7 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
       )}
 
       <p className="text-xs text-slate-400 text-center">
-        Your photo is processed server-side and not stored permanently. Works best with a well-lit, straight-on kitchen photo.
+        Not stored. Not shared. Best results with a well-lit, straight-on shot.
       </p>
     </div>
   );
