@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     const auth = await authenticateAdminRequest(body);
     if ("error" in auth) return auth.error;
 
-    const { supabase, user, orgId } = auth;
+    const { supabase, user, orgId, orgSlug } = auth;
     const { step_photo_id } = parsed.data;
 
     // Fetch step_photo
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
       duration_ms,
       cost_usd: estimateGeminiCost(VISION_MODEL, usage),
       orgId,
+      orgSlug,
       prompt_tokens: usage.inputTokens,
       completion_tokens: usage.outputTokens,
       total_tokens: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),

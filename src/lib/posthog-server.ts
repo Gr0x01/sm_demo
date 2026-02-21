@@ -34,6 +34,7 @@ interface BaseEvent {
   duration_ms: number;
   cost_usd: number;
   orgId?: string;
+  orgSlug?: string;
 }
 
 interface OpenAIEvent extends BaseEvent {
@@ -56,11 +57,14 @@ export async function captureAiEvent(distinctId: string, properties: AiEvent): P
   const ph = getClient();
   if (!ph) return;
 
+  // Use orgSlug as group key to match client-side posthog.group("org", orgSlug)
+  const groupKey = properties.orgSlug || properties.orgId;
+
   ph.capture({
     distinctId,
     event: "ai_generation",
     properties,
-    ...(properties.orgId ? { groups: { org: properties.orgId } } : {}),
+    ...(groupKey ? { groups: { org: groupKey } } : {}),
   });
 
   await ph.flush();

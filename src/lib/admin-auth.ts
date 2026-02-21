@@ -18,10 +18,10 @@ export async function authenticateAdminRequest(body: { org_id?: string }) {
     return { error: NextResponse.json({ error: "Missing org_id" }, { status: 400 }) };
   }
 
-  // Verify membership
+  // Verify membership and fetch org slug in one query
   const { data: membership } = await supabase
     .from("org_users")
-    .select("role")
+    .select("role, organizations(slug)")
     .eq("user_id", user.id)
     .eq("org_id", orgId)
     .single();
@@ -30,5 +30,7 @@ export async function authenticateAdminRequest(body: { org_id?: string }) {
     return { error: NextResponse.json({ error: "Forbidden" }, { status: 403 }) };
   }
 
-  return { supabase, user, orgId, role: membership.role as "admin" | "viewer" };
+  const orgSlug = (membership.organizations as unknown as { slug: string } | null)?.slug;
+
+  return { supabase, user, orgId, orgSlug, role: membership.role as "admin" | "viewer" };
 }

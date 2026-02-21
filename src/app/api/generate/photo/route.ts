@@ -350,6 +350,7 @@ export async function POST(request: Request) {
       duration_ms: genDuration,
       cost_usd: estimateOpenAICost(modelName, passes),
       orgId: org.id,
+      orgSlug,
       image_size: "1536x1024",
       image_quality: "high",
       second_pass: passes > 1,

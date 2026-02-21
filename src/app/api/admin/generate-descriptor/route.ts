@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const auth = await authenticateAdminRequest(body);
     if ("error" in auth) return auth.error;
 
-    const { user, orgId } = auth;
+    const { user, orgId, orgSlug } = auth;
     const { option_name, option_description, subcategory_name, category_name } = parsed.data;
 
     const descLine = option_description ? `\nDescription: ${option_description}` : "";
@@ -51,6 +51,7 @@ Write ONLY the descriptive phrase. No quotes, no explanation, no prefix. Focus o
       duration_ms,
       cost_usd: estimateGeminiCost(VISION_MODEL, usage),
       orgId,
+      orgSlug,
       prompt_tokens: usage.inputTokens,
       completion_tokens: usage.outputTokens,
       total_tokens: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
