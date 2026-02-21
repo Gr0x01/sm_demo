@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { headers } from "next/headers";
 import crypto from "crypto";
 import { getServiceClient } from "@/lib/supabase";
 import { validateEmail } from "@/lib/buyer-session";
 import { sendResumeEmail } from "@/lib/email";
+import { isSubdomainHost } from "@/lib/subdomain";
 
 export async function POST(
   req: Request,
@@ -64,8 +66,13 @@ export async function POST(
   const fpName = fp?.name ?? "your floorplan";
   const fpSlug = fp?.slug ?? "";
 
-  const appUrl = process.env.APP_URL || "https://withfin.ch";
-  const resumeLink = `${appUrl}/${orgSlug}/${fpSlug}?resume=${resumeToken}`;
+  // Build resume link matching the buyer's actual domain
+  const host = (await headers()).get("host") ?? "";
+  const subdomain = isSubdomainHost(host);
+  const origin = `https://${host}` || process.env.APP_URL || "https://withfin.ch";
+  const resumeLink = subdomain
+    ? `${origin}/${fpSlug}?resume=${resumeToken}`
+    : `${origin}/${orgSlug}/${fpSlug}?resume=${resumeToken}`;
 
   // Fire-and-forget — save succeeds even if email fails
   sendResumeEmail(normalizedEmail, resumeLink, orgName, fpName).catch((err) => {

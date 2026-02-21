@@ -4,7 +4,7 @@ import type { NextConfig } from "next";
 // Excludes API routes, admin, framework paths, and any path whose first
 // segment contains a dot (static files like logo.svg, robots.txt, etc.)
 const PASSTHROUGH =
-  "(?!api|admin|_next|auth|try|floorplans|[^/]*\\.[^/]*)";
+  "(?!api|admin|_next|auth|try|floorplans|rooms|swatches|[^/]*\\.[^/]*)";
 
 const nextConfig: NextConfig = {
   images: {
