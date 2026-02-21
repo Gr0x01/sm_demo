@@ -11,49 +11,43 @@ interface CompactOptionListProps {
 
 export function CompactOptionList({ subCategory, selectedOptionId, onSelect }: CompactOptionListProps) {
   return (
-    <div className="mb-4 last:mb-0">
-      <h4 className="text-sm font-semibold text-gray-600 mb-2 px-0.5">
+    <div className="mb-4 last:mb-0 mt-6 first:mt-0">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-[var(--color-navy)] mb-3 px-0.5">
         {subCategory.name}
       </h4>
-      <div className="space-y-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
         {subCategory.options.map((option) => {
           const isSelected = selectedOptionId === option.id;
           return (
             <button
               key={option.id}
               onClick={() => onSelect(option.id)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 border transition-all duration-150 cursor-pointer text-left ${
+              className={`relative flex flex-col items-center justify-center px-3 py-4 border-2 transition-all duration-150 cursor-pointer text-center min-h-[72px] ${
                 isSelected
-                  ? "border-[var(--color-accent)] bg-blue-50/50"
-                  : "border-gray-200 hover:border-gray-300 hover:shadow-sm bg-white active:scale-[0.99]"
+                  ? "border-[var(--color-accent)] bg-blue-50/60 shadow-sm"
+                  : "border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98]"
               }`}
             >
-              <div
-                className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors duration-150 ${
-                  isSelected
-                    ? "border-[var(--color-accent)] bg-[var(--color-accent)]"
-                    : "border-gray-300"
-                }`}
-              >
-                <svg
-                  className={`w-2.5 h-2.5 text-white transition-all duration-150 ${
-                    isSelected ? "opacity-100 scale-100" : "opacity-0 scale-50"
-                  }`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={3}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <span className="text-sm text-[var(--color-navy)] flex-1 truncate">{option.name}</span>
+              {isSelected && (
+                <div className="absolute top-1.5 right-1.5 w-5 h-5 bg-[var(--color-accent)] flex items-center justify-center">
+                  <svg
+                    className="w-3 h-3 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={3}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              )}
+              <span className="text-xs font-medium text-[var(--color-navy)] leading-tight">{option.name}</span>
               {option.nudge && (
-                <span className="flex-shrink-0 text-[9px] font-semibold uppercase text-[var(--color-accent)] bg-blue-50 px-1.5 py-0.5 border border-blue-200">
+                <span className="mt-1 text-[9px] font-semibold uppercase text-[var(--color-accent)] bg-blue-50 px-1.5 py-0.5 border border-blue-200">
                   {option.nudge}
                 </span>
               )}
-              <span className={`text-xs flex-shrink-0 ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
+              <span className={`mt-1 text-xs font-medium ${option.price === 0 ? "text-green-600" : "text-gray-500"}`}>
                 {formatPrice(option.price)}
               </span>
             </button>

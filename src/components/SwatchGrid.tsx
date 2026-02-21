@@ -37,8 +37,8 @@ export function SwatchGrid({ subCategory, selectedOptionId, disabled = false, di
 
   return (
     <>
-      <div className="mb-6 last:mb-0">
-        <h4 className={`text-sm font-semibold mb-2 px-0.5 ${disabled ? "text-gray-400" : "text-gray-700"}`}>
+      <div className="mb-6 last:mb-0 mt-6 first:mt-0">
+        <h4 className={`text-xs font-semibold uppercase tracking-wider mb-3 px-0.5 ${disabled ? "text-gray-400" : "text-[var(--color-navy)]"}`}>
           {subCategory.name}
         </h4>
         {disabled && disabledReason && (
@@ -84,7 +84,7 @@ export function SwatchGrid({ subCategory, selectedOptionId, disabled = false, di
 
                   {/* Selected checkmark */}
                   <div
-                    className={`absolute top-1 right-1 w-5 h-5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shadow transition-all duration-150 ${
+                    className={`absolute top-1 right-1 w-5 h-5 bg-[var(--color-accent)] flex items-center justify-center shadow transition-all duration-150 ${
                       isSelected ? "opacity-100 scale-100" : "opacity-0 scale-75"
                     }`}
                   >
