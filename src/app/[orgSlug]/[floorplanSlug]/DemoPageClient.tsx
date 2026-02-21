@@ -79,6 +79,7 @@ interface DemoPageClientProps {
   contractLockedIds: string[];
   syncPairs: { a: string; b: string; label: string }[];
   generationCap?: number;
+  isSubdomain?: boolean;
 }
 
 export function DemoPageClient({
@@ -95,6 +96,7 @@ export function DemoPageClient({
   contractLockedIds,
   syncPairs,
   generationCap,
+  isSubdomain: isSubdomainProp = false,
 }: DemoPageClientProps) {
   const posthog = usePostHog();
   const [page, setPageState] = useState<PageState>(getPageFromUrl);
@@ -151,7 +153,10 @@ export function DemoPageClient({
             // If the session belongs to a different org/floorplan, redirect there
             if (session.orgSlug && session.floorplanSlug &&
                 (session.orgSlug !== orgSlug || session.floorplanSlug !== floorplanSlug)) {
-              window.location.href = `/${session.orgSlug}/${session.floorplanSlug}?resume=${resumeToken}&page=picker`;
+              const resumePath = isSubdomainProp
+                ? `/${session.floorplanSlug}?resume=${resumeToken}&page=picker`
+                : `/${session.orgSlug}/${session.floorplanSlug}?resume=${resumeToken}&page=picker`;
+              window.location.href = resumePath;
               return;
             }
 
@@ -270,6 +275,7 @@ export function DemoPageClient({
           floorplanSlug={floorplanSlug}
           orgId={orgId}
           floorplanId={floorplanId}
+          isSubdomain={isSubdomainProp}
           onResumed={(session) => {
             handleSessionResumed(session);
             setToast("Welcome back! Your selections have been restored.");
@@ -297,6 +303,7 @@ export function DemoPageClient({
           resumeToken={buyerSession?.resumeToken}
           orgSlug={orgSlug}
           floorplanSlug={floorplanSlug}
+          isSubdomain={isSubdomainProp}
         />
       </div>
     );

@@ -20,6 +20,7 @@ interface UpgradeSummaryProps {
   resumeToken?: string;
   orgSlug?: string;
   floorplanSlug?: string;
+  isSubdomain?: boolean;
 }
 
 export function UpgradeSummary({
@@ -36,11 +37,12 @@ export function UpgradeSummary({
   resumeToken,
   orgSlug,
   floorplanSlug,
+  isSubdomain: isSubdomainProp = false,
 }: UpgradeSummaryProps) {
   const [shareCopied, setShareCopied] = useState(false);
 
   const shareUrl = resumeToken && orgSlug && floorplanSlug
-    ? `${typeof window !== "undefined" ? window.location.origin : ""}/${orgSlug}/${floorplanSlug}/summary/${resumeToken}`
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}${isSubdomainProp ? "" : `/${orgSlug}`}/${floorplanSlug}/summary/${resumeToken}`
     : null;
 
   const handleShare = async () => {

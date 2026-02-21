@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { isSubdomainClient } from "@/lib/subdomain";
 
 type ResumeState = "idle" | "loading" | "not-found" | "error";
 
@@ -54,7 +55,10 @@ export function ResumeSavedDesignLink({
 
       const data = await res.json();
       setIsOpen(false);
-      router.push(`/${data.orgSlug}/${data.floorplanSlug}?resume=${data.resumeToken}&page=picker`);
+      const path = isSubdomainClient()
+        ? `/${data.floorplanSlug}?resume=${data.resumeToken}&page=picker`
+        : `/${data.orgSlug}/${data.floorplanSlug}?resume=${data.resumeToken}&page=picker`;
+      router.push(path);
     } catch {
       setState("error");
       setError("Something went wrong. Please try again.");

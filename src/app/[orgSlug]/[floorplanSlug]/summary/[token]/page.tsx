@@ -2,6 +2,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getServiceClient } from "@/lib/supabase";
+import { isSubdomain } from "@/lib/subdomain";
 import {
   getOrgBySlug,
   getFloorplan,
@@ -50,6 +51,10 @@ export async function generateMetadata({
   const { org, floorplan } = data;
   const title = `${floorplan.name} Selections — ${org.name}`;
   const description = "Your home selections, visualized.";
+  const subdomain = await isSubdomain();
+  const ogPath = subdomain
+    ? `/${floorplanSlug}/summary/${token}/og`
+    : `/${orgSlug}/${floorplanSlug}/summary/${token}/og`;
 
   return {
     title,
@@ -59,7 +64,7 @@ export async function generateMetadata({
       description,
       images: [
         {
-          url: `/${orgSlug}/${floorplanSlug}/summary/${token}/og`,
+          url: ogPath,
           width: 1200,
           height: 630,
           alt: title,

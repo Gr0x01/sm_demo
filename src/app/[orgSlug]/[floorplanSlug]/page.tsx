@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getOrgBySlug, getFloorplan, getCategoriesWithOptions, getStepsWithConfig } from "@/lib/db-queries";
+import { isSubdomain } from "@/lib/subdomain";
 import { DemoPageClient } from "./DemoPageClient";
 
 export default async function DemoPage({
@@ -22,10 +23,13 @@ export default async function DemoPage({
 
   if (categories.length === 0 || steps.length === 0) notFound();
 
+  const subdomain = await isSubdomain();
+
   return (
     <DemoPageClient
       orgId={org.id}
       orgSlug={orgSlug}
+      isSubdomain={subdomain}
       orgName={org.name}
       orgTheme={{
         primaryColor: org.primary_color || "#1b2d4e",

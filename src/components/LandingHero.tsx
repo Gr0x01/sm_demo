@@ -16,6 +16,7 @@ interface LandingHeroProps {
   floorplanSlug?: string;
   orgId?: string;
   floorplanId?: string;
+  isSubdomain?: boolean;
   onResumed?: (session: {
     id: string;
     buyerEmail?: string | null;
@@ -33,6 +34,7 @@ export function LandingHero({
   floorplanSlug,
   orgId,
   floorplanId,
+  isSubdomain = false,
   onResumed,
 }: LandingHeroProps) {
   const [phase, setPhaseRaw] = useState<ContractPhase>(() => {
@@ -117,7 +119,7 @@ export function LandingHero({
         {orgSlug && (
           <div className="px-6 py-4 sm:px-8 md:px-10 border-b border-slate-200">
             <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Link href={`/${orgSlug}`} className="hover:text-[var(--color-navy)] transition-colors">
+              <Link href={isSubdomain ? "/" : `/${orgSlug}`} className="hover:text-[var(--color-navy)] transition-colors">
                 {orgName}
               </Link>
               <span className="text-slate-300">/</span>

@@ -20,10 +20,8 @@ function PostHogPageView() {
 
   useEffect(() => {
     if (pathname && ph) {
-      let url = window.origin + pathname;
-      const search = searchParams.toString();
-      if (search) url += `?${search}`;
-      ph.capture("$pageview", { $current_url: url });
+      // Use actual browser URL, not internal rewritten path from usePathname()
+      ph.capture("$pageview", { $current_url: window.location.href });
     }
   }, [pathname, searchParams, ph]);
 

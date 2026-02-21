@@ -176,9 +176,9 @@ export default async function StoneMartin() {
           </div>
           <p className="text-[10px] text-slate-300 uppercase tracking-[0.14em]">
             Powered by{" "}
-            <Link href="/" className="text-slate-500 hover:text-slate-700 transition-colors">
+            <a href="https://withfin.ch" className="text-slate-500 hover:text-slate-700 transition-colors">
               Finch
-            </Link>
+            </a>
           </p>
         </div>
       </footer>
