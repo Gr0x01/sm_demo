@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { calculateTotal, formatPrice } from "@/lib/pricing";
-import type { Category, SubCategory } from "@/types";
+import { buildUpgradeGroups } from "@/lib/upgrade-groups";
+import type { Category } from "@/types";
 import type { StepConfig } from "@/lib/step-config";
 
 interface UpgradeSummaryProps {
@@ -16,19 +17,9 @@ interface UpgradeSummaryProps {
   categories: Category[];
   steps: StepConfig[];
   onBack: () => void;
-}
-
-interface UpgradeItem {
-  name: string;
-  optionName: string;
-  price: number;
-  quantity: number;
-  lineTotal: number;
-}
-
-interface UpgradeGroup {
-  title: string;
-  items: UpgradeItem[];
+  resumeToken?: string;
+  orgSlug?: string;
+  floorplanSlug?: string;
 }
 
 export function UpgradeSummary({
@@ -42,7 +33,26 @@ export function UpgradeSummary({
   categories,
   steps,
   onBack,
+  resumeToken,
+  orgSlug,
+  floorplanSlug,
 }: UpgradeSummaryProps) {
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const shareUrl = resumeToken && orgSlug && floorplanSlug
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/${orgSlug}/${floorplanSlug}/summary/${resumeToken}`
+    : null;
+
+  const handleShare = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // noop
+    }
+  };
   // Steps that have hero images to display
   const roomImages = useMemo(() =>
     steps
@@ -58,86 +68,49 @@ export function UpgradeSummary({
     [steps]
   );
 
-  // Build lookup map
-  const subCategoryMap = useMemo(() => {
-    const map = new Map<string, SubCategory>();
-    for (const cat of categories) {
-      for (const sub of cat.subCategories) {
-        map.set(sub.id, sub);
-      }
-    }
-    return map;
-  }, [categories]);
-
   const total = useMemo(
     () => calculateTotal(selections, quantities, categories),
     [selections, quantities, categories]
   );
 
-  // Build grouped upgrade list from step config (only paid upgrades)
-  const upgradeGroups = useMemo(() => {
-    const groups: UpgradeGroup[] = [];
-
-    for (const step of steps) {
-      const items: UpgradeItem[] = [];
-
-      for (const section of step.sections) {
-        for (const subId of section.subCategoryIds) {
-          const sub = subCategoryMap.get(subId);
-          if (!sub) continue;
-          const selectedId = selections[subId];
-          if (!selectedId) continue;
-          const option = sub.options.find((o) => o.id === selectedId);
-          if (!option || option.price === 0) continue;
-
-          const qty = sub.isAdditive ? (quantities[subId] || 0) : 1;
-          if (qty === 0) continue;
-
-          items.push({
-            name: sub.name,
-            optionName: option.name,
-            price: option.price,
-            quantity: qty,
-            lineTotal: option.price * qty,
-          });
-        }
-      }
-
-      if (items.length > 0) {
-        groups.push({ title: step.name, items });
-      }
-    }
-
-    return groups;
-  }, [selections, quantities, steps, subCategoryMap]);
+  const upgradeGroups = useMemo(
+    () => buildUpgradeGroups(selections, quantities, steps, categories),
+    [selections, quantities, steps, categories]
+  );
 
   return (
     <div className="min-h-screen bg-white print:bg-white">
-      {/* Header */}
-      <header className="border-b border-gray-200 print:border-gray-300">
-        <div className="max-w-4xl mx-auto px-6 py-6 flex items-center justify-between">
+      {/* Nav bar */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200 print:static print:bg-white print:backdrop-blur-none">
+        <div className="max-w-4xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {logoUrl && <img
-              src={logoUrl}
-              alt={orgName}
-              className="h-6"
-            />}
-            <div>
-              <h1 className="text-lg font-bold text-[var(--color-navy)]">
-                Your Selections
-              </h1>
-              <p className="text-xs text-gray-400">
-                {planName} &middot; {community}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 no-print">
+            {logoUrl && (
+              <button
+                onClick={onBack}
+                className="cursor-pointer hover:opacity-70 transition-opacity no-print"
+              >
+                <img src={logoUrl} alt={orgName} className="h-5" />
+              </button>
+            )}
+            {logoUrl && (
+              <img src={logoUrl} alt={orgName} className="h-5 hidden print:block" />
+            )}
             <button
               onClick={onBack}
-              className="text-xs font-medium text-gray-500 hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+              className="text-xs font-medium text-gray-500 hover:text-[var(--color-navy)] transition-colors cursor-pointer no-print"
             >
-              &larr; Back to Selections
+              &larr; Back
             </button>
+          </div>
+          <div className="flex items-center gap-3 no-print">
+            {shareUrl && (
+              <button
+                onClick={handleShare}
+                className="px-4 py-2 text-xs font-semibold border border-gray-200 text-gray-600 hover:text-[var(--color-navy)] hover:border-gray-300 transition-colors cursor-pointer"
+              >
+                {shareCopied ? "Copied!" : "Share"}
+              </button>
+            )}
             <button
               onClick={() => window.print()}
               className="px-4 py-2 bg-[var(--color-navy)] text-white text-xs font-semibold hover:bg-[var(--color-navy-hover)] transition-colors cursor-pointer"
@@ -149,6 +122,15 @@ export function UpgradeSummary({
       </header>
 
       <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Page title */}
+        <div className="mb-8">
+          <h1 className="text-lg font-bold text-[var(--color-navy)]">
+            Your Selections
+          </h1>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {planName}{community ? ` \u00B7 ${community}` : ""}
+          </p>
+        </div>
         {/* Room Images */}
         <div className="grid grid-cols-2 gap-2 mb-8">
           {roomImages.map((room) => {

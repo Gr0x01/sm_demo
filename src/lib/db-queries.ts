@@ -430,6 +430,46 @@ export async function getStepPhotoGenerationPolicy(
   };
 }
 
+// ---------- Generated images for a buyer session ----------
+
+export async function getGeneratedImagesForSession(sessionId: string) {
+  const supabase = getServiceClient();
+
+  const { data, error } = await supabase
+    .from("generated_images")
+    .select("id, step_photo_id, step_id, image_path, created_at, steps(slug)")
+    .eq("buyer_session_id", sessionId)
+    .neq("image_path", "__pending__")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  // Keep only the latest image per step_photo_id (or step_id for legacy)
+  const seen = new Set<string>();
+  const deduped = data.filter((row) => {
+    const key = (row.step_photo_id as string | null) ?? `step:${row.step_id}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return deduped.map((row) => {
+    const { data: { publicUrl } } = supabase.storage
+      .from("generated-images")
+      .getPublicUrl(row.image_path);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stepSlug = (row as any).steps?.slug as string | undefined;
+
+    return {
+      stepPhotoId: row.step_photo_id as string | null,
+      stepSlug: stepSlug ?? (row.step_id as string),
+      imagePath: row.image_path as string,
+      imageUrl: publicUrl,
+    };
+  });
+}
+
 // ---------- Option lookup for prompt building ----------
 
 export async function getOptionLookup(orgId: string): Promise<Map<string, { option: Option; subCategory: SubCategory }>> {

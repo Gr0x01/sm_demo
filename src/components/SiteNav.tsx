@@ -26,7 +26,7 @@ export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
   return (
     <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
       <div className="max-w-6xl mx-auto px-6 flex items-center justify-between h-14">
-        <Link href="/" className="text-base font-semibold text-slate-900 tracking-[0.04em]">
+        <Link href="/" className="text-base font-semibold text-slate-900 tracking-[0.16em] uppercase">
           Finch
         </Link>
         <div className="hidden md:flex items-center gap-8">

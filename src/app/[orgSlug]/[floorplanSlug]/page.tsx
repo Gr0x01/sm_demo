@@ -9,18 +9,29 @@ export default async function DemoPage({
 }) {
   const { orgSlug, floorplanSlug } = await params;
 
+  console.log(`[DemoPage] Loading orgSlug=${orgSlug} floorplanSlug=${floorplanSlug}`);
+
   const org = await getOrgBySlug(orgSlug);
-  if (!org) notFound();
+  if (!org) {
+    console.error(`[DemoPage] org not found for slug="${orgSlug}"`);
+    notFound();
+  }
 
   const floorplan = await getFloorplan(org.id, floorplanSlug);
-  if (!floorplan) notFound();
+  if (!floorplan) {
+    console.error(`[DemoPage] floorplan not found for orgId=${org.id} slug="${floorplanSlug}"`);
+    notFound();
+  }
 
   const [categories, steps] = await Promise.all([
     getCategoriesWithOptions(org.id),
     getStepsWithConfig(floorplan.id),
   ]);
 
-  if (categories.length === 0 || steps.length === 0) notFound();
+  if (categories.length === 0 || steps.length === 0) {
+    console.error(`[DemoPage] empty data: categories=${categories.length} steps=${steps.length}`);
+    notFound();
+  }
 
   return (
     <DemoPageClient

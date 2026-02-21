@@ -9,11 +9,11 @@ import type { ContractPhase } from "@/lib/contract-phase";
 import type { Category } from "@/types";
 import type { StepConfig } from "@/lib/step-config";
 import { useTrack } from "@/hooks/useTrack";
+import { shiftHex } from "@/lib/color";
 
 type PageState = "landing" | "picker" | "summary";
 
 const VALID_PAGES: PageState[] = ["landing", "picker", "summary"];
-const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 const SESSION_COOKIE_MAX_AGE = 90 * 24 * 60 * 60; // 90 days in seconds
 
 function getPageFromUrl(): PageState {
@@ -44,18 +44,6 @@ function setSessionCookie(orgSlug: string, fpSlug: string, sessionId: string): v
   const name = getCookieName(orgSlug, fpSlug);
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
   document.cookie = `${name}=${encodeURIComponent(sessionId)}; Path=/; SameSite=Lax; Max-Age=${SESSION_COOKIE_MAX_AGE}${secure}`;
-}
-
-/** Shift a hex color lighter (positive amount) or darker (negative). */
-function shiftHex(hex: string, amount: number): string {
-  if (!HEX_RE.test(hex)) return hex;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const shift = (c: number) => Math.min(255, Math.max(0, Math.round(
-    amount > 0 ? c + (255 - c) * amount : c * (1 + amount)
-  )));
-  return `#${shift(r).toString(16).padStart(2, "0")}${shift(g).toString(16).padStart(2, "0")}${shift(b).toString(16).padStart(2, "0")}`;
 }
 
 interface SummaryData {
@@ -306,6 +294,9 @@ export function DemoPageClient({
           categories={categories}
           steps={steps}
           onBack={() => setPage("picker")}
+          resumeToken={buyerSession?.resumeToken}
+          orgSlug={orgSlug}
+          floorplanSlug={floorplanSlug}
         />
       </div>
     );
