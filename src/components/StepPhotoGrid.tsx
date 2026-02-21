@@ -84,7 +84,7 @@ export function StepPhotoGrid({
           />
         )}
 
-        <div className="overflow-x-auto no-scrollbar">
+        {sortedPhotos.length > 1 && <div className="overflow-x-auto no-scrollbar">
           <div className="flex gap-2 min-w-max pr-1">
             {sortedPhotos.map((photo) => {
               const isActive = photo.id === activePhoto?.id;
@@ -123,7 +123,7 @@ export function StepPhotoGrid({
               );
             })}
           </div>
-        </div>
+        </div>}
       </div>
       {lightboxSrc && (
         <ImageLightbox
