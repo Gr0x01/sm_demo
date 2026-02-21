@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { DemoUploader } from "./DemoUploader";
+import { DemoUploader, loadSamplePhoto } from "./DemoUploader";
 import { SiteNav } from "@/components/SiteNav";
 import { DemoPickerPanel } from "./DemoPickerPanel";
 import { DemoViewer } from "./DemoViewer";
@@ -40,7 +40,7 @@ const SS_SELECTIONS = "finch_demo_selections";
 const SS_GENERATED = "finch_demo_generated_url";
 const SS_HISTORY = "finch_demo_history";
 
-export function DemoClient() {
+export function DemoClient({ bare = false, autoSample = false, headerContent }: { bare?: boolean; autoSample?: boolean; headerContent?: React.ReactNode }) {
   const track = useTrack();
   const [phase, setPhase] = useState<DemoPhase>("picking");
   const [uploadedPhoto, setUploadedPhoto] = useState<UploadedPhoto | null>(null);
@@ -97,6 +97,18 @@ export function DemoClient() {
       // Corrupted sessionStorage — start fresh
     }
   }, []);
+
+  // Auto-load sample photo when autoSample is true and no existing session
+  useEffect(() => {
+    if (!autoSample || uploadedPhoto) return;
+    // Check if session restore already loaded a photo
+    if (sessionStorage.getItem(SS_PHOTO)) return;
+    loadSamplePhoto().then((photo) => {
+      handlePhotoAccepted(photo);
+    }).catch(() => {
+      // Silently fail — they can still upload manually
+    });
+  }, [autoSample]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!uploadedPhoto) setMobilePreviewOpen(false);
@@ -250,22 +262,21 @@ export function DemoClient() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col" style={{ "--color-accent": "#0f172a", "--color-navy": "#0f172a" } as React.CSSProperties}>
-      <SiteNav
-        links={[
-          { label: "How It Works", href: "/#compare" },
-          { label: "Pricing", href: "/#pricing" },
-          { label: "FAQ", href: "/#faq" },
-        ]}
-        cta={{ label: "Book a Walkthrough", href: "mailto:hello@finchweb.io?subject=Finch Demo Interest" }}
-      />
+    <div className={`${bare ? "" : "min-h-screen "}bg-slate-50 flex flex-col`} style={{ "--color-accent": "#0f172a", "--color-navy": "#0f172a" } as React.CSSProperties}>
+      {!bare && (
+        <SiteNav
+          links={[]}
+          cta={{ label: "Book a Walkthrough", href: "mailto:hello@finchweb.io?subject=Finch Demo Interest" }}
+        />
+      )}
 
-      <main className="flex-1 px-3 md:px-5 lg:px-6 py-4 md:py-6 pb-28 sm:pb-32 lg:pb-6">
-        <div className="mx-auto w-full max-w-[1660px]">
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)] gap-4 md:gap-6">
+      <main className={`flex-1 px-3 md:px-5 lg:px-6 pb-28 sm:pb-32 lg:pb-6 ${bare ? "py-0" : "py-4 md:py-6"}`}>
+        <div className={`mx-auto w-full ${bare ? "max-w-7xl" : "max-w-[1660px]"}`}>
+          <div className={`grid grid-cols-1 ${bare ? "lg:grid-cols-[minmax(0,1.45fr)_1px_minmax(360px,1fr)] lg:min-h-screen" : "lg:grid-cols-[minmax(0,1.45fr)_minmax(360px,1fr)] gap-4 md:gap-6"}`}>
             {/* Left: sticky viewer + controls */}
-            <section className="lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px-1.5rem)] lg:overflow-hidden lg:self-start demo-enter demo-enter-delay-1">
-              <div className="h-full p-3 md:p-4 bg-white border border-slate-200 flex flex-col gap-4">
+            <section className={`lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px-1.5rem)] lg:self-start demo-enter demo-enter-delay-1 ${bare ? "lg:pr-5 pt-4 md:pt-6" : ""} ${headerContent ? "lg:overflow-y-auto" : "lg:overflow-hidden"}`}>
+              {headerContent}
+              <div className={`flex flex-col gap-4 ${bare ? "" : "h-full p-3 md:p-4 bg-white border border-slate-200"}`}>
                 <div ref={previewSectionRef} className="flex-1 min-h-0">
                   {uploadedPhoto ? (
                     <DemoViewer
@@ -294,7 +305,7 @@ export function DemoClient() {
                 </div>
 
                 {uploadedPhoto && (
-                  <div className="hidden lg:block border-t border-slate-200 pt-4 space-y-3">
+                  <div className="hidden lg:block pt-4 space-y-3">
                     {error && (
                       <div className="px-4 py-3 bg-red-50 border border-red-200 text-sm text-red-700">
                         {error}
@@ -329,8 +340,11 @@ export function DemoClient() {
               </div>
             </section>
 
+            {/* Vertical divider (bare mode only) */}
+            {bare && <div className="hidden lg:block bg-slate-200" />}
+
             {/* Right: scrollable picker */}
-            <section className="lg:pr-1 demo-enter demo-enter-delay-2">
+            <section className={`demo-enter demo-enter-delay-2 ${bare ? "lg:pl-5 pt-12 md:pt-18" : "lg:pr-1"}`}>
               <DemoPickerPanel
                 selections={selections}
                 sceneAnalysis={uploadedPhoto?.sceneAnalysis}
@@ -338,7 +352,7 @@ export function DemoClient() {
               />
 
               {/* CTA Banner */}
-              {(phase === "result" || atCap) && (
+              {!bare && (phase === "result" || atCap) && (
                 <div className="mt-4 md:mt-5 px-5 md:px-6 py-6 bg-gradient-to-br from-white to-slate-50 border border-slate-200 text-center">
                   {atCap ? (
                     <>

@@ -66,6 +66,31 @@ async function hashDataUrl(dataUrl: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 }
 
+/** Load the sample kitchen photo and return the processed photo object */
+export async function loadSamplePhoto(): Promise<{
+  dataUrl: string;
+  hash: string;
+  sceneAnalysis: DemoSceneAnalysis;
+}> {
+  const res = await fetch("/sample-kitchen.jpg");
+  const blob = await res.blob();
+  const file = new File([blob], "sample-kitchen.jpg", { type: "image/jpeg" });
+  const { dataUrl } = await resizeImage(file);
+  const hash = await hashDataUrl(dataUrl);
+  return {
+    dataUrl,
+    hash,
+    sceneAnalysis: {
+      sceneDescription: "Modern model home kitchen with white shaker cabinets, light granite countertops, stainless steel appliances, hardwood flooring, and a large center island with pendant lights. Natural light from windows on the left.",
+      hasIsland: true,
+      kitchenType: "l-shape",
+      cameraAngle: "straight-on",
+      visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
+      spatialHints: { layout: "Island runs horizontally in the foreground. Upper and lower cabinets span the back wall with a range hood centered. Countertops wrap from left wall along the back. Hardwood flooring throughout." },
+    },
+  };
+}
+
 export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
   const track = useTrack();
   const [isDragOver, setIsDragOver] = useState(false);
@@ -160,23 +185,8 @@ export function DemoUploader({ onPhotoAccepted }: DemoUploaderProps) {
     setRejection(null);
     setIsValidating(true);
     try {
-      const res = await fetch("/sample-kitchen.jpg");
-      const blob = await res.blob();
-      const file = new File([blob], "sample-kitchen.jpg", { type: "image/jpeg" });
-      const { dataUrl } = await resizeImage(file);
-      const hash = await hashDataUrl(dataUrl);
-      onPhotoAccepted({
-        dataUrl,
-        hash,
-        sceneAnalysis: {
-          sceneDescription: "Modern model home kitchen with white shaker cabinets, light granite countertops, stainless steel appliances, hardwood flooring, and a large center island with pendant lights. Natural light from windows on the left.",
-          hasIsland: true,
-          kitchenType: "l-shape",
-          cameraAngle: "straight-on",
-          visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
-          spatialHints: { layout: "Island runs horizontally in the foreground. Upper and lower cabinets span the back wall with a range hood centered. Countertops wrap from left wall along the back. Hardwood flooring throughout." },
-        },
-      });
+      const photo = await loadSamplePhoto();
+      onPhotoAccepted(photo);
     } catch {
       setRejection("Failed to load sample photo. Please try uploading your own.");
     } finally {

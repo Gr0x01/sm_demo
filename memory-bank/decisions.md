@@ -282,6 +282,12 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 - Policy key participates in cache hash (`_promptPolicy`).
 **Trade-off**: More moving parts (policy schema + parser), but isolates tenant-specific behavior and keeps global defaults clean.
 
+## D63: Temporary stripped-down homepage for SM prospect talks
+**Context**: Stone Martin (30+ floorplans, real interest) is evaluating Finch. The full homepage (pricing tiers, ROI calc, FAQ) would scare them — looks like a big company selling enterprise SaaS. The page is for 1-2 curious SM team members who type `withfin.ch` after using `stonemartin.withfin.ch`.
+**Decision**: Two-column layout: left column has short personal intro + interactive demo (auto-loaded sample kitchen via `autoSample` prop), right column is the full options picker, vertical rule divider between them. `DemoClient` gained `bare`, `autoSample`, and `headerContent` props. Full marketing homepage preserved at `src/app/landing-full.tsx` — restore by renaming to `page.tsx`.
+**Copy rules learned**: Never say "AI" in customer-facing copy. Don't lecture builders about their business. Don't be condescending about their process. Tone is tinkerer/passion, not critic/salesperson. Contact email: `hello@withfin.ch`.
+**Trade-off**: Temporary. Full homepage is 100% coming back for non-SM prospects.
+
 ## D62: Prompt context hash includes scene/hint inputs
 **Context**: Editing `scene_description`, `photo_baseline`, or `step_photos.spatial_hint` could still hit old cache entries when selections were unchanged.
 **Decision**: Add `_promptContext` to generation/check hash, built from:
