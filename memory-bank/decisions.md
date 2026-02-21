@@ -297,3 +297,20 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 - `steps.spatial_hints` map
 Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HINT`).
 **Trade-off**: More cache misses after prompt-context edits (expected), but behavior now matches operator intent and avoids stale outputs during tuning.
+
+## D64: Self-hosted image generation — evaluated, not viable yet
+**Context**: Adding 2+ new SM floorplans means hundreds of batch generations. At $0.20/image (gpt-image-1.5), costs add up. Evaluated open-source models on RunPod A100 80GB to find a cheaper alternative.
+
+**Models tested**:
+1. **FLUX.1 Fill** — Mask-based inpainting. FAILED. Requires per-region masks. Our pipeline sends 10-15 simultaneous material changes with NO mask — fundamentally incompatible. With full white mask, generates entirely new images instead of editing.
+2. **OmniGen2** (7B, Apache 2.0) — Maskless instruction-based editing with reference image support (`<img0>`, `<img1>` syntax). PARTIALLY WORKED. Single-surface swaps (countertops) showed 80-90% quality. But: can't reliably target "all cabinets" (changes island, ignores wall cabinets), multi-change causes scene drift (backsplash/wall/floor colors shift), and tested with only 2-3 reference images. Our real pipeline sends 10-15 swatches simultaneously — a non-starter.
+3. **FLUX Kontext** — Best quality, but $999/mo commercial license. Rejected.
+4. **Qwen-Image-Edit** — No reference image support. Can't use swatches.
+
+**Key finding**: What makes gpt-image-1.5 uniquely valuable for our use case is its ability to digest 10-15+ reference swatch images in a single prompt and apply them all precisely while preserving room layout. No open-source model can do this today. This isn't a "80% quality" problem — it's a capability gap.
+
+**Decision**: Stay on gpt-image-1.5 for now. Revisit when open-source multi-reference editing matures. OmniGen2 is brand new (Feb 2025) — this space is moving fast.
+
+**RunPod**: Account active with ~$40 remaining credit. Pod `tq98greyvm3tel` stopped (volume with OmniGen2 weights preserved). Can resume testing when new models drop.
+
+**Test outputs**: `scripts/omnigen2-test-outputs/` — 10 test images across two rounds of parameter tuning.

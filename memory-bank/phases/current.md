@@ -119,6 +119,20 @@ Corrected room photo → step assignments for Kinkade floorplan.
 - [x] Fixed photoBaseline descriptions to match actual photo contents
 - [x] Migration script cleanup order: orphan deletion now runs before inserts (avoids unique constraint conflicts)
 
+### 11. Self-Hosted Image Generation (RunPod) — Evaluated, Not Viable Yet
+Tested open-source models on RunPod A100 80GB to replace gpt-image-1.5. **Conclusion: no open-source model can handle our multi-reference swatch pipeline today.**
+- [x] RunPod account setup (~$40 credit remaining), API key configured
+- [x] FLUX.1 Fill tested — mask-based, fundamentally incompatible (we don't use masks)
+- [x] OmniGen2 tested (10 variations) — single-surface swaps OK, but can't reliably target all cabinets, multi-change causes scene drift, and only handles 2-3 reference images (we need 10-15)
+- [x] FLUX Kontext rejected ($999/mo license)
+- [x] Qwen-Image-Edit rejected (no reference image support)
+
+**Why gpt-image-1.5 wins**: Uniquely handles 10-15+ swatch reference images in one prompt, applies them all precisely, preserves room layout. This is a capability gap, not a quality gap.
+
+**Revisit when**: Open-source multi-reference instruction editing matures. OmniGen2 is brand new — space moving fast.
+
+**RunPod**: Pod `tq98greyvm3tel` stopped (OmniGen2 weights on volume). SSH key at `~/.runpod/ssh/RunPod-Key-Go`. Test outputs in `scripts/omnigen2-test-outputs/`.
+
 ### Upcoming (not started)
 - **Workstream E**: Branding controls (depends on A, small)
 

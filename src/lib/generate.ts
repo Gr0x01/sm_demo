@@ -10,7 +10,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v9";
+export const GENERATION_CACHE_VERSION = "v10";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -159,7 +159,9 @@ RULES:
 - For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
 - The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
 - If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.
-- Different rooms have different flooring. Tile stays in bathrooms. LVP/hardwood stays in closets, bedrooms, and hallways. Do NOT extend one flooring material into another room.
+- Different rooms can have different flooring. Keep bathroom tile in bathroom zones only.
+- Bedrooms and nearby spaces may be carpet or hard-surface depending on the selected flooring options; follow those selected options exactly for each visible room.
+- Do NOT bleed one flooring material across doorway boundaries into a room that should keep a different selected material.
 - Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
 - In doorway or multi-room views, keep edits inside the explicitly targeted visible zone and do NOT propagate flooring/fixtures into adjacent rooms.
 - Never add televisions, media walls, built-ins, or extra cabinetry unless that exact item is explicitly selected in the list above.
