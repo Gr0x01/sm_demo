@@ -305,10 +305,25 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 | Hosting/infra | ~$45/mo | ~$45/mo |
 | **Total hard costs** | **$1,000-4,600** | **$245-1,245** |
 
-**Option A: API-based**
-- Generation: ~$0.04-0.15/image
-- Works for first builder but margins are thin on smaller builder deals
+**OpenAI Tier 5 — Batch API pricing (what we have):**
+We have Tier 5 OpenAI access, which unlocks the Batch API for image generation. Batch is async (not real-time) — ideal for pre-generation, not buyer sessions.
+
+| Model | Input | Cached Input | Output |
+|-------|-------|-------------|--------|
+| gpt-image-1.5 | $4.00/1M tokens | $1.00/1M tokens | $16.00/1M tokens |
+
+Batch API is significantly cheaper than standard API for bulk pre-generation. Use standard API for on-demand buyer sessions, batch API for pre-caching.
+
+**Option A: API-based (standard)**
+- Generation: ~$0.04-0.15/image (standard, real-time)
+- Works for on-demand buyer sessions (Essentials tier)
 - Rate limits and 60s generation time make batch pre-gen slow
+
+**Option A.5: API-based (batch)**
+- Pre-generation via Batch API at reduced token rates
+- Async — results returned within 24 hours, not real-time
+- Ideal for Concierge pre-caching of 3,000 images per plan
+- No rate limit pressure — submit large batches overnight
 
 **Option B: Cloud GPU rental (recommended)**
 - RTX A6000 on-demand: ~$0.49/hr (RunPod, Hyperstack)
