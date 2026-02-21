@@ -29,16 +29,34 @@ export default async function AdminBuyersPage({
   const supabase = await createSupabaseServer();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: sessions, error: queryError } = await supabase
-    .from("buyer_sessions")
-    .select("id, buyer_email, total_price, generation_count, status, updated_at, selections, floorplans(name)")
-    .eq("org_id", auth.orgId)
-    .or(`buyer_email.not.is.null,updated_at.gte.${thirtyDaysAgo}`)
-    .order("updated_at", { ascending: false })
-    .limit(200);
+  const [{ data: sessions, error: queryError }, { data: defaults }] = await Promise.all([
+    supabase
+      .from("buyer_sessions")
+      .select("id, buyer_email, total_price, generation_count, status, updated_at, selections, floorplans(name)")
+      .eq("org_id", auth.orgId)
+      .or(`buyer_email.not.is.null,updated_at.gte.${thirtyDaysAgo}`)
+      .order("updated_at", { ascending: false })
+      .limit(200),
+    supabase
+      .from("options")
+      .select("slug, subcategories(slug)")
+      .eq("org_id", auth.orgId)
+      .eq("is_default", true),
+  ]);
 
   if (queryError) {
     console.error("[admin/buyers] Query error:", queryError);
+  }
+
+  // Build default map: subcategory_slug → default option_slug
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const defaultMap = new Map((defaults ?? []).map((d: any) => [d.subcategories?.slug, d.slug]));
+
+  function countUpgrades(selections: Record<string, string> | null): number {
+    if (!selections) return 0;
+    return Object.entries(selections).filter(
+      ([subSlug, optSlug]) => defaultMap.get(subSlug) !== optSlug
+    ).length;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,7 +65,7 @@ export default async function AdminBuyersPage({
     buyerEmail: s.buyer_email,
     floorplanName: s.floorplans?.name ?? "Unknown",
     totalPrice: Number(s.total_price),
-    selectionCount: Object.keys(s.selections ?? {}).length,
+    selectionCount: countUpgrades(s.selections),
     generationCount: s.generation_count,
     status: s.status,
     updatedAt: s.updated_at,
@@ -81,7 +99,8 @@ export default async function AdminBuyersPage({
                     <th className="pb-3 pr-4 font-medium">Email</th>
                     <th className="pb-3 pr-4 font-medium">Floorplan</th>
                     <th className="pb-3 pr-4 font-medium text-right">Total</th>
-                    <th className="pb-3 pr-4 font-medium text-right">Selections</th>
+                    <th className="pb-3 pr-4 font-medium text-right">Upgrades</th>
+                    <th className="pb-3 pr-4 font-medium text-right">Generations</th>
                     <th className="pb-3 pr-4 font-medium">Status</th>
                     <th className="pb-3 font-medium">Last Active</th>
                   </tr>
@@ -97,6 +116,7 @@ export default async function AdminBuyersPage({
                       <td className="py-3 pr-4 text-slate-700">{s.floorplanName}</td>
                       <td className="py-3 pr-4 text-right font-mono text-slate-700">{formatPrice(s.totalPrice)}</td>
                       <td className="py-3 pr-4 text-right text-slate-600">{s.selectionCount}</td>
+                      <td className="py-3 pr-4 text-right text-slate-600">{s.generationCount}</td>
                       <td className="py-3 pr-4">
                         <span className={`inline-block px-2 py-0.5 text-xs font-medium border ${
                           s.status === "submitted"
