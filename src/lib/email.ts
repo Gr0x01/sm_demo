@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { buyerResumeEmail, adminInviteEmail } from "./email-templates";
 
 let _resend: Resend | null = null;
 function getResend(): Resend {
@@ -12,7 +13,9 @@ export async function sendResumeEmail(
   to: string,
   resumeLink: string,
   orgName: string,
-  floorplanName: string
+  floorplanName: string,
+  orgPrimaryColor?: string | null,
+  orgSecondaryColor?: string | null
 ) {
   const from = process.env.RESEND_FROM_EMAIL;
   if (!from) {
@@ -20,18 +23,20 @@ export async function sendResumeEmail(
     return;
   }
 
+  const { html, text } = buyerResumeEmail({
+    floorplanName,
+    resumeLink,
+    orgName,
+    orgPrimaryColor,
+    orgSecondaryColor,
+  });
+
   await getResend().emails.send({
     from,
     to,
     subject: `Your ${orgName} selections are saved`,
-    text: [
-      `Your upgrade selections for the ${floorplanName} plan are saved.`,
-      "",
-      `Pick up where you left off:`,
-      resumeLink,
-      "",
-      `— ${orgName}`,
-    ].join("\n"),
+    html,
+    text,
   });
 }
 
@@ -39,7 +44,9 @@ export async function sendAdminInviteEmail(
   to: string,
   loginLink: string,
   orgName: string,
-  role: string
+  role: string,
+  orgPrimaryColor?: string | null,
+  orgSecondaryColor?: string | null
 ) {
   const from = process.env.RESEND_FROM_EMAIL;
   if (!from) {
@@ -47,17 +54,19 @@ export async function sendAdminInviteEmail(
     return;
   }
 
+  const { html, text } = adminInviteEmail({
+    orgName,
+    role,
+    loginLink,
+    orgPrimaryColor,
+    orgSecondaryColor,
+  });
+
   await getResend().emails.send({
     from,
     to,
     subject: `You've been invited to manage ${orgName} on Finch`,
-    text: [
-      `You've been invited as ${role === "admin" ? "an admin" : "a viewer"} for ${orgName} on Finch.`,
-      "",
-      `Sign in to get started:`,
-      loginLink,
-      "",
-      `— Finch`,
-    ].join("\n"),
+    html,
+    text,
   });
 }

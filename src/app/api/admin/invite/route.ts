@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     // Get org name for the email
     const { data: orgDetails } = await supabase
       .from("organizations")
-      .select("name")
+      .select("name, primary_color, secondary_color")
       .eq("id", orgId)
       .single();
 
@@ -71,7 +71,14 @@ export async function POST(request: Request) {
 
     // Send invite email
     const loginLink = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://withfin.ch"}/admin/login`;
-    await sendAdminInviteEmail(email, loginLink, orgName, role);
+    await sendAdminInviteEmail(
+      email,
+      loginLink,
+      orgName,
+      role,
+      orgDetails?.primary_color,
+      orgDetails?.secondary_color
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

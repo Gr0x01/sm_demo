@@ -57,7 +57,11 @@ export async function POST(
 
   // Look up org name + floorplan name for email
   const [{ data: org }, { data: fp }] = await Promise.all([
-    supabase.from("organizations").select("name, slug").eq("id", org_id).single(),
+    supabase
+      .from("organizations")
+      .select("name, slug, primary_color, secondary_color")
+      .eq("id", org_id)
+      .single(),
     supabase.from("floorplans").select("name, slug").eq("id", floorplan_id).single(),
   ]);
 
@@ -78,7 +82,14 @@ export async function POST(
     : `${origin}/${orgSlug}/${fpSlug}?resume=${resumeToken}`;
 
   // Fire-and-forget — save succeeds even if email fails
-  sendResumeEmail(normalizedEmail, resumeLink, orgName, fpName).catch((err) => {
+  sendResumeEmail(
+    normalizedEmail,
+    resumeLink,
+    orgName,
+    fpName,
+    org?.primary_color,
+    org?.secondary_color
+  ).catch((err) => {
     console.error("[save-email] Failed to send resume email:", err);
   });
 
