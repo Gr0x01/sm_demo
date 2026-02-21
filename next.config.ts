@@ -15,29 +15,18 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        // Subdomain root: stone-martin.withfin.ch → /stone-martin
+        // Subdomain: stonemartin.withfin.ch/* → /stonemartin/*
+        // Single rule handles both root (/) and paths (/kinkade) to prevent cascading
         {
-          source: "/",
+          source: `/:path(${PASSTHROUGH}.*)*`,
           has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.withfin\\.ch" }],
-          destination: "/:orgSlug",
+          destination: "/:orgSlug/:path*",
         },
-        // Subdomain paths: stone-martin.withfin.ch/kinkade → /stone-martin/kinkade
+        // Localhost dev: demo.localhost:3000/* → /demo/*
         {
-          source: `/:path(${PASSTHROUGH}.*)`,
-          has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.withfin\\.ch" }],
-          destination: "/:orgSlug/:path",
-        },
-        // Localhost dev root: demo.localhost:3000 → /demo
-        {
-          source: "/",
+          source: `/:path(${PASSTHROUGH}.*)*`,
           has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.localhost" }],
-          destination: "/:orgSlug",
-        },
-        // Localhost dev: demo.localhost:3000/floorplan → /demo/floorplan
-        {
-          source: `/:path(${PASSTHROUGH}.*)`,
-          has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.localhost" }],
-          destination: "/:orgSlug/:path",
+          destination: "/:orgSlug/:path*",
         },
       ],
     };
