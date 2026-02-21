@@ -7,6 +7,8 @@ import { generateObject } from "ai";
 import sharp from "sharp";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { getServiceClient } from "@/lib/supabase";
+import { captureAiEvent, estimateGeminiCost } from "@/lib/posthog-server";
+import { VISION_MODEL } from "@/lib/models";
 
 const requestSchema = z.object({
   org_id: z.string(),
@@ -33,7 +35,7 @@ export async function POST(request: Request) {
     const auth = await authenticateAdminRequest(body);
     if ("error" in auth) return auth.error;
 
-    const { supabase, orgId } = auth;
+    const { supabase, user, orgId } = auth;
     const { step_photo_id } = parsed.data;
 
     // Fetch step_photo
@@ -90,8 +92,9 @@ export async function POST(request: Request) {
     const mimeType = "image/jpeg";
 
     // Call vision model
-    const { object } = await generateObject({
-      model: google("gemini-2.5-flash"),
+    const start = performance.now();
+    const { object, usage } = await generateObject({
+      model: google(VISION_MODEL),
       schema: checkSchema,
       messages: [
         {
@@ -105,6 +108,19 @@ export async function POST(request: Request) {
           ],
         },
       ],
+    });
+    const duration_ms = Math.round(performance.now() - start);
+
+    await captureAiEvent(user.id, {
+      provider: "google",
+      model: VISION_MODEL,
+      route: "/api/admin/photo-check",
+      duration_ms,
+      cost_usd: estimateGeminiCost(VISION_MODEL, usage),
+      orgId,
+      prompt_tokens: usage.inputTokens,
+      completion_tokens: usage.outputTokens,
+      total_tokens: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
     });
 
     // Derive result

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { captureAiEvent, estimateGeminiCost } from "@/lib/posthog-server";
+import { VISION_MODEL } from "@/lib/models";
 
 export async function POST(request: Request) {
   try {
@@ -14,8 +16,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const { object } = await generateObject({
-      model: google("gemini-2.5-flash"),
+    const start = performance.now();
+    const { object, usage } = await generateObject({
+      model: google(VISION_MODEL),
       schema: z.object({
         isKitchen: z.boolean().describe("True if the image shows a kitchen with visible counters, cabinets, or backsplash"),
         hasAdequateLighting: z.boolean().describe("True if the image has reasonable lighting (not extremely dark or blown out)"),
@@ -77,6 +80,19 @@ export async function POST(request: Request) {
           ],
         },
       ],
+    });
+
+    const duration_ms = Math.round(performance.now() - start);
+
+    await captureAiEvent("anonymous", {
+      provider: "google",
+      model: VISION_MODEL,
+      route: "/api/try/validate-photo",
+      duration_ms,
+      cost_usd: estimateGeminiCost(VISION_MODEL, usage),
+      prompt_tokens: usage.inputTokens,
+      completion_tokens: usage.outputTokens,
+      total_tokens: (usage.inputTokens ?? 0) + (usage.outputTokens ?? 0),
     });
 
     const accepted = object.isKitchen && object.hasAdequateLighting && object.isReasonablyClear;

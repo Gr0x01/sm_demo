@@ -5,6 +5,8 @@ import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
+import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
+import { IMAGE_MODEL } from "@/lib/models";
 
 export const maxDuration = 120;
 
@@ -126,7 +128,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const modelName = (typeof model === "string" && model) ? model : "gpt-image-1.5";
+    const modelName = (typeof model === "string" && model) ? model : IMAGE_MODEL;
     const promptContextSignature = buildPromptContextSignature(aiConfig);
     const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
     const resolvedPolicy = resolvePhotoGenerationPolicy({
@@ -287,6 +289,7 @@ export async function POST(request: Request) {
 
     console.log(`[generate/photo] Sending ${inputImages.length} images to ${modelName} for photo ${stepPhotoId}`);
 
+    const genStart = performance.now();
     const result = await openai.images.edit({
       model: modelName,
       image: inputImages,
@@ -303,6 +306,7 @@ export async function POST(request: Request) {
 
     let outputBuffer = Buffer.from(generatedData.b64_json, "base64");
     let promptForStorage = prompt;
+    let passes = 1;
 
     if (resolvedPolicy.secondPass) {
       try {
@@ -324,6 +328,7 @@ export async function POST(request: Request) {
         if (secondPassData?.b64_json) {
           outputBuffer = Buffer.from(secondPassData.b64_json, "base64");
           promptForStorage = `${prompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
+          passes = 2;
         } else {
           console.warn(
             `[generate/photo] Second pass produced no image for photo ${stepPhotoId}; keeping first-pass output.`,
@@ -336,6 +341,19 @@ export async function POST(request: Request) {
         );
       }
     }
+    const genDuration = Math.round(performance.now() - genStart);
+
+    await captureAiEvent(sessionId, {
+      provider: "openai",
+      model: modelName,
+      route: "/api/generate/photo",
+      duration_ms: genDuration,
+      cost_usd: estimateOpenAICost(modelName, passes),
+      orgId: org.id,
+      image_size: "1536x1024",
+      image_quality: "high",
+      second_pass: passes > 1,
+    });
 
     // --- Reserve credit AFTER successful generation (prevents credit leak on failure) ---
     const { data: newCount } = await supabase.rpc("reserve_generation_credit", {

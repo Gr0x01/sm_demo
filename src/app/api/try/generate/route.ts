@@ -5,6 +5,8 @@ import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS } from "@/lib/demo-options";
 import { DEMO_GENERATION_CACHE_VERSION, hashDemoSelections } from "@/lib/demo-generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
+import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
+import { IMAGE_MODEL } from "@/lib/models";
 
 export const maxDuration = 120;
 
@@ -123,10 +125,11 @@ export async function POST(request: Request) {
         ),
       ];
 
-      console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${swatches.length} swatches) to gpt-image-1.5`);
+      console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${swatches.length} swatches) to ${IMAGE_MODEL}`);
 
+      const genStart = performance.now();
       const result = await openai.images.edit({
-        model: "gpt-image-1.5",
+        model: IMAGE_MODEL,
         image: inputImages,
         prompt,
         quality: "high",
@@ -141,6 +144,18 @@ export async function POST(request: Request) {
           { status: 500 }
         );
       }
+
+      const genDuration = Math.round(performance.now() - genStart);
+      await captureAiEvent("anonymous", {
+        provider: "openai",
+        model: IMAGE_MODEL,
+        route: "/api/try/generate",
+        duration_ms: genDuration,
+        cost_usd: estimateOpenAICost(IMAGE_MODEL, 1),
+        image_size: "1536x1024",
+        image_quality: "high",
+        second_pass: false,
+      });
 
       const outputBuffer = Buffer.from(imageData.b64_json, "base64");
       const outputPath = `demo-${combinedHash}.png`;
@@ -174,7 +189,7 @@ export async function POST(request: Request) {
         image_path: outputPath,
         prompt,
         step_id: null,
-        model: "gpt-image-1.5",
+        model: IMAGE_MODEL,
       }, { onConflict: "selections_hash" });
 
       if (upsertError) {
