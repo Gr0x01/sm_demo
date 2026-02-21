@@ -40,7 +40,7 @@ Server (Next.js API routes)
         │     ├── Reserve credit AFTER successful generation (atomic RPC)
         │     ├── Upload to generated-images bucket, upsert cache row
         │     └── On failure: release __pending__ row so retries can proceed
-        ├── /check — cache check per photo (filters __pending__)
+        ├── /check — 3-state cache check (complete/pending/not_found/error); fast poll mode via selectionsHash, full derivation mode for cache restore
         ├── /feedback — retry flow: refunds credit + deletes cached row, then client regenerates
         └── Returns: imageUrl, cacheHit, generatedImageId, creditsUsed, creditsTotal
 
@@ -93,9 +93,11 @@ Supabase
 2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
 3. Cache hit → free (no credit consumed), returns URL + `cacheHit: true`
 4. Cache miss → DB-based dedup (`__pending__` placeholder, 5 min stale TTL) → generate → reserve credit → upsert
-5. On refresh: `/api/generate/photo/check` checks per-photo, restores generated images + IDs
-6. Retry → refunds credit via RPC, deletes cached row, then regenerates fresh
-7. "Visualize All" fires up to 3 concurrent, each atomically reserves credits via RPC
+5. **Join-in-progress**: If the same photo/selections combo is already generating (e.g. user triggered from another step), 429 response includes `selectionsHash`. Client polls `/api/generate/photo/check` every 3s with the hash (single DB query, no re-derivation). Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted — clear generating state). AbortController per photo key, all aborted on unmount.
+6. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs
+7. Retry → refunds credit via RPC, deletes cached row, then regenerates fresh
+8. "Visualize All" fires up to 3 concurrent, each atomically reserves credits via RPC
+9. **Slot release**: Every failure path inside the claimed-slot block (download fail, no image generated, thrown errors) releases the `__pending__` row so retries aren't blocked
 
 ## Pre-generation Strategy
 
@@ -314,7 +316,7 @@ src/
 │   ├── pricing.ts           # Price calculation (accepts categories as param)
 │   ├── buyer-session.ts     # Session helpers (mapRowToPublicSession, validateEmail, SESSION_COLUMNS)
 │   ├── email.ts             # Resend email utility (sendResumeEmail, lazy-initialized client)
-│   ├── generate.ts          # Prompt construction (accepts optionLookup, spatialHints, sceneDescription, policy overrides)
+│   ├── generate.ts          # Prompt construction, buildPromptContextSignature, hashSelections (shared by generation + check routes)
 │   └── photo-generation-policy.ts # Internal per-photo policy resolver (DB-backed + fallback)
 └── types/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
