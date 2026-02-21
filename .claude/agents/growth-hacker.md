@@ -111,7 +111,7 @@ The Stone Martin Builders demo is the proof of concept. The immediate goal is co
 
 5. **Regional density play** — Builders compete within markets. Land one builder in Birmingham, and every other builder in Birmingham notices. Proximity creates urgency. "If they're using it, I need it."
 
-6. **The pilot is the proof** — A 90-day pilot in one community with before/after upgrade revenue data is the most powerful sales tool that exists. Structure every pilot to produce a clear, shareable number.
+6. **The pilot is the proof** — A 60-day pilot in one community with before/after upgrade revenue data is the most powerful sales tool that exists. Structure every pilot to produce a clear, shareable number.
 
 ---
 
