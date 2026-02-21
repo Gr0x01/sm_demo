@@ -266,7 +266,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
       {!bare && (
         <SiteNav
           links={[]}
-          cta={{ label: "Book a Walkthrough", href: "mailto:hello@finchweb.io?subject=Finch Demo Interest" }}
+          cta={{ label: "Book a Walkthrough", href: "mailto:hello@withfin.ch?subject=Finch Demo Interest" }}
         />
       )}
 
@@ -353,32 +353,32 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
               {/* CTA Banner */}
               {!bare && (phase === "result" || atCap) && (
-                <div className="mt-4 md:mt-5 px-5 md:px-6 py-6 bg-gradient-to-br from-white to-slate-50 border border-slate-200 text-center">
+                <div className="mt-4 md:mt-5 px-5 md:px-6 py-6 border border-slate-200 bg-white text-center">
                   {atCap ? (
                     <>
-                      <p className="text-lg font-semibold text-slate-900 mb-2">
-                        Want more? Let&apos;s build it for your floor plans.
+                      <p className="text-2xl md:text-3xl leading-tight tracking-[-0.02em] text-slate-900 mb-3">
+                        You&apos;ve seen what Finch can do.
                       </p>
-                      <p className="text-sm text-slate-500 mb-4">
-                        We&apos;ll configure Finch with your actual options, pricing, and room photos.
+                      <p className="text-base text-slate-500 mb-6 max-w-lg mx-auto">
+                        Your version uses your floor plans, your options, your pricing. First plan is free. Live in 48 hours.
                       </p>
                     </>
                   ) : (
                     <>
                       <p className="text-lg font-semibold text-slate-900 mb-2">
-                        Imagine this for every buyer, every floor plan.
+                        Your buyers would see this instantly, with your floor plans and pricing.
                       </p>
                       <p className="text-sm text-slate-500 mb-4">
-                        15 minutes. We&apos;ll show you how it works with your plans.
+                        First plan is free. Live in 48 hours.
                       </p>
                     </>
                   )}
                   <a
-                    href="mailto:hello@finchweb.io?subject=Finch Demo Interest"
-                    onClick={() => track("demo_cta_clicked", { trigger: atCap ? "cap" : "result" })}
+                    href="mailto:hello@withfin.ch?subject=Pilot%20Interest%20%E2%80%94%20Saw%20the%20Demo"
+                    onClick={() => track("demo_cta_clicked", { trigger: atCap ? "cap_interstitial" : "result_banner" })}
                     className="inline-block px-8 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                   >
-                    Book a Walkthrough
+                    Start a Pilot
                   </a>
                 </div>
               )}

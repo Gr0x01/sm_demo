@@ -178,17 +178,30 @@ export function DemoViewer({
         </div>
       )}
 
-      {/* Download button */}
+      {/* Post-generation CTA strip + download */}
       {phase === "result" && generatedImageUrl && !isGenerating && (
-        <button
-          onClick={handleDownload}
-          className="absolute bottom-3 right-3 px-3 py-1.5 bg-white/90 border border-slate-200 text-xs font-medium text-slate-700 hover:bg-white transition-colors flex items-center gap-1.5"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-          </svg>
-          Download
-        </button>
+        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/80 via-slate-900/50 to-transparent pt-10 pb-3 px-4 flex items-end justify-between">
+          <p className="text-sm text-white/90 leading-snug max-w-xs hidden sm:block">
+            Your buyers would see this instantly, with your floor plans and pricing.
+          </p>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={handleDownload}
+              className="px-3 py-1.5 bg-white/20 border border-white/30 text-xs font-medium text-white hover:bg-white/30 transition-colors flex items-center gap-1.5"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Save
+            </button>
+            <a
+              href="mailto:hello@withfin.ch?subject=Pilot%20Interest%20%E2%80%94%20Saw%20the%20Demo"
+              className="px-4 py-1.5 bg-white text-slate-900 text-xs font-semibold uppercase tracking-wider hover:bg-slate-100 transition-colors"
+            >
+              Start a Pilot
+            </a>
+          </div>
+        </div>
       )}
     </div>
   );

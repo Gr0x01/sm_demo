@@ -111,7 +111,7 @@ Two sentences max. No job title. No years of experience.
 "No. This fits into your existing design appointments. Your sales team doesn't need training — buyers use the tool themselves."
 
 **What does this cost?**
-"Custom pricing based on your community count and option catalog. Most builders see ROI in the first month. Book a walkthrough and we'll scope it for you."
+"Pricing depends on your floor plan count. Most builders see ROI in the first month. We'll scope it on a call — and your first plan is free to prove it works."
 
 **What about my existing design center software?**
 "Finch works alongside your current process. It's the visual layer that makes your existing options sell better."
