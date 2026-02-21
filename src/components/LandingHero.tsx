@@ -10,6 +10,7 @@ type ResumeState = "idle" | "loading" | "not-found" | "error";
 interface LandingHeroProps {
   onStart: (phase: ContractPhase) => void;
   orgName: string;
+  logoUrl: string | null;
   orgSlug?: string;
   planName?: string;
   community?: string;
@@ -28,6 +29,7 @@ interface LandingHeroProps {
 export function LandingHero({
   onStart,
   orgName,
+  logoUrl,
   orgSlug,
   planName = "",
   community = "",
@@ -114,19 +116,26 @@ export function LandingHero({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6 md:py-14">
-      <div className={canResume ? "max-w-6xl mx-auto border border-slate-200 bg-white" : "max-w-3xl mx-auto border border-slate-200 bg-white"}>
-        {orgSlug && (
-          <div className="px-6 py-4 sm:px-8 md:px-10 border-b border-slate-200">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <Link href={isSubdomain ? "/" : `/${orgSlug}`} className="hover:text-[var(--color-navy)] transition-colors">
-                {orgName}
-              </Link>
-              <span className="text-slate-300">/</span>
-              <span className="text-slate-700">{planName || "Plan"}</span>
-            </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Nav — matches picker header */}
+      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[56px] sm:min-h-[64px] flex items-center justify-between">
+          <Link href={isSubdomain ? "/" : `/${orgSlug}`} className="hover:opacity-70 transition-opacity">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={orgName} className="h-6 sm:h-5" />
+            ) : (
+              <span className="text-sm font-semibold text-slate-900">{orgName}</span>
+            )}
+          </Link>
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <span className="text-slate-700">{planName || "Plan"}</span>
           </div>
-        )}
+        </div>
+      </header>
+
+      <div className="px-4 py-10 sm:px-6 md:py-14">
+      <div className={canResume ? "max-w-6xl mx-auto border border-slate-200 bg-white" : "max-w-3xl mx-auto border border-slate-200 bg-white"}>
         <div className={canResume ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]" : ""}>
           <div className="p-6 sm:p-8 md:p-10">
             <h2 className={`text-sm font-semibold tracking-widest uppercase text-[var(--color-accent)] mb-4 ${canResume ? "" : "text-center"}`}>
@@ -264,6 +273,7 @@ export function LandingHero({
             </aside>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

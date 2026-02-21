@@ -269,6 +269,7 @@ export function DemoPageClient({
             setPage("picker");
           }}
           orgName={orgName}
+          logoUrl={orgTheme.logoUrl}
           orgSlug={orgSlug}
           planName={floorplanName}
           community={community}

@@ -44,7 +44,7 @@ export default async function StoneMartin() {
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             <Image src="/logo.svg" alt="" width={28} height={15} className="brightness-0 invert" />
-            <span className="text-sm font-semibold text-white tracking-[0.06em] uppercase">
+            <span className="hidden md:inline text-sm font-semibold text-white tracking-[0.06em] uppercase">
               Stone Martin Builders
             </span>
           </div>

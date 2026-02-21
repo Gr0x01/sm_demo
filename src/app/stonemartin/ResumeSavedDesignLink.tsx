@@ -77,7 +77,7 @@ export function ResumeSavedDesignLink({
           setError("");
         }}
       >
-        Resume Saved Design
+        Resume Design
       </button>
 
       {isOpen && (
