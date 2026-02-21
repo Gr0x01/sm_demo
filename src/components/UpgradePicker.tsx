@@ -355,6 +355,12 @@ export function UpgradePicker({
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasLoadedRef = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
+  const pollAbortControllersRef = useRef(new Set<AbortController>());
+
+  // Abort all in-flight polling on unmount
+  useEffect(() => () => {
+    for (const c of pollAbortControllersRef.current) c.abort();
+  }, []);
   const [headerHeight, setHeaderHeight] = useState(120);
   const [syncPrompt, setSyncPrompt] = useState<{
     sourceSubId: string;
@@ -595,6 +601,76 @@ export function UpgradePicker({
           dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
           dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "No visualizations remaining" });
           return;
+        }
+        // If generation is already in progress (e.g. triggered from another step),
+        // poll the check endpoint until the result is ready instead of erroring out
+        if (res.status === 429 && data.selectionsHash) {
+          const abort = new AbortController();
+          pollAbortControllersRef.current.add(abort);
+          const pollInterval = 3000;
+          const maxPolls = 50; // ~2.5 min, above maxDuration of 120s
+          let consecutiveFailures = 0;
+          let exitReason: "complete" | "not_found" | "timeout" | "aborted" = "timeout";
+          try {
+            for (let poll = 0; poll < maxPolls; poll++) {
+              await new Promise(r => setTimeout(r, pollInterval));
+              if (abort.signal.aborted) { exitReason = "aborted"; break; }
+              try {
+                const checkRes = await fetch("/api/generate/photo/check", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ selectionsHash: data.selectionsHash }),
+                  signal: abort.signal,
+                });
+                const checkData = await checkRes.json();
+                if (checkData.status === "complete" && checkData.imageUrl) {
+                  consecutiveFailures = 0;
+                  exitReason = "complete";
+                  dispatch({
+                    type: "PHOTO_GENERATION_COMPLETE",
+                    photoKey,
+                    imageUrl: checkData.imageUrl,
+                    selectionsSnapshot,
+                    generatedImageId: checkData.generatedImageId,
+                  });
+                  track("generation_completed", { stepName: step.name, cacheHit: true, joinedInProgress: true });
+                  return;
+                }
+                if (checkData.status === "not_found") {
+                  consecutiveFailures = 0;
+                  exitReason = "not_found";
+                  break;
+                }
+                if (checkData.status === "pending") {
+                  consecutiveFailures = 0;
+                  // keep polling
+                } else {
+                  // status === "error" — transient backend issue, keep polling but track
+                  consecutiveFailures++;
+                  if (consecutiveFailures >= 5) {
+                    throw new Error("Network error while waiting for visualization");
+                  }
+                }
+              } catch (pollErr) {
+                if (abort.signal.aborted) { exitReason = "aborted"; break; }
+                consecutiveFailures++;
+                if (consecutiveFailures >= 5) {
+                  throw new Error("Network error while waiting for visualization");
+                }
+              }
+            }
+          } finally {
+            pollAbortControllersRef.current.delete(abort);
+          }
+          if (exitReason === "aborted") {
+            dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "" });
+            return;
+          }
+          if (exitReason === "not_found") {
+            throw new Error("Visualization failed \u2014 tap to retry");
+          }
+          // timeout — generation may still be running server-side
+          throw new Error("Still processing \u2014 try refreshing");
         }
         throw new Error(data.error || "Generation failed");
       }

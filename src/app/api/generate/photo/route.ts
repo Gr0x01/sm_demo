@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
-import { buildEditPrompt, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
+import { buildEditPrompt, buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
@@ -11,20 +11,6 @@ import { IMAGE_MODEL } from "@/lib/models";
 export const maxDuration = 120;
 
 const openai = new OpenAI();
-
-function buildPromptContextSignature(aiConfig: Awaited<ReturnType<typeof getStepPhotoAiConfig>>): string {
-  if (!aiConfig) return "";
-  const sortedSpatialHints = Object.entries(aiConfig.spatialHints ?? {})
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}:${v}`)
-    .join("|");
-  return [
-    `scene:${aiConfig.sceneDescription ?? ""}`,
-    `photoBaseline:${aiConfig.photo.photoBaseline ?? ""}`,
-    `photoSpatialHint:${aiConfig.photo.spatialHint ?? ""}`,
-    `spatialHints:${sortedSpatialHints}`,
-  ].join("||");
-}
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
   const lines: string[] = [];
@@ -193,7 +179,7 @@ export async function POST(request: Request) {
     const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId, selectionsJsonForClaim);
     if (claimResult === "in_progress") {
       return NextResponse.json(
-        { error: "This combination is already being generated" },
+        { error: "This combination is already being generated", selectionsHash },
         { status: 429 }
       );
     }
@@ -224,6 +210,7 @@ export async function POST(request: Request) {
       .download(aiConfig.photo.imagePath);
 
     if (downloadErr || !imageData) {
+      await releaseGenerationSlot(supabase, selectionsHash);
       return NextResponse.json({ error: "Failed to load base photo" }, { status: 500 });
     }
 
@@ -301,6 +288,7 @@ export async function POST(request: Request) {
 
     const generatedData = result.data?.[0];
     if (!generatedData?.b64_json) {
+      await releaseGenerationSlot(supabase, selectionsHash);
       return NextResponse.json({ error: "No image was generated" }, { status: 500 });
     }
 

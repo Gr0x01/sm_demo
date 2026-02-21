@@ -241,6 +241,28 @@ RULES:
   return { prompt, swatches };
 }
 
+/**
+ * Build a deterministic signature of the prompt context fields that affect generation output.
+ * Used in the selections hash so cache invalidates when prompts/spatial hints change.
+ */
+export function buildPromptContextSignature(aiConfig: {
+  sceneDescription?: string | null;
+  photo: { photoBaseline?: string | null; spatialHint?: string | null };
+  spatialHints?: Record<string, string> | null;
+}): string {
+  if (!aiConfig) return "";
+  const sortedSpatialHints = Object.entries(aiConfig.spatialHints ?? {})
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}:${v}`)
+    .join("|");
+  return [
+    `scene:${aiConfig.sceneDescription ?? ""}`,
+    `photoBaseline:${aiConfig.photo.photoBaseline ?? ""}`,
+    `photoSpatialHint:${aiConfig.photo.spatialHint ?? ""}`,
+    `spatialHints:${sortedSpatialHints}`,
+  ].join("||");
+}
+
 export function hashSelections(selections: Record<string, string>): string {
   const sorted = Object.keys(selections)
     .sort()
