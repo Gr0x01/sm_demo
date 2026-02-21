@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { ResumeSavedDesignLink } from "./ResumeSavedDesignLink";
 import { getOrgBySlug, getFloorplansForOrg } from "@/lib/db-queries";
 
@@ -28,6 +29,11 @@ const STATIC_COVERS: Record<string, string> = {
 export default async function StoneMartin() {
   const org = await getOrgBySlug("stonemartin");
   const floorplans = org ? await getFloorplansForOrg(org.id) : [];
+
+  const host = (await headers()).get("host") ?? "";
+  const isSubdomain =
+    host.endsWith(".withfin.ch") || /^[^.]+\.localhost/.test(host);
+  const linkPrefix = isSubdomain ? "" : "/stonemartin";
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
@@ -138,7 +144,7 @@ export default async function StoneMartin() {
                 return (
                   <Link
                     key={fp.slug}
-                    href={`/stonemartin/${fp.slug}`}
+                    href={`${linkPrefix}/${fp.slug}`}
                     className="block hover:shadow-md transition-shadow"
                   >
                     {card}
