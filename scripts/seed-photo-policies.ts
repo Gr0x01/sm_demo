@@ -98,9 +98,72 @@ async function seedStoneMartinKitchenPolicy() {
   console.log(`Policy upserted for step_photo ${photo.id} (${photo.image_path})`);
 }
 
+async function seedStoneMartinGreatroomPolicy() {
+  const { data: org, error: orgErr } = await supabase
+    .from("organizations")
+    .select("id")
+    .eq("slug", "stonemartin")
+    .single();
+  if (orgErr || !org) throw new Error(`Failed to load stonemartin org: ${orgErr?.message ?? "not found"}`);
+
+  const { data: floorplan, error: fpErr } = await supabase
+    .from("floorplans")
+    .select("id")
+    .eq("org_id", org.id)
+    .eq("slug", "kinkade")
+    .single();
+  if (fpErr || !floorplan) throw new Error(`Failed to load kinkade floorplan: ${fpErr?.message ?? "not found"}`);
+
+  const { data: step, error: stepErr } = await supabase
+    .from("steps")
+    .select("id")
+    .eq("org_id", org.id)
+    .eq("floorplan_id", floorplan.id)
+    .eq("slug", "set-your-style")
+    .single();
+  if (stepErr || !step) throw new Error(`Failed to load set-your-style step: ${stepErr?.message ?? "not found"}`);
+
+  const { data: photo, error: photoErr } = await supabase
+    .from("step_photos")
+    .select("id, image_path")
+    .eq("org_id", org.id)
+    .eq("step_id", step.id)
+    .ilike("image_path", "%greatroom-wide.webp")
+    .limit(1)
+    .maybeSingle();
+  if (photoErr || !photo) throw new Error(`Failed to load greatroom-wide photo: ${photoErr?.message ?? "not found"}`);
+
+  const policy = {
+    promptOverrides: {
+      invariantRulesAlways: [
+        "Preserve room zoning exactly as the source photo: the main great-room/living floor area (especially the left/foreground open space) must stay open and uncluttered.",
+        "Do NOT add any new kitchen structures in the great-room area: no new islands, perimeter cabinets, countertops, appliances, sinks, faucets, or backsplash walls.",
+        "Kitchen edits are allowed ONLY on existing kitchen elements already visible in the source background kitchen zone. Do NOT expand the kitchen footprint into the living room.",
+      ],
+    },
+  };
+
+  const { error: upsertErr } = await supabase
+    .from("step_photo_generation_policies")
+    .upsert(
+      {
+        org_id: org.id,
+        step_photo_id: photo.id,
+        policy_key: "stonemartin:kinkade:greatroom-wide:v1",
+        is_active: true,
+        policy_json: policy,
+      },
+      { onConflict: "org_id,step_photo_id,policy_key" },
+    );
+  if (upsertErr) throw new Error(`Failed to upsert policy: ${upsertErr.message}`);
+
+  console.log(`Policy upserted for step_photo ${photo.id} (${photo.image_path})`);
+}
+
 async function main() {
   try {
     await seedStoneMartinKitchenPolicy();
+    await seedStoneMartinGreatroomPolicy();
     console.log("Done.");
   } catch (error) {
     console.error(error);

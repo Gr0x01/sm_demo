@@ -34,86 +34,11 @@ interface SecondPassPolicyConfig {
   };
 }
 
-const STONEMARTIN_KITCHEN_CLOSE_POLICY_KEY = "stonemartin:kinkade:kitchen-close:v1";
-const STONEMARTIN_GREATROOM_WIDE_POLICY_KEY = "stonemartin:kinkade:greatroom-wide:v1";
-
-const STONEMARTIN_KITCHEN_CLOSE_PROMPT_OVERRIDES: PromptPolicyOverrides = {
-  invariantRulesWhenSelected: {
-    refrigerator: [
-      "Refrigerator opening is reserved for the refrigerator only. Place the selected refrigerator in that opening and do NOT fill that opening with cabinets, drawers, shelves, pantry units, or countertops.",
-    ],
-  },
-  invariantRulesWhenNotSelected: {
-    refrigerator: [
-      "Refrigerator opening state must match the source photo exactly: if the opening/alcove is empty, keep it empty; if it contains a refrigerator, keep that refrigerator unchanged.",
-      "Never convert the refrigerator opening into cabinetry, drawers, shelves, pantry units, countertops, or trim build-outs. The only permitted change inside an empty opening is wall paint/finish.",
-    ],
-  },
-};
-
-const STONEMARTIN_GREATROOM_WIDE_PROMPT_OVERRIDES: PromptPolicyOverrides = {
-  invariantRulesAlways: [
-    "Preserve room zoning exactly as the source photo: the main great-room/living floor area (especially the left/foreground open space) must stay open and uncluttered.",
-    "Do NOT add any new kitchen structures in the great-room area: no new islands, perimeter cabinets, countertops, appliances, sinks, faucets, or backsplash walls.",
-    "Kitchen edits are allowed ONLY on existing kitchen elements already visible in the source background kitchen zone. Do NOT expand the kitchen footprint into the living room.",
-  ],
-};
-
-function matchesStoneMartinKitchenClose(input: ResolvePhotoGenerationPolicyInput): boolean {
-  if (input.orgSlug !== "stonemartin") return false;
-  if (input.floorplanSlug !== "kinkade") return false;
-  if (input.stepSlug !== "design-your-kitchen") return false;
-  return input.imagePath.endsWith("kitchen-close.webp");
-}
-
-function matchesStoneMartinGreatRoomWide(input: ResolvePhotoGenerationPolicyInput): boolean {
-  if (input.orgSlug !== "stonemartin") return false;
-  if (input.floorplanSlug !== "kinkade") return false;
-  if (input.stepSlug !== "set-your-style") return false;
-  return input.imagePath.endsWith("greatroom-wide.webp");
-}
-
-function shouldRunStoneMartinRangeSecondPass(input: ResolvePhotoGenerationPolicyInput): boolean {
-  if (input.modelName !== "gpt-image-1.5") return false;
-  const rangeOptionId = input.selections.range;
-  if (!rangeOptionId) return false;
-  return rangeOptionId === "range-ge-gas-slide-in" || rangeOptionId === "range-ge-gas-slide-in-convection";
-}
-
 export function resolvePhotoGenerationPolicy(
   input: ResolvePhotoGenerationPolicyInput,
   dbPolicy?: StepPhotoGenerationPolicyRecord | null,
 ): ResolvedPhotoGenerationPolicy {
-  const dbResolved = resolveDbBackedPolicy(input, dbPolicy);
-  if (dbResolved) return dbResolved;
-
-  if (matchesStoneMartinKitchenClose(input)) {
-    const secondPass = shouldRunStoneMartinRangeSecondPass(input)
-      ? {
-          reason: "stonemartin_kitchen_slide_in_range",
-          inputFidelity: "low" as const,
-          prompt:
-            "Second pass: correct ONLY the cooking range geometry on the back wall. " +
-            "The selected range is slide-in: NO raised backguard panel, backsplash tile must be visible directly behind the cooktop, " +
-            "and there must be exactly one oven door below the cooktop. Keep all surrounding cabinetry, countertop seams, island, sink, faucet, floor, walls, and lighting unchanged.",
-        }
-      : undefined;
-
-    return {
-      policyKey: STONEMARTIN_KITCHEN_CLOSE_POLICY_KEY,
-      promptOverrides: STONEMARTIN_KITCHEN_CLOSE_PROMPT_OVERRIDES,
-      secondPass,
-    };
-  }
-
-  if (matchesStoneMartinGreatRoomWide(input)) {
-    return {
-      policyKey: STONEMARTIN_GREATROOM_WIDE_POLICY_KEY,
-      promptOverrides: STONEMARTIN_GREATROOM_WIDE_PROMPT_OVERRIDES,
-    };
-  }
-
-  return { policyKey: "none" };
+  return resolveDbBackedPolicy(input, dbPolicy) ?? { policyKey: "none" };
 }
 
 function resolveDbBackedPolicy(

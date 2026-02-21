@@ -115,7 +115,8 @@ export async function POST(request: Request) {
     }
 
     const modelName = (typeof model === "string" && model) ? model : IMAGE_MODEL;
-    const promptContextSignature = buildPromptContextSignature(aiConfig);
+    const optionLookup = await getOptionLookup(org.id);
+    const promptContextSignature = buildPromptContextSignature(aiConfig, selections, optionLookup);
     const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
     const resolvedPolicy = resolvePhotoGenerationPolicy({
       orgSlug,
@@ -242,7 +243,6 @@ export async function POST(request: Request) {
     };
 
     // --- Build prompt ---
-    const optionLookup = await getOptionLookup(org.id);
     const spatialHints = { ...aiConfig.spatialHints };
     const sceneDescription = buildSceneDescription(aiConfig);
     const photoSpatialHint = aiConfig.photo.spatialHint;

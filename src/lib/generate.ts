@@ -18,51 +18,6 @@ export interface PromptPolicyOverrides {
   invariantRulesWhenNotSelected?: Record<string, string[]>;
 }
 
-const INVARIANT_RULES_BY_SUBCATEGORY: Record<string, string[]> = {
-  "kitchen-cabinet-color": [
-    "Apply cabinet color ONLY to perimeter/wall cabinets. Do NOT apply it to island cabinetry.",
-  ],
-  "kitchen-island-cabinet-color": [
-    "Apply island cabinet color ONLY to island base cabinets in the foreground. Do NOT apply it to perimeter/wall cabinets.",
-  ],
-  "kitchen-cabinet-hardware": [
-    "Keep hardware count and placement identical. Do NOT add or remove pulls/knobs.",
-  ],
-  "kitchen-sink": [
-    "Keep the sink basin in the exact same cutout position, scale, and orientation. Do NOT mirror/flip/rotate it.",
-  ],
-  "kitchen-faucet": [
-    "Keep faucet base location and spout direction exactly as in the source photo. Do NOT mirror/flip it.",
-  ],
-  "dishwasher": [
-    "Keep the dishwasher in the same slot next to the sink. Do NOT relocate it.",
-  ],
-  "refrigerator": [
-    "Keep the refrigerator in its built-in alcove. Do NOT move, resize, or relocate it.",
-  ],
-  "range": [
-    "Keep the range in the same back-wall cutout between the same cabinets. Do NOT move or relocate it.",
-    "A kitchen range in this step is a SINGLE-oven appliance: exactly one oven door below the cooktop. Do NOT add a second/upper oven door or a stacked double-oven look.",
-  ],
-};
-
-const INVARIANT_RULES_BY_OPTION_ID: Record<string, string[]> = {
-  "range-ge-included-freestanding": [
-    "Freestanding range: include the raised backguard/control panel behind the burners.",
-    "This is still a single-oven range: one oven cavity/door only, with no upper oven compartment.",
-  ],
-  "range-ge-gas-slide-in": [
-    "Slide-in range: NO raised backguard panel; the cooktop sits flush with the countertop and backsplash is visible directly behind it.",
-    "If the source photo shows a freestanding range backguard, remove that backguard and restore matching backsplash tile directly behind the range.",
-    "This is still a single-oven range: one oven cavity/door only, with no upper oven compartment.",
-  ],
-  "range-ge-gas-slide-in-convection": [
-    "Slide-in range: NO raised backguard panel; the cooktop sits flush with the countertop and backsplash is visible directly behind it.",
-    "If the source photo shows a freestanding range backguard, remove that backguard and restore matching backsplash tile directly behind the range.",
-    "This is still a single-oven range: one oven cavity/door only, with no upper oven compartment.",
-  ],
-};
-
 /**
  * Resolve a swatch URL to a Buffer (downloads from Supabase Storage).
  * Return null if the swatch can't be loaded.
@@ -92,8 +47,8 @@ export async function buildEditPrompt(
   const listLines: string[] = [];
   const swatches: SwatchImage[] = [];
   const selectedSubIds = new Set<string>();
-  const selectedOptionIds = new Set<string>();
   const dynamicInvariantRules = new Set<string>();
+  let hasApplianceSelection = false;
   let listIndex = 1;
   let swatchIndex = 1;
 
@@ -109,23 +64,14 @@ export async function buildEditPrompt(
     selectedSubIds.add(subId);
 
     const { option, subCategory } = found;
-    selectedOptionIds.add(option.id);
+    if (subCategory.isAppliance) hasApplianceSelection = true;
 
-    if (subId === "range") {
-      const optionName = option.name.toLowerCase();
-      if (optionName.includes("slide in") || optionName.includes("slide-in")) {
-        dynamicInvariantRules.add(
-          "Selected range is slide-in: NO raised backguard panel; the cooktop sits flush with the countertop and backsplash is visible directly behind it."
-        );
-        dynamicInvariantRules.add(
-          "If the source photo shows a freestanding range backguard, remove that backguard and restore matching backsplash tile directly behind the range."
-        );
-      }
-      if (optionName.includes("freestanding") || optionName.includes("free standing")) {
-        dynamicInvariantRules.add(
-          "Selected range is freestanding: include a raised backguard/control panel behind the burners."
-        );
-      }
+    // Collect DB-driven generation rules from subcategory and option
+    if (subCategory.generationRules) {
+      for (const rule of subCategory.generationRules) dynamicInvariantRules.add(rule);
+    }
+    if (option.generationRules) {
+      for (const rule of option.generationRules) dynamicInvariantRules.add(rule);
     }
 
     const hint = spatialHints[subId];
@@ -165,20 +111,7 @@ export async function buildEditPrompt(
     };
   }
 
-  const invariantRules = new Set<string>();
-  for (const subId of selectedSubIds) {
-    const rules = INVARIANT_RULES_BY_SUBCATEGORY[subId];
-    if (!rules) continue;
-    for (const rule of rules) invariantRules.add(rule);
-  }
-  for (const optionId of selectedOptionIds) {
-    const rules = INVARIANT_RULES_BY_OPTION_ID[optionId];
-    if (!rules) continue;
-    for (const rule of rules) invariantRules.add(rule);
-  }
-  for (const rule of dynamicInvariantRules) {
-    invariantRules.add(rule);
-  }
+  const invariantRules = new Set<string>(dynamicInvariantRules);
   for (const rule of promptPolicyOverrides?.invariantRulesAlways ?? []) {
     invariantRules.add(rule);
   }
@@ -195,10 +128,6 @@ export async function buildEditPrompt(
       ? `\nCRITICAL FIXED-GEOMETRY RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
       : "";
 
-  const hasApplianceSelection =
-    selectedSubIds.has("dishwasher") ||
-    selectedSubIds.has("refrigerator") ||
-    selectedSubIds.has("range");
   const editObjective = hasApplianceSelection
     ? "Edit this room photo to match the selected finishes and appliance models."
     : "Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:";
@@ -243,23 +172,46 @@ RULES:
 
 /**
  * Build a deterministic signature of the prompt context fields that affect generation output.
- * Used in the selections hash so cache invalidates when prompts/spatial hints change.
+ * Used in the selections hash so cache invalidates when prompts/spatial hints/generation rules change.
  */
-export function buildPromptContextSignature(aiConfig: {
-  sceneDescription?: string | null;
-  photo: { photoBaseline?: string | null; spatialHint?: string | null };
-  spatialHints?: Record<string, string> | null;
-}): string {
+export function buildPromptContextSignature(
+  aiConfig: {
+    sceneDescription?: string | null;
+    photo: { photoBaseline?: string | null; spatialHint?: string | null };
+    spatialHints?: Record<string, string> | null;
+  },
+  selections?: Record<string, string>,
+  optionLookup?: Map<string, { option: Option; subCategory: SubCategory }>,
+): string {
   if (!aiConfig) return "";
   const sortedSpatialHints = Object.entries(aiConfig.spatialHints ?? {})
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([k, v]) => `${k}:${v}`)
     .join("|");
+
+  // Build a deterministic signature of generation rules that apply to the current selections
+  let rulesSignature = "";
+  if (selections && optionLookup) {
+    const ruleParts: string[] = [];
+    for (const [subId, optId] of Object.entries(selections).sort(([a], [b]) => a.localeCompare(b))) {
+      const found = optionLookup.get(`${subId}:${optId}`);
+      if (!found) continue;
+      if (found.subCategory.generationRules?.length) {
+        ruleParts.push(`s:${subId}:${found.subCategory.generationRules.join(";")}`);
+      }
+      if (found.option.generationRules?.length) {
+        ruleParts.push(`o:${optId}:${found.option.generationRules.join(";")}`);
+      }
+    }
+    if (ruleParts.length > 0) rulesSignature = ruleParts.join("|");
+  }
+
   return [
     `scene:${aiConfig.sceneDescription ?? ""}`,
     `photoBaseline:${aiConfig.photo.photoBaseline ?? ""}`,
     `photoSpatialHint:${aiConfig.photo.spatialHint ?? ""}`,
     `spatialHints:${sortedSpatialHints}`,
+    `rules:${rulesSignature}`,
   ].join("||");
 }
 
