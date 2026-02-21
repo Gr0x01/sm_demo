@@ -6,21 +6,35 @@ import { ChevronDown, ChevronUp, ImageIcon } from "lucide-react";
 interface PriceTrackerProps {
   total: number;
   stepName?: string;
+  stepProgressLabel?: string;
   showGenerateButton?: boolean;
   error?: string | null;
   previewImageUrl?: string | null;
   previewTitle?: string;
   previewSummary?: string[];
+  showNavigation?: boolean;
+  onBack?: () => void;
+  onPrimaryAction?: () => void;
+  primaryActionLabel?: string;
+  backDisabled?: boolean;
+  onSave?: () => void;
 }
 
 export function PriceTracker({
   total,
   stepName,
+  stepProgressLabel,
   showGenerateButton = false,
   error,
   previewImageUrl = null,
   previewTitle,
   previewSummary = [],
+  showNavigation = false,
+  onBack,
+  onPrimaryAction,
+  primaryActionLabel = "Continue",
+  backDisabled = false,
+  onSave,
 }: PriceTrackerProps) {
   const [pulse, setPulse] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -130,7 +144,7 @@ export function PriceTracker({
           <>
             <span className="text-sm text-gray-500">Total Upgrades</span>
             <span
-              className={`text-lg font-bold text-[var(--color-navy)] ${pulse ? "animate-price-pulse" : ""}`}
+              className={`text-lg font-bold text-[var(--color-navy)] ml-auto ${pulse ? "animate-price-pulse" : ""}`}
             >
               {total === 0 ? "Base Package" : <>+${total.toLocaleString()}</>}
             </span>
@@ -141,6 +155,45 @@ export function PriceTracker({
         <div className="max-w-4xl mx-auto px-4 pb-3">
           <div className="bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
             {error}
+          </div>
+        </div>
+      )}
+
+      {showNavigation && onPrimaryAction && (
+        <div className="border-t border-gray-200/80">
+          <div className="max-w-4xl mx-auto px-4 pt-2 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+            {stepProgressLabel && (
+              <p className="mb-2 text-xs font-medium text-gray-500">{stepProgressLabel}</p>
+            )}
+            {onSave && (
+              <div className="mb-2 flex justify-end">
+                <button
+                  onClick={onSave}
+                  className="px-3 py-1.5 text-sm font-semibold border border-gray-300 text-gray-700 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+                >
+                  Save
+                </button>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={onBack}
+                disabled={backDisabled}
+                className={`py-2.5 text-sm font-semibold border transition-colors ${
+                  backDisabled
+                    ? "border-gray-200 text-gray-300 cursor-not-allowed"
+                    : "border-gray-300 text-gray-700 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] cursor-pointer"
+                }`}
+              >
+                Back
+              </button>
+              <button
+                onClick={onPrimaryAction}
+                className="py-2.5 text-sm font-semibold bg-[var(--color-navy)] text-white hover:opacity-90 transition-opacity cursor-pointer"
+              >
+                {primaryActionLabel}
+              </button>
+            </div>
           </div>
         </div>
       )}

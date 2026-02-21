@@ -483,6 +483,7 @@ export function UpgradePicker({
 
   const activeStep = allSteps.find((s) => s.id === activeStepId) || allSteps[0];
   const activeStepIndex = allSteps.findIndex((s) => s.id === activeStepId);
+  const safeActiveStepIndex = activeStepIndex >= 0 ? activeStepIndex : 0;
 
   const total = useMemo(
     () => calculateTotal(state.selections, state.quantities, categories),
@@ -673,6 +674,21 @@ export function UpgradePicker({
     }
   }, [activeStepIndex, allSteps, setActiveStepId]);
 
+  const handleBack = useCallback(() => {
+    if (activeStepIndex > 0) {
+      setActiveStepId(allSteps[activeStepIndex - 1].id);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [activeStepIndex, allSteps, setActiveStepId]);
+
+  const handleFinish = useCallback(() => {
+    onFinish({
+      selections: state.selections,
+      quantities: state.quantities,
+      generatedImageUrls: state.generatedImageUrls,
+    });
+  }, [onFinish, state.selections, state.quantities, state.generatedImageUrls]);
+
   const isLastStep = activeStepIndex >= allSteps.length - 1;
   const nextStepName = isLastStep ? "" : allSteps[activeStepIndex + 1].name;
   const isGeneratingThisStep = state.generatingStepIds.has(activeStep.id);
@@ -731,7 +747,7 @@ export function UpgradePicker({
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[72px] sm:min-h-[64px] flex items-center gap-2 sm:gap-4">
           {/* Logo — left, links back to landing */}
-          <div className="w-48 shrink-0 flex items-center">
+          <div className="w-12 sm:w-32 lg:w-auto shrink-0 flex items-center">
             <button
               onClick={onNavigateHome}
               className="cursor-pointer hover:opacity-70 transition-opacity"
@@ -750,22 +766,32 @@ export function UpgradePicker({
             />
           </div>
 
-          {/* Save + Finish — right */}
-          <div className="w-48 shrink-0 flex items-center gap-2 justify-end">
+          {/* Right spacer on mobile + actions on desktop/tablet */}
+          <div className="w-12 sm:w-32 lg:w-auto shrink-0 flex items-center justify-end">
             {sessionId && (
               <button
                 onClick={() => setShowSaveModal(true)}
-                className="px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+                className="sm:hidden px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-700 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
               >
                 Save
               </button>
             )}
-            <button
-              onClick={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
-              className="px-3 py-1.5 text-sm font-semibold bg-[var(--color-navy)] text-white hover:opacity-90 transition-opacity cursor-pointer"
-            >
-              Review & Finish
-            </button>
+            <div className="hidden sm:flex items-center gap-2">
+              {sessionId && (
+                <button
+                  onClick={() => setShowSaveModal(true)}
+                  className="px-2.5 md:px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+                >
+                  Save
+                </button>
+              )}
+              <button
+                onClick={handleFinish}
+                className="px-2.5 md:px-3 py-1.5 text-sm font-semibold bg-[var(--color-navy)] text-white hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
+              >
+                Finish
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -789,7 +815,7 @@ export function UpgradePicker({
                 nextStepName={nextStepName}
                 headerHeight={headerHeight}
                 lockedSubCategoryIds={lockedSubCategoryIds}
-                onFinish={() => onFinish({ selections: state.selections, quantities: state.quantities, generatedImageUrls: state.generatedImageUrls })}
+                onFinish={handleFinish}
                 photos={activeStep.photos}
                 generatedImageUrls={state.generatedImageUrls}
                 generatingPhotoKeys={state.generatingPhotoKeys}
@@ -805,7 +831,7 @@ export function UpgradePicker({
           )}
 
           {/* Right Column — scrollable options or gallery */}
-          <div className="flex-1 min-w-0 pb-20 lg:pb-5">
+          <div className="flex-1 min-w-0 pb-36 lg:pb-5">
             {activeStep.id === "__gallery" ? (
               <GalleryView
                 steps={steps}
@@ -854,16 +880,6 @@ export function UpgradePicker({
                   onSetQuantity={handleSetQuantity}
                   lockedSubCategoryIds={lockedSubCategoryIds}
                 />
-
-                {/* Mobile-only: Continue button */}
-                {!isLastStep && (
-                  <button
-                    onClick={handleContinue}
-                    className="lg:hidden w-full mt-10 py-3.5 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
-                  >
-                    Next Step &rarr;
-                  </button>
-                )}
               </>
             )}
           </div>
@@ -880,6 +896,11 @@ export function UpgradePicker({
           previewImageUrl={activePreviewImageUrl}
           previewTitle={activeStep.name}
           previewSummary={activeSelectionSummary}
+          showNavigation
+          onBack={safeActiveStepIndex > 0 ? handleBack : undefined}
+          onPrimaryAction={isLastStep ? handleFinish : handleContinue}
+          primaryActionLabel={isLastStep ? "Finish" : "Continue"}
+          backDisabled={safeActiveStepIndex === 0}
         />
       </div>
 
