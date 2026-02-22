@@ -95,7 +95,7 @@ export function UpgradePicker({
   initialSelections,
   initialQuantities,
   sessionId,
-  buyerEmail,
+  buyerEmail: _buyerEmail,
   orgSlug,
   floorplanSlug,
   onSessionSaved,
@@ -104,13 +104,13 @@ export function UpgradePicker({
   onNavigateHome,
   orgName,
   logoUrl,
-  planName,
-  community,
+  planName: _planName,
+  community: _community,
   categories,
   steps,
   contractLockedIds,
   syncPairs,
-  generationCap,
+  generationCap: _generationCap,
 }: UpgradePickerProps) {
   const track = useTrack({ orgSlug, floorplanSlug, sessionId });
 
@@ -410,7 +410,7 @@ export function UpgradePicker({
                       photoKey: photo.id,
                       imageUrl,
                       selectionsSnapshot: stableStringify(photoSelections),
-                      generatedImageId: generatedImageId ?? null,
+                      generatedImageId: generatedImageId ?? "",
                     });
                   }
                 }
@@ -484,7 +484,7 @@ export function UpgradePicker({
                   photoKey: photo.id,
                   imageUrl,
                   selectionsSnapshot: nextSnapshot,
-                  generatedImageId: generatedImageId ?? null,
+                  generatedImageId: generatedImageId ?? "",
                 });
               }
             } catch {
@@ -708,11 +708,11 @@ export function UpgradePicker({
                     throw new Error("Network error while waiting for visualization");
                   }
                 }
-              } catch (pollErr) {
+              } catch (pollErr: unknown) {
                 if (abort.signal.aborted) { exitReason = "aborted"; break; }
                 consecutiveFailures++;
                 if (consecutiveFailures >= 5) {
-                  throw new Error("Network error while waiting for visualization");
+                  throw new Error("Network error while waiting for visualization", { cause: pollErr });
                 }
               }
             }

@@ -83,7 +83,7 @@ export function normalizePrimaryAccentAsWallPaint(
   if (!accentOptionId || !accentOptionId.startsWith("accent-")) return selections;
 
   const wallOptionId = `wall-${accentOptionId.slice("accent-".length)}`;
-  const next = { ...selections, "common-wall-paint": wallOptionId };
+  const next: Record<string, string> = { ...selections, "common-wall-paint": wallOptionId };
   delete next["accent-color"];
   return next;
 }

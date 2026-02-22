@@ -37,7 +37,7 @@ const _getFloorplan = async (orgId: string, floorplanSlug: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("floorplans")
-    .select("id, name, slug, community, price_sheet_label, contract_locked_ids, sync_pairs, is_active")
+    .select("id, name, slug, community, price_sheet_label, contract_locked_ids, sync_pairs, is_active, cover_image_path")
     .eq("org_id", orgId)
     .eq("slug", floorplanSlug)
     .single();
