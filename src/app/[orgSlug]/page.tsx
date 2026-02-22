@@ -23,8 +23,7 @@ export default async function OrgPage({
   const org = await getOrgBySlug(orgSlug);
   if (!org) notFound();
 
-  const allFloorplans = await getFloorplansForOrg(org.id);
-  const floorplans = allFloorplans.filter((fp) => fp.is_active);
+  const floorplans = await getFloorplansForOrg(org.id);
 
   const host = (await headers()).get("host") ?? "";
   const isSubdomain =
