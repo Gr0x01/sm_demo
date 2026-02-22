@@ -327,6 +327,8 @@ export function UpgradePicker({
   const hasLoadedRef = useRef(false);
   const headerRef = useRef<HTMLElement>(null);
   const pollAbortControllersRef = useRef(new Set<AbortController>());
+  const cacheHydrateRunRef = useRef(0);
+  const cacheHydrateInFlightRef = useRef(new Set<string>());
 
   // Abort all in-flight polling on unmount
   useEffect(() => () => {
@@ -419,6 +421,86 @@ export function UpgradePicker({
 
     loadAndCheckCache();
   }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections, getPhotoVisualSelections, orgSlug, floorplanSlug]);
+
+  // On selection changes, auto-switch to any already-cached image for the new fingerprint
+  // so users don't sit on an "OUTDATED" badge when a matching cached render exists.
+  useEffect(() => {
+    if (!hasLoadedRef.current) return;
+    if (!orgSlug || !floorplanSlug) return;
+
+    const runId = ++cacheHydrateRunRef.current;
+    const timer = setTimeout(() => {
+      const modelParam = new URLSearchParams(window.location.search).get("model");
+
+      void (async () => {
+        for (const step of steps) {
+          if (!step.showGenerateButton || !step.photos?.length) continue;
+
+          for (const photo of step.photos) {
+            if (cacheHydrateRunRef.current !== runId) return;
+            if (state.generatingPhotoKeys.has(photo.id)) continue;
+
+            const previousSnapshot = state.generatedWithSelections[photo.id];
+            if (!previousSnapshot) continue; // only hydrate stale-existing images
+
+            const photoSelections = getPhotoVisualSelections(step, photo, state.selections);
+            const nextSnapshot = stableStringify(photoSelections);
+            if (previousSnapshot === nextSnapshot) continue;
+
+            const inFlightKey = `${photo.id}:${nextSnapshot}`;
+            if (cacheHydrateInFlightRef.current.has(inFlightKey)) continue;
+            cacheHydrateInFlightRef.current.add(inFlightKey);
+
+            try {
+              const checkRes = await fetch("/api/generate/photo/check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  orgSlug,
+                  floorplanSlug,
+                  stepPhotoId: photo.id,
+                  selections: photoSelections,
+                  ...(modelParam ? { model: modelParam } : {}),
+                }),
+              });
+              if (!checkRes.ok) continue;
+
+              const { status, imageUrl, generatedImageId } = await checkRes.json() as {
+                status?: string;
+                imageUrl?: string | null;
+                generatedImageId?: string | null;
+              };
+
+              if (cacheHydrateRunRef.current !== runId) return;
+              if (status === "complete" && imageUrl) {
+                dispatch({
+                  type: "PHOTO_GENERATION_COMPLETE",
+                  photoKey: photo.id,
+                  imageUrl,
+                  selectionsSnapshot: nextSnapshot,
+                  generatedImageId: generatedImageId ?? null,
+                });
+              }
+            } catch {
+              // Non-critical
+            } finally {
+              cacheHydrateInFlightRef.current.delete(inFlightKey);
+            }
+          }
+        }
+      })();
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [
+    steps,
+    state.selections,
+    state.generatedWithSelections,
+    state.generatingPhotoKeys,
+    getPhotoVisualSelections,
+    orgSlug,
+    floorplanSlug,
+  ]);
 
   // Auto-save selections (debounced 1s)
   useEffect(() => {
