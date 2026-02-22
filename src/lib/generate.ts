@@ -12,7 +12,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v15";
+export const GENERATION_CACHE_VERSION = "v17";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -110,6 +110,20 @@ export async function buildEditPrompt(
       : `${subCategory.name}: ${option.name}${descriptorSuffix}`;
     const swatchBackedLabel = subCategory.isAppliance ? applianceLabel : finishLabel;
 
+    // Build fallback label when no swatch image is available.
+    // Appliances: keep name + descriptor (AI needs model identification).
+    // Finishes: use hex as sole color authority — never expose name/descriptor for color.
+    const buildFallbackLabel = () => {
+      if (subCategory.isAppliance) {
+        return `${applianceLabel} (no swatch image available; follow text exactly)`;
+      }
+      const hex = option.swatchColor?.trim();
+      if (hex) {
+        return `${finishLabel} (no swatch; target color ${hex})`;
+      }
+      return `${finishLabel} (no swatch image available; keep existing color)`;
+    };
+
     if (option.swatchUrl && resolveSwatchBuffer) {
       try {
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
@@ -121,16 +135,15 @@ export async function buildEditPrompt(
           swatchIndex += 1;
           listIndex += 1;
         } else {
-          listLines.push(`${listIndex}. ${applianceLabel} (no swatch image available; follow text exactly)`);
+          listLines.push(`${listIndex}. ${buildFallbackLabel()}`);
           listIndex += 1;
         }
       } catch {
-        listLines.push(`${listIndex}. ${applianceLabel} (no swatch image available; follow text exactly)`);
+        listLines.push(`${listIndex}. ${buildFallbackLabel()}`);
         listIndex += 1;
       }
     } else {
-      // No swatch image available — describe by name
-      listLines.push(`${listIndex}. ${applianceLabel} (no swatch image available; follow text exactly)`);
+      listLines.push(`${listIndex}. ${buildFallbackLabel()}`);
       listIndex += 1;
     }
   }

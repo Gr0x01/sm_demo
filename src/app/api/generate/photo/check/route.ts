@@ -5,7 +5,7 @@ import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGeneratio
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
-import { getEffectivePhotoScopedIds } from "@/lib/photo-scope";
+import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
   // Per-photo baseline text is the authoritative scene context when present.
@@ -81,6 +81,10 @@ export async function POST(request: Request) {
         aiConfig.sceneDescription ?? "",
       ].join("\n");
       scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
+      scopedSelections = normalizePrimaryAccentAsWallPaint(scopedSelections, {
+        stepSlug: aiConfig.stepSlug,
+        imagePath: aiConfig.photo.imagePath,
+      });
       const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
       const sceneDescription = buildSceneDescription(aiConfig);
 

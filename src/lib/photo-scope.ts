@@ -48,13 +48,42 @@ export function getEffectivePhotoScopedIds(
     effective.add("common-wall-paint");
   }
 
-  // Stone Martin semantics: accent color owns primary bedroom + primary bath walls.
-  // If we keep common wall paint in those views, the prompt receives conflicting
-  // wall-color instructions and the accent color is frequently overridden.
+  // Stone Martin semantics: primary bedroom + primary bath should support accent
+  // paint selection, but final prompting treats those walls as whole-wall paint.
+  // Keep both IDs in scope here; selection normalization handles the remap.
   if (isPrimaryBedroomView || isPrimaryBathView) {
     effective.add("accent-color");
-    effective.delete("common-wall-paint");
+    effective.add("common-wall-paint");
   }
 
   return effective;
+}
+
+function isPrimaryAccentAsWallView(context: { stepSlug?: string | null; imagePath?: string | null }): boolean {
+  const imagePath = (context.imagePath ?? "").toLowerCase();
+  return (
+    imagePath.includes("primary-bedroom.webp") ||
+    context.stepSlug === "primary-bath" ||
+    imagePath.includes("primary-bath-vanity.webp") ||
+    imagePath.includes("primary-bath-shower.webp") ||
+    imagePath.includes("bath-closet.webp")
+  );
+}
+
+/**
+ * For Stone Martin primary bedroom/bath photos, treat accent color as whole-wall paint.
+ * This remaps accent option IDs to their wall equivalents and removes accent-color.
+ */
+export function normalizePrimaryAccentAsWallPaint(
+  selections: Record<string, string>,
+  context: { stepSlug?: string | null; imagePath?: string | null },
+): Record<string, string> {
+  if (!isPrimaryAccentAsWallView(context)) return selections;
+  const accentOptionId = selections["accent-color"];
+  if (!accentOptionId || !accentOptionId.startsWith("accent-")) return selections;
+
+  const wallOptionId = `wall-${accentOptionId.slice("accent-".length)}`;
+  const next = { ...selections, "common-wall-paint": wallOptionId };
+  delete next["accent-color"];
+  return next;
 }

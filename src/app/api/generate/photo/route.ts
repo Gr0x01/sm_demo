@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
+import sharp from "sharp";
 import { buildEditPrompt, buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
@@ -8,7 +9,7 @@ import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
-import { getEffectivePhotoScopedIds } from "@/lib/photo-scope";
+import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 
 export const maxDuration = 120;
 
@@ -144,6 +145,10 @@ export async function POST(request: Request) {
       aiConfig.sceneDescription ?? "",
     ].join("\n");
     scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
+    scopedSelections = normalizePrimaryAccentAsWallPaint(scopedSelections, {
+      stepSlug: aiConfig.stepSlug,
+      imagePath: aiConfig.photo.imagePath,
+    });
     const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
     const sceneDescription = buildSceneDescription(aiConfig);
 
@@ -276,10 +281,17 @@ export async function POST(request: Request) {
 
       if (swatchErr || !swatchData) return null;
 
-      const buffer = Buffer.from(await swatchData.arrayBuffer());
+      const rawBuffer = Buffer.from(await swatchData.arrayBuffer());
       const ext = storagePath.split(".").pop()?.toLowerCase() || "png";
+
+      // SVG swatches must be rasterized — OpenAI only accepts JPEG/PNG/WebP
+      if (ext === "svg" || ext === "svgz") {
+        const pngBuffer = await sharp(rawBuffer).png().toBuffer();
+        return { buffer: pngBuffer, mediaType: "image/png" };
+      }
+
       const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-      return { buffer, mediaType };
+      return { buffer: rawBuffer, mediaType };
     };
 
     // --- Build prompt ---
