@@ -12,7 +12,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v14";
+export const GENERATION_CACHE_VERSION = "v15";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -158,12 +158,21 @@ export async function buildEditPrompt(
     invariantRules.size > 0
       ? `\nCRITICAL FIXED-GEOMETRY RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
       : "";
-  const hasWallPaintSelection =
-    selectedSubIds.has("common-wall-paint") || selectedSubIds.has("accent-color");
-  const wallPaintRuleBlock = hasWallPaintSelection
-    ? `\n- Wall paint selections apply to ALL visible painted drywall wall surfaces across every visible zone/room in frame (including bathroom, closet, hallway, and kitchen zones when visible).
+  const hasCommonWallPaintSelection = selectedSubIds.has("common-wall-paint");
+  const hasAccentColorSelection = selectedSubIds.has("accent-color");
+  const wallPaintRuleBlock =
+    hasCommonWallPaintSelection && hasAccentColorSelection
+      ? `\n- Common Wall Paint and Accent Color are separate wall-finish targets. Keep them in separate wall zones; do NOT blend or average them.
+- Accent Color applies only to accent-designated wall zones for this photo.
+- Common Wall Paint applies only to non-accent painted drywall wall zones for this photo.
 - Do NOT paint non-wall surfaces: tile, cabinets, mirrors, glass, trim, doors, countertops, or flooring unless those categories are explicitly selected.`
-    : "";
+      : hasCommonWallPaintSelection
+      ? `\n- Common Wall Paint applies to ALL visible painted drywall wall surfaces across every visible zone/room in frame (including bathroom, closet, hallway, and kitchen zones when visible).
+- Do NOT paint non-wall surfaces: tile, cabinets, mirrors, glass, trim, doors, countertops, or flooring unless those categories are explicitly selected.`
+      : hasAccentColorSelection
+      ? `\n- Accent Color applies to the accent-designated painted drywall wall zones visible in this photo.
+- Do NOT paint non-wall surfaces: tile, cabinets, mirrors, glass, trim, doors, countertops, or flooring unless those categories are explicitly selected.`
+      : "";
 
   const editObjective = hasApplianceSelection
     ? "Edit this room photo to match the selected finishes and appliance models."

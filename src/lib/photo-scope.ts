@@ -21,6 +21,12 @@ export function getEffectivePhotoScopedIds(
     context.stepSlug === "design-your-kitchen" ||
     imagePath.includes("kitchen-close.webp");
   const isBathClosetView = imagePath.includes("bath-closet.webp");
+  const isPrimaryBedroomView = imagePath.includes("primary-bedroom.webp");
+  const isPrimaryBathView =
+    context.stepSlug === "primary-bath" ||
+    imagePath.includes("primary-bath-vanity.webp") ||
+    imagePath.includes("primary-bath-shower.webp") ||
+    isBathClosetView;
 
   if (isGreatRoomKitchenView && effective.has("kitchen-faucet")) {
     effective.add("cabinet-style-whole-house");
@@ -40,6 +46,14 @@ export function getEffectivePhotoScopedIds(
   // Wall paint should remain in scope for kitchen and split bath+closet views.
   if (isGreatRoomKitchenView || isKitchenView || isBathClosetView) {
     effective.add("common-wall-paint");
+  }
+
+  // Stone Martin semantics: accent color owns primary bedroom + primary bath walls.
+  // If we keep common wall paint in those views, the prompt receives conflicting
+  // wall-color instructions and the accent color is frequently overridden.
+  if (isPrimaryBedroomView || isPrimaryBathView) {
+    effective.add("accent-color");
+    effective.delete("common-wall-paint");
   }
 
   return effective;
