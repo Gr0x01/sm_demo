@@ -124,7 +124,6 @@ export function LandingHero({
         <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[56px] sm:min-h-[64px] flex items-center justify-between">
           <Link href={isSubdomain ? "/" : `/${orgSlug}`} className="hover:opacity-70 transition-opacity">
             {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
               <img src={logoUrl} alt={orgName} className="h-6 sm:h-5" />
             ) : (
               <span className="text-sm font-semibold text-slate-900">{orgName}</span>

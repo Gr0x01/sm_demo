@@ -108,7 +108,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
     }).catch(() => {
       // Silently fail — they can still upload manually
     });
-  }, [autoSample]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoSample]);
 
   useEffect(() => {
     if (!uploadedPhoto) setMobilePreviewOpen(false);

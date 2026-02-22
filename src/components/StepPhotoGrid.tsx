@@ -93,7 +93,6 @@ export function StepPhotoGrid({
             {sortedPhotos.map((photo) => {
               const isActive = photo.id === activePhoto?.id;
               const generatedUrl = generatedImageUrls[photo.id] ?? null;
-              const displayUrl = generatedUrl || photo.imageUrl;
               const isGenerating = generatingPhotoKeys.has(photo.id);
               const isStale = generatedWithSelections[photo.id] !== getFingerprint(photo) && !!generatedWithSelections[photo.id];
 
@@ -226,7 +225,7 @@ function PhotoViewerCard({
           <div className="flex items-center gap-1 shrink-0">
             {!isGenerating && (
               <button
-                onClick={(e) => { e.stopPropagation(); hasGenerated && !isStale ? onRetry() : onGenerate(); }}
+                onClick={(e) => { e.stopPropagation(); if (hasGenerated && !isStale) { onRetry(); } else { onGenerate(); } }}
                 className="px-2 py-1 bg-[var(--color-navy)] text-white text-[10px] font-semibold hover:bg-[var(--color-navy-hover)] transition-colors cursor-pointer"
               >
                 {hasGenerated && isStale ? "Update" : hasGenerated ? "Retry" : "Visualize"}

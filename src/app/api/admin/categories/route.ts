@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
     invalidateOrgCache(orgId);
     return NextResponse.json(data, { status: 201 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Internal error" }, { status: 500 });
   }
 }

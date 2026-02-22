@@ -32,7 +32,7 @@ export async function PATCH(
     if ("error" in auth) return auth.error;
 
     const { supabase, orgId } = auth;
-    const { org_id: _, ...updates } = parsed.data;
+    const { org_id: _orgId, ...updates } = parsed.data;
 
     const { data, error } = await supabase
       .from("options")

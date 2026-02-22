@@ -363,7 +363,7 @@ export function FloorplanEditor({
   orgSlug,
   isAdmin,
   allSubcategories,
-  supabaseUrl,
+  supabaseUrl: _supabaseUrl,
 }: FloorplanEditorProps) {
   const router = useRouter();
   const [steps, setSteps] = useState(initialSteps);

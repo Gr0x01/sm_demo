@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { getOrgBySlug, getFloorplansForOrg } from "@/lib/db-queries";
@@ -23,8 +23,8 @@ export default async function OrgPage({
   const org = await getOrgBySlug(orgSlug);
   if (!org) notFound();
 
-  const floorplans = await getFloorplansForOrg(org.id);
-  const activeFloorplans = floorplans.filter((fp) => fp.is_active);
+  const allFloorplans = await getFloorplansForOrg(org.id);
+  const floorplans = allFloorplans.filter((fp) => fp.is_active);
 
   const host = (await headers()).get("host") ?? "";
   const isSubdomain =

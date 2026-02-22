@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const body = await request.json();
-    const { selections_hash, image_path, deleteAll } = body;
+    const { selections_hash, deleteAll } = body;
 
     const auth = await authenticateAdminRequest(body);
     if ("error" in auth) return auth.error;
