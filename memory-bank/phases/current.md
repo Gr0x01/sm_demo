@@ -85,7 +85,7 @@ The SM demo is the sales tool. AI generation prompts need refinement for better 
 - [x] Prompt context wiring completed: `step_photos.spatial_hint` now included in generation prompt context; cache hash includes prompt-context signature (`scene_description`, `photo_baseline`, `spatial_hint`, `spatial_hints`)
 - [x] `/api/generate/photo/feedback` — used by retry flow: refunds credit, deletes cached row, then regenerates
 - [x] Extended `SelectionState`/`SelectionAction` with per-photo keys, credits
-- [x] UpgradePicker: per-photo generation, gallery virtual step, Visualize All (max 3 concurrent), stale detection per photo, initial cache restore for multi-tenant photos on session resume
+- [x] UpgradePicker: per-photo generation, gallery virtual step, Visualize All (max 20 concurrent), stale detection per photo, initial cache restore for multi-tenant photos on session resume
 - [x] Replaced thumbs up/down with retry button in `ImageLightbox` (overlay on bottom gradient bar) — feedback was vanity data with no actionable use
 - [x] `StepPhotoGrid` component — per-step photo cards in sidebar (hero first, stale badge, lightbox)
 - [x] `GalleryView` component — full gallery grid grouped by step, Visualize All, credits meter, cap-reached state
@@ -119,19 +119,21 @@ Corrected room photo → step assignments for Kinkade floorplan.
 - [x] Fixed photoBaseline descriptions to match actual photo contents
 - [x] Migration script cleanup order: orphan deletion now runs before inserts (avoids unique constraint conflicts)
 
-### 11. Self-Hosted Image Generation (RunPod) — Evaluated, Not Viable Yet
-Tested open-source models on RunPod A100 80GB to replace gpt-image-1.5. **Conclusion: no open-source model can handle our multi-reference swatch pipeline today.**
-- [x] RunPod account setup (~$40 credit remaining), API key configured
-- [x] FLUX.1 Fill tested — mask-based, fundamentally incompatible (we don't use masks)
-- [x] OmniGen2 tested (10 variations) — single-surface swaps OK, but can't reliably target all cabinets, multi-change causes scene drift, and only handles 2-3 reference images (we need 10-15)
-- [x] FLUX Kontext rejected ($999/mo license)
-- [x] Qwen-Image-Edit rejected (no reference image support)
+### 11. Self-Hosted Image Generation — Evaluated, Not Viable ✅
+No open-source model can replace gpt-image-1.5 for our pipeline (see D64). All generation costs are gpt-image-1.5 API-based (~$0.20/image). Revisit when open-source multi-reference instruction editing matures.
 
-**Why gpt-image-1.5 wins**: Uniquely handles 10-15+ swatch reference images in one prompt, applies them all precisely, preserves room layout. This is a capability gap, not a quality gap.
-
-**Revisit when**: Open-source multi-reference instruction editing matures. OmniGen2 is brand new — space moving fast.
-
-**RunPod**: Pod `tq98greyvm3tel` stopped (OmniGen2 weights on volume). SSH key at `~/.runpod/ssh/RunPod-Key-Go`. Test outputs in `scripts/omnigen2-test-outputs/`.
+### 12. SM Photo Prompt/Scope Reliability Tuning ✅
+Targeted fixes for cross-room contamination and flooring correctness.
+- [x] Photo scope authority: `step_photos.subcategory_ids` now treated as full scope (no `also_include_ids` merge) in generate/check/fingerprinting paths
+- [x] Scene authority: use `step_photos.photo_baseline` as primary scene context; `steps.scene_description` is fallback only
+- [x] Filter `steps.spatial_hints` to per-photo scope before prompt build/hash
+- [x] Admin support for editing `step_photos.subcategory_ids` directly in Photo Manager
+- [x] Added anti-hallucination prompt rules (no TV/built-ins unless selected, no bathroom fixture-type swaps unless explicitly targeted, no cross-doorway bleed)
+- [x] Flooring resolver added (client + server): bedroom photos send one effective flooring material instruction (carpet vs hard-surface) instead of conflicting pairs
+- [x] Flooring control subcategories forced through picker filtering when in-scope (`carpet-color`, `main-area-flooring-type`, `main-area-flooring-color`)
+- [x] SM data tuning applied in Supabase for key photos: Fireplace, Bath & Closet, Shower, Vanity, Secondary Bedroom, Primary Bedroom
+- [x] Updated `carpet-color` + `main-area-flooring-type` to `generation_hint=always_send` for SM
+- [x] Prompt cache version bumped through these semantics (`v9` → `v13`)
 
 ### Upcoming (not started)
 - **Workstream E**: Branding controls (depends on A, small)

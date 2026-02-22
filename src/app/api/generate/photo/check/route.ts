@@ -4,6 +4,7 @@ import { getServiceClient } from "@/lib/supabase";
 import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup } from "@/lib/db-queries";
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL } from "@/lib/models";
+import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
   // Per-photo baseline text is the authoritative scene context when present.
@@ -79,6 +80,12 @@ export async function POST(request: Request) {
           Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
         );
       }
+      const flooringContextText = [
+        aiConfig.photo.photoBaseline ?? "",
+        aiConfig.photo.spatialHint ?? "",
+        aiConfig.sceneDescription ?? "",
+      ].join("\n");
+      scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
       const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
       const sceneDescription = buildSceneDescription(aiConfig);
 

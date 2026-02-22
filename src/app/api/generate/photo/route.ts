@@ -7,6 +7,7 @@ import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, ge
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
+import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 
 export const maxDuration = 120;
 
@@ -142,6 +143,12 @@ export async function POST(request: Request) {
         Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
       );
     }
+    const flooringContextText = [
+      aiConfig.photo.photoBaseline ?? "",
+      aiConfig.photo.spatialHint ?? "",
+      aiConfig.sceneDescription ?? "",
+    ].join("\n");
+    scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
     const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
     const sceneDescription = buildSceneDescription(aiConfig);
 

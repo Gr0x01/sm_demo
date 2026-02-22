@@ -14,6 +14,7 @@ import { SaveSelectionsModal } from "./SaveSelectionsModal";
 import { GalleryView } from "./GalleryView";
 import { StepPhotoGrid } from "./StepPhotoGrid";
 import type { ContractPhase } from "@/lib/contract-phase";
+import { resolveScopedFlooringSelections, shouldForceSendFlooringSubcategory } from "@/lib/flooring-selection";
 
 
 interface UpgradePickerProps {
@@ -144,12 +145,13 @@ export function UpgradePicker({
       for (const [subId, optId] of Object.entries(allSelections)) {
         const sub = subCategoryMap.get(subId);
         const hint = sub?.generationHint;
+        const forceInclude = shouldForceSendFlooringSubcategory(subId);
         const baselineId = baseline[subId] ?? defaultSelections[subId];
         if (
           visualSubCategoryIds.has(subId) &&
           allowedIds.has(subId) &&
-          hint !== 'skip' &&
-          (hint === 'always_send' || optId !== baselineId)
+          (forceInclude || hint !== 'skip') &&
+          (forceInclude || hint === 'always_send' || optId !== baselineId)
         ) {
           result[subId] = optId;
         }
@@ -174,11 +176,22 @@ export function UpgradePicker({
   /** Per-photo scoped selections: when present, photo.subcategoryIds is the complete scope. */
   const getPhotoVisualSelections = useCallback(
     (step: StepConfig, photo: StepPhoto | null, allSelections: Record<string, string>): Record<string, string> => {
+      const flooringContextText = [
+        photo?.photoBaseline ?? "",
+        photo?.spatialHint ?? "",
+        step.name ?? "",
+      ].join("\n");
       if (photo?.subcategoryIds?.length) {
         const allowedIds = new Set(photo.subcategoryIds);
-        return filterVisualSelections(allowedIds, allSelections, step.photoBaseline ?? {});
+        return resolveScopedFlooringSelections(
+          filterVisualSelections(allowedIds, allSelections, step.photoBaseline ?? {}),
+          flooringContextText,
+        );
       }
-      return getStepVisualSelections(step, allSelections);
+      return resolveScopedFlooringSelections(
+        getStepVisualSelections(step, allSelections),
+        flooringContextText,
+      );
     },
     [filterVisualSelections, getStepVisualSelections]
   );

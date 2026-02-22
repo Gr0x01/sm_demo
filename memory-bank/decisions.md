@@ -314,3 +314,51 @@ Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HI
 **RunPod**: Account active with ~$40 remaining credit. Pod `tq98greyvm3tel` stopped (volume with OmniGen2 weights preserved). Can resume testing when new models drop.
 
 **Test outputs**: `scripts/omnigen2-test-outputs/` — 10 test images across two rounds of parameter tuning.
+
+## D65: Room photo pipeline is Finch-managed, not builder self-serve
+**Context**: The admin panel has a PhotoManager component for uploading room photos, editing spatial hints/baselines, running quality checks, and toggling hero photos. Considered making this builder-facing. But the photo pipeline is the hardest part of setup — photo evaluation/rejection, masking, spatial hints, baselines, test generation, prompt tuning, iteration. Bad inputs directly tank generation quality. Builders shouldn't have to think about this.
+**Decision**: Room photo pipeline is a Finch-managed service. Builders contact us to add/change room photos. Admin PhotoManager stays as internal tooling (no need to polish UX or add builder guardrails). Builders self-serve on the easy stuff: options, swatches, prices, step names, section assignments.
+**Pricing impact**: Per-floorplan setup fee required (covers 10 room photos through the full pipeline). Monthly price pushed higher by ongoing photo support commitment. The real unit of setup cost is the room photo, not the floorplan — a plan with 2 photos is dramatically less work than one with 8.
+**Trade-off**: Creates a service dependency (builders can't add rooms without us), but that's also a retention lever and ensures generation quality stays high. The "we handle the hard part" positioning is a feature, not a limitation.
+
+## D66: Pricing — $2K setup (3 plans) + $299/mo/plan + monthly org generation cap
+**Context**: Needed concrete pricing that (a) covers real costs, (b) targets 3x ROI for builders, (c) incentivizes starting with multiple plans. Photo pipeline is the real setup labor (D65), generation is full-cost gpt-image-1.5 at $0.20/image (D64 — no self-hosted alternative).
+**Decision**:
+- $2,000 setup includes 3 floor plans (10 room photos each, full pipeline)
+- $299/mo per floor plan
+- Additional floor plans: $1,000 setup + $299/mo
+- Monthly org-wide generation cap (not per-session) — controls on-demand generation spend. Pre-cached images are free. Cache fills over time so costs naturally decline.
+**Why 3 plans bundled**: First plan is the real onboarding work (org setup, catalog transcription, photo pipeline). Plans 2-3 reuse the same option catalog — just different room photos. $2K for 3 nudges builders to start bigger vs $1K for 1.
+**ROI math**: 3x ROI at ~40 homes/year (10% upgrade lift on $10K avg). At 50 homes/year = 3.9x. At 15% lift, even 30 homes/year hits 3.5x.
+**Our margins**: Setup hard costs ~$300 (batch generation). Monthly COGS ~$100-150 (on-demand gen + infra). Revenue $897/mo (3 plans). Monthly margin ~$600-750.
+**Monthly cap rationale**: On-demand generations use gpt-image-1.5 at full $0.20/image. Pre-cache covers ~80% of traffic at batch rates. Cap prevents runaway costs from heavy traffic or exploratory buyers. Generated images cache permanently, so the org's effective cost per generation decreases over time as the cache fills. Can get more granular (per-session, per-plan) later.
+**Trade-off**: $2K upfront may deter very small builders (<30 homes/yr), but ROI math doesn't work for them anyway. Pilot program (first plan free) de-risks for everyone.
+
+## D67: Photo-level scope/scene/hints are authoritative over step-level fallbacks
+**Context**: Multi-photo steps were leaking step-level context into unrelated photos (e.g., fireplace receiving kitchen instructions, bedrooms inheriting hero-shot scene text).
+**Decision**:
+- If `step_photos.subcategory_ids` exists, it is the complete allowed scope for that photo (no merge with `steps.also_include_ids`).
+- Scene context prioritizes `step_photos.photo_baseline`; `steps.scene_description` is fallback only when photo baseline is empty.
+- `steps.spatial_hints` are filtered to the photo scope before prompt build/hash.
+- Added admin editing for `step_photos.subcategory_ids` so photo scope can be tuned without SQL.
+**Trade-off**: Requires more curation per photo, but eliminates cross-room contamination and makes prompts predictable.
+
+## D68: Flooring selection is resolved deterministically per bedroom-context photo
+**Context**: Bedroom photos were receiving conflicting flooring instructions (`carpet-color` + `main-area-flooring-color`) or missing carpet context, causing hard-surface outputs when carpet was expected.
+**Decision**:
+- Add shared resolver (`src/lib/flooring-selection.ts`) used by client fingerprinting + server generate/check:
+  - In bedroom-context photos, keep exactly one effective flooring material instruction.
+  - Keep hard-surface only when flooring type explicitly targets primary/whole-house hard-surface (or `carpet-none`).
+  - Otherwise keep carpet and drop main-area flooring color from prompt selections.
+- Force-send flooring control subcategories in picker filtering when in-scope (`carpet-color`, `main-area-flooring-type`, `main-area-flooring-color`).
+- Update prompt rules to explicitly prevent doorway bleed into bathroom tile zones.
+**Trade-off**: Adds domain-specific flooring logic, but removes ambiguity from model instructions and improves repeatability.
+
+## D69: SM flooring reliability required data + code alignment
+**Context**: Prompt behavior depends on both code and admin/DB config. Direct DB edits can leave stale assumptions if subcategory generation hints or per-photo baselines are misaligned.
+**Decision**:
+- Set `carpet-color` and `main-area-flooring-type` to `generation_hint = always_send` (SM org).
+- Rewrite `set-your-style` flooring spatial hint to conditional wording (hard-surface only where selected type applies).
+- Update photo-level baselines/hints/scopes for: `Fireplace`, `Bath & Closet`, `Shower`, `Vanity`, `Secondary Bedroom`, `Primary Bedroom`.
+- Bump cache version across prompt-semantic changes (`v9` → `v13`) to avoid stale outputs.
+**Trade-off**: More operational tuning per floorplan, but materially better floor-material correctness and less hallucinated cross-room edits.

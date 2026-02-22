@@ -10,7 +10,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v10";
+export const GENERATION_CACHE_VERSION = "v13";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -162,6 +162,7 @@ RULES:
 - Different rooms can have different flooring. Keep bathroom tile in bathroom zones only.
 - Bedrooms and nearby spaces may be carpet or hard-surface depending on the selected flooring options; follow those selected options exactly for each visible room.
 - Do NOT bleed one flooring material across doorway boundaries into a room that should keep a different selected material.
+- If a bathroom is visible through a doorway, keep bathroom floor tile unchanged unless a bathroom tile selection is explicitly included for that photo.
 - Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
 - In doorway or multi-room views, keep edits inside the explicitly targeted visible zone and do NOT propagate flooring/fixtures into adjacent rooms.
 - Never add televisions, media walls, built-ins, or extra cabinetry unless that exact item is explicitly selected in the list above.
