@@ -109,10 +109,18 @@ export function StepPhotoGrid({
                   title={photo.label}
                 >
                   <img
-                    src={displayUrl}
+                    src={photo.imageUrl}
                     alt={photo.label}
-                    className="w-full h-full object-cover"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
+                  {generatedUrl && (
+                    <img
+                      key={generatedUrl}
+                      src={generatedUrl}
+                      alt={photo.label}
+                      className="absolute inset-0 w-full h-full object-cover animate-photo-crossfade"
+                    />
+                  )}
                   {isGenerating && (
                     <div className="absolute inset-0 bg-white/70 flex items-center justify-center">
                       <LogoLoader className="w-4 h-auto text-[var(--color-navy)]" />
@@ -167,13 +175,23 @@ function PhotoViewerCard({
 
   return (
     <div className="relative overflow-hidden bg-gray-100 aspect-[16/10]">
-      {/* Base/generated image */}
+      {/* Base image (always present) */}
       <img
-        src={displayUrl}
+        src={photo.imageUrl}
         alt={photo.label}
-        className="w-full h-full object-cover cursor-pointer"
+        className="absolute inset-0 w-full h-full object-cover cursor-pointer"
         onClick={() => onZoom(displayUrl)}
       />
+      {/* Generated image (crossfades in over base) */}
+      {generatedUrl && (
+        <img
+          key={generatedUrl}
+          src={generatedUrl}
+          alt={photo.label}
+          className="absolute inset-0 w-full h-full object-cover cursor-pointer animate-photo-crossfade"
+          onClick={() => onZoom(displayUrl)}
+        />
+      )}
 
       {/* Generating overlay */}
       {isGenerating && (

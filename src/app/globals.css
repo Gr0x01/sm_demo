@@ -115,6 +115,9 @@ h6 {
 .animate-image-reveal {
   animation: imageReveal 600ms ease-out both;
 }
+.animate-photo-crossfade {
+  animation: imageReveal 300ms ease-out both;
+}
 
 /* Price highlight pulse */
 @keyframes pricePulse {

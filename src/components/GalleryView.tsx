@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
@@ -48,6 +48,65 @@ function isKitchenPhoto(step: StepConfig, photo: GalleryPhoto): boolean {
 }
 
 const SLIDESHOW_INTERVAL_MS = 4200;
+
+/** Crossfade viewer — keeps outgoing image visible while incoming fades in on top. */
+function GalleryCrossfade({
+  src,
+  alt,
+  isGenerating,
+  onClick,
+}: {
+  src: string;
+  alt: string;
+  isGenerating: boolean;
+  onClick: () => void;
+}) {
+  const [layers, setLayers] = useState<{ src: string; key: number }[]>([{ src, key: 0 }]);
+  const nextKey = useRef(1);
+
+  useEffect(() => {
+    setLayers((prev) => {
+      const top = prev[prev.length - 1];
+      if (top.src === src) return prev;
+      const key = nextKey.current++;
+      // Keep only the current top (becomes background) + new layer on top
+      return [top, { src, key }];
+    });
+  }, [src]);
+
+  const handleAnimationEnd = useCallback((finishedKey: number) => {
+    // Once the top layer finishes fading in, drop the background layer
+    setLayers((prev) => (prev.length > 1 ? prev.filter((l) => l.key === finishedKey) : prev));
+  }, []);
+
+  return (
+    <div className="group relative aspect-[16/10] overflow-hidden bg-gray-100 lg:aspect-[16/9]">
+      {layers.map((layer, i) => {
+        const isTop = i === layers.length - 1;
+        const needsAnimation = layers.length > 1 && isTop;
+        return (
+          <img
+            key={layer.key}
+            src={layer.src}
+            alt={alt}
+            className={`absolute inset-0 h-full w-full cursor-pointer object-cover transition-transform duration-500 group-hover:scale-[1.02] ${
+              needsAnimation ? "animate-photo-crossfade" : ""
+            }`}
+            onClick={onClick}
+            onAnimationEnd={needsAnimation ? () => handleAnimationEnd(layer.key) : undefined}
+          />
+        );
+      })}
+
+      {isGenerating && (
+        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/85 backdrop-blur-sm">
+          <LogoLoader className="mb-2 h-auto w-10 text-[var(--color-navy)]" />
+          <p className="text-xs font-medium text-[var(--color-navy)]">Visualizing...</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function GalleryView({
   steps,
@@ -266,10 +325,18 @@ export function GalleryView({
                   >
                     <div className="relative h-[56px] w-[74px] shrink-0 overflow-hidden bg-slate-100">
                       <img
-                        src={item.displayUrl}
+                        src={item.photo.imageUrl}
                         alt={item.photo.label}
-                        className="h-full w-full object-cover"
+                        className="absolute inset-0 h-full w-full object-cover"
                       />
+                      {item.generatedUrl && (
+                        <img
+                          key={item.generatedUrl}
+                          src={item.generatedUrl}
+                          alt={item.photo.label}
+                          className="absolute inset-0 h-full w-full object-cover animate-photo-crossfade"
+                        />
+                      )}
                       {item.isGenerating && (
                         <div className="absolute inset-0 flex items-center justify-center bg-white/75">
                           <LogoLoader className="h-auto w-4 text-[var(--color-navy)]" />
@@ -310,25 +377,15 @@ export function GalleryView({
           </aside>
 
           <section className="order-1 border border-slate-200 bg-white lg:order-2">
-            <div className="group relative aspect-[16/10] overflow-hidden bg-gray-100 lg:aspect-[16/9]">
-              <img
-                key={activeItem.photo.id}
-                src={activeItem.displayUrl}
-                alt={activeItem.photo.label}
-                className="h-full w-full cursor-pointer object-cover transition-transform duration-500 group-hover:scale-[1.02] animate-image-reveal"
-                onClick={() => {
-                  setLightboxSrc(activeItem.displayUrl);
-                  setLightboxContext({ photoId: activeItem.photo.id, step: activeItem.step });
-                }}
-              />
-
-              {activeItem.isGenerating && (
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/85 backdrop-blur-sm">
-                  <LogoLoader className="mb-2 h-auto w-10 text-[var(--color-navy)]" />
-                  <p className="text-xs font-medium text-[var(--color-navy)]">Visualizing...</p>
-                </div>
-              )}
-            </div>
+            <GalleryCrossfade
+              src={activeItem.displayUrl}
+              alt={activeItem.photo.label}
+              isGenerating={activeItem.isGenerating}
+              onClick={() => {
+                setLightboxSrc(activeItem.displayUrl);
+                setLightboxContext({ photoId: activeItem.photo.id, step: activeItem.step });
+              }}
+            />
 
             <div className="border-t border-slate-200 bg-white px-3 py-2.5">
               <div className="flex items-center justify-between gap-3">
