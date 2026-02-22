@@ -303,7 +303,13 @@ export function DemoPageClient({
           logoUrl={orgTheme.logoUrl}
           categories={categories}
           steps={steps}
-          onBack={() => setPage("picker")}
+          onBack={() => {
+            if (summaryData) {
+              setInitialSelections(summaryData.selections);
+              setInitialQuantities(summaryData.quantities ?? null);
+            }
+            setPage("picker");
+          }}
           resumeToken={buyerSession?.resumeToken}
           orgSlug={orgSlug}
           floorplanSlug={floorplanSlug}
