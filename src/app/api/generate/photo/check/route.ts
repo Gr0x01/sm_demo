@@ -5,20 +5,12 @@ import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGeneratio
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
+import { getEffectivePhotoScopedIds } from "@/lib/photo-scope";
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
   // Per-photo baseline text is the authoritative scene context when present.
   if (aiConfig.photo.photoBaseline?.trim()) return aiConfig.photo.photoBaseline.trim();
   if (aiConfig.sceneDescription?.trim()) return aiConfig.sceneDescription.trim();
-  return null;
-}
-
-function getPhotoScopedIds(
-  aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>,
-): Set<string> | null {
-  if (aiConfig.photo.subcategoryIds?.length) {
-    return new Set(aiConfig.photo.subcategoryIds);
-  }
   return null;
 }
 
@@ -73,7 +65,10 @@ export async function POST(request: Request) {
       }
 
       // Server-side per-photo selection scoping (mirrors generate route)
-      const photoScopedIds = getPhotoScopedIds(aiConfig);
+      const photoScopedIds = getEffectivePhotoScopedIds(aiConfig.photo.subcategoryIds, {
+        stepSlug: aiConfig.stepSlug,
+        imagePath: aiConfig.photo.imagePath,
+      });
       let scopedSelections = selections as Record<string, string>;
       if (photoScopedIds) {
         scopedSelections = Object.fromEntries(

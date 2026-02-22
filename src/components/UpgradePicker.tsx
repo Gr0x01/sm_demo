@@ -15,6 +15,7 @@ import { GalleryView } from "./GalleryView";
 import { StepPhotoGrid } from "./StepPhotoGrid";
 import type { ContractPhase } from "@/lib/contract-phase";
 import { resolveScopedFlooringSelections, shouldForceSendFlooringSubcategory } from "@/lib/flooring-selection";
+import { getEffectivePhotoScopedIds } from "@/lib/photo-scope";
 
 
 interface UpgradePickerProps {
@@ -181,10 +182,13 @@ export function UpgradePicker({
         photo?.spatialHint ?? "",
         step.name ?? "",
       ].join("\n");
-      if (photo?.subcategoryIds?.length) {
-        const allowedIds = new Set(photo.subcategoryIds);
+      const effectivePhotoScope = getEffectivePhotoScopedIds(photo?.subcategoryIds, {
+        stepSlug: step.id,
+        imagePath: photo?.imagePath ?? null,
+      });
+      if (effectivePhotoScope) {
         return resolveScopedFlooringSelections(
-          filterVisualSelections(allowedIds, allSelections, step.photoBaseline ?? {}),
+          filterVisualSelections(effectivePhotoScope, allSelections, step.photoBaseline ?? {}),
           flooringContextText,
         );
       }
