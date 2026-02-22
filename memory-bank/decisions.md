@@ -321,19 +321,19 @@ Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HI
 **Pricing impact**: Per-floorplan setup fee required (covers 10 room photos through the full pipeline). Monthly price pushed higher by ongoing photo support commitment. The real unit of setup cost is the room photo, not the floorplan — a plan with 2 photos is dramatically less work than one with 8.
 **Trade-off**: Creates a service dependency (builders can't add rooms without us), but that's also a retention lever and ensures generation quality stays high. The "we handle the hard part" positioning is a feature, not a limitation.
 
-## D66: Pricing — $1,500 setup (3 plans) + $500/mo/plan + monthly org generation cap
-**Context**: Needed concrete pricing that (a) covers real costs, (b) targets 3x ROI for builders, (c) incentivizes starting with multiple plans. Photo pipeline is the real setup labor (D65), generation is full-cost gpt-image-1.5 at $0.20/image (D64 — no self-hosted alternative). Revised upward from $299/mo to $500/mo to reflect ongoing support commitment (this isn't passive SaaS).
+## D66: Pricing — $1,500 setup (3 plans) + $500/mo/plan, unlimited generations
+**Context**: Needed concrete pricing that (a) covers real costs, (b) targets 3x ROI for builders, (c) incentivizes starting with multiple plans. Photo pipeline is the real setup labor (D65), generation is full-cost gpt-image-1.5 at $0.20/image (D64 — no self-hosted alternative).
 **Decision**:
 - $1,500 setup includes 3 floor plans (10 room photos each, full pipeline)
 - $500/mo per floor plan
 - Additional floor plans: $1,500 setup + $500/mo
-- Monthly org-wide generation cap (not per-session) — controls on-demand generation spend. Pre-cached images are free. Cache fills over time so costs naturally decline.
+- **Unlimited buyer visualizations. No credit caps. No metering.** Flat rate, full experience. Generation costs are our problem — managed internally through pre-caching (batch API) and permanent cache.
 - **Stone Martin**: 5 floor plans free for 1 year (they're the case study, not a paying customer)
+**Why no cap**: Simpler pitch, no awkward conversations about credits or cache mechanics. At $1,500/mo revenue (3 plans) vs ~$150/mo generation COGS, there's plenty of margin to absorb heavy usage. Every on-demand generation becomes a permanent cached image, so costs decline naturally. Internal soft limits if truly needed — but never exposed to the builder.
 **Why 3 plans bundled**: First plan is the real onboarding work (org setup, catalog transcription, photo pipeline). Plans 2-3 reuse the same option catalog — just different room photos. $1,500 for 3 nudges builders to start bigger.
 **ROI math**: 3x ROI at ~60 homes/year on 3 plans (10% upgrade lift on $10K avg). At 15% lift, 40 homes/year hits 3.1x. Targets builders doing 50+ homes/year.
 **Our margins**: Setup hard costs ~$300 (batch generation). Monthly COGS ~$100-150 (on-demand gen + infra). Revenue $1,500/mo (3 plans). Monthly margin ~$1,300-1,350.
-**Monthly cap rationale**: On-demand generations use gpt-image-1.5 at full $0.20/image. Pre-cache covers ~80% of traffic at batch rates. Cap prevents runaway costs from heavy traffic or exploratory buyers. Generated images cache permanently, so the org's effective cost per generation decreases over time as the cache fills. Can get more granular (per-session, per-plan) later.
-**Trade-off**: $500/mo is a higher bar than $299 — targets 50+ home builders. Smaller builders (<40 homes/yr) won't hit 3x ROI at 10% lift. Pilot program (first plan free) de-risks for everyone.
+**Trade-off**: $500/mo targets 50+ home builders. Smaller builders (<40 homes/yr) won't hit 3x ROI at 10% lift. Pilot program (first plan free) de-risks for everyone.
 
 ## D67: Photo-level scope/scene/hints are authoritative over step-level fallbacks
 **Context**: Multi-photo steps were leaking step-level context into unrelated photos (e.g., fireplace receiving kitchen instructions, bedrooms inheriting hero-shot scene text).

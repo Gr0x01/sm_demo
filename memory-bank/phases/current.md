@@ -20,10 +20,13 @@ Full marketing landing page preserved in `src/app/landing-full.tsx`. **Temporari
 ### 2. Interactive Demo ✅
 Public demo on the landing page is complete.
 
-### 3. SM Demo — Prompt Tuning
-The SM demo is the sales tool. AI generation prompts need refinement for better output quality.
-- [ ] Prompt tuning for kitchen visualization
-- [ ] Generation reliability improvements
+### 3. Prompt Tuning — SM + Demo ✅
+Both orgs now have full prompt tuning applied:
+- [x] SM Kinkade: 8 photos with photo_baseline, spatial_hint, subcategory_ids scoping, step scene_description + spatial_hints, generation policies (fireplace anti-hallucination, kitchen slide-in range second pass)
+- [x] Demo Nest: 4 photos (living room, kitchen, bathroom, bedroom) with photo_baseline, spatial_hint, step scene_description + spatial_hints, generation policies (greatroom zone protection, kitchen slide-in range second pass)
+- [x] Flooring resolver (code-level, all tenants): single effective flooring instruction, `always_send` on carpet-color + main-area-flooring-type
+- [x] Anti-hallucination prompt rules (code-level, all tenants)
+- [x] Photo scope authority: subcategory_ids as full scope (no also_include_ids merge)
 - See `architecture.md` and `generation-reliability-playbook.md`
 
 ### 4. V1 Workstream A: Builder Admin — Auth, RLS, Option Management ✅
@@ -149,9 +152,14 @@ Targeted fixes for cross-room contamination and flooring correctness.
 - [x] V1 product spec (`v1-product.md`)
 
 ### SM Demo (Fully Multi-Tenant)
-- [x] 5-step wizard, 350+ options, 166 swatches, AI kitchen viz
+- [x] 5-step wizard, 350+ options, 166 swatches, 8 room photos with full prompt tuning
 - [x] Mobile UI, contract phase locking, generation reliability hardening
 - [x] Now uses multi-tenant `/api/generate/photo` path (same as all builders)
+
+### Finch Demo Sandbox (Complete)
+- [x] "Finch Demo" org (slug: `demo`), "The Nest" floorplan at `demo.withfin.ch`
+- [x] 4 room photos with full prompt tuning (baselines, spatial hints, scene descriptions, generation policies)
+- [x] Shareable with prospects without exposing SM data
 
 ## Key References
 

@@ -100,8 +100,8 @@ Pricing is NOT on the landing page. Drive to conversations first, learn from ear
 **$1,500 setup (includes 3 floor plans) + $500/mo per floor plan.**
 - Additional floor plans: $1,500 setup + $500/mo each.
 - Each floor plan includes 10 room photos through the full pipeline.
-- Monthly includes: software access, monthly generation cap, ongoing support (option/price updates, occasional photo swaps).
-- Monthly generation cap: org-wide pool for on-demand generations. Pre-cached images are free. Cache fills over time so monthly generation costs naturally decline.
+- Monthly includes: software access, unlimited buyer visualizations, ongoing support (option/price updates, occasional photo swaps).
+- No credit caps, no metering, no usage conversations. Flat rate, full experience. Generation costs are our problem to manage internally (pre-cache strategy, batch API).
 
 **Why 3 plans included in setup:** The real work is onboarding the builder — understanding their catalog, setting up the org, establishing the photo pipeline for the first plan. Plans 2-3 reuse the same option catalog and photo pipeline patterns. $1,500 for 3 nudges builders to start with multiple plans rather than testing with just 1.
 
@@ -322,7 +322,7 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 ### Handling Objections
 - **"$1,500 is a lot upfront"** — That covers 3 floor plans, not 1. Each gets 10 room photos through a full pipeline — photo evaluation, masking, prompt tuning, test generation, QA. Plus your entire option catalog transcribed. Comparable to a Matterport package. And pilot first plan is free.
 - **"Only some of my buyers would use this"** — ROI tables above assume conservative adoption. At 60+ homes/year you're at 3x+ return.
-- **"$500/mo per plan?"** — That covers 24/7 platform access, monthly generation credits (images cache permanently so costs decline over time), option/pricing updates, ongoing photo support, and an admin dashboard for your team. At 60 homes/year across 3 plans, you're looking at $1,000 extra revenue per home — the tool pays for itself many times over.
+- **"$500/mo per plan?"** — Unlimited buyer visualizations, 24/7 platform access, option/pricing updates, ongoing photo support, and an admin dashboard for your team. No usage caps, no per-session fees. At 60 homes/year across 3 plans, you're looking at $1,000 extra revenue per home — the tool pays for itself many times over.
 - **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, pilot first plan is free for 60 days.
 
 ### Cost Structure
@@ -362,12 +362,11 @@ Typical builders have fewer options than SM (6-8 per category vs 12-17), so numb
 | Hosting/infra | ~$45/mo |
 | **Total hard costs** | **~$1,800** |
 
-**On-demand generation costs & monthly org cap:**
+**On-demand generation costs (our problem, not the builder's):**
 - Pre-cached images are free to serve (Supabase CDN). On-demand buyer generations (long-tail combos) cost ~$0.20 each at full gpt-image-1.5 standard rate.
-- **Monthly org generation cap** controls total on-demand spend. Generated images cache permanently, so early months cost more (building the long-tail cache) and costs decrease over time as the cache fills in.
-- Cap sizing: 500-1,000 gens/mo depending on plan count. At 500/mo = $100/mo COGS worst case.
-- Typical: 3 plans × ~50 sessions/mo × ~5 on-demand gens = ~750/mo = ~$150/mo COGS. Well within $897/mo revenue (3 × $299).
-- Builders stomaching higher generation early is a feature — the cache gets richer, and monthly costs naturally decline.
+- No credit cap exposed to builders. Unlimited visualizations is the pitch. We manage costs internally through aggressive pre-caching (batch API) and the permanent cache — every on-demand generation becomes a cached image for future sessions.
+- Typical: 3 plans × ~50 sessions/mo × ~5 on-demand gens = ~750/mo = ~$150/mo COGS. Well within $1,500/mo revenue (3 × $500).
+- Early months cost more (building the long-tail cache), costs decline over time as cache fills. Internal soft limits if needed — but never exposed to the builder.
 
 ## Technical Architecture
 

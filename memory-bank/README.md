@@ -10,15 +10,24 @@ Home builders sell $8-12K in upgrades per home from printed PDFs. Buyers choose 
 
 ## Current State
 
-### Stone Martin Demo (Complete — Keep Active)
-Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166 scraped swatch images, AI kitchen visualization. This is the proof-of-concept shown to every prospect. Lives in this repo.
+### Live Sites
+| URL | What it is |
+|-----|-----------|
+| **withfin.ch** | Finch homepage (temporary prospect mode — personal intro + interactive demo) |
+| **stonemartin.withfin.ch** | Stone Martin demo — full Kinkade plan, real prices, 8 room photos, gallery viz |
+| **demo.withfin.ch** | Finch Demo sandbox — "The Nest" floorplan, 4 room photos, shareable with prospects |
+
+### Stone Martin (Complete — Keep Active)
+Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166 scraped swatch images, 8 room photos with tuned prompts/spatial hints/photo baselines. This is the proof-of-concept shown to every prospect.
 
 **SM is NOT a target customer** — they use BuilderLinq. The demo proves the concept to builders who don't have sophisticated tools.
+
+### Finch Demo Sandbox (Complete — Shareable)
+"Finch Demo" org (slug: `demo`) with "The Nest" floorplan. 4 room photos (living room, kitchen, bathroom, bedroom) with full prompt tuning — photo baselines, spatial hints, scene descriptions, generation policies. Use this to demo Finch to prospects without exposing SM data. Admin: `gr0x01@pm.me`.
 
 ### Finch Product (Building Now)
 - Landing page at withfin.ch
 - Multi-tenant architecture for onboarding multiple builders
-- Builder demos: lighter than SM (same bones, less exhaustive data entry)
 - See `product-architecture.md` for the multi-tenant plan
 - See `landing-page.md` for the marketing site design
 - See `VISION.md` for full business plan, pricing, GTM
