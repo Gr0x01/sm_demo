@@ -73,6 +73,7 @@ interface DemoPageClientProps {
   floorplanId: string;
   floorplanSlug: string;
   floorplanName: string;
+  coverImageUrl?: string | null;
   community: string;
   categories: Category[];
   steps: StepConfig[];
@@ -90,6 +91,7 @@ export function DemoPageClient({
   floorplanId,
   floorplanSlug,
   floorplanName,
+  coverImageUrl,
   community,
   categories,
   steps,
@@ -273,6 +275,7 @@ export function DemoPageClient({
           orgSlug={orgSlug}
           planName={floorplanName}
           community={community}
+          coverImageUrl={coverImageUrl}
           floorplanSlug={floorplanSlug}
           orgId={orgId}
           floorplanId={floorplanId}

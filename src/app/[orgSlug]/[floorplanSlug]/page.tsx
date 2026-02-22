@@ -25,6 +25,11 @@ export default async function DemoPage({
 
   const subdomain = await isSubdomain();
 
+  // Build cover image URL from Supabase Storage if available
+  const coverImageUrl = floorplan.cover_image_path
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/rooms/${floorplan.cover_image_path}`
+    : null;
+
   return (
     <DemoPageClient
       orgId={org.id}
@@ -40,6 +45,7 @@ export default async function DemoPage({
       floorplanId={floorplan.id}
       floorplanSlug={floorplanSlug}
       floorplanName={floorplan.name}
+      coverImageUrl={coverImageUrl}
       community={floorplan.community ?? ""}
       categories={categories}
       steps={steps}

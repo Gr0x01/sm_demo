@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
     };
   },
   async redirects() {
-    return [{ source: "/demo", destination: "/try", permanent: true }];
+    return [];
   },
 };
 

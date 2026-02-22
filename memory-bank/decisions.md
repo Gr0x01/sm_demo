@@ -321,18 +321,19 @@ Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HI
 **Pricing impact**: Per-floorplan setup fee required (covers 10 room photos through the full pipeline). Monthly price pushed higher by ongoing photo support commitment. The real unit of setup cost is the room photo, not the floorplan — a plan with 2 photos is dramatically less work than one with 8.
 **Trade-off**: Creates a service dependency (builders can't add rooms without us), but that's also a retention lever and ensures generation quality stays high. The "we handle the hard part" positioning is a feature, not a limitation.
 
-## D66: Pricing — $2K setup (3 plans) + $299/mo/plan + monthly org generation cap
-**Context**: Needed concrete pricing that (a) covers real costs, (b) targets 3x ROI for builders, (c) incentivizes starting with multiple plans. Photo pipeline is the real setup labor (D65), generation is full-cost gpt-image-1.5 at $0.20/image (D64 — no self-hosted alternative).
+## D66: Pricing — $1,500 setup (3 plans) + $500/mo/plan + monthly org generation cap
+**Context**: Needed concrete pricing that (a) covers real costs, (b) targets 3x ROI for builders, (c) incentivizes starting with multiple plans. Photo pipeline is the real setup labor (D65), generation is full-cost gpt-image-1.5 at $0.20/image (D64 — no self-hosted alternative). Revised upward from $299/mo to $500/mo to reflect ongoing support commitment (this isn't passive SaaS).
 **Decision**:
-- $2,000 setup includes 3 floor plans (10 room photos each, full pipeline)
-- $299/mo per floor plan
-- Additional floor plans: $1,000 setup + $299/mo
+- $1,500 setup includes 3 floor plans (10 room photos each, full pipeline)
+- $500/mo per floor plan
+- Additional floor plans: $1,500 setup + $500/mo
 - Monthly org-wide generation cap (not per-session) — controls on-demand generation spend. Pre-cached images are free. Cache fills over time so costs naturally decline.
-**Why 3 plans bundled**: First plan is the real onboarding work (org setup, catalog transcription, photo pipeline). Plans 2-3 reuse the same option catalog — just different room photos. $2K for 3 nudges builders to start bigger vs $1K for 1.
-**ROI math**: 3x ROI at ~40 homes/year (10% upgrade lift on $10K avg). At 50 homes/year = 3.9x. At 15% lift, even 30 homes/year hits 3.5x.
-**Our margins**: Setup hard costs ~$300 (batch generation). Monthly COGS ~$100-150 (on-demand gen + infra). Revenue $897/mo (3 plans). Monthly margin ~$600-750.
+- **Stone Martin**: 5 floor plans free for 1 year (they're the case study, not a paying customer)
+**Why 3 plans bundled**: First plan is the real onboarding work (org setup, catalog transcription, photo pipeline). Plans 2-3 reuse the same option catalog — just different room photos. $1,500 for 3 nudges builders to start bigger.
+**ROI math**: 3x ROI at ~60 homes/year on 3 plans (10% upgrade lift on $10K avg). At 15% lift, 40 homes/year hits 3.1x. Targets builders doing 50+ homes/year.
+**Our margins**: Setup hard costs ~$300 (batch generation). Monthly COGS ~$100-150 (on-demand gen + infra). Revenue $1,500/mo (3 plans). Monthly margin ~$1,300-1,350.
 **Monthly cap rationale**: On-demand generations use gpt-image-1.5 at full $0.20/image. Pre-cache covers ~80% of traffic at batch rates. Cap prevents runaway costs from heavy traffic or exploratory buyers. Generated images cache permanently, so the org's effective cost per generation decreases over time as the cache fills. Can get more granular (per-session, per-plan) later.
-**Trade-off**: $2K upfront may deter very small builders (<30 homes/yr), but ROI math doesn't work for them anyway. Pilot program (first plan free) de-risks for everyone.
+**Trade-off**: $500/mo is a higher bar than $299 — targets 50+ home builders. Smaller builders (<40 homes/yr) won't hit 3x ROI at 10% lift. Pilot program (first plan free) de-risks for everyone.
 
 ## D67: Photo-level scope/scene/hints are authoritative over step-level fallbacks
 **Context**: Multi-photo steps were leaking step-level context into unrelated photos (e.g., fireplace receiving kitchen instructions, bedrooms inheriting hero-shot scene text).

@@ -30,14 +30,9 @@ export default async function OrgPage({
   const isSubdomain =
     host.endsWith(".withfin.ch") || /^[^.]+\.localhost/.test(host);
 
-  // Single active floorplan → redirect directly
-  if (activeFloorplans.length <= 1) {
-    const fp = activeFloorplans[0] ?? floorplans[0];
-    if (!fp) notFound();
-    redirect(isSubdomain ? `/${fp.slug}` : `/${orgSlug}/${fp.slug}`);
-  }
+  if (floorplans.length === 0) notFound();
 
-  // Multiple floorplans → render chooser
+  // Render chooser
   const linkPrefix = isSubdomain ? "" : `/${orgSlug}`;
 
   const primaryColor = org.primary_color || "#1b2d4e";

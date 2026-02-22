@@ -14,6 +14,7 @@ interface LandingHeroProps {
   orgSlug?: string;
   planName?: string;
   community?: string;
+  coverImageUrl?: string | null;
   floorplanSlug?: string;
   orgId?: string;
   floorplanId?: string;
@@ -33,6 +34,7 @@ export function LandingHero({
   orgSlug,
   planName = "",
   community = "",
+  coverImageUrl,
   floorplanSlug,
   orgId,
   floorplanId,
@@ -54,7 +56,8 @@ export function LandingHero({
   const [resumeState, setResumeState] = useState<ResumeState>("idle");
   const [resumeError, setResumeError] = useState("");
   const resumeInputRef = useRef<HTMLInputElement>(null);
-  const [showPreview, setShowPreview] = useState(Boolean(floorplanSlug));
+  const floorplanPreviewSrc = coverImageUrl || (floorplanSlug ? `/floorplans/${floorplanSlug}.webp` : null);
+  const [showPreview, setShowPreview] = useState(Boolean(floorplanPreviewSrc));
 
   // Auto-focus resume input when ?action=resume
   useEffect(() => {
@@ -66,11 +69,10 @@ export function LandingHero({
   }, []);
 
   useEffect(() => {
-    setShowPreview(Boolean(floorplanSlug));
-  }, [floorplanSlug]);
+    setShowPreview(Boolean(floorplanPreviewSrc));
+  }, [floorplanPreviewSrc]);
 
   const canResume = Boolean(orgId && floorplanId && onResumed);
-  const floorplanPreviewSrc = floorplanSlug ? `/floorplans/${floorplanSlug}.webp` : null;
 
   const handleResume = async () => {
     if (!canResume || !orgId || !floorplanId || !onResumed) return;

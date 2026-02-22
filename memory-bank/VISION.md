@@ -71,43 +71,74 @@ We're the only product that combines:
 
 Self-serve is dead. 380 elements per floor plan (SM Kinkade) = no builder is doing this themselves. One model: we handle all setup, they pay per floor plan per month.
 
-**What we deliver per floor plan:**
+**What we deliver per floor plan (10 room photos included):**
+
+*Builder self-serve (admin dashboard):*
+- Option/pricing updates, swatch uploads, step names/order, section assignments
+- Floorplan metadata, branding — all the catalog stuff
+
+*Finch-managed (the hard part):*
 - Option/pricing transcription from builder's sheets (often messy PDFs → structured data)
 - Swatch image sourcing (cabinets, countertops, backsplash, flooring, faucets, sinks, hardware, appliances)
-- Custom spatial hints per room
-- Prompt descriptors per upgrade option
+- **Room photo pipeline (10 photos/floorplan):** photo evaluation + rejection, masking, spatial hints, baselines, prompt descriptors, test generation, QA, prompt tuning, regeneration of bad outputs
 - AI pre-generation (~3,000 images/floor plan) for instant buyer experience
-- QA review, prompt tuning, regeneration of bad outputs
 - Configuration, branding, testing
-- Admin dashboard for ongoing option/pricing updates
 - Unlimited buyer sessions, no per-session fees
+
+**10 room photos per floorplan:** Each experience has 5 steps — builders arrange photos however they want (2 per step, or heavy on kitchen/bath). The room photo pipeline is the real labor: sourcing/evaluating photos, rejecting bad ones (wrong angle, lighting, resolution), masking, spatial hints, baselines, test generations, iteration. Additional photos beyond 10 = additional fee.
+
+**Setup fee per floorplan:** The room photo pipeline is real labor per photo, not just software config. A floorplan with 2 photos is dramatically less work than one with 8. Setup fee covers the initial photo pipeline work. Monthly covers software access, generation credits, and ongoing support (option/price updates, occasional photo swaps).
 
 **Speed advantage:** First floor plan live in 48 hours. Then 10 plans/day after initial setup. Competitors (Zonda, Hyphen, Aareas) take 2-3 months.
 
-**Photography:** Evaluate during sales conversation. Clean, well-lit model home photos = use them. Otherwise bake photography cost into the setup quote.
+**Photography:** Evaluate during sales conversation. Clean, well-lit model home photos = use them. Otherwise bake photography cost into the setup quote. Some photos will be rejected — "this bathroom has bad lighting, we need a reshoot" is part of the process.
 
-#### Price Range Under Consideration
+#### Pricing Structure
 
 Pricing is NOT on the landing page. Drive to conversations first, learn from early pilots.
 
-| Price/plan/mo | 3 plans annual | Break-even homes (at 10% lift on $10K avg) | Notes |
-|---|---|---|---|
-| $199 | $7.2K | 8 homes | Floor price. Easy yes for any builder. Maybe too cheap for 100+ home builders. |
-| $299 | $10.8K | 11 homes | Comfortable for 50+ home builders. Leaves room to grow. |
-| $499 | $18K | 18 homes | Works for 100+ home builders. 50-home builders need convincing. |
-| $799 | $28.8K | 29 homes | Enterprise-adjacent. Only for 200+ home builders with clear ROI. |
+**$1,500 setup (includes 3 floor plans) + $500/mo per floor plan.**
+- Additional floor plans: $1,500 setup + $500/mo each.
+- Each floor plan includes 10 room photos through the full pipeline.
+- Monthly includes: software access, monthly generation cap, ongoing support (option/price updates, occasional photo swaps).
+- Monthly generation cap: org-wide pool for on-demand generations. Pre-cached images are free. Cache fills over time so monthly generation costs naturally decline.
 
-**Current lean:** Start conversations without a published price. Pilot first plan free. Quote based on builder size after the pilot proves value. Likely land $299-499/plan/mo for production builders, potentially higher for luxury/semi-custom with high upgrade revenue per home.
+**Why 3 plans included in setup:** The real work is onboarding the builder — understanding their catalog, setting up the org, establishing the photo pipeline for the first plan. Plans 2-3 reuse the same option catalog and photo pipeline patterns. $1,500 for 3 nudges builders to start with multiple plans rather than testing with just 1.
 
-**Volume-based pricing option (not decided):**
+**Stone Martin deal:** 5 floor plans free for 1 year. They're the proof-of-concept, not a paying customer (yet). The demo sells Finch to other builders — SM's value is as a case study and reference.
 
-| Builder size | Price/plan/mo | Rationale |
-|---|---|---|
-| Up to 100 homes/yr | $299 | Accessible, clear ROI at 50+ homes |
-| 100-500 homes/yr | $499 | Delivering $100K+ in value, price matches |
-| 500+ homes/yr | Custom | Too much value to leave on the table |
+**Year 1 costs for the builder:**
 
-**Setup fees:** TBD. Could be waived entirely (baked into monthly), or charged as one-time ($1,500-2,500/plan). Waiving setup removes friction. Charging setup filters for serious buyers. Pilot program waives everything regardless.
+| Plans | Setup | Monthly | Year 1 Total | Year 2+ |
+|---|---|---|---|---|
+| 3 | $1,500 | $1,500/mo | $19,500 | $18,000 |
+| 5 | $4,500 | $2,500/mo | $34,500 | $30,000 |
+| 8 | $9,000 | $4,000/mo | $57,000 | $48,000 |
+| 15 | $19,500 | $7,500/mo | $109,500 | $90,000 |
+
+**ROI at 10% upgrade lift on $10K avg upgrades ($1,000 extra/home):**
+
+| Builder size | Plans | Year 1 cost | Revenue lift | ROI |
+|---|---|---|---|---|
+| 30 homes/yr | 3 | $19,500 | $30,000 | 1.5x |
+| 50 homes/yr | 3 | $19,500 | $50,000 | **2.6x** |
+| 60 homes/yr | 3 | $19,500 | $60,000 | **3.1x** |
+| 100 homes/yr | 5 | $34,500 | $100,000 | **2.9x** |
+| 150 homes/yr | 5 | $34,500 | $150,000 | **4.3x** |
+| 200 homes/yr | 8 | $57,000 | $200,000 | **3.5x** |
+| 500 homes/yr | 15 | $109,500 | $500,000 | **4.6x** |
+
+**3x ROI breakpoint: ~60 homes/year on 3 plans at 10% lift.** At 15% lift (reasonable for visual selling vs PDFs), 40 homes/year hits 3.1x. The $500/mo price point targets builders doing 50+ homes/year — below that, ROI is still positive but harder to pitch as a slam dunk.
+
+**Our margins (3 plans, moderate pre-cache):**
+
+| Item | Cost |
+|---|---|
+| Setup hard costs (3 plans × ~1K batch gen) | ~$300 |
+| Monthly generation COGS | ~$100-150/mo |
+| Hosting/infra | ~$45/mo |
+| Revenue (3 × $500/mo) | $1,500/mo |
+| **Monthly margin after COGS** | **~$1,300-1,350/mo** |
 
 #### Pilot Program (Replaces "Founding Partners")
 
@@ -121,7 +152,7 @@ Builders understand pilots. "Founding Partner" sounds like startup energy. Just 
 
 **The pitch:** "We'll set up your best-selling floor plan for free. Your buyers use it. We measure what happens. If upgrade revenue goes up, we talk about your other plans. If it doesn't, you walk away."
 
-**Why:** First non-SM builder is worth more as a case study than revenue. Hard costs per pilot plan are minimal (~$25-50 GPU + our time).
+**Why:** First non-SM builder is worth more as a case study than revenue. Hard costs per pilot plan are minimal (~$100 batch gen + our time).
 
 #### Interactive Demo (Replaces Trial)
 No free trial. Public demo on the landing page:
@@ -289,66 +320,54 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 **The pitch isn't just "you'll sell more upgrades."** It's: your buyers will be happier with what they chose, your team spends less time hand-holding, and they spend more. The before-and-after is a buyer flipping through a PDF in a design center vs. sitting on their couch with their spouse seeing their actual kitchen with the options they're choosing.
 
 ### Handling Objections
-- **"That's a lot upfront"** — Try Essentials at $149/floor plan/mo, no setup fee. Or start with one Concierge floor plan ($2,500 setup + $299/mo) and prove the ROI.
-- **"Only some of my buyers would use this"** — ROI tables above account for 50% adoption and the math still works.
-- **"Why does setup cost $2,500?"** — Professional photography, full option catalog transcription, AI prompt tuning, 3,000+ pre-generated room images, and QA. It's a 2-3 week build-out — real work, real deliverable. Comparable to what you'd pay for a Matterport tour.
-- **"What am I paying $299/mo for?"** — 24/7 platform access, instant AI visualization for every buyer session, image cache maintenance, option/pricing updates, priority support, and an admin dashboard for your team.
-- **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, Essentials is $149/mo for one floor plan.
+- **"$1,500 is a lot upfront"** — That covers 3 floor plans, not 1. Each gets 10 room photos through a full pipeline — photo evaluation, masking, prompt tuning, test generation, QA. Plus your entire option catalog transcribed. Comparable to a Matterport package. And pilot first plan is free.
+- **"Only some of my buyers would use this"** — ROI tables above assume conservative adoption. At 60+ homes/year you're at 3x+ return.
+- **"$500/mo per plan?"** — That covers 24/7 platform access, monthly generation credits (images cache permanently so costs decline over time), option/pricing updates, ongoing photo support, and an admin dashboard for your team. At 60 homes/year across 3 plans, you're looking at $1,000 extra revenue per home — the tool pays for itself many times over.
+- **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, pilot first plan is free for 60 days.
 
 ### Cost Structure
 
-**Pre-generation is non-negotiable.** Each image takes ~60 seconds to generate. Buyers won't wait — the tool must feel instant. That means ~3,000 pre-cached images per plan (covers 80%+ of common combos; long-tail generates on-demand).
+**Self-hosted generation is not viable** (see D64). No open-source model can handle our pipeline (10-15 simultaneous swatch references, precise multi-surface editing, layout preservation). gpt-image-1.5 is the only model that works. All cost math is API-based.
 
-**The pre-cache math:**
-- 3,000 images x 60 sec = **50 hours of generation per plan**
-- 8 plans (Craftway-sized builder) = **400 hours** (~17 days 24/7)
-- At API pricing ($0.04-0.15/image): **$120-450 per plan, $960-3,600 for 8 plans**
+**Pre-generation is non-negotiable.** Each image takes ~60 seconds to generate. Buyers won't wait — the tool must feel instant. Pre-cache common combos; long-tail generates on-demand.
 
-**Hard costs per builder onboarding (Concierge, 8 plans):**
+**Generation costs (gpt-image-1.5):**
+- ~$0.20/image (standard API, real-time) — used for on-demand buyer sessions
+- Batch API available (Tier 5) at ~50% discount, async (24hr turnaround) — use for all pre-generation
 
-| Item | API Pricing | GPU Rental |
-|------|------------|------------|
-| Your time (20 hrs) | — | — |
-| Photography (if needed) | ~$1,000 | ~$1,000 |
-| Pre-generation (8 plans x 3K) | $960-3,600 | ~$200 |
-| Hosting/infra | ~$45/mo | ~$45/mo |
-| **Total hard costs** | **$1,000-4,600** | **$245-1,245** |
+**Pre-cache math (per floorplan, 10 photos):**
 
-**OpenAI Tier 5 — Batch API pricing (what we have):**
-We have Tier 5 OpenAI access, which unlocks the Batch API for image generation. Batch is async (not real-time) — ideal for pre-generation, not buyer sessions.
+Not every combo needs pre-caching. Full combinatorial is absurd (e.g. 12 cabinets × 13 island × 17 counter × 16 floor × 13 paint = 548K for one kitchen photo). Smart strategy: single-category sweeps (hold others at default) + popular multi-combos.
 
-| Model | Input | Cached Input | Output |
-|-------|-------|-------------|--------|
-| gpt-image-1.5 | $4.00/1M tokens | $1.00/1M tokens | $16.00/1M tokens |
+- Kitchen photo (5 visual categories): ~150-200 images (71 sweeps + ~80-130 popular combos)
+- Bedroom photo (paint + flooring): ~30 images
+- Bathroom photo (cabinets + counter + flooring): ~45 images
+- Average across 10 photos: **~500-1,000 images per floorplan**
 
-Batch API is significantly cheaper than standard API for bulk pre-generation. Use standard API for on-demand buyer sessions, batch API for pre-caching.
+Typical builders have fewer options than SM (6-8 per category vs 12-17), so numbers skew toward the low end.
 
-**Option A: API-based (standard)**
-- Generation: ~$0.04-0.15/image (standard, real-time)
-- Works for on-demand buyer sessions (Essentials tier)
-- Rate limits and 60s generation time make batch pre-gen slow
+| Pre-cache depth | Images/plan | Standard ($0.20) | Batch (~$0.10) |
+|---|---|---|---|
+| Conservative (sweeps only) | ~500 | $100 | ~$50 |
+| Moderate (sweeps + top combos) | ~1,000 | $200 | ~$100 |
+| Aggressive (deep combo coverage) | ~2,000 | $400 | ~$200 |
 
-**Option A.5: API-based (batch)**
-- Pre-generation via Batch API at reduced token rates
-- Async — results returned within 24 hours, not real-time
-- Ideal for Concierge pre-caching of 3,000 images per plan
-- No rate limit pressure — submit large batches overnight
+**Hard costs per builder onboarding (8 plans, moderate pre-cache):**
 
-**Option B: Cloud GPU rental (recommended)**
-- RTX A6000 on-demand: ~$0.49/hr (RunPod, Hyperstack)
-- RTX A6000 dedicated monthly: ~$350-365/mo
-- Pre-gen one floor plan (50 hrs): ~$25 on-demand
-- Pre-gen 8 plans (400 hrs): ~$200 on-demand
-- No hardware risk, no maintenance, cancel anytime
+| Item | Cost |
+|------|------|
+| Your time (photo pipeline + setup) | — |
+| Photography (if needed) | ~$1,000 |
+| Pre-generation (8 plans × ~1K images, batch) | ~$800 |
+| Hosting/infra | ~$45/mo |
+| **Total hard costs** | **~$1,800** |
 
-**Why rent beats buy:**
-- New RTX A6000: $6,850-9,000 purchase price
-- 24/7 rental for 2 years: ~$8,400-8,760 — roughly the same cost
-- But: no depreciation, no maintenance, no upfront capital, can scale up/down
-- At low volume (< 5 builders): on-demand hourly is far cheaper than dedicated
-- At high volume (5+ builders onboarding regularly): dedicated monthly makes sense
-
-**Recommended path**: Use on-demand GPU rental from day one. Spin up for batch pre-generation, shut down when done. A full floor plan pre-gen costs ~$41. Only move to dedicated monthly when onboarding cadence justifies it (~2+ plans/month). Never buy hardware.
+**On-demand generation costs & monthly org cap:**
+- Pre-cached images are free to serve (Supabase CDN). On-demand buyer generations (long-tail combos) cost ~$0.20 each at full gpt-image-1.5 standard rate.
+- **Monthly org generation cap** controls total on-demand spend. Generated images cache permanently, so early months cost more (building the long-tail cache) and costs decrease over time as the cache fills in.
+- Cap sizing: 500-1,000 gens/mo depending on plan count. At 500/mo = $100/mo COGS worst case.
+- Typical: 3 plans × ~50 sessions/mo × ~5 on-demand gens = ~750/mo = ~$150/mo COGS. Well within $897/mo revenue (3 × $299).
+- Builders stomaching higher generation early is a feature — the cache gets richer, and monthly costs naturally decline.
 
 ## Technical Architecture
 
