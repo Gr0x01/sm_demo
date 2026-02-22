@@ -20,6 +20,7 @@ export function getEffectivePhotoScopedIds(
   const isKitchenView =
     context.stepSlug === "design-your-kitchen" ||
     imagePath.includes("kitchen-close.webp");
+  const isBathClosetView = imagePath.includes("bath-closet.webp");
 
   if (isGreatRoomKitchenView && effective.has("kitchen-faucet")) {
     effective.add("cabinet-style-whole-house");
@@ -34,6 +35,11 @@ export function getEffectivePhotoScopedIds(
   if (isGreatRoomKitchenView || isKitchenView) {
     effective.add("main-area-flooring-color");
     effective.add("main-area-flooring-type");
+  }
+
+  // Wall paint should remain in scope for kitchen and split bath+closet views.
+  if (isGreatRoomKitchenView || isKitchenView || isBathClosetView) {
+    effective.add("common-wall-paint");
   }
 
   return effective;

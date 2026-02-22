@@ -1,16 +1,18 @@
 import { createHash } from "crypto";
+import sharp from "sharp";
 import type { Option, SubCategory } from "@/types";
 
 export interface SwatchImage {
   label: string;
   buffer: Buffer;
   mediaType: string;
+  anchorHex?: string;
 }
 
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v13";
+export const GENERATION_CACHE_VERSION = "v14";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -23,6 +25,29 @@ export interface PromptPolicyOverrides {
  * Return null if the swatch can't be loaded.
  */
 export type SwatchBufferResolver = (swatchUrl: string) => Promise<{ buffer: Buffer; mediaType: string } | null>;
+
+function toHexChannel(value: number): string {
+  const clamped = Math.max(0, Math.min(255, Math.round(value)));
+  return clamped.toString(16).padStart(2, "0").toUpperCase();
+}
+
+/**
+ * Derive a representative color anchor from the swatch image itself (not DB metadata).
+ * Uses a downscaled image mean to stay robust across JPG/PNG/WebP swatches.
+ */
+async function extractSwatchAnchorHex(buffer: Buffer): Promise<string | null> {
+  try {
+    const stats = await sharp(buffer)
+      .removeAlpha()
+      .resize(64, 64, { fit: "inside" })
+      .stats();
+    const [r, g, b] = stats.channels;
+    if (!r || !g || !b) return null;
+    return `#${toHexChannel(r.mean)}${toHexChannel(g.mean)}${toHexChannel(b.mean)}`;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Build the edit prompt text and collect swatch images for ALL visual selections.
@@ -77,29 +102,35 @@ export async function buildEditPrompt(
     const hint = spatialHints[subId];
     const descriptor = option.promptDescriptor?.trim();
     const descriptorSuffix = descriptor ? ` (${descriptor})` : "";
-    const label = hint
+    const finishLabel = hint
+      ? `${subCategory.name} → apply to ${hint}`
+      : `${subCategory.name}`;
+    const applianceLabel = hint
       ? `${subCategory.name}: ${option.name}${descriptorSuffix} → apply to ${hint}`
       : `${subCategory.name}: ${option.name}${descriptorSuffix}`;
+    const swatchBackedLabel = subCategory.isAppliance ? applianceLabel : finishLabel;
 
     if (option.swatchUrl && resolveSwatchBuffer) {
       try {
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
-          swatches.push({ label, buffer: resolved.buffer, mediaType: resolved.mediaType });
-          listLines.push(`${listIndex}. ${label} (use swatch #${swatchIndex})`);
+          const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
+          swatches.push({ label: swatchBackedLabel, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined });
+          const anchorSuffix = anchorHex ? `; swatch-derived color anchor ${anchorHex}` : "";
+          listLines.push(`${listIndex}. ${swatchBackedLabel} (use swatch #${swatchIndex}${anchorSuffix})`);
           swatchIndex += 1;
           listIndex += 1;
         } else {
-          listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
+          listLines.push(`${listIndex}. ${applianceLabel} (no swatch image available; follow text exactly)`);
           listIndex += 1;
         }
       } catch {
-        listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
+        listLines.push(`${listIndex}. ${applianceLabel} (no swatch image available; follow text exactly)`);
         listIndex += 1;
       }
     } else {
       // No swatch image available — describe by name
-      listLines.push(`${listIndex}. ${label} (no swatch image available; follow text exactly)`);
+      listLines.push(`${listIndex}. ${applianceLabel} (no swatch image available; follow text exactly)`);
       listIndex += 1;
     }
   }
@@ -127,6 +158,12 @@ export async function buildEditPrompt(
     invariantRules.size > 0
       ? `\nCRITICAL FIXED-GEOMETRY RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
       : "";
+  const hasWallPaintSelection =
+    selectedSubIds.has("common-wall-paint") || selectedSubIds.has("accent-color");
+  const wallPaintRuleBlock = hasWallPaintSelection
+    ? `\n- Wall paint selections apply to ALL visible painted drywall wall surfaces across every visible zone/room in frame (including bathroom, closet, hallway, and kitchen zones when visible).
+- Do NOT paint non-wall surfaces: tile, cabinets, mirrors, glass, trim, doors, countertops, or flooring unless those categories are explicitly selected.`
+    : "";
 
   const editObjective = hasApplianceSelection
     ? "Edit this room photo to match the selected finishes and appliance models."
@@ -156,6 +193,8 @@ ${listLines.join("\n")}
 RULES:
 - ${swatchMappingLine}
 - For each item marked "(use swatch #N)", match that swatch's color, pattern, and texture EXACTLY on the specified surface.
+- For swatch-backed finish edits, the swatch image is the ONLY color authority. Treat option names/descriptors as non-authoritative labels for color.
+- If a line includes "swatch-derived color anchor #RRGGBB", use it as a numeric target from that swatch image and avoid hue drift (no unintended green/blue cast).
 - For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
 - The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
 - If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.
@@ -171,7 +210,7 @@ RULES:
 - Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
 - If an edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.
 - Keep the exact camera angle, perspective, lighting, and room layout.
-- Photorealistic result with accurate shadows and reflections.${applianceRuleBlock}${invariantBlock}`;
+- Photorealistic result with accurate shadows and reflections.${wallPaintRuleBlock}${applianceRuleBlock}${invariantBlock}`;
 
   return { prompt, swatches };
 }
