@@ -17,12 +17,23 @@ export function getEffectivePhotoScopedIds(
     context.stepSlug === "set-your-style" ||
     imagePath.includes("greatroom-wide.webp") ||
     imagePath.includes("kitchen-greatroom.webp");
+  const isKitchenView =
+    context.stepSlug === "design-your-kitchen" ||
+    imagePath.includes("kitchen-close.webp");
 
   if (isGreatRoomKitchenView && effective.has("kitchen-faucet")) {
     effective.add("cabinet-style-whole-house");
     effective.add("kitchen-cabinet-color");
     effective.add("kitchen-island-cabinet-color");
     effective.add("kitchen-cabinet-hardware");
+  }
+
+  // Kitchen/great-room floor finish should remain in scope for those photos.
+  // Without this, narrowed photo scopes can edit counters/cabinets but leave
+  // plank flooring unchanged.
+  if (isGreatRoomKitchenView || isKitchenView) {
+    effective.add("main-area-flooring-color");
+    effective.add("main-area-flooring-type");
   }
 
   return effective;
