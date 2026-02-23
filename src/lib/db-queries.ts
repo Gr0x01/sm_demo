@@ -149,7 +149,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
   const supabase = getServiceClient();
 
   // Single query for categories + nested data, plus category-level scope junction
-  const [catsResult, catScopeResult] = await Promise.all([
+  const [catsResult, catScopeResult, pricingResult] = await Promise.all([
     supabase
       .from("categories")
       .select(`
@@ -162,7 +162,16 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
       .eq("org_id", orgId)
       .order("sort_order"),
     supabase.from("category_floorplan_scope").select("category_id").eq("floorplan_id", floorplanId),
+    supabase.from("option_floorplan_pricing").select("option_id, price").eq("floorplan_id", floorplanId),
   ]);
+
+  // Build override map: option UUID → floorplan-specific price
+  const priceOverrides = new Map<string, number>();
+  if (pricingResult.data) {
+    for (const row of pricingResult.data) {
+      priceOverrides.set(row.option_id as string, row.price as number);
+    }
+  }
 
   const cats = catsResult.data;
   if (catsResult.error || !cats) return [];
@@ -217,7 +226,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
             .map((opt): Option => ({
               id: opt.slug,
               name: opt.name,
-              price: opt.price,
+              price: priceOverrides.get(opt.id) ?? opt.price,
               promptDescriptor: opt.prompt_descriptor ?? undefined,
               swatchUrl: opt.swatch_url ?? undefined,
               swatchColor: opt.swatch_color ?? undefined,

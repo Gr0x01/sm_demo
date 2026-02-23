@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash, Trash2, Pencil, Check, X } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash, Trash2, Pencil, Check, X, RotateCcw } from "lucide-react";
 import { SwatchUpload } from "./SwatchUpload";
 import { FloorplanScopePopover } from "./FloorplanScopePopover";
 
@@ -56,6 +56,49 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
   const [expandedCats, setExpandedCats] = useState<Set<string>>(new Set());
   const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
   const [showAddCategory, setShowAddCategory] = useState(false);
+
+  // Per-floorplan pricing overrides
+  const [pricingFloorplanId, setPricingFloorplanId] = useState<string | null>(null);
+  const [overrides, setOverrides] = useState<Map<string, number>>(new Map());
+  const [loadingOverrides, setLoadingOverrides] = useState(false);
+  const fetchVersionRef = useRef(0);
+
+  useEffect(() => {
+    if (!pricingFloorplanId) {
+      setOverrides(new Map());
+      setLoadingOverrides(false);
+      return;
+    }
+
+    const version = ++fetchVersionRef.current;
+    setOverrides(new Map()); // clear immediately so stale data is never shown
+    setLoadingOverrides(true);
+
+    fetch(`/api/admin/pricing-overrides?org_id=${orgId}&floorplan_id=${pricingFloorplanId}`)
+      .then(async (res) => {
+        if (version !== fetchVersionRef.current) return; // stale response
+        if (res.ok) {
+          const data = await res.json();
+          setOverrides(new Map(Object.entries(data).map(([k, v]) => [k, v as number])));
+        } else {
+          setOverrides(new Map()); // ensure empty on error
+        }
+      })
+      .catch((err) => {
+        if (version !== fetchVersionRef.current) return;
+        console.error("Failed to fetch overrides:", err);
+        setOverrides(new Map());
+      })
+      .finally(() => {
+        if (version === fetchVersionRef.current) {
+          setLoadingOverrides(false);
+        }
+      });
+  }, [pricingFloorplanId, orgId]);
+
+  const handlePricingFloorplanChange = (value: string) => {
+    setPricingFloorplanId(value === "" ? null : value);
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -306,13 +349,34 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2 mb-4 flex-wrap">
         <button onClick={expandAll} className="px-3 py-1.5 text-xs text-neutral-400 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 transition-colors">
           Expand all
         </button>
         <button onClick={collapseAll} className="px-3 py-1.5 text-xs text-neutral-400 bg-neutral-900 border border-neutral-800 hover:bg-neutral-800 transition-colors">
           Collapse all
         </button>
+
+        {isAdmin && floorplans.length > 1 && (
+          <div className="flex items-center gap-1.5 ml-4">
+            <span className="text-[11px] uppercase tracking-[0.14em] text-neutral-500 font-semibold">Prices:</span>
+            <select
+              value={pricingFloorplanId ?? ""}
+              onChange={(e) => handlePricingFloorplanChange(e.target.value)}
+              className="px-2 py-1.5 text-xs bg-neutral-900 border border-neutral-700 text-neutral-200 focus:outline-none focus:border-neutral-500"
+            >
+              <option value="">Base Prices</option>
+              {floorplans.map((fp) => (
+                <option key={fp.id} value={fp.id}>{fp.name}</option>
+              ))}
+            </select>
+            {loadingOverrides && <span className="text-[10px] text-neutral-500">Loading...</span>}
+            {pricingFloorplanId && !loadingOverrides && overrides.size > 0 && (
+              <span className="text-[10px] text-amber-400">{overrides.size} override{overrides.size !== 1 ? "s" : ""}</span>
+            )}
+          </div>
+        )}
+
         {isAdmin && (
           <button
             onClick={() => setShowAddCategory(true)}
@@ -369,6 +433,14 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
                           onUpdateOption={handleUpdateOption}
                           onDeleteOption={handleDeleteOption}
                           onOptionReorder={handleOptionReorder}
+                          pricingFloorplanId={pricingFloorplanId}
+                          overrides={overrides}
+                          onOverrideChange={(optId, price) => {
+                            setOverrides((prev) => new Map(prev).set(optId, price));
+                          }}
+                          onOverrideRemove={(optId) => {
+                            setOverrides((prev) => { const m = new Map(prev); m.delete(optId); return m; });
+                          }}
                         />
                       ))}
                     </div>
@@ -404,6 +476,14 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
                   onUpdateOption={handleUpdateOption}
                   onDeleteOption={handleDeleteOption}
                   onOptionReorder={handleOptionReorder}
+                  pricingFloorplanId={pricingFloorplanId}
+                  overrides={overrides}
+                  onOverrideChange={(optId, price) => {
+                    setOverrides((prev) => new Map(prev).set(optId, price));
+                  }}
+                  onOverrideRemove={(optId) => {
+                    setOverrides((prev) => { const m = new Map(prev); m.delete(optId); return m; });
+                  }}
                 />
               ))}
             </div>
@@ -436,6 +516,10 @@ function SortableCategoryRow({
   onUpdateOption,
   onDeleteOption,
   onOptionReorder,
+  pricingFloorplanId,
+  overrides,
+  onOverrideChange,
+  onOverrideRemove,
 }: {
   category: AdminCategory;
   isExpanded: boolean;
@@ -456,6 +540,10 @@ function SortableCategoryRow({
   onUpdateOption: (id: string, updates: Record<string, unknown>) => Promise<void>;
   onDeleteOption: (id: string) => Promise<void>;
   onOptionReorder: (subId: string, event: DragEndEvent) => Promise<void>;
+  pricingFloorplanId: string | null;
+  overrides: Map<string, number>;
+  onOverrideChange: (optionId: string, price: number) => void;
+  onOverrideRemove: (optionId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: category.id });
   const [isEditing, setIsEditing] = useState(false);
@@ -569,6 +657,10 @@ function SortableCategoryRow({
                   onUpdateOption={onUpdateOption}
                   onDeleteOption={onDeleteOption}
                   onOptionReorder={onOptionReorder}
+                  pricingFloorplanId={pricingFloorplanId}
+                  overrides={overrides}
+                  onOverrideChange={onOverrideChange}
+                  onOverrideRemove={onOverrideRemove}
                 />
               ))}
             </SortableContext>
@@ -596,6 +688,10 @@ function SortableSubcategoryRow({
   onUpdateOption,
   onDeleteOption,
   onOptionReorder,
+  pricingFloorplanId,
+  overrides,
+  onOverrideChange,
+  onOverrideRemove,
 }: {
   subcategory: AdminSubcategory;
   categoryName: string;
@@ -611,6 +707,10 @@ function SortableSubcategoryRow({
   onUpdateOption: (id: string, updates: Record<string, unknown>) => Promise<void>;
   onDeleteOption: (id: string) => Promise<void>;
   onOptionReorder: (subId: string, event: DragEndEvent) => Promise<void>;
+  pricingFloorplanId: string | null;
+  overrides: Map<string, number>;
+  onOverrideChange: (optionId: string, price: number) => void;
+  onOverrideRemove: (optionId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: subcategory.id });
   const [isEditing, setIsEditing] = useState(false);
@@ -720,6 +820,10 @@ function SortableSubcategoryRow({
                     subcategoryName={subcategory.name}
                     onUpdate={onUpdateOption}
                     onDelete={onDeleteOption}
+                    pricingFloorplanId={pricingFloorplanId}
+                    overridePrice={overrides.get(option.id)}
+                    onOverrideChange={onOverrideChange}
+                    onOverrideRemove={onOverrideRemove}
                   />
                 ))}
                 {isAdmin && subcategory.options.length === 0 && !showAddOption && (
@@ -751,6 +855,10 @@ const SortableOptionRow = memo(function SortableOptionRow({
   subcategoryName,
   onUpdate,
   onDelete,
+  pricingFloorplanId,
+  overridePrice,
+  onOverrideChange,
+  onOverrideRemove,
 }: {
   option: AdminOption;
   isAdmin: boolean;
@@ -759,11 +867,17 @@ const SortableOptionRow = memo(function SortableOptionRow({
   subcategoryName: string;
   onUpdate: (id: string, updates: Record<string, unknown>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  pricingFloorplanId: string | null;
+  overridePrice: number | undefined;
+  onOverrideChange: (optionId: string, price: number) => void;
+  onOverrideRemove: (optionId: string) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: option.id });
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingPrice, setEditingPrice] = useState(false);
-  const [priceValue, setPriceValue] = useState(String(option.price));
+  const displayPrice = pricingFloorplanId ? (overridePrice ?? option.price) : option.price;
+  const isOverridden = pricingFloorplanId !== null && overridePrice !== undefined;
+  const [priceValue, setPriceValue] = useState(String(displayPrice));
   const descriptorPreview =
     option.description?.trim() ||
     option.prompt_descriptor?.trim() ||
@@ -775,22 +889,61 @@ const SortableOptionRow = memo(function SortableOptionRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // Reset edit state when floorplan context changes
+  useEffect(() => {
+    setEditingPrice(false);
+  }, [pricingFloorplanId]);
+
   useEffect(() => {
     if (!editingPrice) {
-      setPriceValue(String(option.price));
+      setPriceValue(String(displayPrice));
     }
-  }, [editingPrice, option.price]);
+  }, [editingPrice, displayPrice]);
 
   const handleSavePrice = async () => {
     const newPrice = parseInt(priceValue, 10);
-    if (!isNaN(newPrice) && newPrice !== option.price) {
-      try {
-        await onUpdate(option.id, { price: newPrice });
-      } catch (err) {
-        console.error("Price save failed:", err);
+    if (isNaN(newPrice)) { setEditingPrice(false); return; }
+
+    if (pricingFloorplanId) {
+      // Floorplan mode: upsert override
+      if (newPrice !== displayPrice) {
+        try {
+          await apiCall("/api/admin/pricing-overrides", "PUT", {
+            org_id: orgId,
+            floorplan_id: pricingFloorplanId,
+            option_id: option.id,
+            price: newPrice,
+          });
+          onOverrideChange(option.id, newPrice);
+        } catch (err) {
+          console.error("Override save failed:", err);
+        }
+      }
+    } else {
+      // Base mode: update option directly
+      if (newPrice !== option.price) {
+        try {
+          await onUpdate(option.id, { price: newPrice });
+        } catch (err) {
+          console.error("Price save failed:", err);
+        }
       }
     }
     setEditingPrice(false);
+  };
+
+  const handleResetOverride = async () => {
+    if (!pricingFloorplanId) return;
+    try {
+      await apiCall("/api/admin/pricing-overrides", "DELETE", {
+        org_id: orgId,
+        floorplan_id: pricingFloorplanId,
+        option_id: option.id,
+      });
+      onOverrideRemove(option.id);
+    } catch (err) {
+      console.error("Reset override failed:", err);
+    }
   };
 
   const handleSaveOption = async (updates: Record<string, unknown>) => {
@@ -871,15 +1024,33 @@ const SortableOptionRow = memo(function SortableOptionRow({
                     <button onClick={handleSavePrice} className="text-green-400 hover:text-green-300"><Check className="w-3.5 h-3.5" /></button>
                   </div>
                 ) : isAdmin ? (
-                  <button
-                    onClick={() => { setPriceValue(String(option.price)); setEditingPrice(true); }}
-                    className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums transition-colors ${option.price === 0 ? "text-green-500" : "text-neutral-300"} hover:border-neutral-500`}
-                  >
-                    {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    {isOverridden && (
+                      <button
+                        onClick={handleResetOverride}
+                        className="text-neutral-600 hover:text-amber-400 p-0.5"
+                        title="Reset to base price"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setPriceValue(String(displayPrice)); setEditingPrice(true); }}
+                      className={`border px-2 py-1 text-sm font-mono tabular-nums transition-colors ${
+                        isOverridden
+                          ? "border-amber-700/50 text-amber-300 hover:border-amber-600"
+                          : displayPrice === 0
+                            ? "border-neutral-700 text-green-500 hover:border-neutral-500"
+                            : "border-neutral-700 text-neutral-300 hover:border-neutral-500"
+                      }`}
+                    >
+                      {isOverridden && <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 mr-1.5 align-middle" />}
+                      {displayPrice === 0 ? "Included" : `$${displayPrice.toLocaleString()}`}
+                    </button>
+                  </div>
                 ) : (
-                  <span className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums ${option.price === 0 ? "text-green-500" : "text-neutral-300"}`}>
-                    {option.price === 0 ? "Included" : `$${option.price.toLocaleString()}`}
+                  <span className={`border border-neutral-700 px-2 py-1 text-sm font-mono tabular-nums ${displayPrice === 0 ? "text-green-500" : "text-neutral-300"}`}>
+                    {displayPrice === 0 ? "Included" : `$${displayPrice.toLocaleString()}`}
                   </span>
                 )}
               </div>
@@ -925,6 +1096,9 @@ const SortableOptionRow = memo(function SortableOptionRow({
           onSaveOption={handleSaveOption}
           onDelete={onDelete}
           onClose={closeEditor}
+          pricingFloorplanId={pricingFloorplanId}
+          overridePrice={overridePrice}
+          onOverrideChange={onOverrideChange}
         />
       )}
     </>
@@ -939,6 +1113,9 @@ function OptionEditorModal({
   onSaveOption,
   onDelete,
   onClose,
+  pricingFloorplanId,
+  overridePrice,
+  onOverrideChange,
 }: {
   option: AdminOption;
   orgId: string;
@@ -947,10 +1124,14 @@ function OptionEditorModal({
   onSaveOption: (updates: Record<string, unknown>) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
   onClose: () => void;
+  pricingFloorplanId: string | null;
+  overridePrice: number | undefined;
+  onOverrideChange: (optionId: string, price: number) => void;
 }) {
+  const effectivePrice = pricingFloorplanId ? (overridePrice ?? option.price) : option.price;
   const [draft, setDraft] = useState({
     name: option.name,
-    price: String(option.price),
+    price: String(effectivePrice),
     swatchColor: option.swatch_color ?? "",
     nudge: option.nudge ?? "",
     swatchUrl: option.swatch_url,
@@ -964,7 +1145,7 @@ function OptionEditorModal({
   useEffect(() => {
     setDraft({
       name: option.name,
-      price: String(option.price),
+      price: String(effectivePrice),
       swatchColor: option.swatch_color ?? "",
       nudge: option.nudge ?? "",
       swatchUrl: option.swatch_url,
@@ -975,7 +1156,7 @@ function OptionEditorModal({
   }, [
     option.id,
     option.name,
-    option.price,
+    effectivePrice,
     option.swatch_color,
     option.nudge,
     option.swatch_url,
@@ -988,7 +1169,7 @@ function OptionEditorModal({
     const updates: Record<string, unknown> = {};
     const normalizedName = draft.name.trim() || option.name;
     const parsedPrice = Number.parseInt(draft.price, 10);
-    const normalizedPrice = Number.isFinite(parsedPrice) ? parsedPrice : option.price;
+    const normalizedPrice = Number.isFinite(parsedPrice) ? parsedPrice : effectivePrice;
     const normalizedSwatchColor = draft.swatchColor.trim() || null;
     const normalizedNudge = draft.nudge.trim() || null;
     const normalizedDescription = draft.description.trim() || null;
@@ -996,7 +1177,8 @@ function OptionEditorModal({
     const normalizedSwatchUrl = draft.swatchUrl || null;
 
     if (normalizedName !== option.name) updates.name = normalizedName;
-    if (normalizedPrice !== option.price) updates.price = normalizedPrice;
+    // In floorplan mode, price changes are handled separately via override API
+    if (!pricingFloorplanId && normalizedPrice !== option.price) updates.price = normalizedPrice;
     if (normalizedSwatchColor !== (option.swatch_color ?? null)) updates.swatch_color = normalizedSwatchColor;
     if (normalizedNudge !== (option.nudge ?? null)) updates.nudge = normalizedNudge;
     if (normalizedDescription !== (option.description ?? null)) updates.description = normalizedDescription;
@@ -1007,13 +1189,19 @@ function OptionEditorModal({
     return updates;
   };
 
-  const hasChanges = Object.keys(buildUpdates()).length > 0;
+  const hasPriceOverrideChange = pricingFloorplanId !== null && (() => {
+    const parsedPrice = Number.parseInt(draft.price, 10);
+    const normalizedPrice = Number.isFinite(parsedPrice) ? parsedPrice : effectivePrice;
+    return normalizedPrice !== effectivePrice;
+  })();
 
-  const requestClose = () => {
+  const hasChanges = Object.keys(buildUpdates()).length > 0 || hasPriceOverrideChange;
+
+  const requestClose = useCallback(() => {
     if (saving) return;
     if (hasChanges && !confirm("Discard unsaved changes?")) return;
     onClose();
-  };
+  }, [saving, hasChanges, onClose]);
 
   useEffect(() => {
     const prevOverflow = document.body.style.overflow;
@@ -1032,7 +1220,7 @@ function OptionEditorModal({
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [saving, hasChanges, onClose]);
+  }, [requestClose]);
 
   const handleGenerateDescriptor = async () => {
     setGenerating(true);
@@ -1061,13 +1249,29 @@ function OptionEditorModal({
 
   const handleSave = async () => {
     const updates = buildUpdates();
-    if (Object.keys(updates).length === 0) {
+    if (Object.keys(updates).length === 0 && !hasPriceOverrideChange) {
       onClose();
       return;
     }
     setSaving(true);
     try {
-      await onSaveOption(updates);
+      // Save option field changes (non-price in floorplan mode)
+      if (Object.keys(updates).length > 0) {
+        await onSaveOption(updates);
+      }
+      // Save price override in floorplan mode
+      if (hasPriceOverrideChange && pricingFloorplanId) {
+        const newPrice = Number.parseInt(draft.price, 10);
+        if (Number.isFinite(newPrice)) {
+          await apiCall("/api/admin/pricing-overrides", "PUT", {
+            org_id: orgId,
+            floorplan_id: pricingFloorplanId,
+            option_id: option.id,
+            price: newPrice,
+          });
+          onOverrideChange(option.id, newPrice);
+        }
+      }
       onClose();
     } finally {
       setSaving(false);
@@ -1108,6 +1312,7 @@ function OptionEditorModal({
             setDraft={setDraft}
             generating={generating}
             onGenerateDescriptor={handleGenerateDescriptor}
+            pricingFloorplanId={pricingFloorplanId}
           />
         </div>
 
@@ -1164,6 +1369,7 @@ function OptionDetailPanel({
   setDraft,
   generating,
   onGenerateDescriptor,
+  pricingFloorplanId,
 }: {
   option: AdminOption;
   orgId: string;
@@ -1189,6 +1395,7 @@ function OptionDetailPanel({
   }>>;
   generating: boolean;
   onGenerateDescriptor: () => Promise<void>;
+  pricingFloorplanId: string | null;
 }) {
   return (
     <div className="space-y-4 text-sm text-slate-900">
@@ -1204,13 +1411,18 @@ function OptionDetailPanel({
             />
           </div>
           <div>
-            <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 mb-1">Price</span>
+            <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 mb-1">
+              Price{pricingFloorplanId ? <span className="text-amber-600 ml-1">(floorplan override)</span> : ""}
+            </span>
             <input
               type="number"
               value={draft.price}
               onChange={(e) => setDraft((prev) => ({ ...prev, price: e.target.value }))}
-              className="w-full bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+              className={`w-full bg-white border text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500 ${pricingFloorplanId ? "border-amber-300" : "border-slate-300"}`}
             />
+            {pricingFloorplanId && (
+              <p className="text-[10px] text-amber-600 mt-0.5">Base: ${option.price.toLocaleString()}</p>
+            )}
           </div>
           <div>
             <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500 mb-1">Swatch color</span>
