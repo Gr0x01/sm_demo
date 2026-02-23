@@ -170,6 +170,32 @@ h6 {
   scrollbar-width: none;
 }
 
+/* Subtle custom scrollbar for desktop panels */
+.gallery-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 #f1f5f9;
+}
+
+.gallery-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.gallery-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+.gallery-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background: linear-gradient(180deg, #cbd5e1, #94a3b8);
+  background-clip: padding-box;
+}
+
+.gallery-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #94a3b8, #64748b);
+  background-clip: padding-box;
+}
+
 /* Admin route light-theme overrides for existing neutral utility usage */
 .admin-theme {
   color: #0f172a;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
@@ -123,6 +123,8 @@ export function GalleryView({
   const [lightboxContext, setLightboxContext] = useState<{ photoId: string; step: StepConfig } | null>(null);
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const viewerPanelRef = useRef<HTMLElement | null>(null);
+  const [viewerPanelHeight, setViewerPanelHeight] = useState<number | null>(null);
 
   const stepsWithPhotos = steps.filter(s => s.photos?.length);
 
@@ -219,6 +221,37 @@ export function GalleryView({
     return () => window.clearInterval(timer);
   }, [isAutoPlaying, canAnimate, shiftActivePhoto]);
 
+  useEffect(() => {
+    if (!activeItem) return;
+    const panel = viewerPanelRef.current;
+    if (!panel) return;
+
+    let rafId: number | null = null;
+    const syncHeight = () => {
+      const next = Math.round(panel.getBoundingClientRect().height);
+      setViewerPanelHeight((prev) => (prev === next ? prev : next));
+    };
+    const scheduleSync = () => {
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      rafId = window.requestAnimationFrame(syncHeight);
+    };
+
+    scheduleSync();
+    const observer = new ResizeObserver(scheduleSync);
+    observer.observe(panel);
+    window.addEventListener("resize", scheduleSync);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", scheduleSync);
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+    };
+  }, [activeItem]);
+
+  const leftRailStyle: CSSProperties | undefined = viewerPanelHeight
+    ? ({ ["--gallery-hero-height" as string]: `${viewerPanelHeight}px` } as CSSProperties)
+    : undefined;
+
   return (
     <div className="space-y-8">
       {/* Header with Visualize All */}
@@ -245,9 +278,12 @@ export function GalleryView({
       </div>
 
       {activeItem && (
-        <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="order-2 border border-slate-200 bg-white lg:order-1">
-            <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
+        <div className="grid items-start gap-4 lg:grid-cols-[300px_minmax(0,1fr)]">
+          <aside
+            style={leftRailStyle}
+            className="order-2 self-start overflow-hidden rounded-sm border border-slate-200 bg-white ring-1 ring-slate-100 lg:order-1 lg:flex lg:max-h-[var(--gallery-hero-height)] lg:flex-col"
+          >
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-gradient-to-b from-white to-slate-50 px-3 py-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Scenes
               </span>
@@ -283,7 +319,7 @@ export function GalleryView({
                 </div>
               )}
             </div>
-            <div className="max-h-[64vh] overflow-y-auto">
+            <div className="gallery-scrollbar max-h-[52vh] overflow-y-auto overscroll-contain lg:max-h-none lg:flex-1">
               {galleryItems.map((item) => {
                 const isActive = item.photo.id === activeItem.photo.id;
                 const hasIssue = !!item.error && !item.isGenerating;
@@ -295,7 +331,7 @@ export function GalleryView({
                       setActivePhotoId(item.photo.id);
                       setIsAutoPlaying(false);
                     }}
-                    className={`flex w-full items-center gap-3 border-l-2 px-2.5 py-2 text-left transition-colors cursor-pointer ${
+                    className={`flex w-full items-center gap-3 border-b border-slate-100 border-l-2 px-2.5 py-2 text-left transition-colors cursor-pointer last:border-b-0 ${
                       isActive
                         ? "border-l-[var(--color-navy)] bg-slate-50"
                         : "border-l-transparent hover:bg-slate-50"
@@ -354,7 +390,7 @@ export function GalleryView({
             </div>
           </aside>
 
-          <section className="order-1 border border-slate-200 bg-white lg:order-2">
+          <section ref={viewerPanelRef} className="order-1 self-start border border-slate-200 bg-white lg:order-2">
             <GalleryCrossfade
               src={activeItem.displayUrl}
               alt={activeItem.photo.label}
