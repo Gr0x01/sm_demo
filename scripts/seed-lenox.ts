@@ -109,11 +109,11 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     ],
   },
   {
-    stepSlug: "set-your-style",
+    stepSlug: "primary-bath",
     file: "Lenox-Primary-Bedroom.webp",
     label: "Primary Bedroom",
     isHero: false,
-    sortOrder: 3,
+    sortOrder: 1,
     spatialHint:
       "Primary bedroom with tray ceiling and crown molding at the tray edge. Dark-bladed ceiling fan centered in the tray. " +
       "Carpet covers the entire floor. Two windows on the left wall. A doorway on the right leads to the en-suite bathroom; " +
@@ -252,8 +252,9 @@ const LENOX_SCENE_DESCRIPTIONS: Record<string, string> = {
     "This photo shows a kitchen in a new-construction home. There is an island with sink in the center, " +
     "perimeter cabinets with range and microwave on the back wall, pendant lights, pantry doors, and LVP flooring.",
   "primary-bath":
-    "This photo shows a primary bathroom in a new-construction home. There is a single vanity with mirror on the left, " +
-    "a glass-enclosed walk-in shower in the center, and a soaking tub on the right with tile flooring throughout.",
+    "This photo shows a primary bathroom and bedroom in a new-construction home. The bathroom has a single vanity with mirror on the left, " +
+    "a glass-enclosed walk-in shower in the center, and a soaking tub on the right with tile flooring throughout. " +
+    "The primary bedroom has a tray ceiling with ceiling fan, carpet flooring, and a walk-in closet.",
   "secondary-spaces":
     "This photo shows a secondary bathroom in a new-construction home. There is a single vanity, a one-piece tub/shower combo, " +
     "a toilet, tile flooring, and a secondary bedroom with carpet and a ceiling fan.",

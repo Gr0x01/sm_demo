@@ -135,9 +135,9 @@ const STEP_TEMPLATES = [
     ],
   },
   {
-    name: "Primary Bath",
+    name: "Primary Bed and Bath",
     slug: "primary-bath",
-    subtitle: "Design your primary bathroom",
+    subtitle: "Design your primary bedroom and bathroom",
     sections: [
       { title: "Vanity", subcategorySlugs: ["bath-vanity"] },
       { title: "Tile", subcategorySlugs: ["floor-tile"] },

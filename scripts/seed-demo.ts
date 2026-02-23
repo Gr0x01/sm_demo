@@ -344,9 +344,9 @@ const STEP_TEMPLATES = [
     subtitle: "Choose the foundation finishes for your home",
     sections: [
       { title: "Cabinets", subcategorySlugs: ["cabinet-style-whole-house"] },
-      { title: "Flooring", subcategorySlugs: ["main-area-flooring-type", "main-area-flooring-color", "carpet-color"] },
+      { title: "Flooring", subcategorySlugs: ["main-area-flooring-type", "main-area-flooring-color"] },
       { title: "Paint & Trim", subcategorySlugs: ["common-wall-paint", "baseboard", "crown-options", "interior-door-style"] },
-      { title: "Fireplace & Lighting", subcategorySlugs: ["fireplace-mantel", "lighting", "great-room-fan", "bedroom-fan"] },
+      { title: "Fireplace & Lighting", subcategorySlugs: ["fireplace-mantel", "lighting", "great-room-fan"] },
     ],
   },
   {
@@ -361,13 +361,14 @@ const STEP_TEMPLATES = [
     ],
   },
   {
-    name: "Primary Bath",
+    name: "Primary Bed and Bath",
     slug: "primary-bath",
-    subtitle: "Design your primary bathroom",
+    subtitle: "Design your primary bedroom and bathroom",
     sections: [
       { title: "Vanity", subcategorySlugs: ["primary-bath-cabinet-color", "bathroom-cabinet-hardware", "primary-bath-mirrors"] },
       { title: "Tile", subcategorySlugs: ["floor-tile-color", "primary-shower"] },
       { title: "Fixtures", subcategorySlugs: ["bath-faucets", "bath-hardware"] },
+      { title: "Bedroom", subcategorySlugs: ["bedroom-fan", "carpet-color"] },
     ],
   },
   {

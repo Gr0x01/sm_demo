@@ -70,7 +70,6 @@ export const steps: StepConfig[] = [
         subCategoryIds: [
           "main-area-flooring-type",
           "main-area-flooring-color",
-          "carpet-color",
           "bonus-room-stair-treads",
         ],
       },
@@ -108,7 +107,6 @@ export const steps: StepConfig[] = [
         subCategoryIds: [
           "lighting",
           "great-room-fan",
-          "bedroom-fan",
           "can-lights-primary",
           "can-lights-additional",
         ],
@@ -179,8 +177,8 @@ export const steps: StepConfig[] = [
   {
     id: "primary-bath",
     number: 3,
-    name: "Primary Bath",
-    subtitle: "Vanity, tile, shower & fixtures",
+    name: "Primary Bed and Bath",
+    subtitle: "Bedroom, vanity, tile, shower & fixtures",
     heroImage: "/rooms/primary-bath-vanity.webp",
     heroVariant: "full",
     showGenerateButton: true,
@@ -222,6 +220,10 @@ export const steps: StepConfig[] = [
       {
         title: "Fixtures",
         subCategoryIds: ["bath-faucets", "bath-hardware"],
+      },
+      {
+        title: "Bedroom",
+        subCategoryIds: ["bedroom-fan", "carpet-color", "primary-closet-shelving"],
       },
     ],
   },
@@ -267,7 +269,6 @@ export const steps: StepConfig[] = [
       {
         title: "Closets & Storage",
         subCategoryIds: [
-          "primary-closet-shelving",
           "pantry-shelving",
         ],
       },

@@ -7,7 +7,7 @@ import { slugify } from "@/lib/slugify";
 const SKELETON_STEPS = [
   "Set Your Style",
   "Design Your Kitchen",
-  "Primary Bath",
+  "Primary Bed and Bath",
   "Secondary Spaces",
   "Finishing Touches",
 ];
