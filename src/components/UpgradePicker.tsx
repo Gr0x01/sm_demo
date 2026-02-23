@@ -35,6 +35,7 @@ interface UpgradePickerProps {
   onNavigateHome: () => void;
   orgName: string;
   logoUrl: string | null;
+  logoType?: "icon" | "wordmark";
   planName: string;
   community: string;
   categories: Category[];
@@ -103,6 +104,7 @@ export function UpgradePicker({
   onNavigateHome,
   orgName,
   logoUrl,
+  logoType = "icon",
   planName: _planName,
   community: _community,
   categories,

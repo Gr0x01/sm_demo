@@ -14,6 +14,7 @@ interface UpgradeSummaryProps {
   community: string;
   orgName: string;
   logoUrl: string | null;
+  logoType?: "icon" | "wordmark";
   categories: Category[];
   steps: StepConfig[];
   onBack: () => void;
@@ -31,6 +32,7 @@ export function UpgradeSummary({
   community,
   orgName,
   logoUrl,
+  logoType = "icon",
   categories,
   steps,
   onBack,

@@ -15,7 +15,7 @@ const _getOrgBySlug = async (slug: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("organizations")
-    .select("id, name, slug, logo_url, primary_color, secondary_color, accent_color")
+    .select("id, name, slug, logo_url, primary_color, secondary_color, accent_color, logo_type, header_style, corner_style")
     .eq("slug", slug)
     .single();
 

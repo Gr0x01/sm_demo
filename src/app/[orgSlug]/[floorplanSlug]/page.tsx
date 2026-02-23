@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getOrgBySlug, getFloorplan, getCategoriesForFloorplan, getStepsWithConfig } from "@/lib/db-queries";
+import { parseLogoType, parseHeaderStyle, parseCornerStyle } from "@/lib/branding";
 import { isSubdomain } from "@/lib/subdomain";
 import { DemoPageClient } from "./DemoPageClient";
 
@@ -41,6 +42,9 @@ export default async function DemoPage({
         secondaryColor: org.secondary_color || "#C5A572",
         accentColor: org.accent_color || "#2767b1",
         logoUrl: org.logo_url,
+        logoType: parseLogoType(org.logo_type),
+        headerStyle: parseHeaderStyle(org.header_style),
+        cornerStyle: parseCornerStyle(org.corner_style),
       }}
       floorplanId={floorplan.id}
       floorplanSlug={floorplanSlug}

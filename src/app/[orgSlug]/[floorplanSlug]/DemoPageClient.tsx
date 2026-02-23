@@ -57,6 +57,9 @@ export interface OrgTheme {
   secondaryColor: string;
   accentColor: string;
   logoUrl: string | null;
+  logoType: "icon" | "wordmark";
+  headerStyle: "light" | "dark";
+  cornerStyle: "sharp" | "rounded";
 }
 
 interface BuyerSessionState {
@@ -270,6 +273,7 @@ export function DemoPageClient({
           }}
           orgName={orgName}
           logoUrl={orgTheme.logoUrl}
+          logoType={orgTheme.logoType}
           orgSlug={orgSlug}
           planName={floorplanName}
           community={community}
@@ -299,6 +303,7 @@ export function DemoPageClient({
           community={community}
           orgName={orgName}
           logoUrl={orgTheme.logoUrl}
+          logoType={orgTheme.logoType}
           categories={categories}
           steps={steps}
           onBack={() => {
@@ -340,6 +345,7 @@ export function DemoPageClient({
         onNavigateHome={() => setPage("landing")}
         orgName={orgName}
         logoUrl={orgTheme.logoUrl}
+        logoType={orgTheme.logoType}
         planName={floorplanName}
         community={community}
         categories={categories}

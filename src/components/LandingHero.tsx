@@ -11,6 +11,7 @@ interface LandingHeroProps {
   onStart: (phase: ContractPhase) => void;
   orgName: string;
   logoUrl: string | null;
+  logoType?: "icon" | "wordmark";
   orgSlug?: string;
   planName?: string;
   community?: string;
@@ -31,6 +32,7 @@ export function LandingHero({
   onStart,
   orgName,
   logoUrl,
+  logoType = "icon",
   orgSlug,
   planName = "",
   community = "",
@@ -122,10 +124,13 @@ export function LandingHero({
       {/* Nav — matches picker header */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[56px] sm:min-h-[64px] flex items-center justify-between">
-          <Link href={isSubdomain ? "/" : `/${orgSlug}`} className="hover:opacity-70 transition-opacity">
+          <Link href={isSubdomain ? "/" : `/${orgSlug}`} className="hover:opacity-70 transition-opacity flex items-center gap-2">
             {logoUrl ? (
-              <img src={logoUrl} alt={orgName} className="h-6 sm:h-5" />
+              <img src={logoUrl} alt={orgName} className="h-3" />
             ) : (
+              <span className="text-sm font-semibold text-slate-900">{orgName}</span>
+            )}
+            {logoUrl && logoType !== "wordmark" && (
               <span className="text-sm font-semibold text-slate-900">{orgName}</span>
             )}
           </Link>

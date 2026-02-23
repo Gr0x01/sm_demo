@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { getOrgBySlug, getFloorplansForOrg } from "@/lib/db-queries";
+import { parseLogoType, parseHeaderStyle, parseCornerStyle } from "@/lib/branding";
 import { ResumeSavedDesignLink } from "@/components/ResumeSavedDesignLink";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -36,25 +37,34 @@ export default async function OrgPage({
 
   const primaryColor = org.primary_color || "#1b2d4e";
   const secondaryColor = org.secondary_color || "#C5A572";
+  const logoType = parseLogoType(org.logo_type);
+  const headerStyle = parseHeaderStyle(org.header_style);
+  const cornerStyle = parseCornerStyle(org.corner_style);
+
+  const isDarkHeader = headerStyle === "dark";
+  const radiusStyle = cornerStyle === "rounded" ? "0.5rem" : "0px";
 
   return (
     <div className="min-h-screen bg-white">
       {/* Nav */}
       <nav
-        className="sticky top-0 z-50 border-b backdrop-blur"
-        style={{ backgroundColor: `${primaryColor}f2`, borderColor: `${primaryColor}33` }}
+        className={`sticky top-0 z-50 border-b backdrop-blur ${isDarkHeader ? "" : "border-slate-200"}`}
+        style={isDarkHeader
+          ? { backgroundColor: `${primaryColor}f2`, borderColor: `${primaryColor}33` }
+          : { backgroundColor: "rgba(255,255,255,0.92)" }
+        }
       >
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             {org.logo_url ? (
-              <img src={org.logo_url} alt={org.name} className="h-6 brightness-0 invert" />
+              <img src={org.logo_url} alt={org.name} className={`h-[12px] ${isDarkHeader ? "brightness-0 invert" : ""}`} />
             ) : (
-              <span className="text-sm font-semibold text-white tracking-[0.06em] uppercase">
+              <span className={`text-sm font-semibold tracking-[0.06em] uppercase ${isDarkHeader ? "text-white" : "text-slate-900"}`}>
                 {org.name}
               </span>
             )}
-            {org.logo_url && (
-              <span className="hidden md:inline text-sm font-semibold text-white tracking-[0.06em] uppercase">
+            {org.logo_url && logoType !== "wordmark" && (
+              <span className={`hidden md:inline text-sm font-semibold tracking-[0.06em] uppercase ${isDarkHeader ? "text-white" : "text-slate-900"}`}>
                 {org.name}
               </span>
             )}
@@ -103,7 +113,7 @@ export default async function OrgPage({
               const coverUrl = getCoverImageUrl(fp.cover_image_path);
 
               const card = (
-                <div className="group relative overflow-hidden border border-slate-200 bg-white">
+                <div className="group relative overflow-hidden border border-slate-200 bg-white" style={{ borderRadius: radiusStyle }}>
                   <div className="relative aspect-[16/10] bg-slate-100 overflow-hidden">
                     {coverUrl ? (
                       <img
@@ -171,7 +181,7 @@ export default async function OrgPage({
             ) : (
               <span className="text-xs text-slate-400">{org.name}</span>
             )}
-            {org.logo_url && (
+            {org.logo_url && logoType !== "wordmark" && (
               <span className="text-xs text-slate-400">
                 {org.name}
               </span>
