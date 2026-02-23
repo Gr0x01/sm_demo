@@ -13,7 +13,6 @@ interface GalleryViewProps {
   onGeneratePhoto: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
   onRetry: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
   onGenerateAll: () => void;
-  generationCredits: { used: number; total: number } | null;
   errors: Record<string, string>;
   generatedWithSelections: Record<string, string>;
   getPhotoVisualSelections: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
@@ -115,7 +114,6 @@ export function GalleryView({
   onGeneratePhoto,
   onRetry,
   onGenerateAll,
-  generationCredits,
   errors,
   generatedWithSelections,
   getPhotoVisualSelections,
@@ -129,7 +127,6 @@ export function GalleryView({
   const stepsWithPhotos = steps.filter(s => s.photos?.length);
 
   const isAnyGenerating = generatingPhotoKeys.size > 0;
-  const capReached = generationCredits ? generationCredits.used >= generationCredits.total : false;
 
   const galleryItems: GalleryItem[] = useMemo(() => {
     const items = stepsWithPhotos.flatMap((step) => {
@@ -224,47 +221,28 @@ export function GalleryView({
 
   return (
     <div className="space-y-8">
-      {/* Header with Visualize All + Credits */}
+      {/* Header with Visualize All */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-[var(--color-navy)]">Photo Gallery</h2>
           <p className="text-sm text-gray-500 mt-0.5">Review AI visualizations across all rooms</p>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Credits meter */}
-          {generationCredits && generationCredits.used >= generationCredits.total * 0.75 && (
-            <div className="text-sm text-gray-500">
-              <span className="font-semibold text-[var(--color-navy)]">
-                {generationCredits.total - generationCredits.used}
-              </span>
-              /{generationCredits.total} remaining
-            </div>
-          )}
-
-          {/* Visualize All button */}
-          {pendingCount > 0 && (
-            <button
-              onClick={onGenerateAll}
-              disabled={isAnyGenerating || capReached}
-              className={`inline-flex items-center px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
-                isAnyGenerating || capReached
-                  ? "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)]"
-              }`}
-            >
-              Visualize All ({pendingCount})
-            </button>
-          )}
-        </div>
+        {/* Visualize All button */}
+        {pendingCount > 0 && (
+          <button
+            onClick={onGenerateAll}
+            disabled={isAnyGenerating}
+            className={`inline-flex items-center px-4 py-2 text-sm font-semibold transition-colors cursor-pointer ${
+              isAnyGenerating
+                ? "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
+                : "border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)]"
+            }`}
+          >
+            Visualize All ({pendingCount})
+          </button>
+        )}
       </div>
-
-      {/* Cap reached message */}
-      {capReached && (
-        <div className="bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-          You&apos;ve used all {generationCredits?.total} visualizations for this session. Your current images are still available.
-        </div>
-      )}
 
       {activeItem && (
         <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -407,12 +385,7 @@ export function GalleryView({
                         onGeneratePhoto(activeItem.photo.id, activeItem.photo.id, activeItem.step);
                       }
                     }}
-                    disabled={capReached}
-                    className={`shrink-0 px-2.5 py-1.5 text-[11px] font-semibold transition-colors cursor-pointer ${
-                      capReached
-                        ? "border border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : "border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)]"
-                    }`}
+                    className="shrink-0 px-2.5 py-1.5 text-[11px] font-semibold transition-colors cursor-pointer border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)]"
                   >
                     {activeItem.hasGenerated && activeItem.isStale
                       ? "Update"

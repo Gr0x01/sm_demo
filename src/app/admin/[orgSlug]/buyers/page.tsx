@@ -32,7 +32,7 @@ export default async function AdminBuyersPage({
   const [{ data: sessions, error: queryError }, { data: defaults }] = await Promise.all([
     supabase
       .from("buyer_sessions")
-      .select("id, buyer_email, total_price, generation_count, status, updated_at, selections, floorplans(name)")
+      .select("id, buyer_email, total_price, status, updated_at, selections, floorplans(name)")
       .eq("org_id", auth.orgId)
       .or(`buyer_email.not.is.null,updated_at.gte.${thirtyDaysAgo}`)
       .order("updated_at", { ascending: false })
@@ -66,7 +66,6 @@ export default async function AdminBuyersPage({
     floorplanName: s.floorplans?.name ?? "Unknown",
     totalPrice: Number(s.total_price),
     selectionCount: countUpgrades(s.selections),
-    generationCount: s.generation_count,
     status: s.status,
     updatedAt: s.updated_at,
   }));
@@ -100,7 +99,6 @@ export default async function AdminBuyersPage({
                     <th className="pb-3 pr-4 font-medium">Floorplan</th>
                     <th className="pb-3 pr-4 font-medium text-right">Total</th>
                     <th className="pb-3 pr-4 font-medium text-right">Upgrades</th>
-                    <th className="pb-3 pr-4 font-medium text-right">Generations</th>
                     <th className="pb-3 pr-4 font-medium">Status</th>
                     <th className="pb-3 font-medium">Last Active</th>
                   </tr>
@@ -116,7 +114,6 @@ export default async function AdminBuyersPage({
                       <td className="py-3 pr-4 text-slate-700">{s.floorplanName}</td>
                       <td className="py-3 pr-4 text-right font-mono text-slate-700">{formatPrice(s.totalPrice)}</td>
                       <td className="py-3 pr-4 text-right text-slate-600">{s.selectionCount}</td>
-                      <td className="py-3 pr-4 text-right text-slate-600">{s.generationCount}</td>
                       <td className="py-3 pr-4">
                         <span className={`inline-block px-2 py-0.5 text-xs font-medium border ${
                           s.status === "submitted"

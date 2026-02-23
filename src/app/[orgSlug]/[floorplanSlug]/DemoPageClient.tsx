@@ -79,7 +79,6 @@ interface DemoPageClientProps {
   steps: StepConfig[];
   contractLockedIds: string[];
   syncPairs: { a: string; b: string; label: string }[];
-  generationCap?: number;
   isSubdomain?: boolean;
 }
 
@@ -97,7 +96,6 @@ export function DemoPageClient({
   steps,
   contractLockedIds,
   syncPairs,
-  generationCap,
   isSubdomain: isSubdomainProp = false,
 }: DemoPageClientProps) {
   const posthog = usePostHog();
@@ -348,7 +346,6 @@ export function DemoPageClient({
         steps={steps}
         contractLockedIds={contractLockedIds}
         syncPairs={syncPairs}
-        generationCap={generationCap}
       />
       {toast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-5 py-3 shadow-lg text-sm font-medium animate-fade-in">

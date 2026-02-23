@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
   const [{ data: sessions, error }, { data: defaults }] = await Promise.all([
     supabase
       .from("buyer_sessions")
-      .select("id, buyer_email, total_price, generation_count, status, updated_at, selections, floorplans(name)")
+      .select("id, buyer_email, total_price, status, updated_at, selections, floorplans(name)")
       .eq("org_id", orgId)
       .or(`buyer_email.not.is.null,updated_at.gte.${thirtyDaysAgo}`)
       .order("updated_at", { ascending: false })
@@ -47,7 +47,6 @@ export async function GET(req: NextRequest) {
       floorplanName: (s as any).floorplans?.name ?? "Unknown",
       totalPrice: Number(s.total_price),
       selectionCount: upgradeCount,
-      generationCount: s.generation_count,
       status: s.status,
       updatedAt: s.updated_at,
     };

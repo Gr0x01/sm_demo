@@ -188,7 +188,6 @@ async function main() {
       {
         name: orgName,
         slug: orgSlug,
-        generation_cap_per_session: 20,
       },
       { onConflict: "slug" }
     )

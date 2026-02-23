@@ -119,7 +119,7 @@ export async function POST(request: Request) {
     // Validate session ownership
     const { data: session } = await supabase
       .from("buyer_sessions")
-      .select("id, org_id, floorplan_id, generation_count")
+      .select("id, org_id, floorplan_id")
       .eq("id", sessionId)
       .single();
 
@@ -208,8 +208,6 @@ export async function POST(request: Request) {
         imageUrl: publicUrl,
         cacheHit: true,
         generatedImageId: String(cached.id),
-        creditsUsed: session.generation_count,
-        creditsTotal: org.generation_cap_per_session ?? 20,
       });
     }
 
@@ -238,17 +236,6 @@ export async function POST(request: Request) {
 
     // Everything below has claimed the slot — release it on any failure
     try {
-
-    // --- Pre-check credit availability (non-mutating) ---
-    const cap = org.generation_cap_per_session ?? 20;
-    if (session.generation_count >= cap) {
-      await releaseGenerationSlot(supabase, selectionsHash);
-      return NextResponse.json({
-        error: "cap_reached",
-        creditsUsed: cap,
-        creditsTotal: cap,
-      }, { status: 429 });
-    }
 
     // --- Load hero image from Supabase Storage ---
     const { data: imageData, error: downloadErr } = await supabase.storage
@@ -394,16 +381,6 @@ export async function POST(request: Request) {
       second_pass: passes > 1,
     });
 
-    // --- Reserve credit AFTER successful generation (prevents credit leak on failure) ---
-    const { data: newCount } = await supabase.rpc("reserve_generation_credit", {
-      p_session_id: sessionId,
-      p_org_id: org.id,
-    });
-
-    // If cap was reached between pre-check and now, still save the image (we already generated it)
-    // but report the actual credit state
-    const creditsUsed = newCount ?? cap;
-
     // --- Upload to Storage ---
     const outputPath = `${org.id}/${selectionsHash}.png`;
 
@@ -420,8 +397,6 @@ export async function POST(request: Request) {
       return NextResponse.json({
         imageUrl: `data:image/png;base64,${outputBuffer.toString("base64")}`,
         cacheHit: false,
-        creditsUsed,
-        creditsTotal: cap,
         warning: "Image was not cached due to storage upload failure",
       });
     }
@@ -464,8 +439,6 @@ export async function POST(request: Request) {
       imageUrl: publicUrl,
       cacheHit: false,
       generatedImageId: upserted ? String(upserted.id) : null,
-      creditsUsed,
-      creditsTotal: cap,
     });
 
     } catch (genError) {

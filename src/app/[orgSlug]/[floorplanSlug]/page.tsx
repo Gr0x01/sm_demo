@@ -51,7 +51,6 @@ export default async function DemoPage({
       steps={steps}
       contractLockedIds={floorplan.contract_locked_ids}
       syncPairs={floorplan.sync_pairs as { a: string; b: string; label: string }[]}
-      generationCap={org.generation_cap_per_session ?? 20}
     />
   );
 }

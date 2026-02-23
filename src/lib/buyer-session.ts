@@ -1,7 +1,7 @@
 import type { BuyerSession } from "@/types";
 
 /** Columns to SELECT for buyer_sessions queries. */
-export const SESSION_COLUMNS = "id, org_id, floorplan_id, buyer_email, resume_token, selections, quantities, total_price, generation_count, status, submitted_at, created_at, updated_at";
+export const SESSION_COLUMNS = "id, org_id, floorplan_id, buyer_email, resume_token, selections, quantities, total_price, status, submitted_at, created_at, updated_at";
 
 /** Map a Supabase buyer_sessions row to the BuyerSession API shape (excludes resumeToken). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -14,7 +14,6 @@ export function mapRowToPublicSession(row: any): Omit<BuyerSession, "resumeToken
     selections: row.selections ?? {},
     quantities: row.quantities ?? {},
     totalPrice: Number(row.total_price),
-    generationCount: row.generation_count,
     status: row.status,
     submittedAt: row.submitted_at,
     createdAt: row.created_at,

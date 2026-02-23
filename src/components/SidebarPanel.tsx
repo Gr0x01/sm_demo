@@ -51,7 +51,6 @@ interface SidebarPanelProps {
   generatingPhotoKeys?: Set<string>;
   onGeneratePhoto?: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
   onRetry?: (photoKey: string, stepPhotoId: string, step: StepConfig) => void;
-  generationCredits?: { used: number; total: number } | null;
   errors?: Record<string, string>;
   generatedWithSelections?: Record<string, string>;
   getPhotoVisualSelections?: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
@@ -71,7 +70,6 @@ export function SidebarPanel({
   generatingPhotoKeys,
   onGeneratePhoto,
   onRetry,
-  generationCredits,
   errors,
   generatedWithSelections,
   getPhotoVisualSelections,
@@ -178,12 +176,6 @@ export function SidebarPanel({
             getPhotoVisualSelections={getPhotoVisualSelections}
             selections={selections}
           />
-          {/* Credits display */}
-          {generationCredits && generationCredits.used >= generationCredits.total * 0.75 && (
-            <div className="text-xs text-gray-500 text-center">
-              {generationCredits.total - generationCredits.used}/{generationCredits.total} visualizations remaining
-            </div>
-          )}
         </>
       ) : showImage ? (
         <StepHero

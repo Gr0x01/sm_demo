@@ -41,7 +41,6 @@ interface UpgradePickerProps {
   steps: StepConfig[];
   contractLockedIds: string[];
   syncPairs: { a: string; b: string; label: string }[];
-  generationCap?: number;
 }
 
 function getDefaultSelectionsFromCategories(categories: Category[]): Record<string, string> {
@@ -110,7 +109,6 @@ export function UpgradePicker({
   steps,
   contractLockedIds,
   syncPairs,
-  generationCap: _generationCap,
 }: UpgradePickerProps) {
   const track = useTrack({ orgSlug, floorplanSlug, sessionId });
 
@@ -270,8 +268,6 @@ export function UpgradePicker({
         delete nextSnaps[action.photoKey];
         return { ...state, generatedImageUrls: nextUrls, generatedImageIds: nextIds, generatedWithSelections: nextSnaps };
       }
-      case "SET_CREDITS":
-        return { ...state, generationCredits: { used: action.used, total: action.total } };
       default:
         return state;
     }
@@ -285,7 +281,6 @@ export function UpgradePicker({
     hasEverGenerated: false,
     generatedWithSelections: {},
     generatedImageIds: {},
-    generationCredits: null,
     errors: {},
   }));
 
@@ -654,11 +649,6 @@ export function UpgradePicker({
       const data = await res.json();
 
       if (!res.ok) {
-        if (data.error === "cap_reached") {
-          dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
-          dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "No visualizations remaining" });
-          return;
-        }
         // If generation is already in progress (e.g. triggered from another step),
         // poll the check endpoint until the result is ready instead of erroring out
         if (res.status === 429 && data.selectionsHash) {
@@ -740,11 +730,7 @@ export function UpgradePicker({
         generatedImageId: data.generatedImageId,
       });
 
-      track("generation_completed", { stepName: step.name, cacheHit: !!data.cacheHit, creditsUsed: data.creditsUsed });
-
-      if (data.creditsUsed !== undefined) {
-        dispatch({ type: "SET_CREDITS", used: data.creditsUsed, total: data.creditsTotal });
-      }
+      track("generation_completed", { stepName: step.name, cacheHit: !!data.cacheHit });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: message });
@@ -779,7 +765,7 @@ export function UpgradePicker({
   }, [steps, state.selections, state.generatedWithSelections, state.generatingPhotoKeys, getPhotoVisualSelections, handleGeneratePhoto]);
 
   const handleRetry = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig) => {
-    // Refund credit for the old image, then regenerate
+    // Invalidate cached image, then regenerate
     const generatedImageId = state.generatedImageIds[photoKey];
     if (generatedImageId && sessionId) {
       dispatch({ type: "REMOVE_GENERATED_IMAGE", photoKey });
@@ -787,10 +773,10 @@ export function UpgradePicker({
         await fetch("/api/generate/photo/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ generatedImageId, vote: -1, sessionId, orgSlug }),
+          body: JSON.stringify({ generatedImageId, sessionId, orgSlug }),
         });
       } catch {
-        // Best-effort refund
+        // Best-effort cache invalidation
       }
     }
     await handleGeneratePhoto(photoKey, stepPhotoId, step, { retry: true });
@@ -874,7 +860,7 @@ export function UpgradePicker({
               onClick={onNavigateHome}
               className="cursor-pointer hover:opacity-70 transition-opacity"
             >
-              {logoUrl && <img src={logoUrl} alt={orgName} className="h-6 sm:h-5" />}
+              {logoUrl && <img src={logoUrl} alt={orgName} className="h-3" />}
             </button>
           </div>
 
@@ -937,7 +923,6 @@ export function UpgradePicker({
                 generatingPhotoKeys={state.generatingPhotoKeys}
                 onGeneratePhoto={handleGeneratePhoto}
                 onRetry={handleRetry}
-                generationCredits={state.generationCredits}
                 errors={state.errors}
                 generatedWithSelections={state.generatedWithSelections}
                 getPhotoVisualSelections={getPhotoVisualSelections}
@@ -956,7 +941,6 @@ export function UpgradePicker({
                 onGeneratePhoto={handleGeneratePhoto}
                 onRetry={handleRetry}
                 onGenerateAll={handleGenerateAll}
-                generationCredits={state.generationCredits}
                 errors={state.errors}
                 generatedWithSelections={state.generatedWithSelections}
                 getPhotoVisualSelections={getPhotoVisualSelections}
@@ -978,11 +962,6 @@ export function UpgradePicker({
                       getPhotoVisualSelections={getPhotoVisualSelections}
                       selections={state.selections}
                     />
-                    {state.generationCredits && state.generationCredits.used >= state.generationCredits.total * 0.75 && (
-                      <div className="text-xs text-gray-500 text-center mt-2">
-                        {state.generationCredits.total - state.generationCredits.used}/{state.generationCredits.total} visualizations remaining
-                      </div>
-                    )}
                   </div>
                 )}
 

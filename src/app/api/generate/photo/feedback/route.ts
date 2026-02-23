@@ -3,14 +3,14 @@ import { getServiceClient } from "@/lib/supabase";
 import { getOrgBySlug } from "@/lib/db-queries";
 
 /**
- * Thumbs up/down feedback on a generated image.
- * Thumbs down refunds the generation credit. Changing from down→up re-reserves.
+ * Retry/regenerate feedback on a generated image.
+ * Deletes the cached generated image row so the next generation is fresh.
  */
 export async function POST(request: Request) {
   try {
-    const { generatedImageId, vote, sessionId, orgSlug } = await request.json();
+    const { generatedImageId, sessionId, orgSlug } = await request.json();
 
-    if (!generatedImageId || !sessionId || !orgSlug || (vote !== 1 && vote !== -1)) {
+    if (!generatedImageId || !sessionId || !orgSlug) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     // Validate session belongs to org
     const { data: session } = await supabase
       .from("buyer_sessions")
-      .select("id, org_id, generation_count")
+      .select("id, org_id")
       .eq("id", sessionId)
       .single();
 
@@ -44,78 +44,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Check existing feedback
-    const { data: existing } = await supabase
-      .from("generation_feedback")
-      .select("id, vote, credit_refunded")
-      .eq("generated_image_id", generatedImageId)
-      .eq("buyer_session_id", sessionId)
-      .single();
+    // Delete the cached image row so regeneration produces a fresh result
+    await supabase
+      .from("generated_images")
+      .delete()
+      .eq("id", generatedImageId);
 
-    let creditsUsed = session.generation_count;
-
-    if (existing) {
-      const oldVote = existing.vote;
-      const wasRefunded = existing.credit_refunded;
-
-      // Update vote
-      await supabase
-        .from("generation_feedback")
-        .update({ vote })
-        .eq("id", existing.id);
-
-      if (vote === -1 && !wasRefunded) {
-        // Thumbs down — refund credit
-        const { data: newCount } = await supabase.rpc("refund_generation_credit", {
-          p_session_id: sessionId,
-        });
-        creditsUsed = newCount ?? creditsUsed;
-
-        await supabase
-          .from("generation_feedback")
-          .update({ credit_refunded: true })
-          .eq("id", existing.id);
-      } else if (vote === 1 && oldVote === -1 && wasRefunded) {
-        // Changed from thumbs down to thumbs up — re-reserve
-        const { data: newCount } = await supabase.rpc("reserve_generation_credit", {
-          p_session_id: sessionId,
-          p_org_id: org.id,
-        });
-        if (newCount !== null) {
-          creditsUsed = newCount;
-          // Only mark as not-refunded if re-reserve succeeded
-          await supabase
-            .from("generation_feedback")
-            .update({ credit_refunded: false })
-            .eq("id", existing.id);
-        }
-        // If re-reserve failed (cap reached), keep credit_refunded: true — buyer keeps the refund
-      }
-    } else {
-      // Insert new feedback
-      let creditRefunded = false;
-
-      if (vote === -1) {
-        const { data: newCount } = await supabase.rpc("refund_generation_credit", {
-          p_session_id: sessionId,
-        });
-        creditsUsed = newCount ?? creditsUsed;
-        creditRefunded = true;
-      }
-
-      await supabase.from("generation_feedback").insert({
-        generated_image_id: generatedImageId,
-        buyer_session_id: sessionId,
-        org_id: org.id,
-        vote,
-        credit_refunded: creditRefunded,
-      });
-    }
-
-    return NextResponse.json({
-      creditsUsed,
-      creditsTotal: org.generation_cap_per_session ?? 20,
-    });
+    return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[generate/photo/feedback] Error:", error);
     return NextResponse.json({ error: "Failed to process feedback" }, { status: 500 });

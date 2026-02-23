@@ -27,18 +27,8 @@ export async function GET(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Fetch generation cap from org
-  const { data: org } = await supabase
-    .from("organizations")
-    .select("generation_cap_per_session")
-    .eq("id", orgId)
-    .single();
-
   const session = mapRowToPublicSession(row);
-  return NextResponse.json({
-    ...session,
-    generationCap: org?.generation_cap_per_session ?? 20,
-  });
+  return NextResponse.json(session);
 }
 
 export async function PUT(

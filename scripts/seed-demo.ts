@@ -37,8 +37,6 @@ const ORG_SLUG = "demo";
 const ORG_NAME = "Finch Homes";
 const ORG_PRIMARY_COLOR = "#2D4A3E"; // forest green
 const ORG_SECONDARY_COLOR = "#C8A96E"; // warm gold accent
-const GENERATION_CAP = 30;
-
 // ---------- Floorplans ----------
 
 const FLOORPLANS = [
@@ -514,7 +512,6 @@ async function main() {
         slug: ORG_SLUG,
         primary_color: ORG_PRIMARY_COLOR,
         secondary_color: ORG_SECONDARY_COLOR,
-        generation_cap_per_session: GENERATION_CAP,
       },
       { onConflict: "slug" }
     )
@@ -1020,7 +1017,6 @@ async function main() {
   console.log(`  Swatches uploaded: ${uploadedSwatches}`);
   console.log(`  Room photos: ${ROOM_PHOTOS.length}`);
   console.log(`  Generation policies: 2`);
-  console.log(`  Generation cap: ${GENERATION_CAP}/session`);
   console.log(`\nVerify at: withfin.ch/demo`);
 }
 

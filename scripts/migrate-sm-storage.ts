@@ -433,20 +433,6 @@ async function main() {
   console.log(`  Updated: ${updatedUrls}, Skipped (already URL): ${skippedUrls}`);
 
   // ---------------------------------------------------------------
-  // 1e. Increase generation cap for SM (sales demo — don't want cap during demos)
-  // ---------------------------------------------------------------
-  console.log("\n--- Updating generation cap ---");
-  const { error: capErr } = await supabase
-    .from("organizations")
-    .update({ generation_cap_per_session: 100 })
-    .eq("id", orgId);
-
-  if (capErr) {
-    console.error("Failed to update generation cap:", capErr);
-  } else {
-    console.log("  Set generation_cap_per_session = 100 for Stone Martin");
-  }
-
   // ---------- Summary ----------
   console.log("\nMigration complete!");
   console.log(`  ${ROOM_PHOTOS.length} room photos → Storage + step_photos rows`);
