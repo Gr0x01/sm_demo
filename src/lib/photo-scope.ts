@@ -21,7 +21,9 @@ export function getEffectivePhotoScopedIds(
     context.stepSlug === "design-your-kitchen" ||
     imagePath.includes("kitchen-close.webp");
   const isBathClosetView = imagePath.includes("bath-closet.webp");
-  const isPrimaryBedroomView = imagePath.includes("primary-bedroom.webp");
+  const isPrimaryBedroomView =
+    imagePath.includes("primary-bedroom.webp") ||
+    imagePath.includes("primary_bedroom.webp");
   const isPrimaryBathView =
     context.stepSlug === "primary-bath" ||
     imagePath.includes("primary-bath-vanity.webp") ||
@@ -63,6 +65,7 @@ function isPrimaryAccentAsWallView(context: { stepSlug?: string | null; imagePat
   const imagePath = (context.imagePath ?? "").toLowerCase();
   return (
     imagePath.includes("primary-bedroom.webp") ||
+    imagePath.includes("primary_bedroom.webp") ||
     context.stepSlug === "primary-bath" ||
     imagePath.includes("primary-bath-vanity.webp") ||
     imagePath.includes("primary-bath-shower.webp") ||
