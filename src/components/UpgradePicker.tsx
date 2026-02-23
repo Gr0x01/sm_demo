@@ -862,7 +862,7 @@ export function UpgradePicker({
               onClick={onNavigateHome}
               className="cursor-pointer hover:opacity-70 transition-opacity"
             >
-              {logoUrl && <img src={logoUrl} alt={orgName} className="h-3" />}
+              {logoUrl && <img src={logoUrl} alt={orgName} className="h-[20px]" />}
             </button>
           </div>
 

@@ -57,7 +57,7 @@ export default async function OrgPage({
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
             {org.logo_url ? (
-              <img src={org.logo_url} alt={org.name} className={`h-[12px] ${isDarkHeader ? "brightness-0 invert" : ""}`} />
+              <img src={org.logo_url} alt={org.name} className={`h-[20px] ${isDarkHeader ? "brightness-0 invert" : ""}`} />
             ) : (
               <span className={`text-sm font-semibold tracking-[0.06em] uppercase ${isDarkHeader ? "text-white" : "text-slate-900"}`}>
                 {org.name}
