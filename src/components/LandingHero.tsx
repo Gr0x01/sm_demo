@@ -19,6 +19,7 @@ interface LandingHeroProps {
   floorplanSlug?: string;
   orgId?: string;
   floorplanId?: string;
+  hasContractPhases?: boolean;
   isSubdomain?: boolean;
   onResumed?: (session: {
     id: string;
@@ -40,6 +41,7 @@ export function LandingHero({
   floorplanSlug,
   orgId,
   floorplanId,
+  hasContractPhases = false,
   isSubdomain = false,
   onResumed,
 }: LandingHeroProps) {
@@ -170,6 +172,7 @@ export function LandingHero({
             )}
 
             <div className={`mt-6 flex w-full ${canResume ? "" : "max-w-lg mx-auto"} flex-col gap-4 sm:flex-row sm:items-center sm:justify-between`}>
+              {hasContractPhases && (
               <div className="flex items-center gap-3">
                 <span className={`text-sm font-medium transition-colors ${phase === "pre-contract" ? "text-[var(--color-navy)]" : "text-slate-400"}`}>
                   Pre-Contract
@@ -190,6 +193,7 @@ export function LandingHero({
                   Post-Contract
                 </span>
               </div>
+              )}
 
               <button
                 onClick={() => onStart(phase)}

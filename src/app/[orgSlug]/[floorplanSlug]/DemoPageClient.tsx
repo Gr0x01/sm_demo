@@ -281,6 +281,7 @@ export function DemoPageClient({
           floorplanSlug={floorplanSlug}
           orgId={orgId}
           floorplanId={floorplanId}
+          hasContractPhases={contractLockedIds.length > 0}
           isSubdomain={isSubdomainProp}
           onResumed={(session) => {
             handleSessionResumed(session);
@@ -342,7 +343,7 @@ export function DemoPageClient({
         onSessionSaved={handleSessionSaved}
         onSessionResumed={handleSessionResumed}
         contractPhase={contractPhase}
-        onNavigateHome={() => setPage("landing")}
+        onNavigateHome={() => { window.location.href = `/${orgSlug}`; }}
         orgName={orgName}
         logoUrl={orgTheme.logoUrl}
         logoType={orgTheme.logoType}
