@@ -138,6 +138,27 @@ Targeted fixes for cross-room contamination and flooring correctness.
 - [x] Updated `carpet-color` + `main-area-flooring-type` to `generation_hint=always_send` for SM
 - [x] Prompt cache version bumped through these semantics (`v9` → `v13`)
 
+### 13. Per-Floorplan Pricing + Lenox Floorplan ✅
+Enables different prices per floorplan for the same shared option catalog. Lenox is larger than Kinkade, so flooring, countertops, trim, etc. cost more.
+- [x] `option_floorplan_pricing` table (composite PK: option_id + floorplan_id) with RLS + cross-org validation
+- [x] Buyer-facing query overlay in `db-queries.ts` (`_getCategoriesForFloorplan` parallel fetch)
+- [x] Admin API: GET/PUT/DELETE `/api/admin/pricing-overrides` with org ownership validation
+- [x] Admin UI: floorplan dropdown in OptionTree toolbar, override indicators (amber dot), inline edit routes to override API, reset-to-base
+- [x] Version-based fetch (`fetchVersionRef`) to prevent race conditions on rapid floorplan switching
+- [x] Seed script `scripts/seed-lenox.ts`: duplicates Kinkade → Lenox, seeds 55 real pricing overrides from PDF
+- [x] Code review + backend architect review fixes: cross-org RLS, negative price check, stale closure, migration re-runnability, bulk upsert, photo basename collision
+
+### 14. Lenox Room Photos — Full AI Generation Pipeline ✅
+Replaced cloned Kinkade photos with 9 actual Lenox room photos, each with complete AI generation metadata.
+- [x] 9 Lenox photos uploaded from `tmp/Lenox/` to Supabase Storage with full metadata (spatial_hint, photo_baseline, subcategory_ids)
+- [x] Photo → step mapping: 4 in Set Your Style (living room hero, entryway, dining, primary bedroom), 2 in Kitchen (kitchen hero, kitchen & dining), 1 in Primary Bath, 2 in Secondary Spaces (bath hero, bedroom)
+- [x] Step-level metadata updated: scene_description + spatial_hints for all 4 generate-enabled steps, stale Kinkade photo_baseline cleared
+- [x] 3 generation policies seeded: kitchen hero (slide-in range second pass), kitchen & dining (slide-in range second pass + refrigerator invariants), living room (zone protection)
+- [x] Removed `models: ["gpt-image-1.5"]` hardcoding from all second-pass policies (Kinkade, Lenox, Demo) — second pass now fires for any model
+- [x] Exterior cover photo uploaded, floorplan visible in org landing page picker
+- [x] 55 pricing overrides seeded (after `option_floorplan_pricing` migration applied)
+- [x] Code review + backend architect review: caught missing `range` in kitchen hero scopeSlugs (would have silently broken second-pass), added refrigerator invariant rules to Kitchen & Dining policy
+
 ### Upcoming (not started)
 - **Workstream E**: Branding controls (depends on A, small)
 
@@ -152,7 +173,9 @@ Targeted fixes for cross-room contamination and flooring correctness.
 - [x] V1 product spec (`v1-product.md`)
 
 ### SM Demo (Fully Multi-Tenant)
-- [x] 5-step wizard, 350+ options, 166 swatches, 8 room photos with full prompt tuning
+- [x] 5-step wizard, 350+ options, 166 swatches
+- [x] Kinkade: 8 room photos with full prompt tuning
+- [x] Lenox: 9 room photos with full prompt tuning, 55 pricing overrides, 3 generation policies
 - [x] Mobile UI, contract phase locking, generation reliability hardening
 - [x] Now uses multi-tenant `/api/generate/photo` path (same as all builders)
 

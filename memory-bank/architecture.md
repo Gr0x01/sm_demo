@@ -49,6 +49,7 @@ Supabase
   ├── Table: step_photos (multiple photos per step, hero flag, quality check, spatial hints)
   ├── Table: generated_images (cache — step_id, model, step_photo_id, buyer_session_id, selections_fingerprint)
   ├── Table: step_photo_generation_policies (internal-only per-photo prompt/second-pass policy JSON)
+  ├── Table: option_floorplan_pricing (per-floorplan price overrides, composite PK: option_id + floorplan_id)
   ├── Table: buyer_sessions (anonymous + email-saved)
   ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, API route deleted)
   ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
@@ -60,7 +61,7 @@ Supabase
   └── Storage bucket: rooms ({orgId}/rooms/{stepId}/{uuid}.{ext}) — public read, admin upload
 ```
 
-**Data flow**: All option/step/AI-config data lives in Supabase. The server component in `page.tsx` fetches floorplan-scoped categories via `getCategoriesForFloorplan(orgId, floorplanId)` in `src/lib/db-queries.ts` and passes to client components as props. Org-wide `getCategoriesWithOptions` is used only by admin and prompt-building (needs all options). API routes also fetch from DB. Static TypeScript files (`options-data.ts`, `step-config.ts`) remain as seed source but are no longer imported at runtime.
+**Data flow**: All option/step/AI-config data lives in Supabase. The server component in `page.tsx` fetches floorplan-scoped categories via `getCategoriesForFloorplan(orgId, floorplanId)` in `src/lib/db-queries.ts` and passes to client components as props. Per-floorplan pricing overrides are fetched in parallel from `option_floorplan_pricing` and applied as `overrideMap.get(opt.id) ?? opt.price`. Org-wide `getCategoriesWithOptions` is used only by admin and prompt-building (needs all options). API routes also fetch from DB. Static TypeScript files (`options-data.ts`, `step-config.ts`) remain as seed source but are no longer imported at runtime.
 
 **Caching**: Query functions use `unstable_cache` (24h revalidation) for cross-request caching + React `cache()` for request-scoped dedup. First visitor hits DB (4 queries), subsequent visitors get cached results. Cache tags (`org:{slug}`, `categories:{orgId}`, `steps:{floorplanId}`) allow on-demand invalidation.
 
@@ -252,6 +253,7 @@ src/
 │       │   ├── spatial-hint/route.ts # AI spatial layout description (Gemini Flash)
 │       │   ├── reorder/route.ts    # Bulk sort_order update (categories, subcategories, options, steps, step_photos)
 │       │   ├── scope/route.ts      # Floorplan scoping (GET/POST)
+│       │   ├── pricing-overrides/route.ts  # GET/PUT/DELETE per-floorplan price overrides
 │       │   ├── generate-descriptor/route.ts  # AI descriptor generation
 │       │   ├── images/route.ts     # Authenticated GET/DELETE for image cache
 │       │   └── buyer-sessions/route.ts # GET — admin session list (authenticateAdminRequest)
@@ -318,10 +320,12 @@ src/
 scripts/
 ├── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
 ├── seed-new-tenant.ts       # Seed a new builder org with starter structure (9 cats, 15 subcats, 15 defaults, 5 steps)
+├── seed-lenox.ts            # Create Lenox floorplan (duplicate Kinkade), upload 9 Lenox room photos with full AI metadata, seed 3 generation policies + 55 pricing overrides
 ├── migrate-sm-storage.ts    # Upload SM room photos + swatches to Storage, create step_photos
-├── seed-photo-policies.ts   # Seed internal per-photo generation policies (e.g., SM kitchen-close)
+├── seed-photo-policies.ts   # Seed internal per-photo generation policies (SM Kinkade kitchen-close + greatroom)
 └── sql/
-    └── 2026-02-21-step-photo-generation-policies.sql # Policy table migration
+    ├── 2026-02-21-step-photo-generation-policies.sql # Policy table migration
+    └── 2026-02-23-option-floorplan-pricing.sql       # Per-floorplan pricing override table
 
 public/
 ├── logo.svg                 # Stone Martin Builders logo (currentColor fill)
@@ -361,7 +365,7 @@ public/
 - `generate-descriptor` — AI prompt descriptor generation (Gemini Flash)
 - `images` — authenticated GET/DELETE for generated image cache (org-scoped, verified storage deletes)
 
-**Option Tree UI** (`src/components/admin/OptionTree.tsx`): Full CRUD tree with drag reorder (dnd-kit), inline price edit, swatch upload, AI descriptor generation, floorplan scope popovers.
+**Option Tree UI** (`src/components/admin/OptionTree.tsx`): Full CRUD tree with drag reorder (dnd-kit), inline price edit, swatch upload, AI descriptor generation, floorplan scope popovers. Per-floorplan pricing: dropdown selector in toolbar (visible when 2+ floorplans), override indicators (amber dot), inline edit routes to `/api/admin/pricing-overrides`, reset-to-base action.
 
 **Floorplan Pipeline UI**: FloorplanList (card grid) → FloorplanEditor (step list with dnd-kit, accordion detail with sections/subcategory assignment) → PhotoManager (step tabs, photo cards with quality badges, spatial hint generation, hero toggle).
 

@@ -942,7 +942,6 @@ async function main() {
       secondPass: {
         reason: "demo_kitchen_slide_in_range",
         inputFidelity: "low",
-        models: ["gpt-image-1.5"],
         whenSelected: {
           subId: "range",
           optionIds: ["range-ge-gas-slide-in", "range-ge-gas-slide-in-convection"],
