@@ -388,15 +388,13 @@ The component architecture (UpgradePicker, SidebarPanel, SwatchGrid, etc.) is re
 - Security: path traversal protection, tenant boundary on all mutations, `runtime = "nodejs"` on vision routes
 
 ### Phase 5: Gallery Visualization (Workstream D) ✅
-- `generation_cap_per_session` on organizations (default 20)
 - Extended `generated_images` with `step_photo_id`, `buyer_session_id`, `selections_fingerprint`
-- `generation_feedback` table (vote, credit_refunded, unique per session+image)
-- `reserve_generation_credit` + `refund_generation_credit` RPCs (atomic)
 - `generated-images` storage bucket (multi-tenant, replaces kitchen-images for new orgs)
-- Per-photo generation route with DB-based dedup, ownership validation, credit tracking
-- Thumbs up/down feedback with credit refund mechanics
-- Gallery virtual step with Visualize All + credits meter
+- Per-photo generation route with DB-based dedup, ownership validation
+- Retry flow: deletes cached row, regenerates fresh
+- Gallery virtual step with Visualize All
 - Initial cache restore for multi-tenant photos on session resume
+- Generation caps removed (D70) — unlimited visualizations, costs in monthly pricing
 
 ### Phase 6: Self-Serve Tooling (Future)
 - CSV/spreadsheet bulk import for upgrades

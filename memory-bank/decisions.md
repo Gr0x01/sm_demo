@@ -221,9 +221,7 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 **Trade-off**: Simpler logic, no data loss from merge conflicts. Slightly more DB rows. Admin dashboard shows all sessions.
 
 ## D50: generation_count deferred to Workstream D
-**Context**: The `buyer_sessions` schema includes `generation_count` but Workstream C has no cap or counter logic.
-**Decision**: Column exists in schema (avoids a future migration), but zero application code reads or writes it. All counter incrementing, cap enforcement, and UI messaging are owned by Workstream D.
-**Trade-off**: Column is technically unused in C, but prevents a schema migration when D ships.
+**Status**: SUPERSEDED by D70. Column dropped — generation caps removed entirely.
 
 ## D51: Resend for transactional email
 **Context**: Need to send resume links to buyers. Options: Resend, SendGrid, SES, Postmark.
@@ -241,14 +239,10 @@ Apply these invariants whenever the corresponding subcategory is in the current 
 **Trade-off**: Slightly more complex than hardcoded trigger, but scales to any number of builders and provides audit trail.
 
 ## D55: Session-scoped feedback, not cache deletion
-**Context**: Thumbs down on a generated image could either delete the cache row or just record the vote.
-**Decision**: Thumbs down records feedback in a `generation_feedback` table, does NOT delete the `generated_images` cache row. Cache stays intact for other sessions. Credit refund tracked on the feedback row (`credit_refunded` boolean). Changing from thumbs-down to thumbs-up re-reserves the credit (only if cap allows).
-**Trade-off**: Slightly more complex than simple delete, but preserves cache for other users and enables analytics.
+**Status**: SUPERSEDED by D70. `generation_feedback` table dropped. Retry flow now simply deletes the cached `generated_images` row and regenerates.
 
 ## D56: Atomic credit reservation via Postgres RPC
-**Context**: "Visualize All" fires up to 3 concurrent generation requests. A read-then-write pattern could overspend the cap.
-**Decision**: `reserve_generation_credit` RPC atomically increments `generation_count` only if below the org's cap, returning the new count or NULL. Called AFTER successful OpenAI generation (prevents credit leak on AI failure). `refund_generation_credit` decrements with `GREATEST(0)`.
-**Trade-off**: Credit reserved after generation means the image exists even if reserve fails (cap hit between pre-check and now). We save the image anyway since it's already generated.
+**Status**: SUPERSEDED by D70. `reserve_generation_credit` and `refund_generation_credit` RPCs dropped. No per-session credit tracking.
 
 ## D57: DB-based dedup via __pending__ placeholder rows
 **Context**: In-memory `Set<string>` for duplicate prevention only works on a single serverless instance. Concurrent requests on different instances can generate duplicates.
@@ -363,3 +357,14 @@ Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HI
 - Update photo-level baselines/hints/scopes for: `Fireplace`, `Bath & Closet`, `Shower`, `Vanity`, `Secondary Bedroom`, `Primary Bedroom`.
 - Bump cache version across prompt-semantic changes (`v9` → `v13`) to avoid stale outputs.
 **Trade-off**: More operational tuning per floorplan, but materially better floor-material correctness and less hallucinated cross-room edits.
+
+## D70: Remove per-session generation cap — unlimited visualizations
+**Context**: Pricing decision D66 set unlimited buyer visualizations with no credit caps. The `generation_cap_per_session` column, `generation_count` tracking, `generation_feedback` table, and `reserve_generation_credit`/`refund_generation_credit` RPCs were infrastructure for a cap that's no longer enforced. Generation costs roll into monthly pricing.
+**Decision**: Removed all cap/credit infrastructure:
+- DB: dropped `generation_cap_per_session` (organizations), `generation_count` (buyer_sessions), `generation_feedback` table, both credit RPCs
+- API: removed cap checks, credit reservation, `creditsUsed`/`creditsTotal` from responses
+- Client: removed credits meter, cap-reached banners, `SET_CREDITS` action, `generationCredits` state
+- Feedback route simplified to just delete cached image row (no credit accounting)
+- `/try` demo page's local cookie-based 5-generation cap intentionally preserved (separate mechanism)
+**Supersedes**: D50, D55, D56.
+**Trade-off**: No per-session usage limits. Internal monitoring via PostHog if abuse becomes a concern. Permanent cache means costs decline naturally over time.

@@ -279,7 +279,7 @@ Current upgrade revenue: ~$5M/year | Annual tool cost: ~$53.8K
 | 50% | $2,000 (conservative) | $500K | $53.8K | **$446K** | 9.3x |
 | 75% | $2,000 (conservative) | $750K | $53.8K | **$696K** | 13.9x |
 
-**Small AL/GA builder (~50 homes/year, ~$8K avg upgrades, 3 plans on Concierge)**
+**Small AL/GA builder (~50 homes/year, ~$8K avg upgrades, 3 plans on Concierge)**2
 Current upgrade revenue: ~$400K/year | Annual tool cost: ~$10.8K
 
 | Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |

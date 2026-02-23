@@ -75,25 +75,25 @@ Both orgs now have full prompt tuning applied:
 - [x] Admin buyer dashboard (list + detail pages, user-scoped Supabase client)
 - [x] pg_cron cleanup for anonymous sessions >30 days
 - [x] Security: ownership verification on all session routes, resume token not leaked in responses, input validation, generic error messages
-- [x] `generation_count` column in schema (reserved for Workstream D — no app code reads/writes it)
+- [x] ~~`generation_count` column~~ (removed in D70 — generation caps dropped)
 
 ### 7. V1 Workstream D: Gallery Visualization ✅
-**Depends on B + C.** Per-photo AI visualization, gallery view, retry flow, generation credit cap.
-- [x] DB migrations: `generation_cap_per_session` on orgs, `step_photo_id`/`buyer_session_id`/`selections_fingerprint` on `generated_images`, `generation_feedback` table, `reserve_generation_credit` + `refund_generation_credit` RPCs, `generated-images` storage bucket
+**Depends on B + C.** Per-photo AI visualization, gallery view, retry flow.
+- [x] DB migrations: `step_photo_id`/`buyer_session_id`/`selections_fingerprint` on `generated_images`, `generated-images` storage bucket
 - [x] `StepPhoto` type on `StepConfig`, `step_photos` join in `getStepsWithConfig`, `getStepPhotoAiConfig` query
 - [x] `SwatchBufferResolver` callback in `buildEditPrompt` (Supabase Storage for all tenants)
-- [x] `/api/generate/photo` — multi-tenant per-photo generation with ownership validation, DB-based dedup (`__pending__` placeholder rows), stale lock cleanup (5 min TTL), credit reservation after generation, SVG swatch filtering (JPEG/PNG/WebP only)
+- [x] `/api/generate/photo` — multi-tenant per-photo generation with ownership validation, DB-based dedup (`__pending__` placeholder rows), stale lock cleanup (5 min TTL), SVG swatch filtering (JPEG/PNG/WebP only)
 - [x] `/api/generate/photo/check` — multi-tenant per-photo cache check
 - [x] Internal per-photo policy layer (DB-backed `step_photo_generation_policies` with code fallback): prompt invariant overrides + optional policy-driven pass-2 refinement
 - [x] Prompt context wiring completed: `step_photos.spatial_hint` now included in generation prompt context; cache hash includes prompt-context signature (`scene_description`, `photo_baseline`, `spatial_hint`, `spatial_hints`)
-- [x] `/api/generate/photo/feedback` — used by retry flow: refunds credit, deletes cached row, then regenerates
-- [x] Extended `SelectionState`/`SelectionAction` with per-photo keys, credits
+- [x] `/api/generate/photo/feedback` — retry flow: deletes cached row, then client regenerates
+- [x] Extended `SelectionState`/`SelectionAction` with per-photo keys
 - [x] UpgradePicker: per-photo generation, gallery virtual step, Visualize All (max 20 concurrent), stale detection per photo, initial cache restore for multi-tenant photos on session resume
 - [x] Replaced thumbs up/down with retry button in `ImageLightbox` (overlay on bottom gradient bar) — feedback was vanity data with no actionable use
 - [x] `StepPhotoGrid` component — per-step photo cards in sidebar (hero first, stale badge, lightbox)
-- [x] `GalleryView` component — full gallery grid grouped by step, Visualize All, credits meter, cap-reached state
-- [x] `SidebarPanel` updated — photo grid replaces StepHero when step has photos, credits display
-- [x] Credits wired: `generationCap` from org → session response → page → client → picker
+- [x] `GalleryView` component — full gallery grid grouped by step, Visualize All
+- [x] `SidebarPanel` updated — photo grid replaces StepHero when step has photos
+- [x] Generation caps removed (D70) — unlimited visualizations, costs in monthly pricing
 - [x] Admin login Suspense fix for `useSearchParams()`
 
 ### 8. Floorplan Onboarding: Skeleton Steps + Duplicate ✅
@@ -103,7 +103,7 @@ Both orgs now have full prompt tuning applied:
 
 ### 9. SM Multi-Tenant Migration ✅
 Migrated Stone Martin from legacy single-tenant generation to full multi-tenant photo system.
-- [x] Migration script (`scripts/migrate-sm-storage.ts`): uploads room photos + swatches to Supabase Storage, creates `step_photos` rows, updates `swatch_url` to Storage URLs, sets generation cap to 100
+- [x] Migration script (`scripts/migrate-sm-storage.ts`): uploads room photos + swatches to Supabase Storage, creates `step_photos` rows, updates `swatch_url` to Storage URLs
 - [x] Deleted legacy routes: `/api/generate/route.ts`, `/api/generate/check/route.ts`
 - [x] Deleted `GenerateButton.tsx` (dead code)
 - [x] Cleaned UpgradePicker: removed `handleGenerate`, SM cache checks, added mobile `StepPhotoGrid`
