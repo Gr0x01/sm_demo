@@ -35,6 +35,7 @@ interface BaseEvent {
   cost_usd: number;
   orgId?: string;
   orgSlug?: string;
+  floorplanSlug?: string;
 }
 
 interface OpenAIEvent extends BaseEvent {
