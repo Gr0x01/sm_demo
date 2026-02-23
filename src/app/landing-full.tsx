@@ -494,7 +494,7 @@ export default function LandingPage() {
               </div>
 
               <p className="text-xs text-slate-400">
-                Currently in pilot with a 500+ home/year production builder in Alabama.
+                Currently in pilot with a production home builder in the Southeast.
               </p>
 
             </div>
