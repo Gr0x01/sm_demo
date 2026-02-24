@@ -1,5 +1,6 @@
 import { Inngest, EventSchemas } from "inngest";
 import type { ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
+import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 
 export interface PhotoGenerateRequestedData {
   selectionsHash: string;
@@ -20,9 +21,19 @@ export interface PhotoGenerateRequestedData {
   promptContextSignature: string;
 }
 
+export interface DemoGenerateRequestedData {
+  combinedHash: string;
+  photoHash: string;
+  effectiveSelections: Record<string, string>;
+  sceneAnalysis: DemoSceneAnalysis | null;
+}
+
 type Events = {
   "photo/generate.requested": {
     data: PhotoGenerateRequestedData;
+  };
+  "demo/generate.requested": {
+    data: DemoGenerateRequestedData;
   };
 };
 

@@ -178,7 +178,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
         return;
       }
 
-      // Generate
+      // Generate (dispatches to Inngest, returns 202)
       const genRes = await fetch("/api/try/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -190,23 +190,57 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
         }),
       });
 
-      if (!genRes.ok) {
-        const errData = await genRes.json().catch(() => ({}));
-        throw new Error(errData.error || "Generation failed");
+      const genData = await genRes.json();
+
+      // Cache hit — route returned 200 with imageUrl
+      if (genRes.ok && genRes.status === 200 && genData.imageUrl) {
+        setGeneratedImageUrl(genData.imageUrl);
+        sessionStorage.setItem(SS_GENERATED, genData.imageUrl);
+        setPhase("result");
+        track("demo_generation_completed", { cacheHit: true, generationsUsed });
+        return;
       }
 
-      const genData = await genRes.json();
-      setGeneratedImageUrl(genData.imageUrl);
-      sessionStorage.setItem(SS_GENERATED, genData.imageUrl);
-      setPhase("result");
+      // 202 or 429 — poll /check until result is ready
+      if ((genRes.status === 202 || genRes.status === 429) && (genData.combinedHash || genData.imageUrl === undefined)) {
+        const pollInterval = 3000;
+        const maxPolls = 50; // ~2.5 min
+        let imageUrl: string | null = null;
 
-      // Increment counter and save to history (only if not a cache hit)
-      if (!genData.cacheHit) {
+        for (let i = 0; i < maxPolls; i++) {
+          await new Promise((r) => setTimeout(r, pollInterval));
+
+          const pollRes = await fetch("/api/try/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              photoHash: uploadedPhoto.hash,
+              selections,
+              sceneAnalysis: uploadedPhoto.sceneAnalysis,
+            }),
+          });
+
+          const pollData = await pollRes.json();
+          if (pollData.imageUrl) {
+            imageUrl = pollData.imageUrl;
+            break;
+          }
+        }
+
+        if (!imageUrl) {
+          throw new Error("Generation timed out — please try again");
+        }
+
+        setGeneratedImageUrl(imageUrl);
+        sessionStorage.setItem(SS_GENERATED, imageUrl);
+        setPhase("result");
+
+        // Increment counter and save to history
         const newCount = generationsUsed + 1;
         setGenerationsUsed(newCount);
         setCookie("finch_demo_gens", String(newCount));
 
-        const entry: GenerationEntry = { selections: { ...selections }, imageUrl: genData.imageUrl };
+        const entry: GenerationEntry = { selections: { ...selections }, imageUrl };
         setGenerationHistory((prev) => {
           const next = [...prev, entry];
           sessionStorage.setItem(SS_HISTORY, JSON.stringify(next));
@@ -216,9 +250,15 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
         if (newCount >= 5) {
           track("demo_cap_reached", { generationsUsed: newCount });
         }
+
+        track("demo_generation_completed", { cacheHit: false, generationsUsed: newCount });
+        return;
       }
 
-      track("demo_generation_completed", { cacheHit: !!genData.cacheHit, generationsUsed: genData.cacheHit ? generationsUsed : generationsUsed + 1 });
+      // Error response
+      if (!genRes.ok) {
+        throw new Error(genData.error || "Generation failed");
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(message);

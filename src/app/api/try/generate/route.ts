@@ -1,20 +1,11 @@
 import { NextResponse } from "next/server";
-import OpenAI, { toFile } from "openai";
-import { buildDemoPrompt } from "@/lib/demo-prompt";
 import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS } from "@/lib/demo-options";
-import { DEMO_GENERATION_CACHE_VERSION, hashDemoSelections } from "@/lib/demo-generate";
+import { hashDemoSelections } from "@/lib/demo-generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
-import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
-import { IMAGE_MODEL } from "@/lib/models";
+import { inngest } from "@/inngest/client";
 
-export const maxDuration = 120;
-
-const openai = new OpenAI();
-
-// Rate limiting
-const lastRequestTime = { value: 0 };
-const inProgressHashes = new Set<string>();
+export const maxDuration = 30;
 
 export async function POST(request: Request) {
   try {
@@ -53,16 +44,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Rate limiting — 5 second cooldown
-    const now = Date.now();
-    if (now - lastRequestTime.value < 5000) {
-      return NextResponse.json(
-        { error: "Please wait before generating again" },
-        { status: 429 }
-      );
-    }
-    lastRequestTime.value = now;
-
     // Drop selections for surfaces that are not visible in this photo.
     const { combinedHash, effectiveSelections } = hashDemoSelections(photoHash, selections, sceneAnalysis);
     if (Object.keys(effectiveSelections).length === 0) {
@@ -72,142 +53,87 @@ export async function POST(request: Request) {
       );
     }
 
-    // Double-click guard
-    if (inProgressHashes.has(combinedHash)) {
-      return NextResponse.json(
-        { error: "This combination is already being generated" },
-        { status: 429 }
-      );
-    }
-    inProgressHashes.add(combinedHash);
+    const supabase = getServiceClient();
 
-    try {
-      const supabase = getServiceClient();
+    // Cache check
+    const { data: cached } = await supabase
+      .from("generated_images")
+      .select("image_path")
+      .eq("selections_hash", combinedHash)
+      .neq("image_path", "__pending__")
+      .single();
 
-      // Re-check cache (race guard)
-      const { data: cached } = await supabase
-        .from("generated_images")
-        .select("image_path")
-        .eq("selections_hash", combinedHash)
-        .single();
-
-      if (cached?.image_path) {
-        const {
-          data: { publicUrl },
-        } = supabase.storage
-          .from("demo-generated")
-          .getPublicUrl(cached.image_path);
-
-        return NextResponse.json({ imageUrl: publicUrl, cacheHit: true });
-      }
-
-      // Upload user photo to demo-uploads bucket
-      const photoBuffer = Buffer.from(photoBase64, "base64");
-      await supabase.storage
-        .from("demo-uploads")
-        .upload(`${photoHash}.jpg`, photoBuffer, {
-          contentType: "image/jpeg",
-          upsert: true,
-        });
-
-      // Build prompt + load swatches
-      const { prompt, swatches } = await buildDemoPrompt(effectiveSelections, sceneAnalysis);
-
-      // Assemble images: user photo + swatches
-      const inputImages = [
-        await toFile(photoBuffer, "kitchen.jpg", { type: "image/jpeg" }),
-        ...await Promise.all(
-          swatches.map((s) => {
-            const ext = s.mediaType.split("/")[1] || "png";
-            const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-            return toFile(s.buffer, filename, { type: s.mediaType });
-          })
-        ),
-      ];
-
-      console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${swatches.length} swatches) to ${IMAGE_MODEL}`);
-
-      const genStart = performance.now();
-      const result = await openai.images.edit({
-        model: IMAGE_MODEL,
-        image: inputImages,
-        prompt,
-        quality: "high",
-        size: "1536x1024",
-        input_fidelity: "high",
-      });
-
-      const imageData = result.data?.[0];
-      if (!imageData?.b64_json) {
-        return NextResponse.json(
-          { error: "No image was generated" },
-          { status: 500 }
-        );
-      }
-
-      const genDuration = Math.round(performance.now() - genStart);
-      await captureAiEvent("anonymous", {
-        provider: "openai",
-        model: IMAGE_MODEL,
-        route: "/api/try/generate",
-        duration_ms: genDuration,
-        cost_usd: estimateOpenAICost(IMAGE_MODEL, 1),
-        image_size: "1536x1024",
-        image_quality: "high",
-        second_pass: false,
-      });
-
-      const outputBuffer = Buffer.from(imageData.b64_json, "base64");
-      const outputPath = `demo-${combinedHash}.png`;
-
-      // Upload result
-      const { error: uploadError } = await supabase.storage
-        .from("demo-generated")
-        .upload(outputPath, outputBuffer, {
-          contentType: "image/png",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        console.error("[demo/generate] Upload error:", uploadError);
-        return NextResponse.json({
-          imageUrl: `data:image/png;base64,${outputBuffer.toString("base64")}`,
-          cacheHit: false,
-          warning: "Image was not cached due to storage upload failure",
-        });
-      }
-
-      // Cache the result
-      const { error: upsertError } = await supabase.from("generated_images").upsert({
-        selections_hash: combinedHash,
-        selections_json: {
-          _source: "demo",
-          _cacheVersion: DEMO_GENERATION_CACHE_VERSION,
-          photo_hash: photoHash,
-          ...effectiveSelections,
-        },
-        image_path: outputPath,
-        prompt,
-        step_id: null,
-        model: IMAGE_MODEL,
-      }, { onConflict: "selections_hash" });
-
-      if (upsertError) {
-        console.error("[demo/generate] DB upsert failed:", upsertError);
-      } else {
-        console.log(`[demo/generate] Cached: ${combinedHash} → ${outputPath}`);
-      }
-
+    if (cached?.image_path) {
       const {
         data: { publicUrl },
       } = supabase.storage
         .from("demo-generated")
-        .getPublicUrl(outputPath);
+        .getPublicUrl(cached.image_path);
 
-      return NextResponse.json({ imageUrl: publicUrl, cacheHit: false });
-    } finally {
-      inProgressHashes.delete(combinedHash);
+      return NextResponse.json({ imageUrl: publicUrl, cacheHit: true });
     }
+
+    // --- Claim slot via DB (cross-instance safe, replaces in-memory Set) ---
+    const staleThreshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    await supabase
+      .from("generated_images")
+      .delete()
+      .eq("selections_hash", combinedHash)
+      .eq("image_path", "__pending__")
+      .lt("created_at", staleThreshold);
+
+    const { error: claimError } = await supabase
+      .from("generated_images")
+      .insert({
+        selections_hash: combinedHash,
+        image_path: "__pending__",
+        step_id: null,
+      });
+
+    if (claimError) {
+      if (claimError.code === "23505") {
+        // Already in progress — tell client to poll
+        return NextResponse.json(
+          { error: "Already being generated", combinedHash },
+          { status: 429 }
+        );
+      }
+      console.error("[demo/generate] Claim slot failed:", claimError);
+      return NextResponse.json({ error: "Service temporarily unavailable" }, { status: 503 });
+    }
+
+    // Upload user photo to demo-uploads (Inngest function will download it)
+    const photoBuffer = Buffer.from(photoBase64, "base64");
+    await supabase.storage
+      .from("demo-uploads")
+      .upload(`${photoHash}.jpg`, photoBuffer, {
+        contentType: "image/jpeg",
+        upsert: true,
+      });
+
+    // --- Dispatch to Inngest ---
+    try {
+      await inngest.send({
+        name: "demo/generate.requested",
+        data: {
+          combinedHash,
+          photoHash,
+          effectiveSelections,
+          sceneAnalysis: sceneAnalysis ?? null,
+        },
+      });
+    } catch (sendError) {
+      console.error("[demo/generate] Inngest send failed:", sendError);
+      // Release slot
+      await supabase
+        .from("generated_images")
+        .delete()
+        .eq("selections_hash", combinedHash)
+        .eq("image_path", "__pending__");
+      return NextResponse.json({ error: "Service temporarily unavailable" }, { status: 503 });
+    }
+
+    return NextResponse.json({ combinedHash }, { status: 202 });
   } catch (error) {
     console.error("[demo/generate] Error:", error);
     return NextResponse.json(
