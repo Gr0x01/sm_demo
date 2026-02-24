@@ -493,10 +493,6 @@ export default function LandingPage() {
                 </a>
               </div>
 
-              <p className="text-xs text-slate-400">
-                Currently in pilot with a production home builder in the Southeast.
-              </p>
-
             </div>
 
             <div data-reveal style={revealStyle(180)} className="hidden md:block">
@@ -756,7 +752,7 @@ export default function LandingPage() {
           style={revealStyle(160)}
           className="text-sm text-slate-400 text-center mt-6"
         >
-          After the pilot, pricing is per floor plan per month. We scope it to your volume.
+          After the pilot, pricing is per floor plan per month.
         </p>
       </Section>
 
