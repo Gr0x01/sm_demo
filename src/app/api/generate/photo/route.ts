@@ -1,19 +1,14 @@
 import { NextResponse } from "next/server";
-import OpenAI, { toFile } from "openai";
-import sharp from "sharp";
-import { buildEditPrompt, buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
-import type { SwatchBufferResolver } from "@/lib/generate";
+import { buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
+import { inngest } from "@/inngest/client";
 
-export const maxDuration = 120;
-
-const openai = new OpenAI();
+export const maxDuration = 30;
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
   // Per-photo baseline text is the authoritative scene context when present.
@@ -77,7 +72,7 @@ async function claimGenerationSlot(
 }
 
 /**
- * Clean up a pending placeholder if generation fails, so retries can proceed.
+ * Clean up a pending placeholder if Inngest event send fails.
  */
 async function releaseGenerationSlot(
   supabase: ReturnType<typeof getServiceClient>,
@@ -92,7 +87,8 @@ async function releaseGenerationSlot(
 
 /**
  * Multi-tenant per-photo generation route.
- * SM demo uses the original /api/generate route — this is for orgs with step_photos.
+ * Validates, claims slot, then dispatches to Inngest for background generation.
+ * Client polls /api/generate/photo/check (existing pattern).
  */
 export async function POST(request: Request) {
   try {
@@ -180,6 +176,7 @@ export async function POST(request: Request) {
       _promptPolicy: resolvedPolicy.policyKey,
       _promptContext: promptContextSignature,
     });
+    const selectionsFingerprint = hashSelections(scopedSelections);
 
     // --- Retry: delete existing cached image so we regenerate fresh ---
     if (retry) {
@@ -234,219 +231,42 @@ export async function POST(request: Request) {
       );
     }
 
-    // Everything below has claimed the slot — release it on any failure
+    // --- Dispatch to Inngest for background generation ---
     try {
-
-    // --- Load hero image from Supabase Storage ---
-    const { data: imageData, error: downloadErr } = await supabase.storage
-      .from("rooms")
-      .download(aiConfig.photo.imagePath);
-
-    if (downloadErr || !imageData) {
-      await releaseGenerationSlot(supabase, selectionsHash);
-      return NextResponse.json({ error: "Failed to load base photo" }, { status: 500 });
-    }
-
-    const imageBuffer = Buffer.from(await imageData.arrayBuffer());
-    const heroExt = aiConfig.photo.imagePath.split(".").pop()?.toLowerCase() || "webp";
-    const heroMime = heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`;
-    const heroFilename = aiConfig.photo.imagePath.split("/").pop() || "room.webp";
-
-    // --- Build swatch resolver for Supabase Storage ---
-    const resolveSwatchBuffer: SwatchBufferResolver = async (swatchUrl: string) => {
-      let storagePath = swatchUrl;
-      if (swatchUrl.startsWith("http")) {
-        const match = swatchUrl.match(/\/object\/public\/swatches\/(.+)$/);
-        if (match) storagePath = match[1];
-        else return null;
-      }
-      if (storagePath.startsWith("/swatches/")) storagePath = storagePath.slice("/swatches/".length);
-
-      const { data: swatchData, error: swatchErr } = await supabase.storage
-        .from("swatches")
-        .download(storagePath);
-
-      if (swatchErr || !swatchData) return null;
-
-      const rawBuffer = Buffer.from(await swatchData.arrayBuffer());
-      const ext = storagePath.split(".").pop()?.toLowerCase() || "png";
-
-      // SVG swatches must be rasterized — OpenAI only accepts JPEG/PNG/WebP
-      if (ext === "svg" || ext === "svgz") {
-        const pngBuffer = await sharp(rawBuffer).png().toBuffer();
-        return { buffer: pngBuffer, mediaType: "image/png" };
-      }
-
-      const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-      return { buffer: rawBuffer, mediaType };
-    };
-
-    // --- Build prompt ---
-    const photoSpatialHint = aiConfig.photo.spatialHint;
-
-    const { prompt, swatches } = await buildEditPrompt(
-      scopedSelections,
-      optionLookup,
-      spatialHints,
-      sceneDescription,
-      photoSpatialHint,
-      resolveSwatchBuffer,
-      resolvedPolicy.promptOverrides,
-    );
-
-    // --- Generate image (filter out unsupported formats like SVG) ---
-    const supportedSwatches = swatches.filter((s) => {
-      const supported = ["image/jpeg", "image/png", "image/webp"];
-      return supported.includes(s.mediaType);
-    });
-
-    const inputImages = [
-      await toFile(imageBuffer, heroFilename, { type: heroMime }),
-      ...await Promise.all(
-        supportedSwatches.map((s) => {
-          const ext = s.mediaType.split("/")[1] || "png";
-          const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-          return toFile(s.buffer, filename, { type: s.mediaType });
-        })
-      ),
-    ];
-
-    console.log(`[generate/photo] Sending ${inputImages.length} images to ${modelName} for photo ${stepPhotoId}`);
-
-    const genStart = performance.now();
-    const result = await openai.images.edit({
-      model: modelName,
-      image: inputImages,
-      prompt,
-      quality: "high",
-      size: "1536x1024",
-      input_fidelity: "high",
-    });
-
-    const generatedData = result.data?.[0];
-    if (!generatedData?.b64_json) {
-      await releaseGenerationSlot(supabase, selectionsHash);
-      return NextResponse.json({ error: "No image was generated" }, { status: 500 });
-    }
-
-    let outputBuffer = Buffer.from(generatedData.b64_json, "base64");
-    let promptForStorage = prompt;
-    let passes = 1;
-
-    if (resolvedPolicy.secondPass) {
-      try {
-        const secondPassInput = [
-          await toFile(outputBuffer, "first-pass.png", { type: "image/png" }),
-        ];
-        console.log(
-          `[generate/photo] Running second pass (${resolvedPolicy.secondPass.reason}) for photo ${stepPhotoId}`,
-        );
-        const secondPassResult = await openai.images.edit({
-          model: modelName,
-          image: secondPassInput,
-          prompt: resolvedPolicy.secondPass.prompt,
-          quality: "high",
-          size: "1536x1024",
-          input_fidelity: resolvedPolicy.secondPass.inputFidelity,
-        });
-        const secondPassData = secondPassResult.data?.[0];
-        if (secondPassData?.b64_json) {
-          outputBuffer = Buffer.from(secondPassData.b64_json, "base64");
-          promptForStorage = `${prompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
-          passes = 2;
-        } else {
-          console.warn(
-            `[generate/photo] Second pass produced no image for photo ${stepPhotoId}; keeping first-pass output.`,
-          );
-        }
-      } catch (secondPassError) {
-        console.warn(
-          `[generate/photo] Second pass failed for photo ${stepPhotoId}; keeping first-pass output.`,
-          secondPassError,
-        );
-      }
-    }
-    const genDuration = Math.round(performance.now() - genStart);
-
-    await captureAiEvent(sessionId, {
-      provider: "openai",
-      model: modelName,
-      route: "/api/generate/photo",
-      duration_ms: genDuration,
-      cost_usd: estimateOpenAICost(modelName, passes),
-      orgId: org.id,
-      orgSlug,
-      floorplanSlug,
-      image_size: "1536x1024",
-      image_quality: "high",
-      second_pass: passes > 1,
-    });
-
-    // --- Upload to Storage ---
-    const outputPath = `${org.id}/${selectionsHash}.png`;
-
-    const { error: uploadError } = await supabase.storage
-      .from("generated-images")
-      .upload(outputPath, outputBuffer, {
-        contentType: "image/png",
-        upsert: true,
-      });
-
-    if (uploadError) {
-      console.error("[generate/photo] Storage upload failed:", uploadError);
-      await releaseGenerationSlot(supabase, selectionsHash);
-      return NextResponse.json({
-        imageUrl: `data:image/png;base64,${outputBuffer.toString("base64")}`,
-        cacheHit: false,
-        warning: "Image was not cached due to storage upload failure",
-      });
-    }
-
-    // --- Cache the result (upsert replaces the __pending__ placeholder) ---
-    const selectionsFingerprint = hashSelections(scopedSelections);
-    const { data: upserted, error: upsertError } = await supabase
-      .from("generated_images")
-      .upsert({
-        selections_hash: selectionsHash,
-        selections_json: {
-          ...scopedSelections,
-          _stepPhotoId: stepPhotoId,
-          _model: modelName,
-          _cacheVersion: GENERATION_CACHE_VERSION,
-          _promptPolicy: resolvedPolicy.policyKey,
-          _promptContext: promptContextSignature,
+      await inngest.send({
+        name: "photo/generate.requested",
+        data: {
+          selectionsHash,
+          selectionsFingerprint,
+          orgId: org.id,
+          orgSlug,
+          floorplanSlug,
+          stepPhotoId,
+          stepId: aiConfig.stepId,
+          sessionId,
+          scopedSelections,
+          modelName,
+          resolvedPolicy,
+          sceneDescription,
+          spatialHints,
+          photoSpatialHint: aiConfig.photo.spatialHint,
+          selectionsJsonForClaim,
+          promptContextSignature,
         },
-        image_path: outputPath,
-        prompt: promptForStorage,
-        step_id: aiConfig.stepId,
-        step_photo_id: stepPhotoId,
-        buyer_session_id: sessionId,
-        selections_fingerprint: selectionsFingerprint,
-        model: modelName,
-        org_id: org.id,
-      }, { onConflict: "selections_hash" })
-      .select("id")
-      .single();
-
-    if (upsertError) {
-      console.error("[generate/photo] DB upsert failed:", upsertError);
-    }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from("generated-images")
-      .getPublicUrl(outputPath);
-
-    return NextResponse.json({
-      imageUrl: publicUrl,
-      cacheHit: false,
-      generatedImageId: upserted ? String(upserted.id) : null,
-    });
-
-    } catch (genError) {
-      // Generation failed — release the placeholder so retries can proceed
+      });
+    } catch (sendError) {
+      console.error("[generate/photo] Inngest send failed:", sendError);
       await releaseGenerationSlot(supabase, selectionsHash);
-      throw genError;
+      return NextResponse.json(
+        { error: "Service temporarily unavailable" },
+        { status: 503 }
+      );
     }
+
+    return NextResponse.json(
+      { selectionsHash },
+      { status: 202 }
+    );
   } catch (error) {
     console.error("[generate/photo] Error:", error);
     return NextResponse.json({ error: "Failed to generate image" }, { status: 500 });

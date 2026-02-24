@@ -653,7 +653,7 @@ export function UpgradePicker({
       if (!res.ok) {
         // If generation is already in progress (e.g. triggered from another step),
         // poll the check endpoint until the result is ready instead of erroring out
-        if (res.status === 429 && data.selectionsHash) {
+        if ((res.status === 429 || res.status === 202) && data.selectionsHash) {
           const abort = new AbortController();
           pollAbortControllersRef.current.add(abort);
           const pollInterval = 3000;
