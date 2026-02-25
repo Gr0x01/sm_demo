@@ -139,7 +139,7 @@ export async function POST(request: Request) {
     }
 
     if (row.image_path === "__pending__") {
-      return NextResponse.json({ status: "pending", imageUrl: null });
+      return NextResponse.json({ status: "pending", imageUrl: null, selectionsHash: hash });
     }
 
     const { data: { publicUrl } } = supabase.storage

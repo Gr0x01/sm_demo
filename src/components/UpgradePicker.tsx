@@ -337,6 +337,78 @@ export function UpgradePicker({
   useEffect(() => () => {
     for (const c of pollAbortControllersRef.current) c.abort();
   }, []);
+
+  // Shared polling helper — used by both handleGeneratePhoto and loadAndCheckCache
+  const pollUntilComplete = useCallback(async (
+    photoKey: string,
+    selectionsHash: string,
+    selectionsSnapshot: string,
+    stepName: string,
+  ): Promise<void> => {
+    const abort = new AbortController();
+    pollAbortControllersRef.current.add(abort);
+    const pollInterval = 3000;
+    const maxPolls = 50; // ~2.5 min
+    let consecutiveFailures = 0;
+    let exitReason: "complete" | "not_found" | "timeout" | "aborted" = "timeout";
+    try {
+      for (let poll = 0; poll < maxPolls; poll++) {
+        await new Promise(r => setTimeout(r, pollInterval));
+        if (abort.signal.aborted) { exitReason = "aborted"; break; }
+        try {
+          const checkRes = await fetch("/api/generate/photo/check", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ selectionsHash }),
+            signal: abort.signal,
+          });
+          const checkData = await checkRes.json();
+          if (checkData.status === "complete" && checkData.imageUrl) {
+            consecutiveFailures = 0;
+            exitReason = "complete";
+            dispatch({
+              type: "PHOTO_GENERATION_COMPLETE",
+              photoKey,
+              imageUrl: checkData.imageUrl,
+              selectionsSnapshot,
+              generatedImageId: checkData.generatedImageId,
+            });
+            track("generation_completed", { stepName, cacheHit: true, joinedInProgress: true });
+            return;
+          }
+          if (checkData.status === "not_found") {
+            consecutiveFailures = 0;
+            exitReason = "not_found";
+            break;
+          }
+          if (checkData.status === "pending") {
+            consecutiveFailures = 0;
+          } else {
+            consecutiveFailures++;
+            if (consecutiveFailures >= 5) {
+              throw new Error("Network error while waiting for visualization");
+            }
+          }
+        } catch (pollErr: unknown) {
+          if (abort.signal.aborted) { exitReason = "aborted"; break; }
+          consecutiveFailures++;
+          if (consecutiveFailures >= 5) {
+            throw new Error("Network error while waiting for visualization", { cause: pollErr });
+          }
+        }
+      }
+    } finally {
+      pollAbortControllersRef.current.delete(abort);
+    }
+    if (exitReason === "aborted") {
+      dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "" });
+      return;
+    }
+    if (exitReason === "not_found") {
+      throw new Error("Visualization failed \u2014 tap to retry");
+    }
+    throw new Error("Still processing \u2014 try refreshing");
+  }, [track]);
   const [headerHeight, setHeaderHeight] = useState(120);
   const [syncPrompt, setSyncPrompt] = useState<{
     sourceSubId: string;
@@ -400,15 +472,24 @@ export function UpgradePicker({
                   }),
                 });
                 if (checkRes.ok) {
-                  const { imageUrl, generatedImageId } = await checkRes.json();
-                  if (imageUrl) {
+                  const checkData = await checkRes.json();
+                  if (checkData.status === "complete" && checkData.imageUrl) {
                     dispatch({
                       type: "PHOTO_GENERATION_COMPLETE",
                       photoKey: photo.id,
-                      imageUrl,
+                      imageUrl: checkData.imageUrl,
                       selectionsSnapshot: stableStringify(photoSelections),
-                      generatedImageId: generatedImageId ?? "",
+                      generatedImageId: checkData.generatedImageId ?? "",
                     });
+                  } else if (checkData.status === "pending" && checkData.selectionsHash) {
+                    // Generation in progress — show loading and poll until done
+                    dispatch({ type: "START_GENERATING_PHOTO", photoKey: photo.id });
+                    pollUntilComplete(
+                      photo.id,
+                      checkData.selectionsHash,
+                      stableStringify(photoSelections),
+                      step.name,
+                    ).catch(() => {}); // errors handled inside via dispatch
                   }
                 }
               } catch {
@@ -423,7 +504,7 @@ export function UpgradePicker({
     }
 
     loadAndCheckCache();
-  }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections, getPhotoVisualSelections, orgSlug, floorplanSlug]);
+  }, [initialSelections, initialQuantities, steps, defaultSelections, getStepVisualSelections, getPhotoVisualSelections, orgSlug, floorplanSlug, pollUntilComplete]);
 
   // On selection changes, auto-switch to any already-cached image for the new fingerprint
   // so users don't sit on an "OUTDATED" badge when a matching cached render exists.
@@ -653,72 +734,8 @@ export function UpgradePicker({
       // 202: dispatched to Inngest background function — poll for completion
       // 429: duplicate request already in progress — poll for completion
       if ((res.status === 429 || res.status === 202) && data.selectionsHash) {
-        const abort = new AbortController();
-        pollAbortControllersRef.current.add(abort);
-        const pollInterval = 3000;
-        const maxPolls = 50; // ~2.5 min, above maxDuration of 120s
-        let consecutiveFailures = 0;
-        let exitReason: "complete" | "not_found" | "timeout" | "aborted" = "timeout";
-        try {
-          for (let poll = 0; poll < maxPolls; poll++) {
-            await new Promise(r => setTimeout(r, pollInterval));
-            if (abort.signal.aborted) { exitReason = "aborted"; break; }
-            try {
-              const checkRes = await fetch("/api/generate/photo/check", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ selectionsHash: data.selectionsHash }),
-                signal: abort.signal,
-              });
-              const checkData = await checkRes.json();
-              if (checkData.status === "complete" && checkData.imageUrl) {
-                consecutiveFailures = 0;
-                exitReason = "complete";
-                dispatch({
-                  type: "PHOTO_GENERATION_COMPLETE",
-                  photoKey,
-                  imageUrl: checkData.imageUrl,
-                  selectionsSnapshot,
-                  generatedImageId: checkData.generatedImageId,
-                });
-                track("generation_completed", { stepName: step.name, cacheHit: true, joinedInProgress: true });
-                return;
-              }
-              if (checkData.status === "not_found") {
-                consecutiveFailures = 0;
-                exitReason = "not_found";
-                break;
-              }
-              if (checkData.status === "pending") {
-                consecutiveFailures = 0;
-                // keep polling
-              } else {
-                // status === "error" — transient backend issue, keep polling but track
-                consecutiveFailures++;
-                if (consecutiveFailures >= 5) {
-                  throw new Error("Network error while waiting for visualization");
-                }
-              }
-            } catch (pollErr: unknown) {
-              if (abort.signal.aborted) { exitReason = "aborted"; break; }
-              consecutiveFailures++;
-              if (consecutiveFailures >= 5) {
-                throw new Error("Network error while waiting for visualization", { cause: pollErr });
-              }
-            }
-          }
-        } finally {
-          pollAbortControllersRef.current.delete(abort);
-        }
-        if (exitReason === "aborted") {
-          dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "" });
-          return;
-        }
-        if (exitReason === "not_found") {
-          throw new Error("Visualization failed \u2014 tap to retry");
-        }
-        // timeout — generation may still be running server-side
-        throw new Error("Still processing \u2014 try refreshing");
+        await pollUntilComplete(photoKey, data.selectionsHash, selectionsSnapshot, step.name);
+        return;
       }
 
       if (!res.ok) {
@@ -739,7 +756,7 @@ export function UpgradePicker({
       dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: message });
       track("generation_failed", { stepName: step.name, error: message });
     }
-  }, [state.selections, state.generatingPhotoKeys, orgSlug, floorplanSlug, sessionId, getPhotoVisualSelections, track]);
+  }, [state.selections, state.generatingPhotoKeys, orgSlug, floorplanSlug, sessionId, getPhotoVisualSelections, track, pollUntilComplete]);
 
   const handleGenerateAll = useCallback(async () => {
     // Collect all photos across all steps that need generation
