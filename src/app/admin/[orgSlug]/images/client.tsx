@@ -4,11 +4,17 @@ import { useEffect, useState } from "react";
 
 interface GeneratedImage {
   selections_hash: string;
-  selections_json: Record<string, string>;
+  selections_json: Record<string, unknown>;
   image_path: string;
   prompt: string;
   created_at: string;
   publicUrl: string;
+  intermediateImages?: Array<{
+    id: string;
+    label: string;
+    path: string;
+    publicUrl: string;
+  }>;
 }
 
 export function AdminImagesClient({ orgId }: { orgId: string }) {
@@ -97,8 +103,8 @@ export function AdminImagesClient({ orgId }: { orgId: string }) {
     });
   };
 
-  const renderSelections = (json: Record<string, string>) => {
-    const entries = Object.entries(json);
+  const renderSelections = (json: Record<string, unknown>) => {
+    const entries = Object.entries(json).filter(([key]) => key !== "_debugPassArtifacts");
     if (!entries.length) return <span className="text-slate-500">None</span>;
     return (
       <ul className="space-y-1 text-sm">
@@ -106,7 +112,11 @@ export function AdminImagesClient({ orgId }: { orgId: string }) {
           <li key={key} className="flex justify-between gap-4">
             <span className="text-slate-500 truncate">{key}</span>
             <span className="text-slate-800 font-medium truncate text-right">
-              {value}
+              {typeof value === "string"
+                ? value
+                : typeof value === "number" || typeof value === "boolean"
+                  ? String(value)
+                  : JSON.stringify(value)}
             </span>
           </li>
         ))}
@@ -195,7 +205,7 @@ export function AdminImagesClient({ orgId }: { orgId: string }) {
                         </p>
                         <p className="text-xs text-slate-500 mt-1">
                           {formatDate(image.created_at)}
-                          {image.selections_json._model && (
+                          {typeof image.selections_json._model === "string" && (
                             <span className="ml-2 text-amber-700 font-mono">
                               [{image.selections_json._model}]
                             </span>
@@ -227,6 +237,26 @@ export function AdminImagesClient({ orgId }: { orgId: string }) {
                           <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Selections</p>
                           {renderSelections(image.selections_json)}
                         </div>
+                        {!!image.intermediateImages?.length && (
+                          <div>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider mb-2">Intermediate Passes</p>
+                            <div className="grid grid-cols-1 gap-3">
+                              {image.intermediateImages.map((artifact) => (
+                                <div key={artifact.path} className="border border-slate-200 bg-slate-50 p-2">
+                                  <p className="text-[11px] text-slate-600 mb-2">{artifact.label}</p>
+                                  <div className="aspect-video bg-white overflow-hidden">
+                                    <img
+                                      src={artifact.publicUrl}
+                                      alt={artifact.label}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {image.prompt && (
                           <div>
                             <p className="text-xs text-slate-500 uppercase tracking-wider mb-1">Prompt</p>

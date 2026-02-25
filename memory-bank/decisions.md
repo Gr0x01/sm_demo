@@ -434,3 +434,13 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 - `responseModalities: ["IMAGE"]` for image-only output
 
 **Test outputs**: `scripts/nano-banana-test-outputs/` — v3 results with prompts, swatches, and output images.
+
+## D75: Persist and expose per-pass generation artifacts in admin
+**Context**: Multi-pass generation (batch split + policy refine + range-lock) could appear opaque because only the final image was visible. Temp pass images were cleaned up, making it hard to determine whether a later pass was a no-op, fallback, or actual correction.
+**Decision**:
+- Persist pass outputs as debug artifacts in Supabase Storage under `generated-images/{orgId}/debug/{selectionsHash}/...`.
+- Record artifact metadata in `generated_images.selections_json._debugPassArtifacts`.
+- Extend `/api/admin/images` GET response to include intermediate pass URLs.
+- Update admin image details UI to render an "Intermediate Passes" section.
+- Keep deleting debug artifacts together with the final image on single-delete and delete-all.
+**Trade-off**: Slightly higher storage footprint per generation, but materially better observability and faster root-cause analysis for geometry/edit drift issues.

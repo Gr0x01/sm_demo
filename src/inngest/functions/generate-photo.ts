@@ -8,6 +8,8 @@ import { captureAiEvent, estimateGeminiImageCost } from "@/lib/posthog-server";
 import { generateImageWithGemini, wrapPromptForGemini, splitSelectionsForGemini } from "@/lib/gemini-image";
 
 const SUPPORTED_SWATCH_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const SLIDE_IN_RANGE_OPTION_IDS = new Set(["range-ge-gas-slide-in", "range-ge-gas-slide-in-convection"]);
+type PassArtifact = { id: string; label: string; path: string };
 
 /** Build a swatch resolver that downloads from Supabase Storage. */
 function createSwatchResolver(supabase: ReturnType<typeof getServiceClient>): SwatchBufferResolver {
@@ -93,6 +95,24 @@ async function uploadTempImage(
   return tempPath;
 }
 
+/** Upload a debug artifact image for pass-by-pass inspection in admin tooling. */
+async function uploadDebugArtifactImage(
+  supabase: ReturnType<typeof getServiceClient>,
+  orgId: string,
+  selectionsHash: string,
+  artifactId: string,
+  buffer: Buffer,
+  mimeType: string,
+): Promise<string> {
+  const ext = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
+  const debugPath = `${orgId}/debug/${selectionsHash}/${artifactId}.${ext}`;
+  const { error } = await supabase.storage
+    .from("generated-images")
+    .upload(debugPath, buffer, { contentType: mimeType, upsert: true });
+  if (error) throw new Error(`Debug upload failed: ${error.message}`);
+  return debugPath;
+}
+
 /** Download an intermediate image from temp storage. */
 async function downloadTempImage(
   supabase: ReturnType<typeof getServiceClient>,
@@ -146,6 +166,7 @@ export const generatePhoto = inngest.createFunction(
       photoSpatialHint,
       selectionsJsonForClaim,
     } = event.data;
+    const isSlideInRangeSelected = SLIDE_IN_RANGE_OPTION_IDS.has(scopedSelections.range ?? "");
 
     // --- Step 1: First swatch batch (always runs, up to 120s) ---
     // Also computes and returns batch assignments so continuation steps don't re-derive from DB.
@@ -205,15 +226,24 @@ export const generatePhoto = inngest.createFunction(
 
       const durationMs = Math.round(performance.now() - genStart);
       console.log(`[generate/photo] Batch 1 complete for ${stepPhotoId} in ${durationMs}ms`);
+      const outputBuffer = Buffer.from(result.b64, "base64");
 
       // Upload intermediate image to storage instead of passing b64 through step state
       let tempPath: string | null = null;
-      if (batchCount > 1 || resolvedPolicy.secondPass) {
+      if (batchCount > 1 || resolvedPolicy.secondPass || isSlideInRangeSelected) {
         tempPath = await uploadTempImage(
           supabase, orgId, selectionsHash, "batch-1",
-          Buffer.from(result.b64, "base64"), result.mimeType,
+          outputBuffer, result.mimeType,
         );
       }
+      const debugPath = await uploadDebugArtifactImage(
+        supabase,
+        orgId,
+        selectionsHash,
+        "01-batch-1",
+        outputBuffer,
+        result.mimeType,
+      );
 
       return {
         prompt,
@@ -224,10 +254,12 @@ export const generatePhoto = inngest.createFunction(
         mimeType: result.mimeType,
         // Only pass b64 through state if this is the final image (no continuation/refine needed)
         finalB64: (!tempPath) ? result.b64 : null,
+        debugArtifact: { id: "batch-1", label: `Batch 1/${batchCount}`, path: debugPath } satisfies PassArtifact,
       };
     });
 
     // --- Step 2: Continuation batches (conditional: batches > 1) ---
+    const passArtifacts: PassArtifact[] = [firstBatch.debugArtifact];
     let latestTempPath = firstBatch.tempPath;
     let latestMimeType = firstBatch.mimeType;
     let currentPrompt = firstBatch.prompt;
@@ -276,20 +308,40 @@ export const generatePhoto = inngest.createFunction(
 
           const durationMs = Math.round(performance.now() - genStart);
           console.log(`[generate/photo] Batch ${batchIdx + 1} complete for ${stepPhotoId} in ${durationMs}ms`);
+          const outputBuffer = Buffer.from(result.b64, "base64");
 
           // Upload intermediate to temp storage
           const tempPath = await uploadTempImage(
             supabase, orgId, selectionsHash, `batch-${batchIdx + 1}`,
-            Buffer.from(result.b64, "base64"), result.mimeType,
+            outputBuffer, result.mimeType,
+          );
+          const debugPath = await uploadDebugArtifactImage(
+            supabase,
+            orgId,
+            selectionsHash,
+            `${String(batchIdx + 1).padStart(2, "0")}-batch-${batchIdx + 1}`,
+            outputBuffer,
+            result.mimeType,
           );
 
-          return { prompt: batchPrompt, durationMs, tempPath, mimeType: result.mimeType };
+          return {
+            prompt: batchPrompt,
+            durationMs,
+            tempPath,
+            mimeType: result.mimeType,
+            debugArtifact: {
+              id: `batch-${batchIdx + 1}`,
+              label: `Batch ${batchIdx + 1}/${batchCount}`,
+              path: debugPath,
+            } satisfies PassArtifact,
+          };
         });
 
         latestTempPath = continuation.tempPath;
         latestMimeType = continuation.mimeType;
         currentPrompt += `\n\nBATCH ${batchIdx + 1}:\n${continuation.prompt}`;
         totalDurationMs += continuation.durationMs;
+        passArtifacts.push(continuation.debugArtifact);
       }
     }
 
@@ -312,7 +364,7 @@ export const generatePhoto = inngest.createFunction(
         );
 
         const roomBuffer = await downloadTempImage(supabase, prevTempPath);
-        const isRangePolicy = /range/i.test(resolvedPolicy.secondPass!.reason);
+        const isRangePolicy = /range/i.test(resolvedPolicy.secondPass!.reason) || isSlideInRangeSelected;
         const rangeSwatch = isRangePolicy
           ? await getSelectedRangeSwatch(scopedSelections, optionLookup, resolveSwatchBuffer)
           : [];
@@ -333,11 +385,20 @@ export const generatePhoto = inngest.createFunction(
 
           const durationMs = Math.round(performance.now() - genStart);
           console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          const outputBuffer = Buffer.from(result.b64, "base64");
 
           // Upload refined image
           const tempPath = await uploadTempImage(
             supabase, orgId, selectionsHash, "refine",
-            Buffer.from(result.b64, "base64"), result.mimeType,
+            outputBuffer, result.mimeType,
+          );
+          const debugPath = await uploadDebugArtifactImage(
+            supabase,
+            orgId,
+            selectionsHash,
+            "98-refine",
+            outputBuffer,
+            result.mimeType,
           );
 
           return {
@@ -346,6 +407,7 @@ export const generatePhoto = inngest.createFunction(
             durationMs,
             success: true as const,
             promptUsed: secondPassPrompt,
+            debugArtifact: { id: "refine", label: "Second pass refine", path: debugPath } satisfies PassArtifact,
           };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
@@ -356,20 +418,23 @@ export const generatePhoto = inngest.createFunction(
             durationMs,
             success: false as const,
             promptUsed: secondPassPrompt,
+            debugArtifact: null,
           };
         }
       });
 
       policySecondPassAttempted = true;
       totalDurationMs += secondPass.durationMs;
+      finalPrompt = `${currentPrompt}\n\nSECOND_PASS_ATTEMPT (${resolvedPolicy.secondPass.reason})${secondPass.success ? "" : " [FAILED]"}:\n${secondPass.promptUsed}`;
       if (secondPass.success && secondPass.tempPath) {
         latestTempPath = secondPass.tempPath;
-        finalPrompt = `${currentPrompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${secondPass.promptUsed}`;
+        if (secondPass.mimeType) latestMimeType = secondPass.mimeType;
+        if (secondPass.debugArtifact) passArtifacts.push(secondPass.debugArtifact);
       }
     }
 
     // --- Step 3b: Range lock pass (conditional third pass for known slide-in range drift) ---
-    if (resolvedPolicy.secondPass && /range/i.test(resolvedPolicy.secondPass.reason) && scopedSelections.range) {
+    if (isSlideInRangeSelected) {
       const prevTempPath = latestTempPath!;
       const prevMimeType = latestMimeType;
 
@@ -400,10 +465,19 @@ export const generatePhoto = inngest.createFunction(
 
           const durationMs = Math.round(performance.now() - genStart);
           console.log(`[generate/photo] Range lock pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          const outputBuffer = Buffer.from(result.b64, "base64");
 
           const tempPath = await uploadTempImage(
             supabase, orgId, selectionsHash, "range-lock",
-            Buffer.from(result.b64, "base64"), result.mimeType,
+            outputBuffer, result.mimeType,
+          );
+          const debugPath = await uploadDebugArtifactImage(
+            supabase,
+            orgId,
+            selectionsHash,
+            "99-range-lock",
+            outputBuffer,
+            result.mimeType,
           );
 
           return {
@@ -412,6 +486,7 @@ export const generatePhoto = inngest.createFunction(
             durationMs,
             success: true as const,
             promptUsed: lockPrompt,
+            debugArtifact: { id: "range-lock", label: "Range lock pass", path: debugPath } satisfies PassArtifact,
           };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
@@ -422,15 +497,17 @@ export const generatePhoto = inngest.createFunction(
             durationMs,
             success: false as const,
             promptUsed: lockPrompt,
+            debugArtifact: null,
           };
         }
       });
 
       rangeLockPassAttempted = true;
       totalDurationMs += rangeLock.durationMs;
+      finalPrompt = `${finalPrompt}\n\nRANGE_LOCK_PASS${rangeLock.success ? "" : " [FAILED]"}:\n${rangeLock.promptUsed}`;
       if (rangeLock.success && rangeLock.tempPath) {
         latestTempPath = rangeLock.tempPath;
-        finalPrompt = `${finalPrompt}\n\nRANGE_LOCK_PASS:\n${rangeLock.promptUsed}`;
+        if (rangeLock.debugArtifact) passArtifacts.push(rangeLock.debugArtifact);
       }
     }
 
@@ -449,6 +526,12 @@ export const generatePhoto = inngest.createFunction(
       }
 
       const outputPath = `${orgId}/${selectionsHash}.png`;
+      const selectionsJsonForDb = passArtifacts.length > 0
+        ? {
+            ...selectionsJsonForClaim,
+            _debugPassArtifacts: JSON.stringify(passArtifacts),
+          }
+        : selectionsJsonForClaim;
 
       const { error: uploadError } = await supabase.storage
         .from("generated-images")
@@ -465,7 +548,7 @@ export const generatePhoto = inngest.createFunction(
         .from("generated_images")
         .upsert({
           selections_hash: selectionsHash,
-          selections_json: selectionsJsonForClaim,
+          selections_json: selectionsJsonForDb,
           image_path: outputPath,
           prompt: finalPrompt,
           step_id: stepId,
@@ -493,7 +576,7 @@ export const generatePhoto = inngest.createFunction(
         orgSlug,
         floorplanSlug,
         image_size: "1K",
-        second_pass: policySecondPassAttempted,
+        second_pass: policySecondPassAttempted || rangeLockPassAttempted,
         swatch_batch_count: batchCount,
       });
 

@@ -2,6 +2,28 @@ import { NextResponse } from "next/server";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { getServiceClient } from "@/lib/supabase";
 
+type DebugPassArtifact = { id: string; label: string; path: string };
+
+function parseDebugPassArtifacts(raw: unknown): DebugPassArtifact[] {
+  if (typeof raw !== "string" || raw.trim() === "") return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item): item is DebugPassArtifact => {
+        if (!item || typeof item !== "object") return false;
+        const candidate = item as Record<string, unknown>;
+        return (
+          typeof candidate.id === "string" &&
+          typeof candidate.label === "string" &&
+          typeof candidate.path === "string"
+        );
+      });
+  } catch {
+    return [];
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -27,8 +49,17 @@ export async function GET(request: Request) {
       const {
         data: { publicUrl },
       } = supabase.storage.from("generated-images").getPublicUrl(row.image_path);
+      const debugArtifacts = parseDebugPassArtifacts(
+        (row.selections_json as Record<string, unknown> | null)?._debugPassArtifacts,
+      );
+      const intermediateImages = debugArtifacts.map((artifact) => {
+        const {
+          data: { publicUrl: artifactUrl },
+        } = supabase.storage.from("generated-images").getPublicUrl(artifact.path);
+        return { ...artifact, publicUrl: artifactUrl };
+      });
 
-      return { ...row, publicUrl };
+      return { ...row, publicUrl, intermediateImages };
     });
 
     return NextResponse.json({ images });
@@ -55,12 +86,17 @@ export async function DELETE(request: Request) {
       // Fetch all image paths for this org
       const { data: allRows } = await supabase
         .from("generated_images")
-        .select("image_path")
+        .select("image_path, selections_json")
         .eq("org_id", auth.orgId)
         .neq("image_path", "__pending__");
 
       if (allRows && allRows.length > 0) {
-        const paths = allRows.map((r) => r.image_path);
+        const paths = allRows.flatMap((r) => {
+          const artifacts = parseDebugPassArtifacts(
+            (r.selections_json as Record<string, unknown> | null)?._debugPassArtifacts,
+          );
+          return [r.image_path, ...artifacts.map((a) => a.path)];
+        });
         await supabase.storage.from("generated-images").remove(paths);
         await supabase
           .from("generated_images")
@@ -82,7 +118,7 @@ export async function DELETE(request: Request) {
     // Verify the row belongs to this org and get its image_path
     const { data: row, error: lookupErr } = await supabase
       .from("generated_images")
-      .select("image_path")
+      .select("image_path, selections_json")
       .eq("selections_hash", selections_hash)
       .eq("org_id", auth.orgId)
       .single();
@@ -92,7 +128,12 @@ export async function DELETE(request: Request) {
     }
 
     // Delete storage file using the verified path from DB
-    await supabase.storage.from("generated-images").remove([row.image_path]);
+    const artifacts = parseDebugPassArtifacts(
+      (row.selections_json as Record<string, unknown> | null)?._debugPassArtifacts,
+    );
+    await supabase.storage
+      .from("generated-images")
+      .remove([row.image_path, ...artifacts.map((a) => a.path)]);
 
     // Delete DB row
     const { error } = await supabase

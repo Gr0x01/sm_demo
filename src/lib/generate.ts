@@ -12,7 +12,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v17";
+export const GENERATION_CACHE_VERSION = "v18";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -102,13 +102,14 @@ export async function buildEditPrompt(
     const hint = spatialHints[subId];
     const descriptor = option.promptDescriptor?.trim();
     const descriptorSuffix = descriptor ? ` (${descriptor})` : "";
-    const finishLabel = hint
+    const targetLabel = hint
       ? `${subCategory.name} → apply to ${hint}`
       : `${subCategory.name}`;
     const applianceLabel = hint
       ? `${subCategory.name}: ${option.name}${descriptorSuffix} → apply to ${hint}`
       : `${subCategory.name}: ${option.name}${descriptorSuffix}`;
-    const swatchBackedLabel = subCategory.isAppliance ? applianceLabel : finishLabel;
+    // Swatch-backed edits are swatch-authoritative for appearance, including appliances.
+    const swatchBackedLabel = targetLabel;
 
     // Build fallback label when no swatch image is available.
     // Appliances: keep name + descriptor (AI needs model identification).
@@ -119,9 +120,9 @@ export async function buildEditPrompt(
       }
       const hex = option.swatchColor?.trim();
       if (hex) {
-        return `${finishLabel} (no swatch; target color ${hex})`;
+        return `${targetLabel} (no swatch; target color ${hex})`;
       }
-      return `${finishLabel} (no swatch image available; keep existing color)`;
+      return `${targetLabel} (no swatch image available; keep existing color)`;
     };
 
     if (option.swatchUrl && resolveSwatchBuffer) {
@@ -191,7 +192,9 @@ export async function buildEditPrompt(
     ? "Edit this room photo to match the selected finishes and appliance models."
     : "Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:";
   const applianceRuleBlock = hasApplianceSelection
-    ? `\n- Appliance selections (dishwasher/refrigerator/range) may require model-shape changes. Replace ONLY the selected appliance in-place to match the swatch and descriptor.
+    ? `\n- Appliance selections (dishwasher/refrigerator/range) may require model-shape changes. Replace ONLY the selected appliance in-place.
+- If an appliance has a swatch, use that swatch as the ONLY appearance authority for finish/color/material.
+- Only if an appliance has no swatch image available, follow the text descriptor for appearance.
 - Keep each appliance in the same location, opening, perspective, and approximate footprint.`
     : "";
 
@@ -215,7 +218,7 @@ ${listLines.join("\n")}
 RULES:
 - ${swatchMappingLine}
 - For each item marked "(use swatch #N)", match that swatch's color, pattern, and texture EXACTLY on the specified surface.
-- For swatch-backed finish edits, the swatch image is the ONLY color authority. Treat option names/descriptors as non-authoritative labels for color.
+- For swatch-backed edits (including appliances), the swatch image is the ONLY appearance authority. Treat option names/descriptors as non-authoritative for color/finish/material.
 - If a line includes "swatch-derived color anchor #RRGGBB", use it as a numeric target from that swatch image and avoid hue drift (no unintended green/blue cast).
 - For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
 - The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
