@@ -650,77 +650,78 @@ export function UpgradePicker({
 
       const data = await res.json();
 
-      if (!res.ok) {
-        // If generation is already in progress (e.g. triggered from another step),
-        // poll the check endpoint until the result is ready instead of erroring out
-        if ((res.status === 429 || res.status === 202) && data.selectionsHash) {
-          const abort = new AbortController();
-          pollAbortControllersRef.current.add(abort);
-          const pollInterval = 3000;
-          const maxPolls = 50; // ~2.5 min, above maxDuration of 120s
-          let consecutiveFailures = 0;
-          let exitReason: "complete" | "not_found" | "timeout" | "aborted" = "timeout";
-          try {
-            for (let poll = 0; poll < maxPolls; poll++) {
-              await new Promise(r => setTimeout(r, pollInterval));
-              if (abort.signal.aborted) { exitReason = "aborted"; break; }
-              try {
-                const checkRes = await fetch("/api/generate/photo/check", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ selectionsHash: data.selectionsHash }),
-                  signal: abort.signal,
+      // 202: dispatched to Inngest background function — poll for completion
+      // 429: duplicate request already in progress — poll for completion
+      if ((res.status === 429 || res.status === 202) && data.selectionsHash) {
+        const abort = new AbortController();
+        pollAbortControllersRef.current.add(abort);
+        const pollInterval = 3000;
+        const maxPolls = 50; // ~2.5 min, above maxDuration of 120s
+        let consecutiveFailures = 0;
+        let exitReason: "complete" | "not_found" | "timeout" | "aborted" = "timeout";
+        try {
+          for (let poll = 0; poll < maxPolls; poll++) {
+            await new Promise(r => setTimeout(r, pollInterval));
+            if (abort.signal.aborted) { exitReason = "aborted"; break; }
+            try {
+              const checkRes = await fetch("/api/generate/photo/check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ selectionsHash: data.selectionsHash }),
+                signal: abort.signal,
+              });
+              const checkData = await checkRes.json();
+              if (checkData.status === "complete" && checkData.imageUrl) {
+                consecutiveFailures = 0;
+                exitReason = "complete";
+                dispatch({
+                  type: "PHOTO_GENERATION_COMPLETE",
+                  photoKey,
+                  imageUrl: checkData.imageUrl,
+                  selectionsSnapshot,
+                  generatedImageId: checkData.generatedImageId,
                 });
-                const checkData = await checkRes.json();
-                if (checkData.status === "complete" && checkData.imageUrl) {
-                  consecutiveFailures = 0;
-                  exitReason = "complete";
-                  dispatch({
-                    type: "PHOTO_GENERATION_COMPLETE",
-                    photoKey,
-                    imageUrl: checkData.imageUrl,
-                    selectionsSnapshot,
-                    generatedImageId: checkData.generatedImageId,
-                  });
-                  track("generation_completed", { stepName: step.name, cacheHit: true, joinedInProgress: true });
-                  return;
-                }
-                if (checkData.status === "not_found") {
-                  consecutiveFailures = 0;
-                  exitReason = "not_found";
-                  break;
-                }
-                if (checkData.status === "pending") {
-                  consecutiveFailures = 0;
-                  // keep polling
-                } else {
-                  // status === "error" — transient backend issue, keep polling but track
-                  consecutiveFailures++;
-                  if (consecutiveFailures >= 5) {
-                    throw new Error("Network error while waiting for visualization");
-                  }
-                }
-              } catch (pollErr: unknown) {
-                if (abort.signal.aborted) { exitReason = "aborted"; break; }
+                track("generation_completed", { stepName: step.name, cacheHit: true, joinedInProgress: true });
+                return;
+              }
+              if (checkData.status === "not_found") {
+                consecutiveFailures = 0;
+                exitReason = "not_found";
+                break;
+              }
+              if (checkData.status === "pending") {
+                consecutiveFailures = 0;
+                // keep polling
+              } else {
+                // status === "error" — transient backend issue, keep polling but track
                 consecutiveFailures++;
                 if (consecutiveFailures >= 5) {
-                  throw new Error("Network error while waiting for visualization", { cause: pollErr });
+                  throw new Error("Network error while waiting for visualization");
                 }
               }
+            } catch (pollErr: unknown) {
+              if (abort.signal.aborted) { exitReason = "aborted"; break; }
+              consecutiveFailures++;
+              if (consecutiveFailures >= 5) {
+                throw new Error("Network error while waiting for visualization", { cause: pollErr });
+              }
             }
-          } finally {
-            pollAbortControllersRef.current.delete(abort);
           }
-          if (exitReason === "aborted") {
-            dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "" });
-            return;
-          }
-          if (exitReason === "not_found") {
-            throw new Error("Visualization failed \u2014 tap to retry");
-          }
-          // timeout — generation may still be running server-side
-          throw new Error("Still processing \u2014 try refreshing");
+        } finally {
+          pollAbortControllersRef.current.delete(abort);
         }
+        if (exitReason === "aborted") {
+          dispatch({ type: "PHOTO_GENERATION_ERROR", photoKey, error: "" });
+          return;
+        }
+        if (exitReason === "not_found") {
+          throw new Error("Visualization failed \u2014 tap to retry");
+        }
+        // timeout — generation may still be running server-side
+        throw new Error("Still processing \u2014 try refreshing");
+      }
+
+      if (!res.ok) {
         throw new Error(data.error || "Generation failed");
       }
 

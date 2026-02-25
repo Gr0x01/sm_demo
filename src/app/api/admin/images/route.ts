@@ -16,6 +16,7 @@ export async function GET(request: Request) {
       .from("generated_images")
       .select("selections_hash, selections_json, image_path, prompt, created_at")
       .eq("org_id", auth.orgId)
+      .neq("image_path", "__pending__")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -55,7 +56,8 @@ export async function DELETE(request: Request) {
       const { data: allRows } = await supabase
         .from("generated_images")
         .select("image_path")
-        .eq("org_id", auth.orgId);
+        .eq("org_id", auth.orgId)
+        .neq("image_path", "__pending__");
 
       if (allRows && allRows.length > 0) {
         const paths = allRows.map((r) => r.image_path);
@@ -63,7 +65,8 @@ export async function DELETE(request: Request) {
         await supabase
           .from("generated_images")
           .delete()
-          .eq("org_id", auth.orgId);
+          .eq("org_id", auth.orgId)
+          .neq("image_path", "__pending__");
       }
 
       return NextResponse.json({ success: true, deleted: allRows?.length ?? 0 });
