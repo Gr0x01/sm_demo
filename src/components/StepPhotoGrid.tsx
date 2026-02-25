@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { ImageLightbox } from "./ImageLightbox";
 import { LogoLoader } from "./LogoLoader";
@@ -114,7 +114,6 @@ export function StepPhotoGrid({
                   />
                   {generatedUrl && (
                     <img
-                      key={generatedUrl}
                       src={generatedUrl}
                       alt={photo.label}
                       className="absolute inset-0 w-full h-full object-cover animate-photo-crossfade"
@@ -169,6 +168,26 @@ function PhotoViewerCard({
   onRetry,
   onZoom,
 }: PhotoCardProps) {
+  // Layer-based crossfade: keeps old generated image visible while new fades in
+  const [layers, setLayers] = useState<{ src: string; key: number }[]>(
+    generatedUrl ? [{ src: generatedUrl, key: 0 }] : []
+  );
+  const layerKey = useRef(1);
+
+  useEffect(() => {
+    if (!generatedUrl) { setLayers([]); return; }
+    setLayers((prev) => {
+      const top = prev[prev.length - 1];
+      if (top?.src === generatedUrl) return prev;
+      const key = layerKey.current++;
+      return top ? [top, { src: generatedUrl, key }] : [{ src: generatedUrl, key }];
+    });
+  }, [generatedUrl]);
+
+  const handleLayerEnd = useCallback((finishedKey: number) => {
+    setLayers((prev) => prev.length > 1 ? prev.filter((l) => l.key === finishedKey) : prev);
+  }, []);
+
   const displayUrl = generatedUrl || photo.imageUrl;
   const hasGenerated = !!generatedUrl;
 
@@ -181,16 +200,21 @@ function PhotoViewerCard({
         className="absolute inset-0 w-full h-full object-cover cursor-pointer"
         onClick={() => onZoom(displayUrl)}
       />
-      {/* Generated image (crossfades in over base) */}
-      {generatedUrl && (
-        <img
-          key={generatedUrl}
-          src={generatedUrl}
-          alt={photo.label}
-          className="absolute inset-0 w-full h-full object-cover cursor-pointer animate-photo-crossfade"
-          onClick={() => onZoom(displayUrl)}
-        />
-      )}
+      {/* Generated image layers — old stays visible while new crossfades in */}
+      {layers.map((layer, i) => {
+        const isTop = i === layers.length - 1;
+        const isCrossfading = layers.length > 1 && isTop;
+        return (
+          <img
+            key={layer.key}
+            src={layer.src}
+            alt={photo.label}
+            className={`absolute inset-0 w-full h-full object-cover cursor-pointer ${isTop ? "animate-photo-crossfade" : ""}`}
+            onClick={() => onZoom(displayUrl)}
+            onAnimationEnd={isCrossfading ? () => handleLayerEnd(layer.key) : undefined}
+          />
+        );
+      })}
 
       {/* Generating overlay */}
       {isGenerating && (

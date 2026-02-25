@@ -785,10 +785,11 @@ export function UpgradePicker({
   }, [steps, state.selections, state.generatedWithSelections, state.generatingPhotoKeys, getPhotoVisualSelections, handleGeneratePhoto]);
 
   const handleRetry = useCallback(async (photoKey: string, stepPhotoId: string, step: StepConfig) => {
-    // Invalidate cached image, then regenerate
+    // Show loading overlay immediately — generated image stays visible underneath
+    dispatch({ type: "START_GENERATING_PHOTO", photoKey });
+    // Invalidate server-side cache, then regenerate
     const generatedImageId = state.generatedImageIds[photoKey];
     if (generatedImageId && sessionId) {
-      dispatch({ type: "REMOVE_GENERATED_IMAGE", photoKey });
       try {
         await fetch("/api/generate/photo/feedback", {
           method: "POST",

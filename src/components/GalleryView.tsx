@@ -345,7 +345,6 @@ export function GalleryView({
                       />
                       {item.generatedUrl && (
                         <img
-                          key={item.generatedUrl}
                           src={item.generatedUrl}
                           alt={item.photo.label}
                           className="absolute inset-0 h-full w-full object-cover animate-photo-crossfade"
