@@ -37,7 +37,7 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 | Service | Purpose |
 |---------|---------|
 | **Next.js 16** | App framework |
-| **OpenAI (gpt-image-1.5)** | Image generation (via images.edit) |
+| **Google Gemini (gemini-3-pro-image-preview)** | Image generation (primary) |
 | **Supabase** | Database (multi-tenant, RLS) + Storage (swatches, generated images) + Auth (admin) |
 | **Tailwind CSS v4** | Styling |
 | **Vercel** | Hosting |
@@ -53,7 +53,8 @@ npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a
 ## Environment Variables
 
 ```
-OPENAI_API_KEY=              # For image generation (gpt-image-1.5)
+OPENAI_API_KEY=              # For image generation (kept for fallback)
+GOOGLE_API_KEY=              # For Gemini image generation (gemini-3-pro-image-preview)
 NEXT_PUBLIC_SUPABASE_URL=    # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase anon key
 SUPABASE_SERVICE_ROLE_KEY=   # Supabase service role (server-side only)

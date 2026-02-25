@@ -3,7 +3,7 @@ import { buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections }
 import { getServiceClient } from "@/lib/supabase";
 import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup } from "@/lib/db-queries";
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { IMAGE_MODEL } from "@/lib/models";
+import { resolveImageModel } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
       const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
       const sceneDescription = buildSceneDescription(aiConfig);
 
-      const modelName = (typeof model === "string" && model) ? model : IMAGE_MODEL;
+      const modelName = resolveImageModel(model);
       const optionLookup = await getOptionLookup(org.id);
       const promptContextSignature = buildPromptContextSignature({
         sceneDescription,

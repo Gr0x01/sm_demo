@@ -21,6 +21,14 @@ const OPENAI_IMAGE_COST: Record<string, number> = {
 };
 const DEFAULT_OPENAI_IMAGE_COST = 0.20;
 
+// Estimated all-in cost per Gemini image generation pass (API image unit + input token overhead).
+// Use for PostHog cost_usd tracking. Reconcile against Google billing for actuals.
+const GEMINI_IMAGE_COST: Record<string, number> = {
+  "gemini-3-pro-image-preview": 0.144,  // $0.134 image + ~$0.01 tokens
+  "gemini-2.5-flash-image": 0.06,       // $0.05 image + ~$0.01 tokens
+};
+const DEFAULT_GEMINI_IMAGE_COST = 0.144;
+
 const GEMINI_TOKEN_COST: Record<string, { input: number; output: number }> = {
   "gemini-3-flash-preview": { input: 0.50 / 1_000_000, output: 3.00 / 1_000_000 },
   "gemini-2.5-flash": { input: 0.15 / 1_000_000, output: 0.60 / 1_000_000 },
@@ -50,6 +58,9 @@ interface GeminiEvent extends BaseEvent {
   prompt_tokens?: number;
   completion_tokens?: number;
   total_tokens?: number;
+  image_size?: string;
+  second_pass?: boolean;
+  swatch_batch_count?: number;
 }
 
 type AiEvent = OpenAIEvent | GeminiEvent;
@@ -81,4 +92,8 @@ export function estimateGeminiCost(model: string, usage: { inputTokens?: number;
     (usage.inputTokens ?? 0) * rates.input +
     (usage.outputTokens ?? 0) * rates.output
   );
+}
+
+export function estimateGeminiImageCost(model: string, passes: number): number {
+  return (GEMINI_IMAGE_COST[model] ?? DEFAULT_GEMINI_IMAGE_COST) * passes;
 }

@@ -123,7 +123,17 @@ Corrected room photo → step assignments for Kinkade floorplan.
 - [x] Migration script cleanup order: orphan deletion now runs before inserts (avoids unique constraint conflicts)
 
 ### 11. Self-Hosted Image Generation — Evaluated, Not Viable ✅
-No open-source model can replace gpt-image-1.5 for our pipeline (see D64). All generation costs are gpt-image-1.5 API-based (~$0.20/image). Revisit when open-source multi-reference instruction editing matures.
+No open-source model can replace gpt-image-1.5 for our pipeline (see D64). Revisit when open-source multi-reference instruction editing matures.
+
+### 16. Gemini Image Generation Migration ✅
+Replaced OpenAI gpt-image-1.5 with Gemini gemini-3-pro-image-preview as primary image generator (see D74).
+- [x] `src/lib/gemini-image.ts`: generation helper, anti-collage prompt wrapper, swatch batch splitting
+- [x] `src/lib/models.ts`: `IMAGE_MODEL` → Gemini, `resolveImageModel()` shared by generate + check routes
+- [x] `src/inngest/functions/generate-photo.ts`: multi-pass swatch batching (generate-1 → continuation-N → refine → persist), temp storage for intermediates, DB upsert throws on failure
+- [x] `src/inngest/functions/generate-demo.ts`: Gemini swap, DB upsert throws on failure
+- [x] `src/lib/posthog-server.ts`: Gemini image cost map + `estimateGeminiImageCost()`, extended GeminiEvent
+- [x] DB: cleared `models: ["gpt-image-1.5"]` from all generation policies (SM Kinkade, Lenox, Demo)
+- [x] Tested: single-pass (2 swatches), full kitchen (9 selections), multi-pass split (23 swatches, 2 batches), model fallback, temp file cleanup, cache hits
 
 ### 12. SM Photo Prompt/Scope Reliability Tuning ✅
 Targeted fixes for cross-room contamination and flooring correctness.
@@ -159,8 +169,14 @@ Replaced cloned Kinkade photos with 9 actual Lenox room photos, each with comple
 - [x] 55 pricing overrides seeded (after `option_floorplan_pricing` migration applied)
 - [x] Code review + backend architect review: caught missing `range` in kitchen hero scopeSlugs (would have silently broken second-pass), added refrigerator invariant rules to Kitchen & Dining policy
 
-### Upcoming (not started)
-- **Workstream E**: Branding controls (depends on A, small)
+### 15. V1 Workstream E: Branding Controls ✅
+**Depends on A (admin auth).** Org-level branding customization applied to buyer-facing pages.
+- [x] DB columns on `organizations`: `logo_url`, `logo_type`, `primary_color`, `secondary_color`, `accent_color`, `header_style`, `corner_style`
+- [x] Admin UI (`BrandingSettings.tsx`): logo upload (PNG/JPG/WebP/SVG, <5MB), color pickers (hex + visual), header style toggle (light/dark), corner style toggle (sharp/rounded), logo type (icon/wordmark)
+- [x] `PATCH /api/admin/organizations/[id]` with Zod validation, auth, cache invalidation
+- [x] Type-safe enum parsing (`src/lib/branding.ts`) with fallback defaults
+- [x] Buyer-facing dynamic theming: CSS variable injection (`--color-navy`, `--color-accent`, `--color-secondary`) on org landing + demo pages
+- [x] Org landing page: dynamic header style, logo display, primary/secondary color application, corner style on cards
 
 ## What's Done
 

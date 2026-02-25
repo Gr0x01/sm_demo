@@ -37,3 +37,4 @@ tmp/*
 # RunPod test outputs (large PNGs)
 scripts/flux-test-outputs/
 scripts/omnigen2-test-outputs/
+scripts/nano-banana-test-outputs/

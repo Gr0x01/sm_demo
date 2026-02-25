@@ -24,24 +24,25 @@ Browser (Next.js client)
   ├── /admin/[orgSlug]/images — Generated image cache management
   └── /api/* — API routes
 
-Server (Next.js API routes)
-  └── POST /api/generate/photo (all tenants including SM)
-        ├── Receives: orgSlug, floorplanSlug, stepPhotoId, selections, sessionId, model?
-        ├── Validates ownership chain: org → floorplan → step → step_photo, session → org/floorplan
-        ├── Hash includes _stepPhotoId + _model + _cacheVersion for global uniqueness
-        ├── Cache HIT → return URL
-        ├── Cache MISS:
-        │     ├── DB-based dedup via __pending__ placeholder row (cross-instance safe, 5 min TTL)
-        │     ├── Load base photo from Supabase Storage (rooms bucket)
-        │     ├── Resolve per-photo generation policy (DB-backed, internal-only; code fallback)
-        │     ├── Build prompt via buildEditPrompt with Supabase Storage swatch resolver + policy overrides
-        │     ├── Call OpenAI images.edit with model: modelName (not hardcoded)
-        │     ├── Optional policy-driven second pass (e.g., slide-in range correction)
-        │     ├── Upload to generated-images bucket, upsert cache row
-        │     └── On failure: release __pending__ row so retries can proceed
-        ├── /check — 3-state cache check (complete/pending/not_found/error); fast poll mode via selectionsHash, full derivation mode for cache restore
-        ├── /feedback — retry flow: deletes cached row, then client regenerates
-        └── Returns: imageUrl, cacheHit, generatedImageId
+Server (Next.js API routes + Inngest background functions)
+  ├── POST /api/generate/photo (all tenants including SM) — orchestrator only
+  │     ├── Validates ownership chain, scopes selections, computes hash
+  │     ├── Cache HIT → return 200 with URL
+  │     ├── Cache MISS → claim __pending__ slot → dispatch Inngest event → return 202
+  │     ├── /check — cache check (complete/pending/not_found/error); poll mode + full derivation mode
+  │     └── /feedback — retry flow: deletes cached row, then client regenerates
+  ├── POST /api/try/generate (demo page) — orchestrator only
+  │     ├── Validates demo selections, computes hash, uploads user photo
+  │     ├── Cache HIT → return 200 with URL
+  │     └── Cache MISS → claim __pending__ slot → dispatch Inngest event → return 202
+  ├── POST /api/inngest — Inngest serve endpoint (GET/POST/PUT)
+  └── Inngest background functions (src/inngest/functions/):
+        ├── generate-photo — up to 4 steps: generate-1 → generate-continuation-N (swatch batches) → refine (policy 2nd pass) → persist
+        │     Gemini has a 14-image input limit (1 room + 13 swatches). Photos with >13 swatches are auto-split into batches.
+        │     Each step gets its own 120s Vercel function invocation. Intermediate images stored in temp storage (not step state).
+        │     Config: retries: 2, concurrency: { limit: 5 }
+        └── generate-demo — 2 steps: generate → persist
+              Config: retries: 2, concurrency: { limit: 3 }
 
 Supabase
   ├── Tables: organizations, floorplans, categories,
@@ -89,13 +90,18 @@ Supabase
 ### All Tenants (per-photo, including SM)
 1. User clicks "Visualize" on a photo card → POST `/api/generate/photo`
 2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
-3. Cache hit → returns URL + `cacheHit: true`
-4. Cache miss → DB-based dedup (`__pending__` placeholder, 5 min stale TTL) → generate → upsert
-5. **Join-in-progress**: If the same photo/selections combo is already generating (e.g. user triggered from another step), 429 response includes `selectionsHash`. Client polls `/api/generate/photo/check` every 3s with the hash (single DB query, no re-derivation). Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted — clear generating state). AbortController per photo key, all aborted on unmount.
-6. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs
-7. Retry → deletes cached row via feedback route, then regenerates fresh
-8. "Visualize All" fires up to 20 concurrent
-9. **Slot release**: Every failure path inside the claimed-slot block (download fail, no image generated, thrown errors) releases the `__pending__` row so retries aren't blocked
+3. Cache hit → returns 200 with URL + `cacheHit: true`
+4. Cache miss → claim `__pending__` slot (DB dedup, 5 min stale TTL) → dispatch `photo/generate.requested` to Inngest → return **202** with `selectionsHash`
+5. **Inngest function** (`generate-photo`): up to 4 steps, each gets its own 120s Vercel invocation:
+   - `generate-1` — load hero photo + swatches, build prompt, call Gemini `generateImageWithGemini()`. Computes swatch batch assignments (serialized for continuation steps).
+   - `generate-continuation-N` — conditional: runs when >13 swatch-bearing selections. Each batch gets its own prompt + swatch images, uses previous pass output as room image. Intermediate images uploaded to temp storage (avoids Inngest 4MB step state limit).
+   - `refine` — conditional policy second pass (e.g., slide-in range correction), only when policy requires it
+   - `persist` — upload to Storage, upsert cache row replacing `__pending__`, PostHog event, cleanup temp images
+   - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
+6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.
+7. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs
+8. Retry → deletes cached row via feedback route, then regenerates fresh
+9. "Visualize All" fires up to 20 concurrent
 
 ## Pre-generation Strategy
 
@@ -180,30 +186,31 @@ State shape:
 
 1. User clicks "Visualize" on a photo card (available on steps with `step_photos`)
 2. Client sends POST to `/api/generate/photo` with orgSlug, floorplanSlug, stepPhotoId, selections, sessionId
-3. Server validates ownership chain (org → floorplan → step → step_photo, session → org/floorplan)
-4. Server builds edit prompt via `buildEditPrompt` + loads swatches from Supabase Storage via `SwatchBufferResolver`
-5. Server calls OpenAI `images.edit` with model (default `gpt-image-1.5`):
-   - Input: room photo from Storage + swatch images
-   - Prompt includes upgrade list + spatial placement rules + perspective-locking
-   - Output: 1536x1024 PNG, quality "high"
-6. Upload to `generated-images` bucket, upsert cache row
-7. Return image URL to client
-9. Client displays in StepPhotoGrid (per-photo cards with retry via ImageLightbox)
+3. Route validates ownership, scopes selections, computes hash, claims `__pending__` slot
+4. Route dispatches `photo/generate.requested` event to Inngest, returns 202
+5. Inngest `generate-photo` function runs in background (up to 4 steps, each up to 120s):
+   - Splits swatch-bearing selections into batches of ≤13 (Gemini's 14-image input limit)
+   - Per-batch: builds edit prompt via `buildEditPrompt`, wraps with Gemini anti-collage preamble, calls `generateImageWithGemini()` (3:2 aspect, 1K resolution)
+   - Continuation batches use previous pass output as room image (stored in temp storage between steps)
+   - Optional policy second pass (e.g., slide-in range correction)
+   - Uploads final image to `generated-images` bucket, upserts cache row, cleans temp files
+6. Client polls `/api/generate/photo/check` every 3s until result is ready
+7. Client displays in StepPhotoGrid (per-photo cards with retry via ImageLightbox)
 
-**Image approach**: OpenAI image editing via `images.edit` endpoint. Sends base room photo + individually attached swatch images for selected visual items. Prompt lines explicitly map each item to `swatch #N` in deterministic order, so the model can bind the correct material to the correct surface.
+**Image approach**: Gemini image generation via `@google/genai` SDK (`generateImageWithGemini()` in `src/lib/gemini-image.ts`). Sends base room photo + individually attached swatch images as multimodal input. Prompt lines explicitly map each item to `swatch #N` in deterministic order. Anti-collage preamble wraps the prompt (Gemini has no `size` param equivalent). Config: `responseModalities: ["IMAGE"]`, `aspectRatio: "3:2"`, `imageSize: "1K"`. Default model: `gemini-3-pro-image-preview`.
+
+**Multi-pass swatch splitting**: Gemini has a hard 14-image input limit (1 room photo + 13 swatches). Photos with >13 swatch-bearing selections are auto-split into batches via `splitSelectionsForGemini()`. Each batch gets its own `buildEditPrompt()` call with only that batch's selections. Non-swatch selections (appliances, hex-only) go in batch 1 only. Continuation batches use previous pass output as room image. Batch assignments are computed once in step 1 and serialized (not re-derived from DB).
 
 **Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Base rules are global; tenant/photo-specific constraints are layered via per-photo policy overrides (DB-backed, internal-only), including optional second-pass refinements.
-
-**`input_fidelity: "high"`**: Added to the `images.edit` call to maximize preservation of base image details (hardware, pulls, fixtures). Default is "low". Costs ~$0.04-0.06 extra per request.
 
 **Cache semantic versioning**: Generation hash includes `_cacheVersion` so prompt/pipeline changes do not serve stale outputs. Bump `GENERATION_CACHE_VERSION` whenever generation semantics change.
 Generation hash also includes policy and prompt context inputs (`_promptPolicy`, `_promptContext`) so changes to per-photo hint/baseline/scene/policy invalidate stale cache entries.
 
 **Reliability playbook**: See `generation-reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
 
-**GPT-5.2 test path**: Add `&model=gpt-5.2` to URL to use GPT-5.2 via Responses API instead of gpt-image-1.5. Uses `image_generation` tool. Better detail preservation but different API pattern. Cache hash includes model name to prevent collisions. Admin page shows model tag on cached images.
+**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (good quality, expensive, slow) → **Gemini `gemini-3-pro-image-preview`** via `@google/genai` SDK (current — ~28% cheaper, 2-3x faster, comparable quality, auto multi-pass splitting for >13 swatches). OpenAI package kept installed as fallback but not imported in generation code.
 
-**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format, Supabase upload failures with large PNGs) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (current — best quality for demo). GPT-5.2 via Responses API tested — better detail preservation but 1.5 is good enough for demo. Production would need per-surface masking and multi-pass inpainting.
+**Model validation**: `resolveImageModel()` in `src/lib/models.ts` validates client-provided model names against a Gemini-only whitelist (`SUPPORTED_IMAGE_MODELS`). Unknown models (including `gpt-image-1.5`) silently fall back to the default Gemini model. Used by both generate and check routes to prevent hash mismatch.
 
 ## Swatch Images
 
@@ -265,9 +272,13 @@ src/
 │       │   └── resume-by-email/route.ts # POST — email-based resume (rate-limited)
 │       ├── generate/
 │       │   └── photo/
-│       │       ├── route.ts        # POST — multi-tenant per-photo generation (DB dedup, SVG swatch filtering)
+│       │       ├── route.ts        # POST — orchestrator: validate, claim slot, dispatch Inngest, return 202
 │       │       ├── check/route.ts  # POST — multi-tenant per-photo cache check
 │       │       └── feedback/route.ts # POST — retry flow: cache row delete for regeneration
+│       ├── try/
+│       │   ├── generate/route.ts   # POST — demo orchestrator: validate, claim, dispatch Inngest, return 202
+│       │   └── check/route.ts      # POST — demo cache check
+│       ├── inngest/route.ts        # Inngest serve endpoint (GET/POST/PUT, maxDuration=120)
 │       └── ... (selections/[buyerId] endpoint deleted — was deprecated)
 ├── components/
 │   ├── LandingHero.tsx
@@ -313,7 +324,14 @@ src/
 │   ├── buyer-session.ts     # Session helpers (mapRowToPublicSession, validateEmail, SESSION_COLUMNS)
 │   ├── email.ts             # Resend email utility (sendResumeEmail, lazy-initialized client)
 │   ├── generate.ts          # Prompt construction, buildPromptContextSignature, hashSelections (shared by generation + check routes)
+│   ├── gemini-image.ts      # Gemini generation helper: generateImageWithGemini(), wrapPromptForGemini(), splitSelectionsForGemini()
+│   ├── models.ts            # IMAGE_MODEL, VISION_MODEL, resolveImageModel(), SUPPORTED_IMAGE_MODELS
 │   └── photo-generation-policy.ts # Internal per-photo policy resolver (DB-backed + fallback)
+├── inngest/
+│   ├── client.ts              # Inngest client singleton + typed event schemas
+│   └── functions/
+│       ├── generate-photo.ts  # Background photo generation (up to 4 steps: generate-1 → continuation-N → refine → persist)
+│       └── generate-demo.ts   # Background demo generation (2 steps: generate → persist)
 └── types/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
 

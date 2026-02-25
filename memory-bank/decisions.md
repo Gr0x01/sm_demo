@@ -368,3 +368,69 @@ Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HI
 - `/try` demo page's local cookie-based 5-generation cap intentionally preserved (separate mechanism)
 **Supersedes**: D50, D55, D56.
 **Trade-off**: No per-session usage limits. Internal monitoring via PostHog if abuse becomes a concern. Permanent cache means costs decline naturally over time.
+
+## D71: Drop setup fee — $500/plan/mo flat, minimum 3 plans
+**Context**: Original pricing (D66) was $1,500 setup (3 plans) + $500/mo/plan. After building Lenox (second floorplan), realized setup is largely automated: LLM converts PDFs to structured data, scraping handles swatches, prompt playbook handles 90% of tuning. Actual hard cost per plan setup is ~$50-100 in generation + 2-4 hrs. The setup fee was solving a problem that doesn't exist.
+**Decision**:
+- **Drop all setup fees.** $500/mo per floorplan, minimum 3 floorplans ($1,500/mo floor).
+- 12-month commitment after pilot conversion. Can add plans anytime, can't drop below 3.
+- Pilot: 1 floorplan free, 60 days. Hard cost ~$100-200 (customer acquisition cost).
+- No volume discounts published. Only offer in exchange for commitment (more plans, annual terms).
+**Why**: (1) Setup costs are low and automated — fee isn't needed for cost recovery. (2) Removing it collapses the sales cycle to a one-sentence pitch. (3) Makes us harder for competitors to undercut on price surface area. (4) Speed to 20 builders matters more than $50K in setup fees (1% of $5M exit target). (5) Builders negotiate everything — two numbers = two things to negotiate. One number = take it or leave it.
+**Supersedes**: D66 setup fee structure. Monthly pricing unchanged.
+**Trade-off**: Lose ~$50K in setup fees across 20 builders. Gain faster sales cycle, simpler pitch, competitive defensibility. Every builder signed faster is one a competitor can't sign.
+**Exit framing**: Target $5M exit at 8-10x ARR. Need ~20 builders × 5 plans avg = $600K ARR. Achievable in 2-3 years at 1-2 new builders/month.
+
+## D72: Inngest for background image generation
+**Context**: Image generation ran inline in API routes (30-120s+). This blocked Vercel functions for the entire duration, hit the 120s timeout on two-pass kitchen generations, and meant client requests hung for the full generation time.
+**Decision**: Move all image generation to Inngest background functions. API routes become thin orchestrators: validate → claim `__pending__` slot → dispatch event → return 202. Client polls `/check` (existing pattern). Each Inngest `step.run()` gets its own 120s Vercel function invocation, so two-pass generations (previously ~176s, exceeding 120s limit) now work on Vercel.
+**Functions**: `generate-photo` (3 steps: generate → refine → persist, retries: 2, concurrency: 5), `generate-demo` (2 steps: generate → persist, retries: 2, concurrency: 3).
+**Trade-off**: Adds Inngest as infrastructure dependency. Gains: no more Vercel timeout failures, client never blocks on generation, automatic retries, concurrency control, observable via Inngest dashboard.
+
+## D74: Replace OpenAI gpt-image-1.5 with Gemini gemini-3-pro-image-preview as primary image generator
+**Context**: D73 validated Gemini as production-viable (~28% cheaper per pass, 2-3x faster, comparable quality). But Gemini has a hard 14-image input limit (1 room photo + 13 swatches max). Some SM photos have up to 23 swatches when buyer customizes everything.
+**Decision**: Replace OpenAI with Gemini as the primary image generator. Auto multi-pass splitting handles photos that exceed the 13-swatch limit:
+- `splitSelectionsForGemini()` separates swatch-bearing vs non-swatch selections, chunks swatch-bearing into groups of ≤13
+- Each batch gets its own Inngest step (`generate-1`, `generate-continuation-N`) with its own 120s timeout
+- Batch assignments computed once in step 1 and serialized (not re-derived from DB between steps)
+- Intermediate images stored in Supabase temp storage (not step state) to avoid Inngest's 4MB limit
+- Temp files cleaned up in persist step
+- Policy second pass (refine) runs after all swatch batches, unchanged
+- `models` field cleared from all DB generation policies so second pass fires for any model
+- `resolveImageModel()` shared by generate + check routes prevents hash mismatch
+- DB upsert failures now throw (trigger Inngest retry) instead of silent log
+**Cost**: 1-pass photos ~$0.144 (28% cheaper than $0.20). 2-pass photos ~$0.288 (only 2 SM photos worst case). Average generation is cheaper. Speed: 25-41s vs 60-120s.
+**Supersedes**: D25 (OpenAI gpt-image-1.5 as primary). OpenAI package kept installed as fallback.
+**Files changed**: `src/lib/gemini-image.ts` (new), `src/lib/models.ts`, `src/lib/posthog-server.ts`, `src/inngest/functions/generate-photo.ts`, `src/inngest/functions/generate-demo.ts`, `src/app/api/generate/photo/route.ts`, `src/app/api/generate/photo/check/route.ts`, `src/lib/demo-generate.ts`.
+
+## D73: Gemini Nano Banana Pro validated as production-viable alternative to gpt-image-1.5
+**Context**: D64 evaluated self-hosted models (FLUX, OmniGen2, Kontext, Qwen) — all failed because they can't handle 10-15 simultaneous swatch references. Needed to test Gemini 3 Pro Image ("Nano Banana Pro") using the real production pipeline, not text descriptions.
+
+**Test script**: `scripts/test-gemini-nano-banana.ts` — uses actual `buildEditPrompt()`, production scoping, DB-backed generation policies, real SM Kinkade room photo + swatches from Supabase.
+
+**Critical bugs found during testing**:
+1. `@google/genai` SDK expects `config.imageConfig` (not `imageGenerationConfig`). Wrong key was silently ignored — aspect ratio never applied. This was the root cause of portrait/collage outputs in v2 tests.
+2. Gemini needs explicit anti-collage/composition instructions in the prompt. No API parameter exists to prevent split-screen/before-after output. Added `GEMINI_OUTPUT_PREAMBLE` wrapper.
+
+**v3 results (both bugs fixed, `imageSize: "1K"`, `aspectRatio: "3:2"`)**:
+
+| Metric | gpt-image-1.5 | Gemini 1K | Gemini 2K |
+|---|---|---|---|
+| Speed | 60-120s | **25-41s** | 37-58s |
+| Resolution | 1536x1024 | 1264x848 | 2528x1696 |
+| Cost/image | $0.20 | ~$0.144 | ~$0.134 |
+| Aspect ratio | Reliable (`size` param) | Reliable (`imageConfig`) | Reliable (`imageConfig`) |
+| Max input images | ~10 | 14 | 14 |
+
+All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full kitchen (8 swatches) completed in 41s vs 60-120s for gpt-image-1.5.
+
+**Decision**: Gemini Nano Banana Pro is validated as a production-viable alternative. Faster, cheaper (28% savings), higher max swatch count. Quality is comparable. Next step: build a Gemini code path in the production route with model selection, and offer 2K as a premium tier.
+
+**Key learnings**:
+- Use `@google/genai` SDK directly, not Vercel AI SDK (better control, no abstraction bugs)
+- `imageConfig` (not `imageGenerationConfig`) for aspect ratio/size
+- `imageSize: "1K"` | `"2K"` | `"4K"` — 1K is the sweet spot for cost/speed/quality
+- Prompt preamble needed: explicit "single image, no collage, preserve full field of view" instructions
+- `responseModalities: ["IMAGE"]` for image-only output
+
+**Test outputs**: `scripts/nano-banana-test-outputs/` — v3 results with prompts, swatches, and output images.
