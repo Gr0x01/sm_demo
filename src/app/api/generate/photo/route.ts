@@ -10,6 +10,7 @@ import {
   buildDefaultOptionBySubcategory,
   normalizeSelectionRecord,
   reconcileClientAndSessionSelections,
+  stripDefaultSelections,
 } from "@/lib/selection-reconcile";
 import { inngest } from "@/inngest/client";
 
@@ -130,10 +131,14 @@ export async function POST(request: Request) {
 
     const optionLookup = await getOptionLookup(org.id);
     const defaultBySubcategory = buildDefaultOptionBySubcategory(optionLookup);
-    const mergedSelections = reconcileClientAndSessionSelections(
-      normalizeSelectionRecord(selections),
-      normalizeSelectionRecord(session.selections),
+    const mergedSelections = stripDefaultSelections(
+      reconcileClientAndSessionSelections(
+        normalizeSelectionRecord(selections),
+        normalizeSelectionRecord(session.selections),
+        defaultBySubcategory,
+      ),
       defaultBySubcategory,
+      optionLookup,
     );
 
     // --- Server-side per-photo selection scoping ---

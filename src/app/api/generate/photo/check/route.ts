@@ -10,6 +10,7 @@ import {
   buildDefaultOptionBySubcategory,
   normalizeSelectionRecord,
   reconcileClientAndSessionSelections,
+  stripDefaultSelections,
 } from "@/lib/selection-reconcile";
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
@@ -82,10 +83,14 @@ export async function POST(request: Request) {
           sessionSelections = normalizeSelectionRecord(session.selections);
         }
       }
-      const mergedSelections = reconcileClientAndSessionSelections(
-        normalizeSelectionRecord(selections),
-        sessionSelections,
+      const mergedSelections = stripDefaultSelections(
+        reconcileClientAndSessionSelections(
+          normalizeSelectionRecord(selections),
+          sessionSelections,
+          defaultBySubcategory,
+        ),
         defaultBySubcategory,
+        optionLookup,
       );
 
       // Server-side per-photo selection scoping (mirrors generate route)
