@@ -9,7 +9,21 @@ import { generateImageWithGemini, wrapPromptForGemini, splitSelectionsForGemini 
 
 const SUPPORTED_SWATCH_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const SLIDE_IN_RANGE_OPTION_IDS = new Set(["range-ge-gas-slide-in", "range-ge-gas-slide-in-convection"]);
+const MIRROR_DETECTION_WIDTH = 256;
+const MIRROR_DETECTION_HEIGHT = 170;
+const MIRROR_DETECTION_IMPROVEMENT_RATIO = 0.96;
+const MIRROR_RETRY_RULES = `CRITICAL ORIENTATION LOCK:
+- Do NOT mirror or flip the image horizontally or vertically.
+- Keep every left/right relationship exactly as in the input photo.
+- Preserve object handedness (faucet direction, handle orientation, appliance hinge side, hallway side, window side).`;
 type PassArtifact = { id: string; label: string; path: string };
+type GuardedGenerationResult = {
+  result: { b64: string; mimeType: string };
+  durationMs: number;
+  modelCalls: number;
+  promptUsed: string;
+  fallbackToInput: boolean;
+};
 
 /** Build a swatch resolver that downloads from Supabase Storage. */
 function createSwatchResolver(supabase: ReturnType<typeof getServiceClient>): SwatchBufferResolver {
@@ -75,6 +89,158 @@ CRITICAL RANGE GEOMETRY LOCK:
 - Keep backsplash tile visible directly behind the cooktop.
 - Keep exactly one oven door below the cooktop.
 - Edit ONLY the cooking range appliance in-place; keep surrounding cabinetry, countertop seams, island, sink, faucet, walls, flooring, and lighting unchanged.`;
+}
+
+function meanAbsDiff(a: Uint8Array, b: Uint8Array): number {
+  const len = Math.min(a.length, b.length);
+  if (len === 0) return Number.POSITIVE_INFINITY;
+  let sum = 0;
+  for (let i = 0; i < len; i++) {
+    sum += Math.abs(a[i] - b[i]);
+  }
+  return sum / len;
+}
+
+function meanAbsDiffFlippedReference(reference: Uint8Array, candidate: Uint8Array, width: number, height: number): number {
+  const len = Math.min(reference.length, candidate.length, width * height);
+  if (len === 0) return Number.POSITIVE_INFINITY;
+  let sum = 0;
+  let count = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idxRef = y * width + (width - 1 - x);
+      const idxCand = y * width + x;
+      if (idxRef >= len || idxCand >= len) continue;
+      sum += Math.abs(reference[idxRef] - candidate[idxCand]);
+      count += 1;
+    }
+  }
+  return count > 0 ? sum / count : Number.POSITIVE_INFINITY;
+}
+
+async function toEdgeMap(buffer: Buffer, width: number, height: number): Promise<Uint8Array> {
+  const gray = await sharp(buffer)
+    .rotate()
+    .resize(width, height, { fit: "fill" })
+    .grayscale()
+    .raw()
+    .toBuffer();
+
+  const edge = new Uint8Array(width * height);
+  for (let y = 1; y < height - 1; y++) {
+    for (let x = 1; x < width - 1; x++) {
+      const idx = y * width + x;
+      const gx = Math.abs(gray[idx + 1] - gray[idx - 1]);
+      const gy = Math.abs(gray[idx + width] - gray[idx - width]);
+      edge[idx] = Math.min(255, gx + gy);
+    }
+  }
+  return edge;
+}
+
+async function isLikelyHorizontallyMirrored(referenceBuffer: Buffer, candidateBuffer: Buffer): Promise<boolean> {
+  try {
+    const [referenceEdge, candidateEdge] = await Promise.all([
+      toEdgeMap(referenceBuffer, MIRROR_DETECTION_WIDTH, MIRROR_DETECTION_HEIGHT),
+      toEdgeMap(candidateBuffer, MIRROR_DETECTION_WIDTH, MIRROR_DETECTION_HEIGHT),
+    ]);
+
+    const normalDiff = meanAbsDiff(referenceEdge, candidateEdge);
+    const mirroredDiff = meanAbsDiffFlippedReference(
+      referenceEdge,
+      candidateEdge,
+      MIRROR_DETECTION_WIDTH,
+      MIRROR_DETECTION_HEIGHT,
+    );
+
+    return mirroredDiff < normalDiff * MIRROR_DETECTION_IMPROVEMENT_RATIO;
+  } catch (error) {
+    console.warn("[generate/photo] Mirror detection failed; skipping mirror guard.", error);
+    return false;
+  }
+}
+
+async function generateImageWithMirrorGuard({
+  roomBuffer,
+  roomMimeType,
+  swatches,
+  prompt,
+  model,
+  stepPhotoId,
+  passLabel,
+}: {
+  roomBuffer: Buffer;
+  roomMimeType: string;
+  swatches: Array<{ buffer: Buffer; mediaType: string }>;
+  prompt: string;
+  model: string;
+  stepPhotoId: string;
+  passLabel: string;
+}): Promise<GuardedGenerationResult> {
+  const runOnce = async (promptText: string) => {
+    const start = performance.now();
+    const result = await generateImageWithGemini({
+      roomBuffer,
+      roomMimeType,
+      swatches,
+      prompt: promptText,
+      model,
+    });
+    return { result, durationMs: Math.round(performance.now() - start) };
+  };
+
+  let totalDurationMs = 0;
+  let modelCalls = 0;
+
+  const first = await runOnce(prompt);
+  totalDurationMs += first.durationMs;
+  modelCalls += 1;
+  const firstBuffer = Buffer.from(first.result.b64, "base64");
+  const firstMirrored = await isLikelyHorizontallyMirrored(roomBuffer, firstBuffer);
+  if (!firstMirrored) {
+    return {
+      result: first.result,
+      durationMs: totalDurationMs,
+      modelCalls,
+      promptUsed: prompt,
+      fallbackToInput: false,
+    };
+  }
+
+  const retryPrompt = `${prompt}\n\n${MIRROR_RETRY_RULES}`;
+  console.warn(`[generate/photo] Mirror detected for ${stepPhotoId} (${passLabel}); retrying with anti-mirror rules.`);
+
+  try {
+    const retry = await runOnce(retryPrompt);
+    totalDurationMs += retry.durationMs;
+    modelCalls += 1;
+
+    const retryBuffer = Buffer.from(retry.result.b64, "base64");
+    const retryMirrored = await isLikelyHorizontallyMirrored(roomBuffer, retryBuffer);
+    if (!retryMirrored) {
+      return {
+        result: retry.result,
+        durationMs: totalDurationMs,
+        modelCalls,
+        promptUsed: retryPrompt,
+        fallbackToInput: false,
+      };
+    }
+  } catch (error) {
+    totalDurationMs += 0;
+    modelCalls += 1;
+    console.warn(`[generate/photo] Anti-mirror retry failed for ${stepPhotoId} (${passLabel}); reverting to input frame.`, error);
+  }
+
+  console.warn(`[generate/photo] Mirror persisted for ${stepPhotoId} (${passLabel}); reverting this pass to the previous input frame.`);
+  const fallbackPng = await sharp(roomBuffer).rotate().png().toBuffer();
+  return {
+    result: { b64: fallbackPng.toString("base64"), mimeType: "image/png" },
+    durationMs: totalDurationMs,
+    modelCalls,
+    promptUsed: retryPrompt,
+    fallbackToInput: true,
+  };
 }
 
 /** Upload intermediate image to temp storage, return the path. Keeps step state small. */
@@ -215,25 +381,25 @@ export const generatePhoto = inngest.createFunction(
       const geminiPrompt = wrapPromptForGemini(prompt);
       console.log(`[generate/photo] Sending ${1 + supportedSwatches.length} images to ${modelName} for photo ${stepPhotoId} (batch 1/${batchCount})`);
 
-      const genStart = performance.now();
-      const result = await generateImageWithGemini({
+      const guarded = await generateImageWithMirrorGuard({
         roomBuffer: imageBuffer,
         roomMimeType: heroMime,
         swatches: supportedSwatches,
         prompt: geminiPrompt,
         model: modelName,
+        stepPhotoId,
+        passLabel: `batch 1/${batchCount}`,
       });
-
-      const durationMs = Math.round(performance.now() - genStart);
-      console.log(`[generate/photo] Batch 1 complete for ${stepPhotoId} in ${durationMs}ms`);
-      const outputBuffer = Buffer.from(result.b64, "base64");
+      const durationMs = guarded.durationMs;
+      console.log(`[generate/photo] Batch 1 complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
+      const outputBuffer = Buffer.from(guarded.result.b64, "base64");
 
       // Upload intermediate image to storage instead of passing b64 through step state
       let tempPath: string | null = null;
       if (batchCount > 1 || resolvedPolicy.secondPass || isSlideInRangeSelected) {
         tempPath = await uploadTempImage(
           supabase, orgId, selectionsHash, "batch-1",
-          outputBuffer, result.mimeType,
+          outputBuffer, guarded.result.mimeType,
         );
       }
       const debugPath = await uploadDebugArtifactImage(
@@ -242,18 +408,19 @@ export const generatePhoto = inngest.createFunction(
         selectionsHash,
         "01-batch-1",
         outputBuffer,
-        result.mimeType,
+        guarded.result.mimeType,
       );
 
       return {
         prompt,
         durationMs,
+        modelCalls: guarded.modelCalls,
         batchCount,
         batchAssignments: batchCount > 1 ? batches : null,
         tempPath,
-        mimeType: result.mimeType,
+        mimeType: guarded.result.mimeType,
         // Only pass b64 through state if this is the final image (no continuation/refine needed)
-        finalB64: (!tempPath) ? result.b64 : null,
+        finalB64: (!tempPath) ? guarded.result.b64 : null,
         debugArtifact: { id: "batch-1", label: `Batch 1/${batchCount}`, path: debugPath } satisfies PassArtifact,
       };
     });
@@ -264,6 +431,7 @@ export const generatePhoto = inngest.createFunction(
     let latestMimeType = firstBatch.mimeType;
     let currentPrompt = firstBatch.prompt;
     let totalDurationMs = firstBatch.durationMs;
+    let totalModelCalls = firstBatch.modelCalls;
     const batchCount = firstBatch.batchCount;
 
     if (batchCount > 1 && firstBatch.batchAssignments) {
@@ -297,23 +465,23 @@ export const generatePhoto = inngest.createFunction(
           const geminiPrompt = wrapPromptForGemini(batchPrompt);
           console.log(`[generate/photo] Sending ${1 + supportedSwatches.length} images to ${modelName} for photo ${stepPhotoId} (batch ${batchIdx + 1}/${batchCount})`);
 
-          const genStart = performance.now();
-          const result = await generateImageWithGemini({
+          const guarded = await generateImageWithMirrorGuard({
             roomBuffer,
             roomMimeType: prevMimeType,
             swatches: supportedSwatches,
             prompt: geminiPrompt,
             model: modelName,
+            stepPhotoId,
+            passLabel: `batch ${batchIdx + 1}/${batchCount}`,
           });
-
-          const durationMs = Math.round(performance.now() - genStart);
-          console.log(`[generate/photo] Batch ${batchIdx + 1} complete for ${stepPhotoId} in ${durationMs}ms`);
-          const outputBuffer = Buffer.from(result.b64, "base64");
+          const durationMs = guarded.durationMs;
+          console.log(`[generate/photo] Batch ${batchIdx + 1} complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
+          const outputBuffer = Buffer.from(guarded.result.b64, "base64");
 
           // Upload intermediate to temp storage
           const tempPath = await uploadTempImage(
             supabase, orgId, selectionsHash, `batch-${batchIdx + 1}`,
-            outputBuffer, result.mimeType,
+            outputBuffer, guarded.result.mimeType,
           );
           const debugPath = await uploadDebugArtifactImage(
             supabase,
@@ -321,14 +489,15 @@ export const generatePhoto = inngest.createFunction(
             selectionsHash,
             `${String(batchIdx + 1).padStart(2, "0")}-batch-${batchIdx + 1}`,
             outputBuffer,
-            result.mimeType,
+            guarded.result.mimeType,
           );
 
           return {
             prompt: batchPrompt,
             durationMs,
+            modelCalls: guarded.modelCalls,
             tempPath,
-            mimeType: result.mimeType,
+            mimeType: guarded.result.mimeType,
             debugArtifact: {
               id: `batch-${batchIdx + 1}`,
               label: `Batch ${batchIdx + 1}/${batchCount}`,
@@ -341,6 +510,7 @@ export const generatePhoto = inngest.createFunction(
         latestMimeType = continuation.mimeType;
         currentPrompt += `\n\nBATCH ${batchIdx + 1}:\n${continuation.prompt}`;
         totalDurationMs += continuation.durationMs;
+        totalModelCalls += continuation.modelCalls;
         passArtifacts.push(continuation.debugArtifact);
       }
     }
@@ -372,25 +542,26 @@ export const generatePhoto = inngest.createFunction(
           ? buildRangeGeometryPrompt(resolvedPolicy.secondPass!.prompt, rangeSwatch.length > 0)
           : resolvedPolicy.secondPass!.prompt;
         const geminiPrompt = wrapPromptForGemini(secondPassPrompt);
+        const secondPassStart = performance.now();
 
-        const genStart = performance.now();
         try {
-          const result = await generateImageWithGemini({
+          const guarded = await generateImageWithMirrorGuard({
             roomBuffer,
             roomMimeType: prevMimeType,
             swatches: rangeSwatch,
             prompt: geminiPrompt,
             model: modelName,
+            stepPhotoId,
+            passLabel: "second-pass-refine",
           });
-
-          const durationMs = Math.round(performance.now() - genStart);
-          console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          const outputBuffer = Buffer.from(result.b64, "base64");
+          const durationMs = guarded.durationMs;
+          console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
+          const outputBuffer = Buffer.from(guarded.result.b64, "base64");
 
           // Upload refined image
           const tempPath = await uploadTempImage(
             supabase, orgId, selectionsHash, "refine",
-            outputBuffer, result.mimeType,
+            outputBuffer, guarded.result.mimeType,
           );
           const debugPath = await uploadDebugArtifactImage(
             supabase,
@@ -398,24 +569,26 @@ export const generatePhoto = inngest.createFunction(
             selectionsHash,
             "98-refine",
             outputBuffer,
-            result.mimeType,
+            guarded.result.mimeType,
           );
 
           return {
             tempPath,
-            mimeType: result.mimeType,
+            mimeType: guarded.result.mimeType,
             durationMs,
+            modelCalls: guarded.modelCalls,
             success: true as const,
             promptUsed: secondPassPrompt,
             debugArtifact: { id: "refine", label: "Second pass refine", path: debugPath } satisfies PassArtifact,
           };
         } catch (err) {
-          const durationMs = Math.round(performance.now() - genStart);
+          const durationMs = Math.round(performance.now() - secondPassStart);
           console.warn(`[generate/photo] Second pass failed for ${stepPhotoId}; keeping previous output.`, err);
           return {
             tempPath: null,
             mimeType: null,
             durationMs,
+            modelCalls: 1,
             success: false as const,
             promptUsed: secondPassPrompt,
             debugArtifact: null,
@@ -425,6 +598,7 @@ export const generatePhoto = inngest.createFunction(
 
       policySecondPassAttempted = true;
       totalDurationMs += secondPass.durationMs;
+      totalModelCalls += secondPass.modelCalls;
       finalPrompt = `${currentPrompt}\n\nSECOND_PASS_ATTEMPT (${resolvedPolicy.secondPass.reason})${secondPass.success ? "" : " [FAILED]"}:\n${secondPass.promptUsed}`;
       if (secondPass.success && secondPass.tempPath) {
         latestTempPath = secondPass.tempPath;
@@ -452,24 +626,25 @@ export const generatePhoto = inngest.createFunction(
           rangeSwatch.length > 0,
         );
         const geminiPrompt = wrapPromptForGemini(lockPrompt);
+        const rangeLockStart = performance.now();
 
-        const genStart = performance.now();
         try {
-          const result = await generateImageWithGemini({
+          const guarded = await generateImageWithMirrorGuard({
             roomBuffer,
             roomMimeType: prevMimeType,
             swatches: rangeSwatch,
             prompt: geminiPrompt,
             model: modelName,
+            stepPhotoId,
+            passLabel: "range-lock",
           });
-
-          const durationMs = Math.round(performance.now() - genStart);
-          console.log(`[generate/photo] Range lock pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          const outputBuffer = Buffer.from(result.b64, "base64");
+          const durationMs = guarded.durationMs;
+          console.log(`[generate/photo] Range lock pass complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
+          const outputBuffer = Buffer.from(guarded.result.b64, "base64");
 
           const tempPath = await uploadTempImage(
             supabase, orgId, selectionsHash, "range-lock",
-            outputBuffer, result.mimeType,
+            outputBuffer, guarded.result.mimeType,
           );
           const debugPath = await uploadDebugArtifactImage(
             supabase,
@@ -477,24 +652,26 @@ export const generatePhoto = inngest.createFunction(
             selectionsHash,
             "99-range-lock",
             outputBuffer,
-            result.mimeType,
+            guarded.result.mimeType,
           );
 
           return {
             tempPath,
-            mimeType: result.mimeType,
+            mimeType: guarded.result.mimeType,
             durationMs,
+            modelCalls: guarded.modelCalls,
             success: true as const,
             promptUsed: lockPrompt,
             debugArtifact: { id: "range-lock", label: "Range lock pass", path: debugPath } satisfies PassArtifact,
           };
         } catch (err) {
-          const durationMs = Math.round(performance.now() - genStart);
+          const durationMs = Math.round(performance.now() - rangeLockStart);
           console.warn(`[generate/photo] Range lock pass failed for ${stepPhotoId}; keeping previous output.`, err);
           return {
             tempPath: null,
             mimeType: null,
             durationMs,
+            modelCalls: 1,
             success: false as const,
             promptUsed: lockPrompt,
             debugArtifact: null,
@@ -504,6 +681,7 @@ export const generatePhoto = inngest.createFunction(
 
       rangeLockPassAttempted = true;
       totalDurationMs += rangeLock.durationMs;
+      totalModelCalls += rangeLock.modelCalls;
       finalPrompt = `${finalPrompt}\n\nRANGE_LOCK_PASS${rangeLock.success ? "" : " [FAILED]"}:\n${rangeLock.promptUsed}`;
       if (rangeLock.success && rangeLock.tempPath) {
         latestTempPath = rangeLock.tempPath;
@@ -512,7 +690,7 @@ export const generatePhoto = inngest.createFunction(
     }
 
     // --- Step 4: Upload to storage + persist to DB ---
-    const attemptedPasses = batchCount + (policySecondPassAttempted ? 1 : 0) + (rangeLockPassAttempted ? 1 : 0);
+    const attemptedPasses = totalModelCalls;
 
     await step.run("persist", async () => {
       const supabase = getServiceClient();

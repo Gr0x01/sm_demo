@@ -29,12 +29,29 @@ export function getEffectivePhotoScopedIds(
     imagePath.includes("primary-bath-vanity.webp") ||
     imagePath.includes("primary-bath-shower.webp") ||
     isBathClosetView;
+  const hasVanitySignal =
+    effective.has("bath-faucets") ||
+    effective.has("primary-bath-mirrors") ||
+    effective.has("secondary-bath-mirrors") ||
+    effective.has("primary-bath-vanity") ||
+    effective.has("powder-room-vanity");
 
   if (isGreatRoomKitchenView && effective.has("kitchen-faucet")) {
     effective.add("cabinet-style-whole-house");
     effective.add("kitchen-cabinet-color");
     effective.add("kitchen-island-cabinet-color");
     effective.add("kitchen-cabinet-hardware");
+  }
+
+  // Vanity views can end up scoped to faucets/mirrors while dropping cabinet color,
+  // which makes explicit cabinet-color selections (e.g. white bath cabinets) no-op.
+  if (context.stepSlug === "primary-bath" && hasVanitySignal) {
+    effective.add("primary-bath-cabinet-color");
+    effective.add("bathroom-cabinet-hardware");
+  }
+  if (context.stepSlug === "secondary-spaces" && hasVanitySignal) {
+    effective.add("secondary-bath-cabinet-color");
+    effective.add("bathroom-cabinet-hardware");
   }
 
   // Kitchen/great-room floor finish should remain in scope for those photos.

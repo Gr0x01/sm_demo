@@ -7,6 +7,7 @@ export const MAX_GEMINI_SWATCHES = 13;
 // Gemini needs explicit output format constraints that OpenAI's `size` param handles.
 const GEMINI_OUTPUT_PREAMBLE = `OUTPUT FORMAT: Return a single, seamless photograph — NOT a collage, NOT a split-screen, NOT a before-and-after comparison, NOT multiple panels. No borders, no dividers, no side-by-side layout. One unified landscape-orientation image preserving the original photo's full field of view, camera angle, and spatial composition.
 GEOMETRY LOCK: Preserve the exact input framing and camera geometry (no crop, zoom, tilt, pan, lens shift, or vanishing-point drift). Edit only targeted surfaces in-place.
+ORIENTATION LOCK: Preserve exact left-right orientation and object handedness from the input. Never mirror or flip horizontally/vertically.
 
 `;
 

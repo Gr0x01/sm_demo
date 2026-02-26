@@ -12,7 +12,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v19";
+export const GENERATION_CACHE_VERSION = "v21";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -174,9 +174,11 @@ export async function buildEditPrompt(
       : "";
   const hasCommonWallPaintSelection = selectedSubIds.has("common-wall-paint");
   const hasAccentColorSelection = selectedSubIds.has("accent-color");
+  const hasFireplaceMantelAccentSelection = selectedSubIds.has("fireplace-mantel-accent");
+  const hasWainscotingSelection = selectedSubIds.has("wainscoting");
   const hasPerspectiveSensitiveTrimSelection =
-    selectedSubIds.has("wainscoting") ||
-    selectedSubIds.has("fireplace-mantel-accent");
+    hasWainscotingSelection ||
+    hasFireplaceMantelAccentSelection;
   const wallPaintRuleBlock =
     hasCommonWallPaintSelection && hasAccentColorSelection
       ? `\n- Common Wall Paint and Accent Color are separate wall-finish targets. Keep them in separate wall zones; do NOT blend or average them.
@@ -194,6 +196,21 @@ export async function buildEditPrompt(
     ? `\n- Perspective-lock for trim edits: keep the exact original camera position, focal length, vanishing points, and framing. No zoom, crop, tilt, pan, or lens shift.
 - For wainscoting and fireplace accent/shiplap edits, apply changes as in-place planar overlays on existing wall surfaces only.
 - Do NOT move, resize, redraw, or re-proportion architectural geometry (fireplace opening, mantel structure, windows, doors, casing, crown, baseboards, wall corners, ceiling beams).`
+    : "";
+  const fireplaceAccentIsolationRuleBlock =
+    hasFireplaceMantelAccentSelection && !hasWainscotingSelection
+      ? `\n- Fireplace Mantel Accent (including shiplap/box-style) applies ONLY to the accent wall zone directly above the fireplace mantel.
+- Do NOT add or extend any paneling, shiplap, shadow-box trim, or wainscoting to non-fireplace walls when wainscoting is not selected.
+- Keep all existing non-fireplace wall panel layouts unchanged.`
+      : hasFireplaceMantelAccentSelection
+      ? `\n- Fireplace Mantel Accent applies ONLY to the accent wall zone directly above the fireplace mantel; do NOT propagate this treatment to other walls.`
+      : "";
+  const panelingGuardRuleBlock = !hasWainscotingSelection
+    ? `\n- Wainscoting/paneling/shiplap are OFF unless explicitly selected. Do NOT add, extend, remove, or restyle any wall paneling anywhere in the image.
+- If the source photo already contains paneling, keep its footprint, height, seams, and style unchanged.`
+    : "";
+  const fireplaceAccentOffRuleBlock = !hasFireplaceMantelAccentSelection
+    ? `\n- Fireplace mantel accent/shiplap is OFF unless explicitly selected. Keep the fireplace wall detailing exactly as in the source photo.`
     : "";
 
   const editObjective = hasApplianceSelection
@@ -243,7 +260,7 @@ RULES:
 - Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
 - If an edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.
 - Keep the exact camera angle, perspective, lighting, and room layout.
-- Photorealistic result with accurate shadows and reflections.${wallPaintRuleBlock}${trimPerspectiveRuleBlock}${applianceRuleBlock}${invariantBlock}`;
+- Photorealistic result with accurate shadows and reflections.${wallPaintRuleBlock}${trimPerspectiveRuleBlock}${fireplaceAccentIsolationRuleBlock}${panelingGuardRuleBlock}${fireplaceAccentOffRuleBlock}${applianceRuleBlock}${invariantBlock}`;
 
   return { prompt, swatches };
 }
