@@ -6,6 +6,11 @@ import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { resolveImageModel } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
+import {
+  buildDefaultOptionBySubcategory,
+  normalizeSelectionRecord,
+  reconcileClientAndSessionSelections,
+} from "@/lib/selection-reconcile";
 
 function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
   // Per-photo baseline text is the authoritative scene context when present.
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
 
     if (!hash) {
       // Full path: derive hash from inputs (used by initial cache restore)
-      const { orgSlug, floorplanSlug, stepPhotoId, selections, model } = body;
+      const { orgSlug, floorplanSlug, stepPhotoId, selections, model, sessionId } = body;
       if (!orgSlug || !floorplanSlug || !stepPhotoId || !selections) {
         return NextResponse.json({ status: "not_found", imageUrl: null });
       }
@@ -64,12 +69,31 @@ export async function POST(request: Request) {
         return NextResponse.json({ status: "not_found", imageUrl: null });
       }
 
+      const optionLookup = await getOptionLookup(org.id);
+      const defaultBySubcategory = buildDefaultOptionBySubcategory(optionLookup);
+      let sessionSelections: Record<string, string> = {};
+      if (typeof sessionId === "string" && sessionId) {
+        const { data: session } = await supabase
+          .from("buyer_sessions")
+          .select("id, org_id, floorplan_id, selections")
+          .eq("id", sessionId)
+          .single();
+        if (session && session.org_id === org.id && session.floorplan_id === floorplan.id) {
+          sessionSelections = normalizeSelectionRecord(session.selections);
+        }
+      }
+      const mergedSelections = reconcileClientAndSessionSelections(
+        normalizeSelectionRecord(selections),
+        sessionSelections,
+        defaultBySubcategory,
+      );
+
       // Server-side per-photo selection scoping (mirrors generate route)
       const photoScopedIds = getEffectivePhotoScopedIds(aiConfig.photo.subcategoryIds, {
         stepSlug: aiConfig.stepSlug,
         imagePath: aiConfig.photo.imagePath,
       });
-      let scopedSelections = selections as Record<string, string>;
+      let scopedSelections = mergedSelections;
       if (photoScopedIds) {
         scopedSelections = Object.fromEntries(
           Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
@@ -89,7 +113,6 @@ export async function POST(request: Request) {
       const sceneDescription = buildSceneDescription(aiConfig);
 
       const modelName = resolveImageModel(model);
-      const optionLookup = await getOptionLookup(org.id);
       const promptContextSignature = buildPromptContextSignature({
         sceneDescription,
         spatialHints,

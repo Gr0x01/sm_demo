@@ -8,6 +8,7 @@ import type { StepConfig, StepSection, StepPhoto } from "./step-config";
 // These rarely change — revalidate every 5 minutes, bust via tags on admin update.
 
 const REVALIDATE_SECONDS = 86400; // 24 hours — data changes ~quarterly, bust via tags when needed
+const STEPS_REVALIDATE_SECONDS = 300; // 5 minutes — step/photo tuning changes more frequently
 
 // ---------- Organization ----------
 
@@ -318,8 +319,8 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
 };
 
 export const getStepsWithConfig = cache((floorplanId: string) =>
-  unstable_cache(_getStepsWithConfig, ["steps", floorplanId], {
-    revalidate: REVALIDATE_SECONDS,
+  unstable_cache(_getStepsWithConfig, ["steps-v2", floorplanId], {
+    revalidate: STEPS_REVALIDATE_SECONDS,
     tags: [`steps:${floorplanId}`],
   })(floorplanId)
 );

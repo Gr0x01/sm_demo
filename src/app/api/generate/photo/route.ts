@@ -6,6 +6,11 @@ import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { resolveImageModel } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
+import {
+  buildDefaultOptionBySubcategory,
+  normalizeSelectionRecord,
+  reconcileClientAndSessionSelections,
+} from "@/lib/selection-reconcile";
 import { inngest } from "@/inngest/client";
 
 export const maxDuration = 30;
@@ -115,7 +120,7 @@ export async function POST(request: Request) {
     // Validate session ownership
     const { data: session } = await supabase
       .from("buyer_sessions")
-      .select("id, org_id, floorplan_id")
+      .select("id, org_id, floorplan_id, selections")
       .eq("id", sessionId)
       .single();
 
@@ -123,13 +128,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
+    const optionLookup = await getOptionLookup(org.id);
+    const defaultBySubcategory = buildDefaultOptionBySubcategory(optionLookup);
+    const mergedSelections = reconcileClientAndSessionSelections(
+      normalizeSelectionRecord(selections),
+      normalizeSelectionRecord(session.selections),
+      defaultBySubcategory,
+    );
+
     // --- Server-side per-photo selection scoping ---
     // If a photo declares subcategoryIds, that list is the full scope.
     const photoScopedIds = getEffectivePhotoScopedIds(aiConfig.photo.subcategoryIds, {
       stepSlug: aiConfig.stepSlug,
       imagePath: aiConfig.photo.imagePath,
     });
-    let scopedSelections = selections as Record<string, string>;
+    let scopedSelections = mergedSelections;
     if (photoScopedIds) {
       scopedSelections = Object.fromEntries(
         Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
@@ -149,7 +162,6 @@ export async function POST(request: Request) {
     const sceneDescription = buildSceneDescription(aiConfig);
 
     const modelName = resolveImageModel(model);
-    const optionLookup = await getOptionLookup(org.id);
     const promptContextSignature = buildPromptContextSignature({
       sceneDescription,
       spatialHints,

@@ -182,6 +182,14 @@ export function UpgradePicker({
         photo?.spatialHint ?? "",
         step.name ?? "",
       ].join("\n");
+      // step.photoBaseline is authored for the step's hero context. Applying it
+      // to non-hero photos can suppress real edits (e.g. fireplace-specific
+      // changes on the Fireplace photo). For non-hero photos, compare against
+      // defaults only.
+      const baselineForThisPhoto =
+        photo && !photo.isHero
+          ? {}
+          : (step.photoBaseline ?? {});
       const effectivePhotoScope = getEffectivePhotoScopedIds(photo?.subcategoryIds, {
         stepSlug: step.id,
         imagePath: photo?.imagePath ?? null,
@@ -192,18 +200,22 @@ export function UpgradePicker({
       };
       if (effectivePhotoScope) {
         const scopedSelections = resolveScopedFlooringSelections(
-          filterVisualSelections(effectivePhotoScope, allSelections, step.photoBaseline ?? {}),
+          filterVisualSelections(effectivePhotoScope, allSelections, baselineForThisPhoto),
           flooringContextText,
         );
         return normalizePrimaryAccentAsWallPaint(scopedSelections, photoContext);
       }
+      const allowedIds = new Set([
+        ...step.sections.flatMap((sec) => sec.subCategoryIds),
+        ...(step.alsoIncludeIds ?? []),
+      ]);
       const stepSelections = resolveScopedFlooringSelections(
-        getStepVisualSelections(step, allSelections),
+        filterVisualSelections(allowedIds, allSelections, baselineForThisPhoto),
         flooringContextText,
       );
       return normalizePrimaryAccentAsWallPaint(stepSelections, photoContext);
     },
-    [filterVisualSelections, getStepVisualSelections]
+    [filterVisualSelections]
   );
 
   function reducer(state: SelectionState, action: SelectionAction): SelectionState {
@@ -468,6 +480,7 @@ export function UpgradePicker({
                     floorplanSlug,
                     stepPhotoId: photo.id,
                     selections: photoSelections,
+                    sessionId,
                     ...(modelParam ? { model: modelParam } : {}),
                   }),
                 });
@@ -544,6 +557,7 @@ export function UpgradePicker({
                   floorplanSlug,
                   stepPhotoId: photo.id,
                   selections: photoSelections,
+                  sessionId,
                   ...(modelParam ? { model: modelParam } : {}),
                 }),
               });

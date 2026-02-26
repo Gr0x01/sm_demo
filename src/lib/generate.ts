@@ -12,7 +12,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v18";
+export const GENERATION_CACHE_VERSION = "v19";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -174,6 +174,9 @@ export async function buildEditPrompt(
       : "";
   const hasCommonWallPaintSelection = selectedSubIds.has("common-wall-paint");
   const hasAccentColorSelection = selectedSubIds.has("accent-color");
+  const hasPerspectiveSensitiveTrimSelection =
+    selectedSubIds.has("wainscoting") ||
+    selectedSubIds.has("fireplace-mantel-accent");
   const wallPaintRuleBlock =
     hasCommonWallPaintSelection && hasAccentColorSelection
       ? `\n- Common Wall Paint and Accent Color are separate wall-finish targets. Keep them in separate wall zones; do NOT blend or average them.
@@ -187,6 +190,11 @@ export async function buildEditPrompt(
       ? `\n- Accent Color applies to the accent-designated painted drywall wall zones visible in this photo.
 - Do NOT paint non-wall surfaces: tile, cabinets, mirrors, glass, trim, doors, countertops, or flooring unless those categories are explicitly selected.`
       : "";
+  const trimPerspectiveRuleBlock = hasPerspectiveSensitiveTrimSelection
+    ? `\n- Perspective-lock for trim edits: keep the exact original camera position, focal length, vanishing points, and framing. No zoom, crop, tilt, pan, or lens shift.
+- For wainscoting and fireplace accent/shiplap edits, apply changes as in-place planar overlays on existing wall surfaces only.
+- Do NOT move, resize, redraw, or re-proportion architectural geometry (fireplace opening, mantel structure, windows, doors, casing, crown, baseboards, wall corners, ceiling beams).`
+    : "";
 
   const editObjective = hasApplianceSelection
     ? "Edit this room photo to match the selected finishes and appliance models."
@@ -235,7 +243,7 @@ RULES:
 - Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
 - If an edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.
 - Keep the exact camera angle, perspective, lighting, and room layout.
-- Photorealistic result with accurate shadows and reflections.${wallPaintRuleBlock}${applianceRuleBlock}${invariantBlock}`;
+- Photorealistic result with accurate shadows and reflections.${wallPaintRuleBlock}${trimPerspectiveRuleBlock}${applianceRuleBlock}${invariantBlock}`;
 
   return { prompt, swatches };
 }
