@@ -3,7 +3,7 @@ import { buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections }
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { resolveImageModel } from "@/lib/models";
+import { IMAGE_MODEL } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import {
@@ -97,7 +97,7 @@ async function releaseGenerationSlot(
  */
 export async function POST(request: Request) {
   try {
-    const { orgSlug, floorplanSlug, stepPhotoId, selections, sessionId, model, retry } = await request.json();
+    const { orgSlug, floorplanSlug, stepPhotoId, selections, sessionId, retry } = await request.json();
 
     if (!orgSlug || !floorplanSlug || !stepPhotoId || !selections || !sessionId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
     const sceneDescription = buildSceneDescription(aiConfig);
 
-    const modelName = resolveImageModel(model);
+    const modelName = IMAGE_MODEL;
     const promptContextSignature = buildPromptContextSignature({
       sceneDescription,
       spatialHints,
@@ -263,7 +263,6 @@ export async function POST(request: Request) {
           spatialHints,
           photoSpatialHint: aiConfig.photo.spatialHint,
           selectionsJsonForClaim,
-          promptContextSignature,
         },
       });
     } catch (sendError) {

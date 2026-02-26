@@ -461,7 +461,6 @@ export function UpgradePicker({
         });
 
         const mergedSelections = { ...defaultSelections, ...initialSelections };
-        const modelParam = new URLSearchParams(window.location.search).get("model");
         for (const step of steps) {
           if (!step.showGenerateButton) continue;
           const stepSelections = getStepVisualSelections(step, mergedSelections);
@@ -481,7 +480,6 @@ export function UpgradePicker({
                     stepPhotoId: photo.id,
                     selections: photoSelections,
                     sessionId,
-                    ...(modelParam ? { model: modelParam } : {}),
                   }),
                 });
                 if (checkRes.ok) {
@@ -527,8 +525,6 @@ export function UpgradePicker({
 
     const runId = ++cacheHydrateRunRef.current;
     const timer = setTimeout(() => {
-      const modelParam = new URLSearchParams(window.location.search).get("model");
-
       void (async () => {
         for (const step of steps) {
           if (!step.showGenerateButton || !step.photos?.length) continue;
@@ -558,7 +554,6 @@ export function UpgradePicker({
                   stepPhotoId: photo.id,
                   selections: photoSelections,
                   sessionId,
-                  ...(modelParam ? { model: modelParam } : {}),
                 }),
               });
               if (!checkRes.ok) continue;
@@ -728,7 +723,6 @@ export function UpgradePicker({
     const selectionsSnapshot = stableStringify(visualSelections);
 
     try {
-      const modelParam = new URLSearchParams(window.location.search).get("model");
       const res = await fetch("/api/generate/photo", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -738,7 +732,6 @@ export function UpgradePicker({
           stepPhotoId,
           selections: visualSelections,
           sessionId,
-          ...(modelParam ? { model: modelParam } : {}),
           ...(opts?.retry ? { retry: true } : {}),
         }),
       });

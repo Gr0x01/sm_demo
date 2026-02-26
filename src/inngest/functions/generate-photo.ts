@@ -1,311 +1,13 @@
+import OpenAI, { toFile } from "openai";
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
 import { buildEditPrompt } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getOptionLookup } from "@/lib/db-queries";
-import { captureAiEvent, estimateGeminiImageCost } from "@/lib/posthog-server";
-import { generateImageWithGemini, wrapPromptForGemini, splitSelectionsForGemini } from "@/lib/gemini-image";
+import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
 
-const SUPPORTED_SWATCH_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const SLIDE_IN_RANGE_OPTION_IDS = new Set(["range-ge-gas-slide-in", "range-ge-gas-slide-in-convection"]);
-const MIRROR_DETECTION_WIDTH = 256;
-const MIRROR_DETECTION_HEIGHT = 170;
-const MIRROR_DETECTION_IMPROVEMENT_RATIO = 0.96;
-const MIRROR_RETRY_RULES = `CRITICAL ORIENTATION LOCK:
-- Do NOT mirror or flip the image horizontally or vertically.
-- Keep every left/right relationship exactly as in the input photo.
-- Preserve object handedness (faucet direction, handle orientation, appliance hinge side, hallway side, window side).`;
-type PassArtifact = { id: string; label: string; path: string };
-type GuardedGenerationResult = {
-  result: { b64: string; mimeType: string };
-  durationMs: number;
-  modelCalls: number;
-  promptUsed: string;
-  fallbackToInput: boolean;
-};
-
-/** Build a swatch resolver that downloads from Supabase Storage. */
-function createSwatchResolver(supabase: ReturnType<typeof getServiceClient>): SwatchBufferResolver {
-  return async (swatchUrl: string) => {
-    let storagePath = swatchUrl;
-    if (swatchUrl.startsWith("http")) {
-      const match = swatchUrl.match(/\/object\/public\/swatches\/(.+)$/);
-      if (match) storagePath = match[1];
-      else return null;
-    }
-    if (storagePath.startsWith("/swatches/")) storagePath = storagePath.slice("/swatches/".length);
-
-    const { data: swatchData, error: swatchErr } = await supabase.storage
-      .from("swatches")
-      .download(storagePath);
-
-    if (swatchErr || !swatchData) return null;
-
-    const rawBuffer = Buffer.from(await swatchData.arrayBuffer());
-    const ext = storagePath.split(".").pop()?.toLowerCase() || "png";
-
-    if (ext === "svg" || ext === "svgz") {
-      const pngBuffer = await sharp(rawBuffer).png().toBuffer();
-      return { buffer: pngBuffer, mediaType: "image/png" };
-    }
-
-    const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-    return { buffer: rawBuffer, mediaType };
-  };
-}
-
-/**
- * Resolve the currently selected range swatch (if any) as a Gemini-compatible image attachment.
- * Used by range-focused refinement passes to reduce model ambiguity about appliance geometry.
- */
-async function getSelectedRangeSwatch(
-  scopedSelections: Record<string, string>,
-  optionLookup: Map<string, { option: { swatchUrl?: string } }>,
-  resolveSwatchBuffer: SwatchBufferResolver,
-): Promise<Array<{ buffer: Buffer; mediaType: string }>> {
-  const selectedRange = scopedSelections.range;
-  if (!selectedRange) return [];
-
-  const found = optionLookup.get(`range:${selectedRange}`);
-  if (!found?.option.swatchUrl) return [];
-
-  const resolved = await resolveSwatchBuffer(found.option.swatchUrl);
-  if (!resolved) return [];
-  if (!SUPPORTED_SWATCH_MEDIA_TYPES.has(resolved.mediaType)) return [];
-  return [resolved];
-}
-
-function buildRangeGeometryPrompt(basePrompt: string, withSwatch: boolean): string {
-  const swatchInstruction = withSwatch
-    ? "Use attached swatch #1 as the source of truth for the selected range model and finish."
-    : "No swatch attachment is available in this pass; still enforce the selected range geometry exactly.";
-
-  return `${basePrompt}
-
-CRITICAL RANGE GEOMETRY LOCK:
-- ${swatchInstruction}
-- The selected range is slide-in: NO raised backguard panel and NO rear control panel rising above the countertop.
-- Keep backsplash tile visible directly behind the cooktop.
-- Keep exactly one oven door below the cooktop.
-- Edit ONLY the cooking range appliance in-place; keep surrounding cabinetry, countertop seams, island, sink, faucet, walls, flooring, and lighting unchanged.`;
-}
-
-function meanAbsDiff(a: Uint8Array, b: Uint8Array): number {
-  const len = Math.min(a.length, b.length);
-  if (len === 0) return Number.POSITIVE_INFINITY;
-  let sum = 0;
-  for (let i = 0; i < len; i++) {
-    sum += Math.abs(a[i] - b[i]);
-  }
-  return sum / len;
-}
-
-function meanAbsDiffFlippedReference(reference: Uint8Array, candidate: Uint8Array, width: number, height: number): number {
-  const len = Math.min(reference.length, candidate.length, width * height);
-  if (len === 0) return Number.POSITIVE_INFINITY;
-  let sum = 0;
-  let count = 0;
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const idxRef = y * width + (width - 1 - x);
-      const idxCand = y * width + x;
-      if (idxRef >= len || idxCand >= len) continue;
-      sum += Math.abs(reference[idxRef] - candidate[idxCand]);
-      count += 1;
-    }
-  }
-  return count > 0 ? sum / count : Number.POSITIVE_INFINITY;
-}
-
-async function toEdgeMap(buffer: Buffer, width: number, height: number): Promise<Uint8Array> {
-  const gray = await sharp(buffer)
-    .rotate()
-    .resize(width, height, { fit: "fill" })
-    .grayscale()
-    .raw()
-    .toBuffer();
-
-  const edge = new Uint8Array(width * height);
-  for (let y = 1; y < height - 1; y++) {
-    for (let x = 1; x < width - 1; x++) {
-      const idx = y * width + x;
-      const gx = Math.abs(gray[idx + 1] - gray[idx - 1]);
-      const gy = Math.abs(gray[idx + width] - gray[idx - width]);
-      edge[idx] = Math.min(255, gx + gy);
-    }
-  }
-  return edge;
-}
-
-async function isLikelyHorizontallyMirrored(referenceBuffer: Buffer, candidateBuffer: Buffer): Promise<boolean> {
-  try {
-    const [referenceEdge, candidateEdge] = await Promise.all([
-      toEdgeMap(referenceBuffer, MIRROR_DETECTION_WIDTH, MIRROR_DETECTION_HEIGHT),
-      toEdgeMap(candidateBuffer, MIRROR_DETECTION_WIDTH, MIRROR_DETECTION_HEIGHT),
-    ]);
-
-    const normalDiff = meanAbsDiff(referenceEdge, candidateEdge);
-    const mirroredDiff = meanAbsDiffFlippedReference(
-      referenceEdge,
-      candidateEdge,
-      MIRROR_DETECTION_WIDTH,
-      MIRROR_DETECTION_HEIGHT,
-    );
-
-    return mirroredDiff < normalDiff * MIRROR_DETECTION_IMPROVEMENT_RATIO;
-  } catch (error) {
-    console.warn("[generate/photo] Mirror detection failed; skipping mirror guard.", error);
-    return false;
-  }
-}
-
-async function generateImageWithMirrorGuard({
-  roomBuffer,
-  roomMimeType,
-  swatches,
-  prompt,
-  model,
-  stepPhotoId,
-  passLabel,
-}: {
-  roomBuffer: Buffer;
-  roomMimeType: string;
-  swatches: Array<{ buffer: Buffer; mediaType: string }>;
-  prompt: string;
-  model: string;
-  stepPhotoId: string;
-  passLabel: string;
-}): Promise<GuardedGenerationResult> {
-  const runOnce = async (promptText: string) => {
-    const start = performance.now();
-    const result = await generateImageWithGemini({
-      roomBuffer,
-      roomMimeType,
-      swatches,
-      prompt: promptText,
-      model,
-    });
-    return { result, durationMs: Math.round(performance.now() - start) };
-  };
-
-  let totalDurationMs = 0;
-  let modelCalls = 0;
-
-  const first = await runOnce(prompt);
-  totalDurationMs += first.durationMs;
-  modelCalls += 1;
-  const firstBuffer = Buffer.from(first.result.b64, "base64");
-  const firstMirrored = await isLikelyHorizontallyMirrored(roomBuffer, firstBuffer);
-  if (!firstMirrored) {
-    return {
-      result: first.result,
-      durationMs: totalDurationMs,
-      modelCalls,
-      promptUsed: prompt,
-      fallbackToInput: false,
-    };
-  }
-
-  const retryPrompt = `${prompt}\n\n${MIRROR_RETRY_RULES}`;
-  console.warn(`[generate/photo] Mirror detected for ${stepPhotoId} (${passLabel}); retrying with anti-mirror rules.`);
-
-  try {
-    const retry = await runOnce(retryPrompt);
-    totalDurationMs += retry.durationMs;
-    modelCalls += 1;
-
-    const retryBuffer = Buffer.from(retry.result.b64, "base64");
-    const retryMirrored = await isLikelyHorizontallyMirrored(roomBuffer, retryBuffer);
-    if (!retryMirrored) {
-      return {
-        result: retry.result,
-        durationMs: totalDurationMs,
-        modelCalls,
-        promptUsed: retryPrompt,
-        fallbackToInput: false,
-      };
-    }
-  } catch (error) {
-    totalDurationMs += 0;
-    modelCalls += 1;
-    console.warn(`[generate/photo] Anti-mirror retry failed for ${stepPhotoId} (${passLabel}); reverting to input frame.`, error);
-  }
-
-  console.warn(`[generate/photo] Mirror persisted for ${stepPhotoId} (${passLabel}); reverting this pass to the previous input frame.`);
-  const fallbackPng = await sharp(roomBuffer).rotate().png().toBuffer();
-  return {
-    result: { b64: fallbackPng.toString("base64"), mimeType: "image/png" },
-    durationMs: totalDurationMs,
-    modelCalls,
-    promptUsed: retryPrompt,
-    fallbackToInput: true,
-  };
-}
-
-/** Upload intermediate image to temp storage, return the path. Keeps step state small. */
-async function uploadTempImage(
-  supabase: ReturnType<typeof getServiceClient>,
-  orgId: string,
-  selectionsHash: string,
-  suffix: string,
-  buffer: Buffer,
-  mimeType: string,
-): Promise<string> {
-  const ext = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
-  const tempPath = `${orgId}/temp-${selectionsHash}-${suffix}.${ext}`;
-  const { error } = await supabase.storage
-    .from("generated-images")
-    .upload(tempPath, buffer, { contentType: mimeType, upsert: true });
-  if (error) throw new Error(`Temp upload failed: ${error.message}`);
-  return tempPath;
-}
-
-/** Upload a debug artifact image for pass-by-pass inspection in admin tooling. */
-async function uploadDebugArtifactImage(
-  supabase: ReturnType<typeof getServiceClient>,
-  orgId: string,
-  selectionsHash: string,
-  artifactId: string,
-  buffer: Buffer,
-  mimeType: string,
-): Promise<string> {
-  const ext = mimeType === "image/jpeg" ? "jpg" : mimeType === "image/webp" ? "webp" : "png";
-  const debugPath = `${orgId}/debug/${selectionsHash}/${artifactId}.${ext}`;
-  const { error } = await supabase.storage
-    .from("generated-images")
-    .upload(debugPath, buffer, { contentType: mimeType, upsert: true });
-  if (error) throw new Error(`Debug upload failed: ${error.message}`);
-  return debugPath;
-}
-
-/** Download an intermediate image from temp storage. */
-async function downloadTempImage(
-  supabase: ReturnType<typeof getServiceClient>,
-  tempPath: string,
-): Promise<Buffer> {
-  const { data, error } = await supabase.storage
-    .from("generated-images")
-    .download(tempPath);
-  if (error || !data) throw new Error(`Temp download failed: ${error?.message}`);
-  return Buffer.from(await data.arrayBuffer());
-}
-
-/** Clean up temp intermediate images (best-effort). */
-async function cleanupTempImages(
-  supabase: ReturnType<typeof getServiceClient>,
-  orgId: string,
-  selectionsHash: string,
-): Promise<void> {
-  const { data: files } = await supabase.storage
-    .from("generated-images")
-    .list(orgId, { search: `temp-${selectionsHash}-` });
-  if (files?.length) {
-    await supabase.storage
-      .from("generated-images")
-      .remove(files.map((f) => `${orgId}/${f.name}`));
-  }
-}
+const openai = new OpenAI();
 
 export const generatePhoto = inngest.createFunction(
   {
@@ -332,22 +34,15 @@ export const generatePhoto = inngest.createFunction(
       photoSpatialHint,
       selectionsJsonForClaim,
     } = event.data;
-    const isSlideInRangeSelected = SLIDE_IN_RANGE_OPTION_IDS.has(scopedSelections.range ?? "");
 
-    // --- Step 1: First swatch batch (always runs, up to 120s) ---
-    // Also computes and returns batch assignments so continuation steps don't re-derive from DB.
-    const firstBatch = await step.run("generate-1", async () => {
+    // --- Step 1: Prep + first-pass generation (up to 120s) ---
+    const firstPass = await step.run("generate", async () => {
       const supabase = getServiceClient();
 
       const aiConfig = await getStepPhotoAiConfig(stepPhotoId);
       if (!aiConfig) throw new Error(`Step photo ${stepPhotoId} not found`);
 
       const optionLookup = await getOptionLookup(orgId);
-
-      // Split selections into batches for Gemini's 14-image limit.
-      // Serialize the batch assignments so continuation steps use the same split.
-      const batches = splitSelectionsForGemini(scopedSelections, optionLookup);
-      const batchCount = batches.length;
 
       // Download hero image
       const { data: imageData, error: downloadErr } = await supabase.storage
@@ -361,12 +56,39 @@ export const generatePhoto = inngest.createFunction(
       const imageBuffer = Buffer.from(await imageData.arrayBuffer());
       const heroExt = aiConfig.photo.imagePath.split(".").pop()?.toLowerCase() || "webp";
       const heroMime = heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`;
+      const heroFilename = aiConfig.photo.imagePath.split("/").pop() || "room.webp";
 
-      const resolveSwatchBuffer = createSwatchResolver(supabase);
+      // Swatch resolver
+      const resolveSwatchBuffer: SwatchBufferResolver = async (swatchUrl: string) => {
+        let storagePath = swatchUrl;
+        if (swatchUrl.startsWith("http")) {
+          const match = swatchUrl.match(/\/object\/public\/swatches\/(.+)$/);
+          if (match) storagePath = match[1];
+          else return null;
+        }
+        if (storagePath.startsWith("/swatches/")) storagePath = storagePath.slice("/swatches/".length);
 
-      // Build prompt for first batch only
+        const { data: swatchData, error: swatchErr } = await supabase.storage
+          .from("swatches")
+          .download(storagePath);
+
+        if (swatchErr || !swatchData) return null;
+
+        const rawBuffer = Buffer.from(await swatchData.arrayBuffer());
+        const ext = storagePath.split(".").pop()?.toLowerCase() || "png";
+
+        if (ext === "svg" || ext === "svgz") {
+          const pngBuffer = await sharp(rawBuffer).png().toBuffer();
+          return { buffer: pngBuffer, mediaType: "image/png" };
+        }
+
+        const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+        return { buffer: rawBuffer, mediaType };
+      };
+
+      // Build prompt
       const { prompt, swatches } = await buildEditPrompt(
-        batches[0],
+        scopedSelections,
         optionLookup,
         spatialHints,
         sceneDescription,
@@ -376,340 +98,103 @@ export const generatePhoto = inngest.createFunction(
       );
 
       // Filter unsupported swatch formats
-      const supportedSwatches = swatches.filter((s) => SUPPORTED_SWATCH_MEDIA_TYPES.has(s.mediaType));
-
-      const geminiPrompt = wrapPromptForGemini(prompt);
-      console.log(`[generate/photo] Sending ${1 + supportedSwatches.length} images to ${modelName} for photo ${stepPhotoId} (batch 1/${batchCount})`);
-
-      const guarded = await generateImageWithMirrorGuard({
-        roomBuffer: imageBuffer,
-        roomMimeType: heroMime,
-        swatches: supportedSwatches,
-        prompt: geminiPrompt,
-        model: modelName,
-        stepPhotoId,
-        passLabel: `batch 1/${batchCount}`,
+      const supportedSwatches = swatches.filter((s) => {
+        const supported = ["image/jpeg", "image/png", "image/webp"];
+        return supported.includes(s.mediaType);
       });
-      const durationMs = guarded.durationMs;
-      console.log(`[generate/photo] Batch 1 complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
-      const outputBuffer = Buffer.from(guarded.result.b64, "base64");
 
-      // Upload intermediate image to storage instead of passing b64 through step state
-      let tempPath: string | null = null;
-      if (batchCount > 1 || resolvedPolicy.secondPass || isSlideInRangeSelected) {
-        tempPath = await uploadTempImage(
-          supabase, orgId, selectionsHash, "batch-1",
-          outputBuffer, guarded.result.mimeType,
-        );
-      }
-      const debugPath = await uploadDebugArtifactImage(
-        supabase,
-        orgId,
-        selectionsHash,
-        "01-batch-1",
-        outputBuffer,
-        guarded.result.mimeType,
-      );
+      const inputImages = [
+        await toFile(imageBuffer, heroFilename, { type: heroMime }),
+        ...await Promise.all(
+          supportedSwatches.map((s) => {
+            const ext = s.mediaType.split("/")[1] || "png";
+            const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
+            return toFile(s.buffer, filename, { type: s.mediaType });
+          })
+        ),
+      ];
 
-      return {
+      console.log(`[generate/photo] Sending ${inputImages.length} images to ${modelName} for photo ${stepPhotoId}`);
+
+      const genStart = performance.now();
+      const result = await openai.images.edit({
+        model: modelName,
+        image: inputImages,
         prompt,
-        durationMs,
-        modelCalls: guarded.modelCalls,
-        batchCount,
-        batchAssignments: batchCount > 1 ? batches : null,
-        tempPath,
-        mimeType: guarded.result.mimeType,
-        // Only pass b64 through state if this is the final image (no continuation/refine needed)
-        finalB64: (!tempPath) ? guarded.result.b64 : null,
-        debugArtifact: { id: "batch-1", label: `Batch 1/${batchCount}`, path: debugPath } satisfies PassArtifact,
-      };
+        quality: "high",
+        size: "1536x1024",
+        input_fidelity: "high",
+      });
+
+      const generatedData = result.data?.[0];
+      if (!generatedData?.b64_json) {
+        throw new Error("No image was generated");
+      }
+
+      const durationMs = Math.round(performance.now() - genStart);
+      console.log(`[generate/photo] First pass complete for ${stepPhotoId} in ${durationMs}ms`);
+
+      return { b64: generatedData.b64_json, prompt, durationMs };
     });
 
-    // --- Step 2: Continuation batches (conditional: batches > 1) ---
-    const passArtifacts: PassArtifact[] = [firstBatch.debugArtifact];
-    let latestTempPath = firstBatch.tempPath;
-    let latestMimeType = firstBatch.mimeType;
-    let currentPrompt = firstBatch.prompt;
-    let totalDurationMs = firstBatch.durationMs;
-    let totalModelCalls = firstBatch.modelCalls;
-    const batchCount = firstBatch.batchCount;
-
-    if (batchCount > 1 && firstBatch.batchAssignments) {
-      for (let batchIdx = 1; batchIdx < batchCount; batchIdx++) {
-        const stepName = `generate-continuation-${batchIdx + 1}`;
-        const prevTempPath = latestTempPath!;
-        const prevMimeType = latestMimeType;
-        const batchSelections = firstBatch.batchAssignments[batchIdx];
-
-        const continuation = await step.run(stepName, async () => {
-          const supabase = getServiceClient();
-          const optionLookup = await getOptionLookup(orgId);
-          const resolveSwatchBuffer = createSwatchResolver(supabase);
-
-          // Download previous pass output from temp storage
-          const roomBuffer = await downloadTempImage(supabase, prevTempPath);
-
-          // Build prompt for this batch's selections only
-          const { prompt: batchPrompt, swatches } = await buildEditPrompt(
-            batchSelections,
-            optionLookup,
-            spatialHints,
-            sceneDescription,
-            photoSpatialHint,
-            resolveSwatchBuffer,
-            resolvedPolicy.promptOverrides,
-          );
-
-          const supportedSwatches = swatches.filter((s) => SUPPORTED_SWATCH_MEDIA_TYPES.has(s.mediaType));
-
-          const geminiPrompt = wrapPromptForGemini(batchPrompt);
-          console.log(`[generate/photo] Sending ${1 + supportedSwatches.length} images to ${modelName} for photo ${stepPhotoId} (batch ${batchIdx + 1}/${batchCount})`);
-
-          const guarded = await generateImageWithMirrorGuard({
-            roomBuffer,
-            roomMimeType: prevMimeType,
-            swatches: supportedSwatches,
-            prompt: geminiPrompt,
-            model: modelName,
-            stepPhotoId,
-            passLabel: `batch ${batchIdx + 1}/${batchCount}`,
-          });
-          const durationMs = guarded.durationMs;
-          console.log(`[generate/photo] Batch ${batchIdx + 1} complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
-          const outputBuffer = Buffer.from(guarded.result.b64, "base64");
-
-          // Upload intermediate to temp storage
-          const tempPath = await uploadTempImage(
-            supabase, orgId, selectionsHash, `batch-${batchIdx + 1}`,
-            outputBuffer, guarded.result.mimeType,
-          );
-          const debugPath = await uploadDebugArtifactImage(
-            supabase,
-            orgId,
-            selectionsHash,
-            `${String(batchIdx + 1).padStart(2, "0")}-batch-${batchIdx + 1}`,
-            outputBuffer,
-            guarded.result.mimeType,
-          );
-
-          return {
-            prompt: batchPrompt,
-            durationMs,
-            modelCalls: guarded.modelCalls,
-            tempPath,
-            mimeType: guarded.result.mimeType,
-            debugArtifact: {
-              id: `batch-${batchIdx + 1}`,
-              label: `Batch ${batchIdx + 1}/${batchCount}`,
-              path: debugPath,
-            } satisfies PassArtifact,
-          };
-        });
-
-        latestTempPath = continuation.tempPath;
-        latestMimeType = continuation.mimeType;
-        currentPrompt += `\n\nBATCH ${batchIdx + 1}:\n${continuation.prompt}`;
-        totalDurationMs += continuation.durationMs;
-        totalModelCalls += continuation.modelCalls;
-        passArtifacts.push(continuation.debugArtifact);
-      }
-    }
-
-    // --- Step 3: Policy second pass (conditional, gets its own 120s) ---
-    let finalPrompt = currentPrompt;
-    let policySecondPassAttempted = false;
-    let rangeLockPassAttempted = false;
+    // --- Step 2: Second pass (conditional, gets its own 120s) ---
+    let finalB64 = firstPass.b64;
+    let finalPrompt = firstPass.prompt;
+    let passes = 1;
+    let totalDurationMs = firstPass.durationMs;
 
     if (resolvedPolicy.secondPass) {
-      const prevTempPath = latestTempPath!;
-      const prevMimeType = latestMimeType;
-
       const secondPass = await step.run("refine", async () => {
-        const supabase = getServiceClient();
-        const optionLookup = await getOptionLookup(orgId);
-        const resolveSwatchBuffer = createSwatchResolver(supabase);
+        const outputBuffer = Buffer.from(firstPass.b64, "base64");
+        const secondPassInput = [
+          await toFile(outputBuffer, "first-pass.png", { type: "image/png" }),
+        ];
 
         console.log(
           `[generate/photo] Running second pass (${resolvedPolicy.secondPass!.reason}) for photo ${stepPhotoId}`,
         );
 
-        const roomBuffer = await downloadTempImage(supabase, prevTempPath);
-        const isRangePolicy = /range/i.test(resolvedPolicy.secondPass!.reason) || isSlideInRangeSelected;
-        const rangeSwatch = isRangePolicy
-          ? await getSelectedRangeSwatch(scopedSelections, optionLookup, resolveSwatchBuffer)
-          : [];
-        const secondPassPrompt = isRangePolicy
-          ? buildRangeGeometryPrompt(resolvedPolicy.secondPass!.prompt, rangeSwatch.length > 0)
-          : resolvedPolicy.secondPass!.prompt;
-        const geminiPrompt = wrapPromptForGemini(secondPassPrompt);
-        const secondPassStart = performance.now();
-
+        const genStart = performance.now();
         try {
-          const guarded = await generateImageWithMirrorGuard({
-            roomBuffer,
-            roomMimeType: prevMimeType,
-            swatches: rangeSwatch,
-            prompt: geminiPrompt,
+          const secondPassResult = await openai.images.edit({
             model: modelName,
-            stepPhotoId,
-            passLabel: "second-pass-refine",
+            image: secondPassInput,
+            prompt: resolvedPolicy.secondPass!.prompt,
+            quality: "high",
+            size: "1536x1024",
+            input_fidelity: resolvedPolicy.secondPass!.inputFidelity,
           });
-          const durationMs = guarded.durationMs;
-          console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
-          const outputBuffer = Buffer.from(guarded.result.b64, "base64");
 
-          // Upload refined image
-          const tempPath = await uploadTempImage(
-            supabase, orgId, selectionsHash, "refine",
-            outputBuffer, guarded.result.mimeType,
-          );
-          const debugPath = await uploadDebugArtifactImage(
-            supabase,
-            orgId,
-            selectionsHash,
-            "98-refine",
-            outputBuffer,
-            guarded.result.mimeType,
-          );
+          const secondPassData = secondPassResult.data?.[0];
+          const durationMs = Math.round(performance.now() - genStart);
 
-          return {
-            tempPath,
-            mimeType: guarded.result.mimeType,
-            durationMs,
-            modelCalls: guarded.modelCalls,
-            success: true as const,
-            promptUsed: secondPassPrompt,
-            debugArtifact: { id: "refine", label: "Second pass refine", path: debugPath } satisfies PassArtifact,
-          };
+          if (secondPassData?.b64_json) {
+            console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
+            return { b64: secondPassData.b64_json, durationMs, success: true as const };
+          }
+
+          console.warn(`[generate/photo] Second pass produced no image for ${stepPhotoId}; keeping first-pass output.`);
+          return { b64: null, durationMs, success: false as const };
         } catch (err) {
-          const durationMs = Math.round(performance.now() - secondPassStart);
-          console.warn(`[generate/photo] Second pass failed for ${stepPhotoId}; keeping previous output.`, err);
-          return {
-            tempPath: null,
-            mimeType: null,
-            durationMs,
-            modelCalls: 1,
-            success: false as const,
-            promptUsed: secondPassPrompt,
-            debugArtifact: null,
-          };
+          const durationMs = Math.round(performance.now() - genStart);
+          console.warn(`[generate/photo] Second pass failed for ${stepPhotoId}; keeping first-pass output.`, err);
+          return { b64: null, durationMs, success: false as const };
         }
       });
 
-      policySecondPassAttempted = true;
       totalDurationMs += secondPass.durationMs;
-      totalModelCalls += secondPass.modelCalls;
-      finalPrompt = `${currentPrompt}\n\nSECOND_PASS_ATTEMPT (${resolvedPolicy.secondPass.reason})${secondPass.success ? "" : " [FAILED]"}:\n${secondPass.promptUsed}`;
-      if (secondPass.success && secondPass.tempPath) {
-        latestTempPath = secondPass.tempPath;
-        if (secondPass.mimeType) latestMimeType = secondPass.mimeType;
-        if (secondPass.debugArtifact) passArtifacts.push(secondPass.debugArtifact);
+      if (secondPass.success && secondPass.b64) {
+        finalB64 = secondPass.b64;
+        finalPrompt = `${firstPass.prompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
+        passes = 2;
       }
     }
 
-    // --- Step 3b: Range lock pass (conditional third pass for known slide-in range drift) ---
-    if (isSlideInRangeSelected) {
-      const prevTempPath = latestTempPath!;
-      const prevMimeType = latestMimeType;
-
-      const rangeLock = await step.run("refine-range-lock", async () => {
-        const supabase = getServiceClient();
-        const optionLookup = await getOptionLookup(orgId);
-        const resolveSwatchBuffer = createSwatchResolver(supabase);
-
-        console.log(`[generate/photo] Running range lock pass for photo ${stepPhotoId}`);
-
-        const roomBuffer = await downloadTempImage(supabase, prevTempPath);
-        const rangeSwatch = await getSelectedRangeSwatch(scopedSelections, optionLookup, resolveSwatchBuffer);
-        const lockPrompt = buildRangeGeometryPrompt(
-          "Final correction pass: verify and correct ONLY the cooking range geometry.",
-          rangeSwatch.length > 0,
-        );
-        const geminiPrompt = wrapPromptForGemini(lockPrompt);
-        const rangeLockStart = performance.now();
-
-        try {
-          const guarded = await generateImageWithMirrorGuard({
-            roomBuffer,
-            roomMimeType: prevMimeType,
-            swatches: rangeSwatch,
-            prompt: geminiPrompt,
-            model: modelName,
-            stepPhotoId,
-            passLabel: "range-lock",
-          });
-          const durationMs = guarded.durationMs;
-          console.log(`[generate/photo] Range lock pass complete for ${stepPhotoId} in ${durationMs}ms (${guarded.modelCalls} model call${guarded.modelCalls > 1 ? "s" : ""})`);
-          const outputBuffer = Buffer.from(guarded.result.b64, "base64");
-
-          const tempPath = await uploadTempImage(
-            supabase, orgId, selectionsHash, "range-lock",
-            outputBuffer, guarded.result.mimeType,
-          );
-          const debugPath = await uploadDebugArtifactImage(
-            supabase,
-            orgId,
-            selectionsHash,
-            "99-range-lock",
-            outputBuffer,
-            guarded.result.mimeType,
-          );
-
-          return {
-            tempPath,
-            mimeType: guarded.result.mimeType,
-            durationMs,
-            modelCalls: guarded.modelCalls,
-            success: true as const,
-            promptUsed: lockPrompt,
-            debugArtifact: { id: "range-lock", label: "Range lock pass", path: debugPath } satisfies PassArtifact,
-          };
-        } catch (err) {
-          const durationMs = Math.round(performance.now() - rangeLockStart);
-          console.warn(`[generate/photo] Range lock pass failed for ${stepPhotoId}; keeping previous output.`, err);
-          return {
-            tempPath: null,
-            mimeType: null,
-            durationMs,
-            modelCalls: 1,
-            success: false as const,
-            promptUsed: lockPrompt,
-            debugArtifact: null,
-          };
-        }
-      });
-
-      rangeLockPassAttempted = true;
-      totalDurationMs += rangeLock.durationMs;
-      totalModelCalls += rangeLock.modelCalls;
-      finalPrompt = `${finalPrompt}\n\nRANGE_LOCK_PASS${rangeLock.success ? "" : " [FAILED]"}:\n${rangeLock.promptUsed}`;
-      if (rangeLock.success && rangeLock.tempPath) {
-        latestTempPath = rangeLock.tempPath;
-        if (rangeLock.debugArtifact) passArtifacts.push(rangeLock.debugArtifact);
-      }
-    }
-
-    // --- Step 4: Upload to storage + persist to DB ---
-    const attemptedPasses = totalModelCalls;
-
+    // --- Step 3: Upload to storage + persist to DB ---
     await step.run("persist", async () => {
       const supabase = getServiceClient();
-
-      // Get final image: either from temp storage or from step 1's direct b64
-      let outputBuffer: Buffer;
-      if (latestTempPath) {
-        outputBuffer = await downloadTempImage(supabase, latestTempPath);
-      } else {
-        outputBuffer = Buffer.from(firstBatch.finalB64!, "base64");
-      }
-
+      const outputBuffer = Buffer.from(finalB64, "base64");
       const outputPath = `${orgId}/${selectionsHash}.png`;
-      const selectionsJsonForDb = passArtifacts.length > 0
-        ? {
-            ...selectionsJsonForClaim,
-            _debugPassArtifacts: JSON.stringify(passArtifacts),
-          }
-        : selectionsJsonForClaim;
 
       const { error: uploadError } = await supabase.storage
         .from("generated-images")
@@ -726,7 +211,7 @@ export const generatePhoto = inngest.createFunction(
         .from("generated_images")
         .upsert({
           selections_hash: selectionsHash,
-          selections_json: selectionsJsonForDb,
+          selections_json: selectionsJsonForClaim,
           image_path: outputPath,
           prompt: finalPrompt,
           step_id: stepId,
@@ -738,27 +223,24 @@ export const generatePhoto = inngest.createFunction(
         }, { onConflict: "selections_hash" });
 
       if (upsertError) {
-        throw new Error(`DB upsert failed: ${upsertError.message}`);
+        console.error("[generate/photo] DB upsert failed:", upsertError);
       }
 
-      // Clean up temp intermediate images (best-effort)
-      await cleanupTempImages(supabase, orgId, selectionsHash);
-
       await captureAiEvent(sessionId, {
-        provider: "google",
+        provider: "openai",
         model: modelName,
         route: "/api/generate/photo",
         duration_ms: totalDurationMs,
-        cost_usd: estimateGeminiImageCost(modelName, attemptedPasses),
+        cost_usd: estimateOpenAICost(modelName, passes),
         orgId,
         orgSlug,
         floorplanSlug,
-        image_size: "1K",
-        second_pass: policySecondPassAttempted || rangeLockPassAttempted,
-        swatch_batch_count: batchCount,
+        image_size: "1536x1024",
+        image_quality: "high",
+        second_pass: passes > 1,
       });
 
-      console.log(`[generate/photo] Completed for photo ${stepPhotoId} in ${totalDurationMs}ms (${attemptedPasses} pass${attemptedPasses > 1 ? "es" : ""}, ${batchCount} batch${batchCount > 1 ? "es" : ""})`);
+      console.log(`[generate/photo] Completed for photo ${stepPhotoId} in ${totalDurationMs}ms (${passes} pass${passes > 1 ? "es" : ""})`);
     });
   },
 );

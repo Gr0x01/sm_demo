@@ -1,10 +1,12 @@
+import OpenAI, { toFile } from "openai";
 import { inngest } from "@/inngest/client";
 import { buildDemoPrompt } from "@/lib/demo-prompt";
 import { DEMO_GENERATION_CACHE_VERSION } from "@/lib/demo-generate";
 import { getServiceClient } from "@/lib/supabase";
-import { captureAiEvent, estimateGeminiImageCost } from "@/lib/posthog-server";
+import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
-import { generateImageWithGemini, wrapPromptForGemini } from "@/lib/gemini-image";
+
+const openai = new OpenAI();
 
 export const generateDemo = inngest.createFunction(
   {
@@ -37,28 +39,39 @@ export const generateDemo = inngest.createFunction(
         sceneAnalysis ?? undefined,
       );
 
-      // Filter to supported formats
-      const supportedSwatches = swatches.filter((s) => {
-        const supported = ["image/jpeg", "image/png", "image/webp"];
-        return supported.includes(s.mediaType);
-      });
+      // Assemble images: user photo + swatches
+      const inputImages = [
+        await toFile(photoBuffer, "kitchen.jpg", { type: "image/jpeg" }),
+        ...await Promise.all(
+          swatches.map((s) => {
+            const ext = s.mediaType.split("/")[1] || "png";
+            const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
+            return toFile(s.buffer, filename, { type: s.mediaType });
+          })
+        ),
+      ];
 
-      const geminiPrompt = wrapPromptForGemini(prompt);
-      console.log(`[demo/generate] Sending ${1 + supportedSwatches.length} images (1 photo + ${supportedSwatches.length} swatches) to ${IMAGE_MODEL}`);
+      console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${swatches.length} swatches) to ${IMAGE_MODEL}`);
 
       const genStart = performance.now();
-      const genResult = await generateImageWithGemini({
-        roomBuffer: photoBuffer,
-        roomMimeType: "image/jpeg",
-        swatches: supportedSwatches,
-        prompt: geminiPrompt,
+      const genResult = await openai.images.edit({
         model: IMAGE_MODEL,
+        image: inputImages,
+        prompt,
+        quality: "high",
+        size: "1536x1024",
+        input_fidelity: "high",
       });
+
+      const imageData = genResult.data?.[0];
+      if (!imageData?.b64_json) {
+        throw new Error("No image was generated");
+      }
 
       const durationMs = Math.round(performance.now() - genStart);
       console.log(`[demo/generate] Generation complete in ${durationMs}ms`);
 
-      return { b64: genResult.b64, prompt, durationMs };
+      return { b64: imageData.b64_json, prompt, durationMs };
     });
 
     // --- Step 2: Upload + persist ---
@@ -94,18 +107,18 @@ export const generateDemo = inngest.createFunction(
       }, { onConflict: "selections_hash" });
 
       if (upsertError) {
-        throw new Error(`DB upsert failed: ${upsertError.message}`);
+        console.error("[demo/generate] DB upsert failed:", upsertError);
       }
 
       await captureAiEvent("anonymous", {
-        provider: "google",
+        provider: "openai",
         model: IMAGE_MODEL,
         route: "/api/try/generate",
         duration_ms: result.durationMs,
-        cost_usd: estimateGeminiImageCost(IMAGE_MODEL, 1),
-        image_size: "1K",
+        cost_usd: estimateOpenAICost(IMAGE_MODEL, 1),
+        image_size: "1536x1024",
+        image_quality: "high",
         second_pass: false,
-        swatch_batch_count: 1,
       });
 
       console.log(`[demo/generate] Cached: ${combinedHash} → ${outputPath}`);

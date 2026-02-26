@@ -18,7 +18,6 @@ export interface PhotoGenerateRequestedData {
   spatialHints: Record<string, string>;
   photoSpatialHint: string | null;
   selectionsJsonForClaim: Record<string, unknown>;
-  promptContextSignature: string;
 }
 
 export interface DemoGenerateRequestedData {

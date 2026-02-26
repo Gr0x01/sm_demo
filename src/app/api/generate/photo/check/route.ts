@@ -3,7 +3,7 @@ import { buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections }
 import { getServiceClient } from "@/lib/supabase";
 import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup } from "@/lib/db-queries";
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { resolveImageModel } from "@/lib/models";
+import { IMAGE_MODEL } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
 
     if (!hash) {
       // Full path: derive hash from inputs (used by initial cache restore)
-      const { orgSlug, floorplanSlug, stepPhotoId, selections, model, sessionId } = body;
+      const { orgSlug, floorplanSlug, stepPhotoId, selections, sessionId } = body;
       if (!orgSlug || !floorplanSlug || !stepPhotoId || !selections) {
         return NextResponse.json({ status: "not_found", imageUrl: null });
       }
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
       const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
       const sceneDescription = buildSceneDescription(aiConfig);
 
-      const modelName = resolveImageModel(model);
+      const modelName = IMAGE_MODEL;
       const promptContextSignature = buildPromptContextSignature({
         sceneDescription,
         spatialHints,
