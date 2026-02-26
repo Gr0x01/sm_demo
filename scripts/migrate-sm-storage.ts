@@ -35,7 +35,7 @@ const ROOM_PHOTO_SPATIAL_HINTS: Record<string, string> = {
   "kitchen-greatroom.webp":
     "View runs from kitchen into great room: island in midground, living area/fireplace beyond. Keep kitchen finishes confined to cabinets/counters/backsplash and keep great-room finishes on walls/fireplace/flooring. Maintain continuous plank-floor perspective and fixture positions.",
   "greatroom-wide.webp":
-    "Great room is foreground, kitchen is background. Fireplace wall, trim, and paint are primary editable surfaces in the living area; kitchen cabinetry remains separate unless explicitly selected. Keep chandelier/fan positions and room layout unchanged.",
+    "Great room is foreground, kitchen is background. The fireplace is on the LEFT WALL of the great room (viewer's left); it must stay on that wall and never move to the back wall or any other wall. Fireplace wall, trim, and paint are primary editable surfaces in the living area; kitchen cabinetry remains separate unless explicitly selected. Keep chandelier/fan positions and room layout unchanged.",
   "primary-bath-vanity.webp":
     "Double vanity and mirrors are on the left; shower zone is on the right. Vanity color/hardware/faucet edits apply only to the vanity assembly; mirror edits apply only above sinks. Keep tile confined to bathroom floor/shower surfaces and preserve shower glass geometry.",
   "primary-bath-shower.webp":
