@@ -135,7 +135,7 @@ async function seedStoneMartinGreatroomPolicy() {
   const policy = {
     promptOverrides: {
       invariantRulesAlways: [
-        "FIREPLACE POSITION LOCK: The fireplace is on the LEFT WALL of the great room (viewer's left side of the image). It must remain on that exact wall. Do NOT relocate, mirror, or redraw the fireplace on the back wall, right wall, or any other surface. Preserve the fireplace opening shape, mantel, and surround in their original position.",
+        "The fireplace is mostly out of frame in this wide shot — only a small sliver of hearth brick is visible at the extreme bottom-left corner. Do NOT draw, reposition, or enlarge the fireplace. Only change the material/color of the small brick area already visible at the bottom-left edge.",
         "Preserve room zoning exactly as the source photo: the main great-room/living floor area (especially the left/foreground open space) must stay open and uncluttered.",
         "Do NOT add any new kitchen structures in the great-room area: no new islands, perimeter cabinets, countertops, appliances, sinks, faucets, or backsplash walls.",
         "Kitchen edits are allowed ONLY on existing kitchen elements already visible in the source background kitchen zone. Do NOT expand the kitchen footprint into the living room.",
