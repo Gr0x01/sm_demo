@@ -57,17 +57,19 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     isHero: true,
     sortOrder: 0,
     spatialHint:
-      "Open living room with vaulted ceiling and exposed white beams. Fireplace with white mantel and white brick tile surround is on the right wall flanked by a window. " +
-      "Ceiling fan hangs from the peak of the vault. LVP flooring covers the entire floor. Wainscoting panels run along the lower left wall. " +
-      "Crown molding lines the ceiling edges. White baseboard runs along all walls. Paint is on all upper wall surfaces above the wainscoting.",
+      "Open living room viewed from the left side toward the back-right corner. Vaulted ceiling with exposed white beams; ceiling fan hangs from the peak. " +
+      "The BACK WALL (far wall) has two zones: smooth painted drywall on the lower-left portion (beside a half-wall pass-through opening), and the fireplace assembly (white mantel surround with picture-frame panel, white brick hearth) on the right portion. " +
+      "A window is on the RIGHT WALL immediately beside the fireplace corner. The LEFT WALL is also smooth painted drywall. " +
+      "LVP flooring covers the entire floor. Crown molding lines the ceiling edges. White baseboard runs along all walls.",
     photoBaseline:
-      "Vaulted great room with white beam ceiling, brushed-nickel ceiling fan, warm-toned LVP flooring, light greige walls, white wainscoting on the left wall, " +
-      "white fireplace mantel with white brick tile surround on the right wall, recessed lights, and a window to the right of the fireplace.",
+      "Vaulted great room with white beam ceiling, brushed-nickel ceiling fan, warm-toned LVP flooring, light greige walls. " +
+      "Smooth painted drywall on the lower-left portion of the back wall; white fireplace mantel with white brick surround on the right portion of the back wall. " +
+      "Window on the right wall beside the fireplace. Recessed lights throughout.",
     scopeSlugs: [
       "common-wall-paint", "ceiling-paint", "trim-paint", "baseboard", "crown-options",
-      "wainscoting", "main-area-flooring-type", "main-area-flooring-color",
+      "main-area-flooring-type", "main-area-flooring-color",
       "fireplace-mantel", "fireplace-mantel-accent", "fireplace-hearth", "fireplace-tile-surround",
-      "great-room-fan", "lighting", "interior-door-style", "cabinet-style-whole-house",
+      "great-room-fan", "lighting",
     ],
   },
   {
@@ -77,7 +79,7 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     isHero: false,
     sortOrder: 1,
     spatialHint:
-      "Narrow foyer hallway looking toward the front door. Tall shaker-style wainscoting panels cover both side walls up to roughly waist height. " +
+      "Narrow foyer hallway looking toward the front door. Tall shaker-style wainscoting panels (from an upgrade option) cover both side walls up to roughly chest height. " +
       "Crown molding runs along the ceiling. LVP flooring runs the length of the hallway. The front door with three glass panes is centered at the far end. " +
       "A sidelight window is on the right wall near the door. White baseboard at the floor line.",
     photoBaseline:
@@ -86,7 +88,7 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     scopeSlugs: [
       "common-wall-paint", "trim-paint", "baseboard", "crown-options",
       "wainscoting", "main-area-flooring-type", "main-area-flooring-color",
-      "interior-door-style", "door-casing-color",
+      "door-casing-color", "front-door",
     ],
   },
   {
@@ -140,7 +142,7 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "Perimeter cabinets and backsplash on the back wall with range and microwave above. Double pantry doors on the far left. " +
       "Two glass pendant lights hang over the island. LVP flooring throughout. No refrigerator is visible in this shot.",
     photoBaseline:
-      "Kitchen with light grey shaker cabinets, white quartz countertops on island and perimeter, white subway-tile backsplash, " +
+      "Kitchen with light grey shaker cabinets, white quartz countertops on island and perimeter, smooth white backsplash, " +
       "stainless gas range with microwave above, island with undermount sink and arched faucet, two glass pendant lights, " +
       "brushed-nickel cabinet pulls, double white pantry doors on the left, warm-toned LVP flooring, recessed lights.",
     scopeSlugs: [
@@ -148,7 +150,7 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "kitchen-cabinet-color", "kitchen-island-cabinet-color", "kitchen-cabinet-hardware",
       "kitchen-sink", "kitchen-faucet", "cabinet-style-whole-house",
       "under-cabinet-lighting", "light-rail", "glass-cabinet-door", "trash-can-cabinet",
-      "range",
+      "range", "main-area-flooring-type", "main-area-flooring-color", "common-wall-paint",
     ],
   },
   {
@@ -159,8 +161,9 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     sortOrder: 1,
     spatialHint:
       "Kitchen from the side angle showing island in the left foreground with dishwasher panel visible on the near side and sink/faucet on top. " +
-      "Perimeter cabinets, backsplash, range, and microwave on the right wall. Double pantry doors in the back center. " +
-      "Dining area visible through the opening on the far left with chandelier and windows. LVP flooring throughout.",
+      "Perimeter cabinets run along the right wall and wrap around to the back wall. " +
+      "Backsplash tile covers the ENTIRE perimeter wall between upper and lower cabinets — both to the right of the pantry doors (behind the range and microwave) and to the left of the pantry doors (where more upper cabinets and countertop continue). " +
+      "Double pantry doors in the back center. Dining area visible through the opening on the far left with chandelier and windows. LVP flooring throughout.",
     photoBaseline:
       "Side view of kitchen: light grey shaker island with stainless dishwasher panel, undermount sink and arched faucet on island top, " +
       "white quartz countertops, perimeter cabinets with range and over-range microwave on the right, white backsplash, glass pendant lights, " +
@@ -169,7 +172,7 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "counter-top", "countertop-edge", "backsplash",
       "kitchen-cabinet-color", "kitchen-island-cabinet-color", "kitchen-cabinet-hardware",
       "kitchen-sink", "kitchen-faucet", "dishwasher", "range", "refrigerator",
-      "cabinet-style-whole-house",
+      "cabinet-style-whole-house", "main-area-flooring-type", "main-area-flooring-color", "common-wall-paint",
     ],
   },
 
@@ -187,13 +190,13 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "Large-format tile covers the bathroom floor. The tub surround has tile wainscoting.",
     photoBaseline:
       "Primary bath with light grey single vanity, white quartz top, brushed-nickel faucet, framed nickel mirror, glass sconce above, " +
-      "towel ring on the left wall, glass-door walk-in shower with grey tile walls and mosaic tile floor, " +
+      "towel ring on the wall beside the vanity, glass-door walk-in shower with grey tile walls and mosaic tile floor, " +
       "white soaking tub on the right with tile surround and large window above, grey large-format tile floor.",
     scopeSlugs: [
       "primary-bath-vanity", "primary-bath-cabinet-color", "bathroom-cabinet-hardware",
       "primary-bath-mirrors", "floor-tile-color", "primary-shower", "primary-shower-entry",
       "bath-faucets", "bath-hardware", "cabinet-style-whole-house",
-      "rain-head", "wall-mount-hand-shower",
+      "rain-head", "wall-mount-hand-shower", "common-wall-paint",
     ],
   },
 
@@ -216,8 +219,8 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "secondary-bath-cabinet-color", "bathroom-cabinet-hardware",
       "secondary-bath-mirrors", "secondary-shower", "floor-tile-color",
       "secondary-bath-steel-tub", "secondary-bath-walk-in",
-      "bath-faucets", "common-wall-paint", "trim-paint", "baseboard",
-      "door-casing-color", "interior-door-style",
+      "bath-faucets", "bath-hardware", "common-wall-paint", "trim-paint", "baseboard",
+      "door-casing-color", "interior-door-style", "door-hardware",
     ],
   },
   {
@@ -236,7 +239,7 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     scopeSlugs: [
       "carpet-color", "main-area-flooring-type", "main-area-flooring-color",
       "common-wall-paint", "ceiling-paint", "trim-paint", "baseboard", "crown-options",
-      "bedroom-fan", "door-casing-color", "door-hardware",
+      "bedroom-fan",
     ],
   },
 ];
@@ -267,7 +270,7 @@ const LENOX_SPATIAL_HINTS: Record<string, string> = {
   "kitchen-cabinet-hardware": "cabinet knobs and pulls on all cabinets",
   "counter-top": "all countertop surfaces (island and perimeter)",
   "countertop-edge": "edge profile of all countertops",
-  "backsplash": "tile backsplash between upper cabinets and countertop on the walls",
+  "backsplash": "tile backsplash covering the ENTIRE perimeter wall between upper cabinets and countertop — runs the full length on both sides of the pantry doors, not just behind the range",
   "kitchen-sink": "undermount sink basin in the island countertop — preserve the exact sink position and orientation from the original photo",
   "kitchen-faucet": "faucet on the island countertop — the faucet spout arches AWAY from the camera toward the back wall/range side. Keep this exact orientation, do NOT flip it.",
   "dishwasher": "dishwasher panel on the near side of the island",
@@ -281,14 +284,14 @@ const LENOX_SPATIAL_HINTS: Record<string, string> = {
   "trim-paint": "trim and molding along walls",
   "door-casing-color": "door frames and casings",
   "baseboard": "baseboard molding along the floor line",
-  "wainscoting": "wainscoting panels on lower walls",
+  "wainscoting": "if selected, install wainscoting panels on the lower-left portion of the BACK WALL (to the left of the fireplace). The base photo has NO wainscoting — do NOT add wainscoting to the left wall or right wall",
   "interior-door-style": "interior doors (panel style)",
   "lighting": "light fixtures (chandelier, pendants)",
   "great-room-fan": "ceiling fan in the great room (vaulted ceiling)",
-  "fireplace-mantel": "fireplace mantel surround",
-  "fireplace-mantel-accent": "fireplace mantel accent/trim details",
-  "fireplace-hearth": "fireplace hearth at floor level",
-  "fireplace-tile-surround": "tile surround inside the fireplace opening",
+  "fireplace-mantel": "fireplace mantel surround on the right portion of the back wall",
+  "fireplace-mantel-accent": "fireplace mantel accent/trim details on the back wall above the fireplace",
+  "fireplace-hearth": "fireplace hearth at floor level on the back wall",
+  "fireplace-tile-surround": "tile surround inside the fireplace opening on the back wall",
   "primary-bath-vanity": "bathroom vanity cabinet (single vanity, below the mirror)",
   "primary-bath-cabinet-color": "vanity cabinet color",
   "bathroom-cabinet-hardware": "vanity cabinet hardware (pulls and knobs)",
@@ -720,13 +723,12 @@ async function main() {
       promptOverrides: {
         invariantRulesWhenSelected: {
           refrigerator: [
-            "Refrigerator opening is reserved for the refrigerator only. Place the selected refrigerator in that opening and do NOT fill that opening with cabinets, drawers, shelves, pantry units, or countertops.",
+            "No refrigerator is currently visible in this photo. Place the selected refrigerator in the kitchen in a natural position along the perimeter cabinetry. Do NOT fill any other opening or remove existing cabinetry to make room — find the most natural placement.",
           ],
         },
         invariantRulesWhenNotSelected: {
           refrigerator: [
-            "Refrigerator opening state must match the source photo exactly: if the opening/alcove is empty, keep it empty; if it contains a refrigerator, keep that refrigerator unchanged.",
-            "Never convert the refrigerator opening into cabinetry, drawers, shelves, pantry units, countertops, or trim build-outs. The only permitted change inside an empty opening is wall paint/finish.",
+            "No refrigerator is visible in this photo. Do NOT add a refrigerator or create a refrigerator alcove/opening.",
           ],
         },
       },
@@ -763,15 +765,48 @@ async function main() {
     }
   }
 
+  // Entryway — wainscoting removal when not selected
+  const entrywayPhotoId = photoIdByFile.get("Lenox-Entryway.webp");
+  if (entrywayPhotoId) {
+    const policy = {
+      promptOverrides: {
+        invariantRulesWhenNotSelected: {
+          wainscoting: [
+            "IMPORTANT: The source photo shows tall shaker wainscoting panels on both hallway walls — this is an upgrade that was NOT selected. REMOVE all wainscoting panels from both walls and show smooth painted drywall from baseboard to crown molding. No battens, panels, grooves, rails, or trim banding.",
+          ],
+        },
+      },
+    };
+
+    const { error } = await supabase
+      .from("step_photo_generation_policies")
+      .upsert(
+        {
+          org_id: org.id,
+          step_photo_id: entrywayPhotoId,
+          policy_key: "stonemartin:lenox:entryway:v1",
+          is_active: true,
+          policy_json: policy,
+        },
+        { onConflict: "org_id,step_photo_id,policy_key" },
+      );
+    if (error) {
+      console.error("  Failed to upsert entryway policy:", error.message);
+    } else {
+      console.log("  Entryway policy: wainscoting removal when not selected");
+    }
+  }
+
   // Living Room — zone protection
   const livingRoomPhotoId = photoIdByFile.get("Lenox-Living_Room.webp");
   if (livingRoomPhotoId) {
     const policy = {
       promptOverrides: {
         invariantRulesAlways: [
+          "FIREPLACE POSITION LOCK: The fireplace is on the right portion of the BACK WALL (far wall from the camera). The window is on the adjacent RIGHT WALL, not on the fireplace wall. The fireplace must remain on the back wall in its exact position. Do NOT relocate, mirror, or redraw the fireplace on any other wall. Preserve the fireplace opening shape, mantel structure, brick surround, and hearth in their original position and proportions.",
+          "WAINSCOTING PLACEMENT: The base photo has NO wainscoting — all walls are smooth painted drywall. If a wainscoting style is selected, install it ONLY on the lower-left portion of the BACK WALL (to the left of the fireplace). Do NOT place wainscoting on the left wall, right wall, or any other surface. If no wainscoting is selected, do NOT mention or add wainscoting anywhere.",
           "Preserve room zoning exactly as the source photo: the main living room floor area must stay open and uncluttered.",
           "Do NOT add any kitchen structures in the living room area: no islands, perimeter cabinets, countertops, appliances, sinks, faucets, or backsplash walls.",
-          "Fireplace mantel, surround, and hearth edits are allowed ONLY on the existing fireplace assembly. Do NOT move the fireplace or alter the wall geometry around it.",
         ],
       },
     };
@@ -782,7 +817,7 @@ async function main() {
         {
           org_id: org.id,
           step_photo_id: livingRoomPhotoId,
-          policy_key: "stonemartin:lenox:living-room:v1",
+          policy_key: "stonemartin:lenox:living-room:v3",
           is_active: true,
           policy_json: policy,
         },
@@ -844,7 +879,7 @@ async function main() {
   }
 
   console.log(`\nDone. ${rows.length} price overrides, ${matchCount} matching base, ${missingCount} missing slugs.`);
-  console.log(`${photoIdByFile.size} photos uploaded, 3 generation policies seeded.`);
+  console.log(`${photoIdByFile.size} photos uploaded, 4 generation policies seeded.`);
 }
 
 main().catch((err) => {
