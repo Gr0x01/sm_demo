@@ -11,6 +11,10 @@ const updateSchema = z.object({
   unit_label: z.string().nullable().optional(),
   max_quantity: z.number().int().nullable().optional(),
   sort_order: z.number().int().optional(),
+  generation_hint: z.enum(["default", "skip", "always_send"]).nullable().optional(),
+  generation_rules: z.array(z.string()).nullable().optional(),
+  generation_rules_when_not_selected: z.array(z.string()).nullable().optional(),
+  is_appliance: z.boolean().optional(),
 });
 
 export async function PATCH(

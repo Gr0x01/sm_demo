@@ -15,7 +15,7 @@ import { GalleryView } from "./GalleryView";
 import { StepPhotoGrid } from "./StepPhotoGrid";
 import type { ContractPhase } from "@/lib/contract-phase";
 import { resolveScopedFlooringSelections, shouldForceSendFlooringSubcategory } from "@/lib/flooring-selection";
-import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
+import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 
 
 interface UpgradePickerProps {
@@ -190,30 +190,22 @@ export function UpgradePicker({
         photo && !photo.isHero
           ? {}
           : (step.photoBaseline ?? {});
-      const effectivePhotoScope = getEffectivePhotoScopedIds(photo?.subcategoryIds, {
-        stepSlug: step.id,
-        imagePath: photo?.imagePath ?? null,
-      });
+      const sectionIds = step.sections.flatMap((sec) => sec.subCategoryIds);
+      const alsoInclude = step.alsoIncludeIds ?? [];
+      const effectivePhotoScope = getPhotoScopedIds(
+        photo?.subcategoryIds,
+        [...sectionIds, ...alsoInclude],
+      );
       const photoContext = {
         stepSlug: step.id,
         imagePath: photo?.imagePath ?? null,
       };
-      if (effectivePhotoScope) {
-        const scopedSelections = resolveScopedFlooringSelections(
-          filterVisualSelections(effectivePhotoScope, allSelections, baselineForThisPhoto),
-          flooringContextText,
-        );
-        return normalizePrimaryAccentAsWallPaint(scopedSelections, photoContext);
-      }
-      const allowedIds = new Set([
-        ...step.sections.flatMap((sec) => sec.subCategoryIds),
-        ...(step.alsoIncludeIds ?? []),
-      ]);
-      const stepSelections = resolveScopedFlooringSelections(
-        filterVisualSelections(allowedIds, allSelections, baselineForThisPhoto),
+      const scopeSet = effectivePhotoScope ?? new Set([...sectionIds, ...alsoInclude]);
+      const scopedSelections = resolveScopedFlooringSelections(
+        filterVisualSelections(scopeSet, allSelections, baselineForThisPhoto),
         flooringContextText,
       );
-      return normalizePrimaryAccentAsWallPaint(stepSelections, photoContext);
+      return normalizePrimaryAccentAsWallPaint(scopedSelections, photoContext);
     },
     [filterVisualSelections]
   );

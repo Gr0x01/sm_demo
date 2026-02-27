@@ -85,7 +85,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
     .select(`
       id, slug, name, sort_order,
       subcategories (
-        id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, is_appliance,
+        id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
         options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default )
       )
     `)
@@ -101,7 +101,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
       id: string; slug: string; name: string; category_id: string; is_visual: boolean;
       is_additive: boolean | null; unit_label: string | null; max_quantity: number | null;
       sort_order: number; generation_hint: string | null; generation_rules: string[] | null;
-      is_appliance: boolean;
+      generation_rules_when_not_selected: string[] | null; is_appliance: boolean;
       options: {
         id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
         swatch_url: string | null; swatch_color: string | null; nudge: string | null;
@@ -119,6 +119,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
         maxQuantity: sub.max_quantity ?? undefined,
         generationHint: (sub.generation_hint as SubCategory['generationHint']) ?? undefined,
         generationRules: sub.generation_rules ?? undefined,
+        generationRulesWhenNotSelected: sub.generation_rules_when_not_selected ?? undefined,
         isAppliance: sub.is_appliance || undefined,
         options: (sub.options ?? [])
           .sort((a, b) => a.sort_order - b.sort_order)
@@ -156,7 +157,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
       .select(`
         id, slug, name, sort_order,
         subcategories (
-          id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids, generation_hint, generation_rules, is_appliance,
+          id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
           options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default )
         )
       `)
@@ -191,7 +192,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
     id: string; slug: string; name: string; category_id: string; is_visual: boolean;
     is_additive: boolean | null; unit_label: string | null; max_quantity: number | null;
     sort_order: number; floorplan_ids: string[]; generation_hint: string | null; generation_rules: string[] | null;
-    is_appliance: boolean;
+    generation_rules_when_not_selected: string[] | null; is_appliance: boolean;
     options: {
       id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
       swatch_url: string | null; swatch_color: string | null; nudge: string | null;
@@ -220,6 +221,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
           maxQuantity: sub.max_quantity ?? undefined,
           generationHint: (sub.generation_hint as SubCategory['generationHint']) ?? undefined,
           generationRules: sub.generation_rules ?? undefined,
+          generationRulesWhenNotSelected: sub.generation_rules_when_not_selected ?? undefined,
           isAppliance: sub.is_appliance || undefined,
           options: (sub.options ?? [])
             .filter((opt) => fitsFloorplan(opt.floorplan_ids))

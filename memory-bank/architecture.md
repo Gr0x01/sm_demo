@@ -37,16 +37,17 @@ Server (Next.js API routes + Inngest background functions)
   │     └── Cache MISS → claim __pending__ slot → dispatch Inngest event → return 202
   ├── POST /api/inngest — Inngest serve endpoint (GET/POST/PUT)
   └── Inngest background functions (src/inngest/functions/):
-        ├── generate-photo — up to 4 steps: generate-1 → generate-continuation-N (swatch batches) → refine (policy 2nd pass) → persist
-        │     Gemini has a 14-image input limit (1 room + 13 swatches). Photos with >13 swatches are auto-split into batches.
-        │     Each step gets its own 120s Vercel function invocation. Intermediate images stored in temp storage (not step state).
+        ├── generate-photo — 3 steps: generate → refine (policy 2nd pass, conditional) → persist
+        │     OpenAI gpt-image-1.5 via images.edit endpoint. Hero photo + swatches as input images.
+        │     Each step gets its own 120s Vercel function invocation.
         │     Config: retries: 2, concurrency: { limit: 5 }
         └── generate-demo — 2 steps: generate → persist
               Config: retries: 2, concurrency: { limit: 3 }
 
 Supabase
   ├── Tables: organizations, floorplans, categories,
-  │           subcategories, options, steps, step_sections, step_ai_config
+  │           subcategories (+ generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance),
+  │           options (+ generation_rules), steps, step_sections, step_ai_config
   ├── Table: step_photos (multiple photos per step, hero flag, quality check, spatial hints)
   ├── Table: generated_images (cache — step_id, model, step_photo_id, buyer_session_id, selections_fingerprint)
   ├── Table: step_photo_generation_policies (internal-only per-photo prompt/second-pass policy JSON)
@@ -92,11 +93,10 @@ Supabase
 2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
 3. Cache hit → returns 200 with URL + `cacheHit: true`
 4. Cache miss → claim `__pending__` slot (DB dedup, 5 min stale TTL) → dispatch `photo/generate.requested` to Inngest → return **202** with `selectionsHash`
-5. **Inngest function** (`generate-photo`): up to 4 steps, each gets its own 120s Vercel invocation:
-   - `generate-1` — load hero photo + swatches, build prompt, call Gemini `generateImageWithGemini()`. Computes swatch batch assignments (serialized for continuation steps).
-   - `generate-continuation-N` — conditional: runs when >13 swatch-bearing selections. Each batch gets its own prompt + swatch images, uses previous pass output as room image. Intermediate images uploaded to temp storage (avoids Inngest 4MB step state limit).
+5. **Inngest function** (`generate-photo`): 3 steps, each gets its own 120s Vercel invocation:
+   - `generate` — load hero photo + swatches from Supabase Storage, build prompt via `buildEditPrompt`, call OpenAI `images.edit` (gpt-image-1.5, quality: high, 1536x1024, input_fidelity: high)
    - `refine` — conditional policy second pass (e.g., slide-in range correction), only when policy requires it
-   - `persist` — upload to Storage, upsert cache row replacing `__pending__`, PostHog event, cleanup temp images
+   - `persist` — upload to Storage, upsert cache row replacing `__pending__`, PostHog event
    - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
 6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.
 7. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs
@@ -188,29 +188,32 @@ State shape:
 2. Client sends POST to `/api/generate/photo` with orgSlug, floorplanSlug, stepPhotoId, selections, sessionId
 3. Route validates ownership, scopes selections, computes hash, claims `__pending__` slot
 4. Route dispatches `photo/generate.requested` event to Inngest, returns 202
-5. Inngest `generate-photo` function runs in background (up to 4 steps, each up to 120s):
-   - Splits swatch-bearing selections into batches of ≤13 (Gemini's 14-image input limit)
-   - Per-batch: builds edit prompt via `buildEditPrompt`, wraps with Gemini anti-collage preamble, calls `generateImageWithGemini()` (3:2 aspect, 1K resolution)
-   - Continuation batches use previous pass output as room image (stored in temp storage between steps)
+5. Inngest `generate-photo` function runs in background (3 steps, each up to 120s):
+   - Downloads hero photo + swatches from Supabase Storage, builds prompt via `buildEditPrompt`
+   - Calls OpenAI `images.edit` (gpt-image-1.5, quality: high, 1536x1024, input_fidelity: high)
    - Optional policy second pass (e.g., slide-in range correction)
-   - Uploads final image to `generated-images` bucket, upserts cache row, cleans temp files
+   - Uploads final image to `generated-images` bucket, upserts cache row
 6. Client polls `/api/generate/photo/check` every 3s until result is ready
 7. Client displays in StepPhotoGrid (per-photo cards with retry via ImageLightbox)
 
-**Image approach**: Gemini image generation via `@google/genai` SDK (`generateImageWithGemini()` in `src/lib/gemini-image.ts`). Sends base room photo + individually attached swatch images as multimodal input. Prompt lines explicitly map each item to `swatch #N` in deterministic order. Anti-collage preamble wraps the prompt (Gemini has no `size` param equivalent). Config: `responseModalities: ["IMAGE"]`, `aspectRatio: "3:2"`, `imageSize: "1K"`. Default model: `gemini-3-pro-image-preview`.
-
-**Multi-pass swatch splitting**: Gemini has a hard 14-image input limit (1 room photo + 13 swatches). Photos with >13 swatch-bearing selections are auto-split into batches via `splitSelectionsForGemini()`. Each batch gets its own `buildEditPrompt()` call with only that batch's selections. Non-swatch selections (appliances, hex-only) go in batch 1 only. Continuation batches use previous pass output as room image. Batch assignments are computed once in step 1 and serialized (not re-derived from DB).
+**Image approach**: OpenAI `gpt-image-1.5` via `images.edit` endpoint. Sends base room photo + individually attached swatch images (via `openai.toFile()`). Prompt lines explicitly map each item to `swatch #N` in deterministic order. Config: `quality: "high"`, `size: "1536x1024"`, `input_fidelity: "high"`. Typical generation time: 45-90s per pass.
 
 **Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Base rules are global; tenant/photo-specific constraints are layered via per-photo policy overrides (DB-backed, internal-only), including optional second-pass refinements.
+
+**Generation rule layering** (from general to specific, all accumulate into a Set):
+1. `subcategory.generation_rules` — fires when subcategory is selected (e.g., "apply Common Wall Paint to all drywall zones"). Supports conditional cross-subcategory logic in natural language (e.g., "If Accent Color is also selected, apply only to non-accent zones").
+2. `subcategory.generation_rules_when_not_selected` — negative guards scoped to photo (e.g., "wainscoting OFF = don't add paneling"). Fires for any photo where the subcategory is in scope but not selected.
+3. `option.generation_rules` — option-specific rules (e.g., "stainless steel appliances — match existing finish").
+4. `step_photo_generation_policies` — per-photo overrides (internal-only, not admin-editable). Prompt invariants + optional second-pass refinement.
+
+All rule fields are admin-editable via the OptionTree AI Rules UI. Conditional cross-subcategory interaction (e.g., wall paint vs accent color) is expressed as natural language in rule text — the AI model evaluates by reading the edit list, no code branches needed.
 
 **Cache semantic versioning**: Generation hash includes `_cacheVersion` so prompt/pipeline changes do not serve stale outputs. Bump `GENERATION_CACHE_VERSION` whenever generation semantics change.
 Generation hash also includes policy and prompt context inputs (`_promptPolicy`, `_promptContext`) so changes to per-photo hint/baseline/scene/policy invalidate stale cache entries.
 
 **Reliability playbook**: See `generation-reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
 
-**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (good quality, expensive, slow) → **Gemini `gemini-3-pro-image-preview`** via `@google/genai` SDK (current — ~28% cheaper, 2-3x faster, comparable quality, auto multi-pass splitting for >13 swatches). OpenAI package kept installed as fallback but not imported in generation code.
-
-**Model validation**: `resolveImageModel()` in `src/lib/models.ts` validates client-provided model names against a Gemini-only whitelist (`SUPPORTED_IMAGE_MODELS`). Unknown models (including `gpt-image-1.5`) silently fall back to the default Gemini model. Used by both generate and check routes to prevent hash mismatch.
+**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (good quality, expensive, slow) → Gemini `gemini-3-pro-image-preview` (faster/cheaper but unpredictable hallucinations — reverted D77) → **OpenAI `gpt-image-1.5`** (current — reliable output, ~60-120s per pass). `@google/genai` kept as devDependency for test scripts.
 
 ## Swatch Images
 
@@ -324,13 +327,12 @@ src/
 │   ├── buyer-session.ts     # Session helpers (mapRowToPublicSession, validateEmail, SESSION_COLUMNS)
 │   ├── email.ts             # Resend email utility (sendResumeEmail, lazy-initialized client)
 │   ├── generate.ts          # Prompt construction, buildPromptContextSignature, hashSelections (shared by generation + check routes)
-│   ├── gemini-image.ts      # Gemini generation helper: generateImageWithGemini(), wrapPromptForGemini(), splitSelectionsForGemini()
-│   ├── models.ts            # IMAGE_MODEL, VISION_MODEL, resolveImageModel(), SUPPORTED_IMAGE_MODELS
+│   ├── models.ts            # IMAGE_MODEL (gpt-image-1.5), VISION_MODEL (gemini-3-flash-preview)
 │   └── photo-generation-policy.ts # Internal per-photo policy resolver (DB-backed + fallback)
 ├── inngest/
 │   ├── client.ts              # Inngest client singleton + typed event schemas
 │   └── functions/
-│       ├── generate-photo.ts  # Background photo generation (up to 4 steps: generate-1 → continuation-N → refine → persist)
+│       ├── generate-photo.ts  # Background photo generation (3 steps: generate → refine → persist)
 │       └── generate-demo.ts   # Background demo generation (2 steps: generate → persist)
 └── types/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
@@ -372,7 +374,7 @@ public/
 **Routing**: `/admin/[orgSlug]/...` — org-scoped admin pages. Server components gate with `getAuthenticatedUser(orgSlug)`.
 
 **CRUD API routes** (`/api/admin/{entity}`):
-- `categories`, `subcategories`, `options` — POST (create with slug generation), PATCH, DELETE
+- `categories`, `subcategories`, `options` — POST (create with slug generation), PATCH (including generation rule fields), DELETE
 - `floorplans` — POST (create with slug), PATCH, DELETE (+ storage cleanup for all step photos)
 - `steps` — POST (verify floorplan ownership), PATCH (sections as jsonb full replacement), DELETE (+ storage cleanup)
 - `step-photos` — POST (path validation: `{orgId}/rooms/{stepId}/`), PATCH (hero swap via `swap_hero_photo` RPC), DELETE (DB first, then storage)
@@ -383,7 +385,7 @@ public/
 - `generate-descriptor` — AI prompt descriptor generation (Gemini Flash)
 - `images` — authenticated GET/DELETE for generated image cache (org-scoped, verified storage deletes)
 
-**Option Tree UI** (`src/components/admin/OptionTree.tsx`): Full CRUD tree with drag reorder (dnd-kit), inline price edit, swatch upload, AI descriptor generation, floorplan scope popovers. Per-floorplan pricing: dropdown selector in toolbar (visible when 2+ floorplans), override indicators (amber dot), inline edit routes to `/api/admin/pricing-overrides`, reset-to-base action.
+**Option Tree UI** (`src/components/admin/OptionTree.tsx`): Full CRUD tree with drag reorder (dnd-kit), inline price edit, swatch upload, AI descriptor generation, floorplan scope popovers. Per-floorplan pricing: dropdown selector in toolbar (visible when 2+ floorplans), override indicators (amber dot), inline edit routes to `/api/admin/pricing-overrides`, reset-to-base action. **AI Rules authoring**: Subcategory rows have a collapsible "AI Rules" panel (sparkles icon toggle) with generation hint dropdown (default/skip/always_send), appliance checkbox, and two textareas for `generation_rules` / `generation_rules_when_not_selected` — local draft state with blur-save and error feedback (revert + red badge on failure). Option editor modal includes a generation rules textarea saved as part of the normal Save flow. Badges (purple `appliance`, emerald `rules`) surface state at a glance.
 
 **Floorplan Pipeline UI**: FloorplanList (card grid) → FloorplanEditor (step list with dnd-kit, accordion detail with sections/subcategory assignment) → PhotoManager (step tabs, photo cards with quality badges, spatial hint generation, hero toggle).
 

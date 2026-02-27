@@ -12,6 +12,7 @@ export interface PhotoGenerateRequestedData {
   stepId: string;
   sessionId: string;
   scopedSelections: Record<string, string>;
+  scopedSubcategoryIds: string[];
   modelName: string;
   resolvedPolicy: ResolvedPhotoGenerationPolicy;
   sceneDescription: string | null;

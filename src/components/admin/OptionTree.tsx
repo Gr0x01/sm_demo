@@ -20,9 +20,20 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ChevronDown, ChevronRight, GripVertical, Plus, Trash, Trash2, Pencil, Check, X, RotateCcw } from "lucide-react";
+import { ChevronDown, ChevronRight, GripVertical, Plus, Trash, Trash2, Pencil, Check, X, RotateCcw, Sparkles } from "lucide-react";
 import { SwatchUpload } from "./SwatchUpload";
 import { FloorplanScopePopover } from "./FloorplanScopePopover";
+
+// ---------- Generation rules helpers ----------
+
+function parseRulesText(value: string): string[] | null {
+  const rules = value.split("\n").map(s => s.trim()).filter(Boolean);
+  return rules.length > 0 ? rules : null;
+}
+
+function rulesToText(rules: string[] | null): string {
+  return (rules ?? []).join("\n");
+}
 
 // ---------- API helpers ----------
 
@@ -217,6 +228,7 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
       })));
     } catch (err) {
       console.error("Update failed:", err);
+      throw err;
     }
   }, [orgId]);
 
@@ -295,6 +307,7 @@ export function OptionTree({ categories: initialCategories, orgId, orgSlug, isAd
       })));
     } catch (err) {
       console.error("Update failed:", err);
+      throw err;
     }
   }, [orgId]);
 
@@ -716,6 +729,24 @@ function SortableSubcategoryRow({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(subcategory.name);
   const [showAddOption, setShowAddOption] = useState(false);
+  const [showAiRules, setShowAiRules] = useState(false);
+
+  // Local draft state for generation rules textareas (prevents clobbering during edits)
+  const [rulesText, setRulesText] = useState(rulesToText(subcategory.generation_rules));
+  const [rulesNotSelectedText, setRulesNotSelectedText] = useState(rulesToText(subcategory.generation_rules_when_not_selected));
+  const [aiSaveError, setAiSaveError] = useState<string | null>(null);
+  useEffect(() => { setRulesText(rulesToText(subcategory.generation_rules)); }, [subcategory.generation_rules]);
+  useEffect(() => { setRulesNotSelectedText(rulesToText(subcategory.generation_rules_when_not_selected)); }, [subcategory.generation_rules_when_not_selected]);
+
+  const saveAiField = async (updates: Record<string, unknown>, revert?: () => void) => {
+    setAiSaveError(null);
+    try {
+      await onUpdate(subcategory.id, updates);
+    } catch {
+      setAiSaveError("Save failed");
+      revert?.();
+    }
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -766,6 +797,12 @@ function SortableSubcategoryRow({
           {subcategory.is_additive && (
             <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/30 text-amber-400 border border-amber-800/50">additive</span>
           )}
+          {subcategory.is_appliance && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-purple-900/30 text-purple-400 border border-purple-800/50">appliance</span>
+          )}
+          {(subcategory.generation_rules?.length || subcategory.generation_rules_when_not_selected?.length) && (
+            <span className="text-[10px] px-1.5 py-0.5 bg-emerald-900/30 text-emerald-400 border border-emerald-800/50">rules</span>
+          )}
           <span className="text-xs text-neutral-500">{subcategory.options.length} opt</span>
         </div>
 
@@ -774,6 +811,13 @@ function SortableSubcategoryRow({
             {floorplans.length > 1 && (
               <FloorplanScopePopover orgId={orgId} level="subcategory" entityId={subcategory.id} floorplans={floorplans} inheritedFrom={`Category: ${categoryName}`} />
             )}
+            <button
+              onClick={() => setShowAiRules((v) => !v)}
+              className={`p-1 ${showAiRules ? "text-emerald-400" : "text-neutral-600 hover:text-neutral-300"}`}
+              title="AI generation rules"
+            >
+              <Sparkles className="w-3 h-3" />
+            </button>
             <button onClick={() => { setEditName(subcategory.name); setIsEditing(true); }} className="text-neutral-600 hover:text-neutral-300 p-1">
               <Pencil className="w-3 h-3" />
             </button>
@@ -789,6 +833,84 @@ function SortableSubcategoryRow({
           </div>
         )}
       </div>
+
+      {showAiRules && isAdmin && (
+        <div className="border-t border-neutral-800/50 bg-neutral-900/80 px-4 py-3 ml-6 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-emerald-400/80 flex items-center gap-1.5">
+              <Sparkles className="w-3 h-3" /> AI Generation Rules
+            </p>
+            {aiSaveError && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-red-900/40 text-red-400 border border-red-800/50">{aiSaveError}</span>
+            )}
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <span className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Generation hint</span>
+              <select
+                value={subcategory.generation_hint ?? "default"}
+                onChange={(e) => {
+                  const val = e.target.value as "default" | "skip" | "always_send";
+                  saveAiField({ generation_hint: val === "default" ? null : val });
+                }}
+                className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs px-2 py-1.5 focus:outline-none focus:border-neutral-500"
+              >
+                <option value="default">default</option>
+                <option value="skip">skip</option>
+                <option value="always_send">always_send</option>
+              </select>
+            </div>
+            <div className="flex items-center">
+              <label className="flex items-center gap-2 text-xs text-neutral-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={subcategory.is_appliance}
+                  onChange={(e) => saveAiField({ is_appliance: e.target.checked })}
+                  className="accent-purple-500"
+                />
+                Appliance
+              </label>
+            </div>
+          </div>
+
+          <div>
+            <span className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Rules (when selected)</span>
+            <textarea
+              value={rulesText}
+              onChange={(e) => setRulesText(e.target.value)}
+              onBlur={() => {
+                const parsed = parseRulesText(rulesText);
+                const current = subcategory.generation_rules ?? null;
+                if (JSON.stringify(parsed) !== JSON.stringify(current)) {
+                  saveAiField({ generation_rules: parsed }, () => setRulesText(rulesToText(current)));
+                }
+              }}
+              rows={3}
+              placeholder="One rule per line..."
+              className="w-full resize-y bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs px-2.5 py-2 font-mono leading-5 focus:outline-none focus:border-neutral-500"
+            />
+          </div>
+
+          <div>
+            <span className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Rules (when NOT selected)</span>
+            <textarea
+              value={rulesNotSelectedText}
+              onChange={(e) => setRulesNotSelectedText(e.target.value)}
+              onBlur={() => {
+                const parsed = parseRulesText(rulesNotSelectedText);
+                const current = subcategory.generation_rules_when_not_selected ?? null;
+                if (JSON.stringify(parsed) !== JSON.stringify(current)) {
+                  saveAiField({ generation_rules_when_not_selected: parsed }, () => setRulesNotSelectedText(rulesToText(current)));
+                }
+              }}
+              rows={2}
+              placeholder="Negative guards when not selected..."
+              className="w-full resize-y bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs px-2.5 py-2 font-mono leading-5 focus:outline-none focus:border-neutral-500"
+            />
+          </div>
+        </div>
+      )}
 
       {isExpanded && (
         <div className="border-t border-neutral-800/50 bg-neutral-800/20 py-3">
@@ -947,11 +1069,7 @@ const SortableOptionRow = memo(function SortableOptionRow({
   };
 
   const handleSaveOption = async (updates: Record<string, unknown>) => {
-    try {
-      await onUpdate(option.id, updates);
-    } catch (err) {
-      console.error("Option save failed:", err);
-    }
+    await onUpdate(option.id, updates);
   };
 
   const openEditor = () => setIsEditorOpen(true);
@@ -1138,9 +1256,11 @@ function OptionEditorModal({
     description: option.description ?? "",
     promptDescriptor: option.prompt_descriptor ?? "",
     isDefault: option.is_default,
+    generationRulesText: rulesToText(option.generation_rules),
   });
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft({
@@ -1152,6 +1272,7 @@ function OptionEditorModal({
       description: option.description ?? "",
       promptDescriptor: option.prompt_descriptor ?? "",
       isDefault: option.is_default,
+      generationRulesText: rulesToText(option.generation_rules),
     });
   }, [
     option.id,
@@ -1163,6 +1284,7 @@ function OptionEditorModal({
     option.description,
     option.prompt_descriptor,
     option.is_default,
+    option.generation_rules,
   ]);
 
   const buildUpdates = () => {
@@ -1185,6 +1307,8 @@ function OptionEditorModal({
     if (normalizedPromptDescriptor !== (option.prompt_descriptor ?? null)) updates.prompt_descriptor = normalizedPromptDescriptor;
     if (normalizedSwatchUrl !== (option.swatch_url ?? null)) updates.swatch_url = normalizedSwatchUrl;
     if (draft.isDefault !== option.is_default) updates.is_default = draft.isDefault;
+    const normalizedGenRules = parseRulesText(draft.generationRulesText);
+    if (JSON.stringify(normalizedGenRules) !== JSON.stringify(option.generation_rules ?? null)) updates.generation_rules = normalizedGenRules;
 
     return updates;
   };
@@ -1254,6 +1378,7 @@ function OptionEditorModal({
       return;
     }
     setSaving(true);
+    setSaveError(null);
     try {
       // Save option field changes (non-price in floorplan mode)
       if (Object.keys(updates).length > 0) {
@@ -1273,6 +1398,8 @@ function OptionEditorModal({
         }
       }
       onClose();
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -1335,6 +1462,9 @@ function OptionEditorModal({
             {!draft.promptDescriptor.trim() && (
               <span className="text-[10px] px-1.5 py-0.5 bg-amber-50 text-amber-700 border border-amber-200">not ready</span>
             )}
+            {saveError && (
+              <span className="text-[10px] px-1.5 py-0.5 bg-red-50 text-red-700 border border-red-200">{saveError}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1382,6 +1512,7 @@ function OptionDetailPanel({
     description: string;
     promptDescriptor: string;
     isDefault: boolean;
+    generationRulesText: string;
   };
   setDraft: React.Dispatch<React.SetStateAction<{
     name: string;
@@ -1392,6 +1523,7 @@ function OptionDetailPanel({
     description: string;
     promptDescriptor: string;
     isDefault: boolean;
+    generationRulesText: string;
   }>>;
   generating: boolean;
   onGenerateDescriptor: () => Promise<void>;
@@ -1494,6 +1626,22 @@ function OptionDetailPanel({
             {generating ? "Generating..." : "Generate"}
           </button>
         </div>
+      </div>
+
+      <div className="border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 flex items-center gap-1.5">
+          <Sparkles className="w-3 h-3" /> Generation Rules
+        </p>
+        <p className="text-xs leading-5 text-slate-500">
+          Prompt rules injected when this option is selected. One rule per line.
+        </p>
+        <textarea
+          value={draft.generationRulesText}
+          onChange={(e) => setDraft((prev) => ({ ...prev, generationRulesText: e.target.value }))}
+          rows={3}
+          placeholder="One rule per line..."
+          className="w-full resize-y bg-white border border-slate-300 text-slate-900 text-xs px-2.5 py-2 font-mono leading-5 focus:outline-none focus:border-slate-500"
+        />
       </div>
 
       <div className="border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -5,7 +5,7 @@ import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, ge
 import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL } from "@/lib/models";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
-import { getEffectivePhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
+import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import {
   buildDefaultOptionBySubcategory,
   normalizeSelectionRecord,
@@ -142,11 +142,12 @@ export async function POST(request: Request) {
     );
 
     // --- Server-side per-photo selection scoping ---
-    // If a photo declares subcategoryIds, that list is the full scope.
-    const photoScopedIds = getEffectivePhotoScopedIds(aiConfig.photo.subcategoryIds, {
-      stepSlug: aiConfig.stepSlug,
-      imagePath: aiConfig.photo.imagePath,
-    });
+    const sectionSubIds = aiConfig.sections.flatMap(s => s.subcategory_ids ?? []);
+    const alsoInclude = aiConfig.alsoIncludeIds ?? [];
+    const photoScopedIds = getPhotoScopedIds(
+      aiConfig.photo.subcategoryIds,
+      [...sectionSubIds, ...alsoInclude],
+    );
     let scopedSelections = mergedSelections;
     if (photoScopedIds) {
       scopedSelections = Object.fromEntries(
@@ -167,6 +168,7 @@ export async function POST(request: Request) {
     const sceneDescription = buildSceneDescription(aiConfig);
 
     const modelName = IMAGE_MODEL;
+    const scopedSubcategoryIds = photoScopedIds ? [...photoScopedIds] : [];
     const promptContextSignature = buildPromptContextSignature({
       sceneDescription,
       spatialHints,
@@ -174,7 +176,7 @@ export async function POST(request: Request) {
         photoBaseline: aiConfig.photo.photoBaseline,
         spatialHint: aiConfig.photo.spatialHint,
       },
-    }, scopedSelections, optionLookup);
+    }, scopedSelections, optionLookup, scopedSubcategoryIds);
     const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
     const resolvedPolicy = resolvePhotoGenerationPolicy({
       orgSlug,
@@ -262,6 +264,7 @@ export async function POST(request: Request) {
           stepId: aiConfig.stepId,
           sessionId,
           scopedSelections,
+          scopedSubcategoryIds,
           modelName,
           resolvedPolicy,
           sceneDescription,

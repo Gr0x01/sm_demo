@@ -14,6 +14,7 @@ const updateSchema = z.object({
   nudge: z.string().nullable().optional(),
   is_default: z.boolean().optional(),
   sort_order: z.number().int().optional(),
+  generation_rules: z.array(z.string()).nullable().optional(),
 });
 
 export async function PATCH(

@@ -387,21 +387,10 @@ Also wire `step_photos.spatial_hint` into prompt context text (`PHOTO_SPATIAL_HI
 **Functions**: `generate-photo` (3 steps: generate → refine → persist, retries: 2, concurrency: 5), `generate-demo` (2 steps: generate → persist, retries: 2, concurrency: 3).
 **Trade-off**: Adds Inngest as infrastructure dependency. Gains: no more Vercel timeout failures, client never blocks on generation, automatic retries, concurrency control, observable via Inngest dashboard.
 
-## D74: Replace OpenAI gpt-image-1.5 with Gemini gemini-3-pro-image-preview as primary image generator
+## D74: Replace OpenAI gpt-image-1.5 with Gemini gemini-3-pro-image-preview as primary image generator — REVERTED (D77)
 **Context**: D73 validated Gemini as production-viable (~28% cheaper per pass, 2-3x faster, comparable quality). But Gemini has a hard 14-image input limit (1 room photo + 13 swatches max). Some SM photos have up to 23 swatches when buyer customizes everything.
-**Decision**: Replace OpenAI with Gemini as the primary image generator. Auto multi-pass splitting handles photos that exceed the 13-swatch limit:
-- `splitSelectionsForGemini()` separates swatch-bearing vs non-swatch selections, chunks swatch-bearing into groups of ≤13
-- Each batch gets its own Inngest step (`generate-1`, `generate-continuation-N`) with its own 120s timeout
-- Batch assignments computed once in step 1 and serialized (not re-derived from DB between steps)
-- Intermediate images stored in Supabase temp storage (not step state) to avoid Inngest's 4MB limit
-- Temp files cleaned up in persist step
-- Policy second pass (refine) runs after all swatch batches, unchanged
-- `models` field cleared from all DB generation policies so second pass fires for any model
-- `resolveImageModel()` shared by generate + check routes prevents hash mismatch
-- DB upsert failures now throw (trigger Inngest retry) instead of silent log
-**Cost**: 1-pass photos ~$0.144 (28% cheaper than $0.20). 2-pass photos ~$0.288 (only 2 SM photos worst case). Average generation is cheaper. Speed: 25-41s vs 60-120s.
-**Supersedes**: D25 (OpenAI gpt-image-1.5 as primary). OpenAI package kept installed as fallback.
-**Files changed**: `src/lib/gemini-image.ts` (new), `src/lib/models.ts`, `src/lib/posthog-server.ts`, `src/inngest/functions/generate-photo.ts`, `src/inngest/functions/generate-demo.ts`, `src/app/api/generate/photo/route.ts`, `src/app/api/generate/photo/check/route.ts`, `src/lib/demo-generate.ts`.
+**Decision**: Replace OpenAI with Gemini as the primary image generator. Auto multi-pass splitting handles photos that exceed the 13-swatch limit.
+**Outcome**: Reverted in D77. Gemini hallucinated unpredictably in production — random room layout mutations that couldn't be prevented with prompt engineering. OpenAI gpt-image-1.5 restored.
 
 ## D73: Gemini Nano Banana Pro validated as production-viable alternative to gpt-image-1.5
 **Context**: D64 evaluated self-hosted models (FLUX, OmniGen2, Kontext, Qwen) — all failed because they can't handle 10-15 simultaneous swatch references. Needed to test Gemini 3 Pro Image ("Nano Banana Pro") using the real production pipeline, not text descriptions.
@@ -444,3 +433,27 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 - Update admin image details UI to render an "Intermediate Passes" section.
 - Keep deleting debug artifacts together with the final image on single-delete and delete-all.
 **Trade-off**: Slightly higher storage footprint per generation, but materially better observability and faster root-cause analysis for geometry/edit drift issues.
+
+## D76: Separate domain for cold email outreach
+**Context**: Need to do cold outreach to builders. Sending cold emails from `withfin.ch` risks damaging primary domain reputation (spam complaints, bounces).
+**Decision**: Registered `heyfin.ch` as dedicated cold email domain. Warming with Mailreach.co before sending. DNS on Vercel (same as primary, no Cloudflare needed — no wildcard subdomains on this domain).
+**Trade-off**: Extra domain cost and setup overhead vs. protecting `withfin.ch` deliverability for transactional emails (resume links, admin invites, etc.).
+
+## D77: Revert Gemini back to OpenAI gpt-image-1.5
+**Context**: D74 migrated to Gemini `gemini-3-pro-image-preview` ("Nano Banana Pro"). While benchmarks showed faster/cheaper generation, production usage revealed unpredictable hallucinations — random room layout mutations, furniture appearing/disappearing, spatial distortions that couldn't be prevented with prompt engineering. The anti-mirror guard (966d364) and fireplace fixes (4a5a619) were attempts to patch individual failure modes, but the core issue was Gemini's inconsistency across diverse room types and selection combinations.
+**Decision**: Revert to OpenAI `gpt-image-1.5` as primary image generator. Deleted `gemini-image.ts`, restored 3-step Inngest flow (generate → refine → persist), removed multi-pass swatch splitting, mirror detection, and temp storage. All model-agnostic improvements preserved (selection reconcile, photo scoping, fireplace propagation, prompt hardening, UI polish).
+**Trade-off**: ~2x slower (~60-120s vs 25-41s), ~28% more expensive per pass. But reliable output — gpt-image-1.5 doesn't hallucinate room layouts. Speed is the main pain point now (~2 min for photos with second-pass policies).
+**Supersedes**: D74 (Gemini as primary). D73 validation results still accurate for benchmarks but Gemini is not reliable enough for production use.
+**Status of Gemini**: `@google/genai` moved to devDependencies. Test script (`scripts/test-gemini-nano-banana.ts`) retained for future re-evaluation. Revisit when Gemini image editing stabilizes.
+
+## D78: Data-driven photo scope and conditional prompt rules
+**Context**: Photo scope (`photo-scope.ts`) had 78 lines of hardcoded filename guards, and `generate.ts` had 40+ lines of slug-based conditional prompt rules. Neither worked for new builders.
+**Decision**: Move both to DB-driven systems:
+- `subcategories.generation_rules_when_not_selected` — catalog-level negative guards ("wainscoting OFF = don't add paneling"). Fires for any photo where the subcategory is in scope but not selected.
+- `step_photos.subcategory_ids` — explicit photo scope override. Null means "inherit from step sections" (default for new builders). Only set when manually narrowing scope.
+- `subcategories.generation_rules` — already existed, now populated for common-wall-paint, accent-color, wainscoting, fireplace-mantel-accent with the rules previously hardcoded.
+**Scope semantics**: `getPhotoScopedIds(photo.subcategory_ids, fallbackSectionIds)` — explicit IDs take priority, step sections are fallback. New photos inherit scope automatically; admin sets explicit IDs only for unusual shots.
+**Rule layering** (from general to specific): subcategory.generationRules → subcategory.generationRulesWhenNotSelected → option.generationRules → step_photo_generation_policies (per-photo overrides). All coexist; Sets deduplicate.
+**Trade-off**: Slightly more DB state to maintain vs. zero code changes for new builders. `normalizePrimaryAccentAsWallPaint` remains filename-based (separate concern, roadmap item to data-drive).
+**Admin UI**: Admin API + UI now exposes `generation_rules`, `generation_rules_when_not_selected`, `generation_hint`, `is_appliance` on subcategories and `generation_rules` on options. Zod schemas updated so these fields aren't stripped. Subcategory rows have a collapsible "AI Rules" panel (sparkles icon); option editor modal has a generation rules textarea. Conditional interaction logic (e.g., wall paint vs accent color) expressed in rule text as natural language — AI evaluates by reading the edit list, no code branches. Authoring model: human or LLM writes rules during onboarding; admin UI for ongoing edits.
+**Cache version**: v23 → v24.

@@ -125,15 +125,20 @@ Corrected room photo → step assignments for Kinkade floorplan.
 ### 11. Self-Hosted Image Generation — Evaluated, Not Viable ✅
 No open-source model can replace gpt-image-1.5 for our pipeline (see D64). Revisit when open-source multi-reference instruction editing matures.
 
-### 16. Gemini Image Generation Migration ✅
-Replaced OpenAI gpt-image-1.5 with Gemini gemini-3-pro-image-preview as primary image generator (see D74).
-- [x] `src/lib/gemini-image.ts`: generation helper, anti-collage prompt wrapper, swatch batch splitting
-- [x] `src/lib/models.ts`: `IMAGE_MODEL` → Gemini, `resolveImageModel()` shared by generate + check routes
-- [x] `src/inngest/functions/generate-photo.ts`: multi-pass swatch batching (generate-1 → continuation-N → refine → persist), temp storage for intermediates, DB upsert throws on failure
-- [x] `src/inngest/functions/generate-demo.ts`: Gemini swap, DB upsert throws on failure
-- [x] `src/lib/posthog-server.ts`: Gemini image cost map + `estimateGeminiImageCost()`, extended GeminiEvent
-- [x] DB: cleared `models: ["gpt-image-1.5"]` from all generation policies (SM Kinkade, Lenox, Demo)
-- [x] Tested: single-pass (2 swatches), full kitchen (9 selections), multi-pass split (23 swatches, 2 batches), model fallback, temp file cleanup, cache hits
+### 16. Gemini Image Generation Migration — REVERTED
+Attempted migration to Gemini `gemini-3-pro-image-preview` (D74). Faster and cheaper but hallucinated unpredictably in production — random room layout mutations, furniture appearing/disappearing, spatial distortions. Prompt hardening (anti-mirror guard, fireplace fixes) couldn't solve the underlying inconsistency. Reverted to OpenAI `gpt-image-1.5` (D77). `gemini-image.ts` deleted, Inngest functions restored to clean 3-step flow. Test script retained for future re-evaluation.
+
+### 17. Generation Rules Admin UI + Rule Text Authoring (D78 completion) ✅
+Made generation rules fully authorable and editable through admin UI. Previously Zod schemas stripped generation fields, admin query didn't fetch them, and `common-wall-paint` had an unconditional "ALL walls" rule that contradicted accent-color.
+- [x] Admin query: added `generation_hint`, `generation_rules`, `generation_rules_when_not_selected`, `is_appliance` to subcategory SELECT; `generation_rules` to option SELECT
+- [x] Admin types: added fields to `AdminSubcategory` and `AdminOption`
+- [x] Zod schemas: added generation fields to subcategory + option PATCH routes (were silently stripped)
+- [x] OptionTree: collapsible "AI Rules" panel on subcategory rows (sparkles icon toggle) — generation hint dropdown, appliance checkbox, two rule textareas with local draft state + blur-save
+- [x] OptionTree: generation rules textarea in option editor modal, saved as part of normal Save flow
+- [x] Badges: purple `appliance` and emerald `rules` badges on subcategory rows
+- [x] Error handling: `handleUpdateSubcategory`/`handleUpdateOption` re-throw on failure; AI rules blur handlers revert + show red "Save failed" badge; option modal catches errors and shows inline instead of closing
+- [x] DB fix: `common-wall-paint.generation_rules` updated for SM + Demo with conditional accent-color logic ("If Accent Color is also selected, apply only to non-accent zones")
+- [x] Supabase migration: `fix_common_wall_paint_conditional_accent_rules` codifies the rule text update
 
 ### 12. SM Photo Prompt/Scope Reliability Tuning ✅
 Targeted fixes for cross-room contamination and flooring correctness.

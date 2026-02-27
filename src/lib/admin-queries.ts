@@ -19,7 +19,8 @@ const _getAdminOptionTree = async (orgId: string): Promise<AdminCategory[]> => {
       id, slug, org_id, name, sort_order,
       subcategories (
         id, slug, category_id, org_id, name, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids,
-        options ( id, slug, subcategory_id, org_id, name, price, description, prompt_descriptor, swatch_url, swatch_color, nudge, is_default, sort_order, floorplan_ids )
+        generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
+        options ( id, slug, subcategory_id, org_id, name, price, description, prompt_descriptor, swatch_url, swatch_color, nudge, is_default, sort_order, floorplan_ids, generation_rules )
       )
     `)
     .eq("org_id", orgId)

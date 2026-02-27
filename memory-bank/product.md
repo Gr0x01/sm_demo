@@ -59,10 +59,15 @@ Each is a separate decision. Modeling them as one flat category would be wrong.
 - `promptDescriptor` — human-written phrase tuned for AI image quality (e.g., "Calacatta Venice quartz countertop with dramatic gray and gold veining on a white base")
 - `swatchUrl` — image thumbnail from SM website or stock source
 - `nudge` — optional social proof text
+- `generationRules` — prompt rules injected when this option is selected (e.g., "stainless steel appliances — match existing finish")
 
 **SubCategory**:
 - `id`, `name`, `categoryId`
 - `isVisual` — determines if changing this selection affects the AI kitchen image
+- `generationHint` — controls prompt inclusion: `default` (normal), `skip` (omit from prompt), `always_send` (include even when default selected)
+- `generationRules` — prompt rules injected when selected (e.g., "apply Common Wall Paint to all drywall zones"). Supports conditional cross-subcategory logic in natural language.
+- `generationRulesWhenNotSelected` — negative guards (e.g., "don't add wainscoting paneling"). Fires when subcategory is in photo scope but not selected.
+- `isAppliance` — marks appliance subcategories for in-place replacement allowances in prompt
 
 ## isVisual Flag
 

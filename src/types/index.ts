@@ -20,6 +20,7 @@ export interface SubCategory {
   maxQuantity?: number;    // cap the stepper (default 10)
   generationHint?: 'default' | 'skip' | 'always_send';
   generationRules?: string[];
+  generationRulesWhenNotSelected?: string[];
   isAppliance?: boolean;
   options: Option[];
 }
@@ -65,6 +66,7 @@ export interface AdminOption {
   is_default: boolean;
   sort_order: number;
   floorplan_ids: string[];
+  generation_rules: string[] | null;
 }
 
 export interface AdminSubcategory {
@@ -79,6 +81,10 @@ export interface AdminSubcategory {
   max_quantity: number | null;
   sort_order: number;
   floorplan_ids: string[];
+  generation_hint: 'default' | 'skip' | 'always_send' | null;
+  generation_rules: string[] | null;
+  generation_rules_when_not_selected: string[] | null;
+  is_appliance: boolean;
   options: AdminOption[];
 }
 
