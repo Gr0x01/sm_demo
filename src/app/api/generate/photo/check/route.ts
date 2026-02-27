@@ -1,34 +1,13 @@
 import { NextResponse } from "next/server";
-import { buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
+import { deriveGenerationContext } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getOrgBySlug, getFloorplan, getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup } from "@/lib/db-queries";
-import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { IMAGE_MODEL } from "@/lib/models";
-import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
-import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import {
   buildDefaultOptionBySubcategory,
   normalizeSelectionRecord,
   reconcileClientAndSessionSelections,
   stripDefaultSelections,
 } from "@/lib/selection-reconcile";
-
-function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
-  // Per-photo baseline text is the authoritative scene context when present.
-  if (aiConfig.photo.photoBaseline?.trim()) return aiConfig.photo.photoBaseline.trim();
-  if (aiConfig.sceneDescription?.trim()) return aiConfig.sceneDescription.trim();
-  return null;
-}
-
-function filterSpatialHints(
-  spatialHints: Record<string, string>,
-  allowedIds: Set<string> | null,
-): Record<string, string> {
-  if (!allowedIds) return { ...spatialHints };
-  return Object.fromEntries(
-    Object.entries(spatialHints).filter(([key]) => allowedIds.has(key)),
-  );
-}
 
 /**
  * Multi-tenant per-photo cache check.
@@ -93,60 +72,10 @@ export async function POST(request: Request) {
         optionLookup,
       );
 
-      // Server-side per-photo selection scoping (mirrors generate route)
-      const sectionSubIds = aiConfig.sections.flatMap(s => s.subcategory_ids ?? []);
-      const alsoInclude = aiConfig.alsoIncludeIds ?? [];
-      const photoScopedIds = getPhotoScopedIds(
-        aiConfig.photo.subcategoryIds,
-        [...sectionSubIds, ...alsoInclude],
-      );
-      let scopedSelections = mergedSelections;
-      if (photoScopedIds) {
-        scopedSelections = Object.fromEntries(
-          Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
-        );
-      }
-      const flooringContextText = [
-        aiConfig.photo.photoBaseline ?? "",
-        aiConfig.photo.spatialHint ?? "",
-        aiConfig.sceneDescription ?? "",
-      ].join("\n");
-      scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
-      scopedSelections = normalizePrimaryAccentAsWallPaint(scopedSelections, {
-        stepSlug: aiConfig.stepSlug,
-        imagePath: aiConfig.photo.imagePath,
-      });
-      const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
-      const sceneDescription = buildSceneDescription(aiConfig);
-
-      const modelName = IMAGE_MODEL;
-      const scopedSubcategoryIds = photoScopedIds ? [...photoScopedIds] : [];
-      const promptContextSignature = buildPromptContextSignature({
-        sceneDescription,
-        spatialHints,
-        photo: {
-          photoBaseline: aiConfig.photo.photoBaseline,
-          spatialHint: aiConfig.photo.spatialHint,
-        },
-      }, scopedSelections, optionLookup, scopedSubcategoryIds);
+      // Server-side per-photo selection scoping (shared with generate route)
       const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
-      const resolvedPolicy = resolvePhotoGenerationPolicy({
-        orgSlug,
-        floorplanSlug,
-        stepSlug: aiConfig.stepSlug,
-        stepPhotoId,
-        imagePath: aiConfig.photo.imagePath,
-        modelName,
-        selections: scopedSelections,
-      }, dbPolicy);
-      hash = hashSelections({
-        ...scopedSelections,
-        _stepPhotoId: stepPhotoId,
-        _model: modelName,
-        _cacheVersion: GENERATION_CACHE_VERSION,
-        _promptPolicy: resolvedPolicy.policyKey,
-        _promptContext: promptContextSignature,
-      });
+      const ctx = deriveGenerationContext(aiConfig, mergedSelections, optionLookup, { orgSlug, floorplanSlug, stepPhotoId }, dbPolicy);
+      hash = ctx.selectionsHash;
     }
 
     // Single query: get the row regardless of pending state

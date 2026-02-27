@@ -11,27 +11,16 @@ export function getPhotoScopedIds(
   return null;
 }
 
-function isPrimaryAccentAsWallView(context: { stepSlug?: string | null; imagePath?: string | null }): boolean {
-  const imagePath = (context.imagePath ?? "").toLowerCase();
-  return (
-    imagePath.includes("primary-bedroom.webp") ||
-    imagePath.includes("primary_bedroom.webp") ||
-    context.stepSlug === "primary-bath" ||
-    imagePath.includes("primary-bath-vanity.webp") ||
-    imagePath.includes("primary-bath-shower.webp") ||
-    imagePath.includes("bath-closet.webp")
-  );
-}
-
 /**
- * For Stone Martin primary bedroom/bath photos, treat accent color as whole-wall paint.
- * This remaps accent option IDs to their wall equivalents and removes accent-color.
+ * For photos where accent color should be treated as whole-wall paint,
+ * remap accent option IDs to their wall equivalents and remove accent-color.
+ * Controlled by the `remap_accent_as_wall_paint` flag on step_photos.
  */
 export function normalizePrimaryAccentAsWallPaint(
   selections: Record<string, string>,
-  context: { stepSlug?: string | null; imagePath?: string | null },
+  remapAccentAsWallPaint: boolean,
 ): Record<string, string> {
-  if (!isPrimaryAccentAsWallView(context)) return selections;
+  if (!remapAccentAsWallPaint) return selections;
   const accentOptionId = selections["accent-color"];
   if (!accentOptionId || !accentOptionId.startsWith("accent-")) return selections;
 

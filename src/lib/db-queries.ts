@@ -260,7 +260,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
       id, slug, number, name, subtitle, hero_image, hero_variant,
       show_generate_button, scene_description, also_include_ids, photo_baseline,
       sort_order, sections, spatial_hints,
-      step_photos!step_photos_org_match ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline, subcategory_ids )
+      step_photos!step_photos_org_match ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline, subcategory_ids, remap_accent_as_wall_paint )
     `)
     .eq("floorplan_id", floorplanId)
     .order("sort_order");
@@ -286,7 +286,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
     type RawStepPhoto = {
       id: string; image_path: string; label: string; is_hero: boolean;
       sort_order: number; spatial_hint: string | null; photo_baseline: string | null;
-      subcategory_ids: string[] | null;
+      subcategory_ids: string[] | null; remap_accent_as_wall_paint: boolean;
     };
     const rawPhotos = ((s.step_photos ?? []) as RawStepPhoto[])
       .sort((a, b) => a.sort_order - b.sort_order);
@@ -301,6 +301,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
           spatialHint: p.spatial_hint,
           photoBaseline: p.photo_baseline,
           subcategoryIds: p.subcategory_ids ?? null,
+          remapAccentAsWallPaint: p.remap_accent_as_wall_paint,
         }))
       : undefined;
 
@@ -378,7 +379,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
 
   const { data: photo, error: photoErr } = await supabase
     .from("step_photos")
-    .select("id, step_id, spatial_hint, photo_baseline, image_path, subcategory_ids")
+    .select("id, step_id, spatial_hint, photo_baseline, image_path, subcategory_ids, remap_accent_as_wall_paint")
     .eq("id", stepPhotoId)
     .single();
 
@@ -408,6 +409,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
       spatialHint: photo.spatial_hint as string | null,
       photoBaseline: photo.photo_baseline as string | null,
       subcategoryIds: (photo.subcategory_ids as string[] | null) ?? null,
+      remapAccentAsWallPaint: Boolean(photo.remap_accent_as_wall_paint),
     },
   };
 }

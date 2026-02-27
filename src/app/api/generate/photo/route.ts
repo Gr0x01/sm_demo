@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
-import { buildPromptContextSignature, GENERATION_CACHE_VERSION, hashSelections } from "@/lib/generate";
+import { deriveGenerationContext } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
-import { resolvePhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { IMAGE_MODEL } from "@/lib/models";
-import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
-import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import {
   buildDefaultOptionBySubcategory,
   normalizeSelectionRecord,
@@ -15,23 +11,6 @@ import {
 import { inngest } from "@/inngest/client";
 
 export const maxDuration = 30;
-
-function buildSceneDescription(aiConfig: NonNullable<Awaited<ReturnType<typeof getStepPhotoAiConfig>>>): string | null {
-  // Per-photo baseline text is the authoritative scene context when present.
-  if (aiConfig.photo.photoBaseline?.trim()) return aiConfig.photo.photoBaseline.trim();
-  if (aiConfig.sceneDescription?.trim()) return aiConfig.sceneDescription.trim();
-  return null;
-}
-
-function filterSpatialHints(
-  spatialHints: Record<string, string>,
-  allowedIds: Set<string> | null,
-): Record<string, string> {
-  if (!allowedIds) return { ...spatialHints };
-  return Object.fromEntries(
-    Object.entries(spatialHints).filter(([key]) => allowedIds.has(key)),
-  );
-}
 
 /**
  * Claim a generation slot by inserting a placeholder row into generated_images.
@@ -141,61 +120,12 @@ export async function POST(request: Request) {
       optionLookup,
     );
 
-    // --- Server-side per-photo selection scoping ---
-    const sectionSubIds = aiConfig.sections.flatMap(s => s.subcategory_ids ?? []);
-    const alsoInclude = aiConfig.alsoIncludeIds ?? [];
-    const photoScopedIds = getPhotoScopedIds(
-      aiConfig.photo.subcategoryIds,
-      [...sectionSubIds, ...alsoInclude],
-    );
-    let scopedSelections = mergedSelections;
-    if (photoScopedIds) {
-      scopedSelections = Object.fromEntries(
-        Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
-      );
-    }
-    const flooringContextText = [
-      aiConfig.photo.photoBaseline ?? "",
-      aiConfig.photo.spatialHint ?? "",
-      aiConfig.sceneDescription ?? "",
-    ].join("\n");
-    scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
-    scopedSelections = normalizePrimaryAccentAsWallPaint(scopedSelections, {
-      stepSlug: aiConfig.stepSlug,
-      imagePath: aiConfig.photo.imagePath,
-    });
-    const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
-    const sceneDescription = buildSceneDescription(aiConfig);
-
-    const modelName = IMAGE_MODEL;
-    const scopedSubcategoryIds = photoScopedIds ? [...photoScopedIds] : [];
-    const promptContextSignature = buildPromptContextSignature({
-      sceneDescription,
-      spatialHints,
-      photo: {
-        photoBaseline: aiConfig.photo.photoBaseline,
-        spatialHint: aiConfig.photo.spatialHint,
-      },
-    }, scopedSelections, optionLookup, scopedSubcategoryIds);
+    // --- Server-side per-photo selection scoping + hash derivation ---
     const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
-    const resolvedPolicy = resolvePhotoGenerationPolicy({
-      orgSlug,
-      floorplanSlug,
-      stepSlug: aiConfig.stepSlug,
-      stepPhotoId,
-      imagePath: aiConfig.photo.imagePath,
-      modelName,
-      selections: scopedSelections,
-    }, dbPolicy);
-    const selectionsHash = hashSelections({
-      ...scopedSelections,
-      _stepPhotoId: stepPhotoId,
-      _model: modelName,
-      _cacheVersion: GENERATION_CACHE_VERSION,
-      _promptPolicy: resolvedPolicy.policyKey,
-      _promptContext: promptContextSignature,
-    });
-    const selectionsFingerprint = hashSelections(scopedSelections);
+    const {
+      scopedSelections, scopedSubcategoryIds, spatialHints, sceneDescription,
+      resolvedPolicy, selectionsHash, selectionsFingerprint, hashInputs, modelName,
+    } = deriveGenerationContext(aiConfig, mergedSelections, optionLookup, { orgSlug, floorplanSlug, stepPhotoId }, dbPolicy);
 
     // --- Retry: delete existing cached image so we regenerate fresh ---
     if (retry) {
@@ -228,15 +158,7 @@ export async function POST(request: Request) {
     }
 
     // --- Double-click guard via DB placeholder row (cross-instance safe) ---
-    const selectionsJsonForClaim = {
-      ...scopedSelections,
-      _stepPhotoId: stepPhotoId,
-      _model: modelName,
-      _cacheVersion: GENERATION_CACHE_VERSION,
-      _promptPolicy: resolvedPolicy.policyKey,
-      _promptContext: promptContextSignature,
-    };
-    const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId, selectionsJsonForClaim);
+    const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId, hashInputs);
     if (claimResult === "in_progress") {
       return NextResponse.json(
         { error: "This combination is already being generated", selectionsHash },
@@ -270,7 +192,7 @@ export async function POST(request: Request) {
           sceneDescription,
           spatialHints,
           photoSpatialHint: aiConfig.photo.spatialHint,
-          selectionsJsonForClaim,
+          selectionsJsonForClaim: hashInputs,
         },
       });
     } catch (sendError) {

@@ -8,6 +8,7 @@ export interface StepPhoto {
   spatialHint: string | null;
   photoBaseline: string | null;  // text description for AI prompt
   subcategoryIds?: string[] | null;  // scopes which selections are sent to AI for this photo
+  remapAccentAsWallPaint?: boolean;
 }
 
 export interface StepSection {
@@ -354,18 +355,3 @@ export const steps: StepConfig[] = [
     ],
   },
 ];
-
-// Collect all subcategory IDs across all steps for audit
-const allStepSubCategoryIds = new Set(
-  steps.flatMap((s) => s.sections.flatMap((sec) => sec.subCategoryIds))
-);
-
-/** Check if a subcategory ID is mapped to a step */
-export function isInStep(subCategoryId: string): boolean {
-  return allStepSubCategoryIds.has(subCategoryId);
-}
-
-/** Get all subcategory IDs that aren't mapped to any step */
-export function getUnmappedSubCategoryIds(allIds: string[]): string[] {
-  return allIds.filter((id) => !allStepSubCategoryIds.has(id));
-}

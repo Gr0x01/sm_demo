@@ -196,16 +196,12 @@ export function UpgradePicker({
         photo?.subcategoryIds,
         [...sectionIds, ...alsoInclude],
       );
-      const photoContext = {
-        stepSlug: step.id,
-        imagePath: photo?.imagePath ?? null,
-      };
       const scopeSet = effectivePhotoScope ?? new Set([...sectionIds, ...alsoInclude]);
       const scopedSelections = resolveScopedFlooringSelections(
         filterVisualSelections(scopeSet, allSelections, baselineForThisPhoto),
         flooringContextText,
       );
-      return normalizePrimaryAccentAsWallPaint(scopedSelections, photoContext);
+      return normalizePrimaryAccentAsWallPaint(scopedSelections, photo?.remapAccentAsWallPaint ?? false);
     },
     [filterVisualSelections]
   );

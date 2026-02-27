@@ -109,7 +109,7 @@ Also update admin API schema to disallow null `subcategory_ids`.
 
 ## Non-Goals (Unchanged)
 
-- `normalizePrimaryAccentAsWallPaint` remains filename-based. Roadmap: data-drive via per-photo flag.
+- `normalizePrimaryAccentAsWallPaint` is now data-driven via `step_photos.remap_accent_as_wall_paint` boolean column.
 - Flooring resolver and selection reconcile behavior unchanged.
 - Universal structural rules and appliance rules in `generate.ts` unchanged.
 

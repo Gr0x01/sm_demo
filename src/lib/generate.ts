@@ -1,6 +1,11 @@
 import { createHash } from "crypto";
 import sharp from "sharp";
 import type { Option, SubCategory } from "@/types";
+import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
+import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
+import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
+import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
+import { IMAGE_MODEL } from "@/lib/models";
 
 export interface SwatchImage {
   label: string;
@@ -307,6 +312,125 @@ export function buildPromptContextSignature(
     `rules:${rulesSignature}`,
     `scopedIds:${[...(scopedSubcategoryIds ?? [])].sort().join(",")}`,
   ].join("||");
+}
+
+// ---------- Shared helpers for generate + check routes ----------
+
+export type StepPhotoAiConfig = NonNullable<Awaited<ReturnType<typeof import("@/lib/db-queries").getStepPhotoAiConfig>>>;
+export type OptionLookupMap = Map<string, { option: Option; subCategory: SubCategory }>;
+
+export function buildSceneDescription(aiConfig: StepPhotoAiConfig): string | null {
+  if (aiConfig.photo.photoBaseline?.trim()) return aiConfig.photo.photoBaseline.trim();
+  if (aiConfig.sceneDescription?.trim()) return aiConfig.sceneDescription.trim();
+  return null;
+}
+
+export function filterSpatialHints(
+  spatialHints: Record<string, string>,
+  allowedIds: Set<string> | null,
+): Record<string, string> {
+  if (!allowedIds) return { ...spatialHints };
+  return Object.fromEntries(
+    Object.entries(spatialHints).filter(([key]) => allowedIds.has(key)),
+  );
+}
+
+export interface DerivedGenerationContext {
+  scopedSelections: Record<string, string>;
+  scopedSubcategoryIds: string[];
+  photoScopedIds: Set<string> | null;
+  spatialHints: Record<string, string>;
+  sceneDescription: string | null;
+  promptContextSignature: string;
+  resolvedPolicy: ResolvedPhotoGenerationPolicy;
+  selectionsHash: string;
+  selectionsFingerprint: string;
+  /** The composite key that was hashed — use as selections_json for DB claims. */
+  hashInputs: Record<string, string>;
+  modelName: string;
+}
+
+/**
+ * Shared pipeline that derives everything needed for generation cache lookup and dispatch.
+ * Used by both /api/generate/photo (generate) and /api/generate/photo/check (cache check).
+ */
+export function deriveGenerationContext(
+  aiConfig: StepPhotoAiConfig,
+  mergedSelections: Record<string, string>,
+  optionLookup: OptionLookupMap,
+  policyContext: { orgSlug: string; floorplanSlug: string; stepPhotoId: string },
+  dbPolicy: StepPhotoGenerationPolicyRecord | null,
+): DerivedGenerationContext {
+  const sectionSubIds = aiConfig.sections.flatMap(s => s.subcategory_ids ?? []);
+  const alsoInclude = aiConfig.alsoIncludeIds ?? [];
+  const photoScopedIds = getPhotoScopedIds(
+    aiConfig.photo.subcategoryIds,
+    [...sectionSubIds, ...alsoInclude],
+  );
+
+  let scopedSelections = mergedSelections;
+  if (photoScopedIds) {
+    scopedSelections = Object.fromEntries(
+      Object.entries(scopedSelections).filter(([key]) => photoScopedIds.has(key)),
+    );
+  }
+
+  const flooringContextText = [
+    aiConfig.photo.photoBaseline ?? "",
+    aiConfig.photo.spatialHint ?? "",
+    aiConfig.sceneDescription ?? "",
+  ].join("\n");
+  scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
+  scopedSelections = normalizePrimaryAccentAsWallPaint(scopedSelections, aiConfig.photo.remapAccentAsWallPaint);
+
+  const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
+  const sceneDescription = buildSceneDescription(aiConfig);
+
+  const modelName = IMAGE_MODEL;
+  const scopedSubcategoryIds = photoScopedIds ? [...photoScopedIds] : [];
+  const promptContext = buildPromptContextSignature({
+    sceneDescription,
+    spatialHints,
+    photo: {
+      photoBaseline: aiConfig.photo.photoBaseline,
+      spatialHint: aiConfig.photo.spatialHint,
+    },
+  }, scopedSelections, optionLookup, scopedSubcategoryIds);
+
+  const resolvedPolicy = resolvePhotoGenerationPolicy({
+    orgSlug: policyContext.orgSlug,
+    floorplanSlug: policyContext.floorplanSlug,
+    stepSlug: aiConfig.stepSlug,
+    stepPhotoId: policyContext.stepPhotoId,
+    imagePath: aiConfig.photo.imagePath,
+    modelName,
+    selections: scopedSelections,
+  }, dbPolicy);
+
+  const hashInputs: Record<string, string> = {
+    ...scopedSelections,
+    _stepPhotoId: policyContext.stepPhotoId,
+    _model: modelName,
+    _cacheVersion: GENERATION_CACHE_VERSION,
+    _promptPolicy: resolvedPolicy.policyKey,
+    _promptContext: promptContext,
+  };
+  const selectionsHash = hashSelections(hashInputs);
+  const selectionsFingerprint = hashSelections(scopedSelections);
+
+  return {
+    scopedSelections,
+    scopedSubcategoryIds,
+    photoScopedIds,
+    spatialHints,
+    sceneDescription,
+    promptContextSignature: promptContext,
+    resolvedPolicy,
+    selectionsHash,
+    selectionsFingerprint,
+    hashInputs,
+    modelName,
+  };
 }
 
 export function hashSelections(selections: Record<string, string>): string {

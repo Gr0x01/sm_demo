@@ -735,8 +735,18 @@ function SortableSubcategoryRow({
   const [rulesText, setRulesText] = useState(rulesToText(subcategory.generation_rules));
   const [rulesNotSelectedText, setRulesNotSelectedText] = useState(rulesToText(subcategory.generation_rules_when_not_selected));
   const [aiSaveError, setAiSaveError] = useState<string | null>(null);
-  useEffect(() => { setRulesText(rulesToText(subcategory.generation_rules)); }, [subcategory.generation_rules]);
-  useEffect(() => { setRulesNotSelectedText(rulesToText(subcategory.generation_rules_when_not_selected)); }, [subcategory.generation_rules_when_not_selected]);
+  const rulesRef = useRef<HTMLTextAreaElement>(null);
+  const rulesNotSelectedRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (document.activeElement !== rulesRef.current) {
+      setRulesText(rulesToText(subcategory.generation_rules));
+    }
+  }, [subcategory.generation_rules]);
+  useEffect(() => {
+    if (document.activeElement !== rulesNotSelectedRef.current) {
+      setRulesNotSelectedText(rulesToText(subcategory.generation_rules_when_not_selected));
+    }
+  }, [subcategory.generation_rules_when_not_selected]);
 
   const saveAiField = async (updates: Record<string, unknown>, revert?: () => void) => {
     setAiSaveError(null);
@@ -815,6 +825,8 @@ function SortableSubcategoryRow({
               onClick={() => setShowAiRules((v) => !v)}
               className={`p-1 ${showAiRules ? "text-emerald-400" : "text-neutral-600 hover:text-neutral-300"}`}
               title="AI generation rules"
+              aria-label="AI generation rules"
+              aria-expanded={showAiRules}
             >
               <Sparkles className="w-3 h-3" />
             </button>
@@ -847,8 +859,9 @@ function SortableSubcategoryRow({
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
-              <span className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Generation hint</span>
+              <label htmlFor={`gen-hint-${subcategory.id}`} className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Generation hint</label>
               <select
+                id={`gen-hint-${subcategory.id}`}
                 value={subcategory.generation_hint ?? "default"}
                 onChange={(e) => {
                   const val = e.target.value as "default" | "skip" | "always_send";
@@ -856,9 +869,9 @@ function SortableSubcategoryRow({
                 }}
                 className="w-full bg-neutral-800 border border-neutral-700 text-neutral-200 text-xs px-2 py-1.5 focus:outline-none focus:border-neutral-500"
               >
-                <option value="default">default</option>
-                <option value="skip">skip</option>
-                <option value="always_send">always_send</option>
+                <option value="default">Default</option>
+                <option value="skip">Skip</option>
+                <option value="always_send">Always include</option>
               </select>
             </div>
             <div className="flex items-center">
@@ -875,8 +888,10 @@ function SortableSubcategoryRow({
           </div>
 
           <div>
-            <span className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Rules (when selected)</span>
+            <label htmlFor={`rules-selected-${subcategory.id}`} className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Rules (when selected)</label>
             <textarea
+              id={`rules-selected-${subcategory.id}`}
+              ref={rulesRef}
               value={rulesText}
               onChange={(e) => setRulesText(e.target.value)}
               onBlur={() => {
@@ -893,8 +908,10 @@ function SortableSubcategoryRow({
           </div>
 
           <div>
-            <span className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Rules (when NOT selected)</span>
+            <label htmlFor={`rules-not-selected-${subcategory.id}`} className="block text-[10px] uppercase tracking-[0.14em] text-neutral-500 mb-1">Rules (when NOT selected)</label>
             <textarea
+              id={`rules-not-selected-${subcategory.id}`}
+              ref={rulesNotSelectedRef}
               value={rulesNotSelectedText}
               onChange={(e) => setRulesNotSelectedText(e.target.value)}
               onBlur={() => {

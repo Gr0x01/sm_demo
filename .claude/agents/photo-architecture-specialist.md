@@ -85,7 +85,7 @@ Treat image-derived facts as the source of truth for scope decisions.
 
 ## Constraints and Guardrails
 
-- Keep `normalizePrimaryAccentAsWallPaint` unchanged unless explicitly requested.
+- `normalizePrimaryAccentAsWallPaint` is data-driven via `step_photos.remap_accent_as_wall_paint`. Set the flag for photos where accent color should render as wall paint.
 - Keep universal structural rules and appliance rules unchanged unless explicitly requested.
 - Do not set `step_photos.subcategory_ids` to `NOT NULL` until API/UI no longer writes null.
 - Preserve deterministic prompt hashing when changing rule inputs.

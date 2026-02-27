@@ -454,6 +454,15 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 - `subcategories.generation_rules` — already existed, now populated for common-wall-paint, accent-color, wainscoting, fireplace-mantel-accent with the rules previously hardcoded.
 **Scope semantics**: `getPhotoScopedIds(photo.subcategory_ids, fallbackSectionIds)` — explicit IDs take priority, step sections are fallback. New photos inherit scope automatically; admin sets explicit IDs only for unusual shots.
 **Rule layering** (from general to specific): subcategory.generationRules → subcategory.generationRulesWhenNotSelected → option.generationRules → step_photo_generation_policies (per-photo overrides). All coexist; Sets deduplicate.
-**Trade-off**: Slightly more DB state to maintain vs. zero code changes for new builders. `normalizePrimaryAccentAsWallPaint` remains filename-based (separate concern, roadmap item to data-drive).
+**Trade-off**: Slightly more DB state to maintain vs. zero code changes for new builders.
 **Admin UI**: Admin API + UI now exposes `generation_rules`, `generation_rules_when_not_selected`, `generation_hint`, `is_appliance` on subcategories and `generation_rules` on options. Zod schemas updated so these fields aren't stripped. Subcategory rows have a collapsible "AI Rules" panel (sparkles icon); option editor modal has a generation rules textarea. Conditional interaction logic (e.g., wall paint vs accent color) expressed in rule text as natural language — AI evaluates by reading the edit list, no code branches. Authoring model: human or LLM writes rules during onboarding; admin UI for ongoing edits.
 **Cache version**: v23 → v24.
+
+### D79: Data-drive accent→wall remap + D78 hardening
+**Context**: D78 review found 10 issues. `normalizePrimaryAccentAsWallPaint` used filename heuristics that would break for the next builder. Hash derivation was duplicated across generate and check routes. Zod schemas lacked length constraints. OptionTree useEffect clobbered typing on save.
+**Decision**:
+- `step_photos.remap_accent_as_wall_paint` boolean column replaces filename heuristic. Backfilled 6 photos (4 SM Kinkade, 1 SM Lenox, 1 Demo).
+- `deriveGenerationContext()` in `generate.ts` encapsulates the entire scoping→hash pipeline, used by both routes. Eliminates duplicated `buildSceneDescription` and `filterSpatialHints`.
+- Zod: `.min(1).max(500)` per rule string, `.max(20)` per array on subcategory + option API routes.
+- OptionTree: useEffect guards check `document.activeElement !== ref` before overwriting textarea state. Accessibility: `aria-label`, `aria-expanded`, proper `<label htmlFor>`, human-readable dropdown text.
+- Dead exports removed from `step-config.ts` (`allStepSubCategoryIds`, `isInStep`, `getUnmappedSubCategoryIds`).

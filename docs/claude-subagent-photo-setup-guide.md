@@ -59,7 +59,7 @@ Implement the approved image architecture migration end-to-end:
 - code refactor
 - cache version bump
 - verification notes
-Do not modify normalizePrimaryAccentAsWallPaint.
+Set `remap_accent_as_wall_paint = true` on step_photos where accent color should render as wall paint.
 ```
 
 ## Standard Task Templates
