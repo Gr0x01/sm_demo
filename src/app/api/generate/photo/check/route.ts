@@ -6,7 +6,6 @@ import {
   buildDefaultOptionBySubcategory,
   normalizeSelectionRecord,
   reconcileClientAndSessionSelections,
-  stripDefaultSelections,
 } from "@/lib/selection-reconcile";
 
 /**
@@ -62,14 +61,10 @@ export async function POST(request: Request) {
           sessionSelections = normalizeSelectionRecord(session.selections);
         }
       }
-      const mergedSelections = stripDefaultSelections(
-        reconcileClientAndSessionSelections(
-          normalizeSelectionRecord(selections),
-          sessionSelections,
-          defaultBySubcategory,
-        ),
+      const mergedSelections = reconcileClientAndSessionSelections(
+        normalizeSelectionRecord(selections),
+        sessionSelections,
         defaultBySubcategory,
-        optionLookup,
       );
 
       // Server-side per-photo selection scoping (shared with generate route)

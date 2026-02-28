@@ -139,27 +139,25 @@ export function UpgradePicker({
     [contractPhase, contractLockedIds]
   );
 
-  /** Filter allSelections to only visual, non-skip, changed-from-baseline entries within allowedIds. */
+  /** Filter allSelections to only visual, non-skip entries within allowedIds. */
   const filterVisualSelections = useCallback(
-    (allowedIds: Set<string>, allSelections: Record<string, string>, baseline: Record<string, string>): Record<string, string> => {
+    (allowedIds: Set<string>, allSelections: Record<string, string>): Record<string, string> => {
       const result: Record<string, string> = {};
       for (const [subId, optId] of Object.entries(allSelections)) {
         const sub = subCategoryMap.get(subId);
         const hint = sub?.generationHint;
         const forceInclude = shouldForceSendFlooringSubcategory(subId);
-        const baselineId = baseline[subId] ?? defaultSelections[subId];
         if (
           visualSubCategoryIds.has(subId) &&
           allowedIds.has(subId) &&
-          (forceInclude || hint !== 'skip') &&
-          (forceInclude || hint === 'always_send' || optId !== baselineId)
+          (forceInclude || hint !== 'skip')
         ) {
           result[subId] = optId;
         }
       }
       return result;
     },
-    [visualSubCategoryIds, defaultSelections, subCategoryMap]
+    [visualSubCategoryIds, subCategoryMap]
   );
 
   /** Step-level visual selections (all step sections + alsoIncludeIds). */
@@ -169,7 +167,7 @@ export function UpgradePicker({
         ...step.sections.flatMap((sec) => sec.subCategoryIds),
         ...(step.alsoIncludeIds ?? []),
       ]);
-      return filterVisualSelections(allowedIds, allSelections, step.photoBaseline ?? {});
+      return filterVisualSelections(allowedIds, allSelections);
     },
     [filterVisualSelections]
   );
@@ -182,14 +180,6 @@ export function UpgradePicker({
         photo?.spatialHint ?? "",
         step.name ?? "",
       ].join("\n");
-      // step.photoBaseline is authored for the step's hero context. Applying it
-      // to non-hero photos can suppress real edits (e.g. fireplace-specific
-      // changes on the Fireplace photo). For non-hero photos, compare against
-      // defaults only.
-      const baselineForThisPhoto =
-        photo && !photo.isHero
-          ? {}
-          : (step.photoBaseline ?? {});
       const sectionIds = step.sections.flatMap((sec) => sec.subCategoryIds);
       const alsoInclude = step.alsoIncludeIds ?? [];
       const effectivePhotoScope = getPhotoScopedIds(
@@ -198,7 +188,7 @@ export function UpgradePicker({
       );
       const scopeSet = effectivePhotoScope ?? new Set([...sectionIds, ...alsoInclude]);
       const scopedSelections = resolveScopedFlooringSelections(
-        filterVisualSelections(scopeSet, allSelections, baselineForThisPhoto),
+        filterVisualSelections(scopeSet, allSelections),
         flooringContextText,
       );
       return normalizePrimaryAccentAsWallPaint(scopedSelections, photo?.remapAccentAsWallPaint ?? false);

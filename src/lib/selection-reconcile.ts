@@ -1,5 +1,4 @@
 import type { Option, SubCategory } from "@/types";
-import { shouldForceSendFlooringSubcategory } from "@/lib/flooring-selection";
 
 export function normalizeSelectionRecord(value: unknown): Record<string, string> {
   if (!value || typeof value !== "object") return {};
@@ -35,38 +34,6 @@ export function buildDefaultOptionBySubcategory(
   for (const [subId, optId] of firstFree.entries()) out.set(subId, optId);
   for (const [subId, optId] of explicit.entries()) out.set(subId, optId);
   return out;
-}
-
-/**
- * Strip selections still at their default/baseline value.
- * Mirrors client-side filterVisualSelections: only send changes the user actually made.
- * Keeps always_send hints and forced flooring subcategories.
- */
-export function stripDefaultSelections(
-  selections: Record<string, string>,
-  defaultBySubcategory: Map<string, string>,
-  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
-): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const [subId, optId] of Object.entries(selections)) {
-    if (shouldForceSendFlooringSubcategory(subId)) {
-      result[subId] = optId;
-      continue;
-    }
-    // Look up the subcategory's generationHint from any entry in the lookup
-    const entry = optionLookup.get(`${subId}:${optId}`);
-    const hint = entry?.subCategory.generationHint;
-    if (hint === "skip") continue;
-    if (hint === "always_send") {
-      result[subId] = optId;
-      continue;
-    }
-    const baseline = defaultBySubcategory.get(subId);
-    if (optId !== baseline) {
-      result[subId] = optId;
-    }
-  }
-  return result;
 }
 
 /**
