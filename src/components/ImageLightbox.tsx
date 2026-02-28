@@ -47,7 +47,7 @@ export function ImageLightbox({ src, color, alt, onClose, onRetry }: ImageLightb
 
       {/* Content */}
       <div
-        className="relative z-10 flex flex-col items-center w-full max-w-2xl transition-all duration-200"
+        className="relative z-10 flex flex-col items-center w-full max-w-5xl transition-all duration-200"
         style={{
           opacity: visible ? 1 : 0,
           transform: visible ? "scale(1)" : "scale(0.95)",
