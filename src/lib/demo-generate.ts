@@ -3,7 +3,7 @@ import { hashSelections } from "@/lib/generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
 
-export const DEMO_GENERATION_CACHE_VERSION = "v4";
+export const DEMO_GENERATION_CACHE_VERSION = "v5";
 
 export function hashDemoSelections(
   photoHash: string,

@@ -466,3 +466,16 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 - Zod: `.min(1).max(500)` per rule string, `.max(20)` per array on subcategory + option API routes.
 - OptionTree: useEffect guards check `document.activeElement !== ref` before overwriting textarea state. Accessibility: `aria-label`, `aria-expanded`, proper `<label htmlFor>`, human-readable dropdown text.
 - Dead exports removed from `step-config.ts` (`allStepSubCategoryIds`, `isInStep`, `getUnmappedSubCategoryIds`).
+
+## D80: Switch gpt-image-1.5 from quality "high" to "medium"
+**Context**: Generation times of ~70s (single pass) to ~140s (two-pass) were too slow. Investigated quality and input_fidelity parameters. A/B tested all 4 combos (high/high, medium/high, high/low, medium/low) on kitchen (8 swatches) and great room (2 swatches) using real production pipeline.
+**Results**:
+- `quality` is the dominant speed lever: medium is ~2x faster than high
+- `input_fidelity` barely affects speed (~5-8s difference)
+- Kitchen: high/high 76.5s → medium/high 39.9s (1.9x faster)
+- Great room: high/high 69.9s → medium/high 36.5s (1.9x faster)
+- Cost: $0.200 → $0.050 per pass (75% reduction)
+- Visual quality at medium is acceptable for room visualizations
+**Decision**: Switch to `quality: "medium"`, keep `input_fidelity: "high"`. Applied to both generate-photo and generate-demo Inngest functions, including second-pass refinement. Cache version bumped v24 → v25 (generation), v4 → v5 (demo) to invalidate old high-quality cache.
+**Trade-off**: Slightly lower output rendering quality vs. ~2x faster generation and 75% cost reduction. Swatch matching preserved (input_fidelity stays high).
+**Test script**: `scripts/test-quality-fidelity.ts` — reusable A/B test for future quality experiments.

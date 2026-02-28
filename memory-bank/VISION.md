@@ -65,11 +65,11 @@ We're the only product that combines:
 
 ## Business Model
 
-### Pricing — Current Thinking (Pre-Launch, Subject to Change)
+### Pricing — No Setup Fee, Flat Per-Plan Monthly
 
-#### Model: Done-For-You, Per Floor Plan, No Tiers
+#### Model: Done-For-You, Per Floor Plan, No Tiers, No Setup Fee
 
-Self-serve is dead. 380 elements per floor plan (SM Kinkade) = no builder is doing this themselves. One model: we handle all setup, they pay per floor plan per month.
+One model: we handle all setup, they pay per floor plan per month. No setup fee — our onboarding is largely automated (LLM-driven catalog transcription, automated swatch scraping, prompt playbook handles 90% of tuning). Setup costs are low enough to absorb as customer acquisition cost. Removing the fee collapses the sales cycle and makes us harder for competitors to undercut.
 
 **What we deliver per floor plan (10 room photos included):**
 
@@ -77,82 +77,79 @@ Self-serve is dead. 380 elements per floor plan (SM Kinkade) = no builder is doi
 - Option/pricing updates, swatch uploads, step names/order, section assignments
 - Floorplan metadata, branding — all the catalog stuff
 
-*Finch-managed (the hard part):*
-- Option/pricing transcription from builder's sheets (often messy PDFs → structured data)
-- Swatch image sourcing (cabinets, countertops, backsplash, flooring, faucets, sinks, hardware, appliances)
-- **Room photo pipeline (10 photos/floorplan):** photo evaluation + rejection, masking, spatial hints, baselines, prompt descriptors, test generation, QA, prompt tuning, regeneration of bad outputs
-- AI pre-generation (~3,000 images/floor plan) for instant buyer experience
+*Finch-managed:*
+- Option/pricing transcription from builder's sheets (LLM converts messy PDFs → structured data)
+- Swatch image sourcing (automated scraping + manual sourcing where needed)
+- Room photo pipeline (10 photos/floorplan): photo evaluation, spatial hints, baselines, prompt tuning, test generation, QA
+- AI pre-generation for instant buyer experience
 - Configuration, branding, testing
 - Unlimited buyer sessions, no per-session fees
 
-**10 room photos per floorplan:** Each experience has 5 steps — builders arrange photos however they want (2 per step, or heavy on kitchen/bath). The room photo pipeline is the real labor: sourcing/evaluating photos, rejecting bad ones (wrong angle, lighting, resolution), masking, spatial hints, baselines, test generations, iteration. Additional photos beyond 10 = additional fee.
+**Speed advantage:** First floor plan live in 48 hours. Additional plans same day after initial setup. Competitors (Zonda, Hyphen, Aareas) take 2-3 months.
 
-**Setup fee per floorplan:** The room photo pipeline is real labor per photo, not just software config. A floorplan with 2 photos is dramatically less work than one with 8. Setup fee covers the initial photo pipeline work. Monthly covers software access, generation credits, and ongoing support (option/price updates, occasional photo swaps).
-
-**Speed advantage:** First floor plan live in 48 hours. Then 10 plans/day after initial setup. Competitors (Zonda, Hyphen, Aareas) take 2-3 months.
-
-**Photography:** Evaluate during sales conversation. Clean, well-lit model home photos = use them. Otherwise bake photography cost into the setup quote. Some photos will be rejected — "this bathroom has bad lighting, we need a reshoot" is part of the process.
+**Photography:** Evaluate during sales conversation. Clean, well-lit model home photos = use them. Otherwise bake photography cost into an ad-hoc quote. Some photos will be rejected — "this bathroom has bad lighting, we need a reshoot" is part of the process.
 
 #### Pricing Structure
 
 Pricing is NOT on the landing page. Drive to conversations first, learn from early pilots.
 
-**$1,500 setup (includes 3 floor plans) + $500/mo per floor plan.**
-- Additional floor plans: $1,500 setup + $500/mo each.
+**$500/mo per floor plan. Minimum 3 floor plans ($1,500/mo).**
 - Each floor plan includes 10 room photos through the full pipeline.
-- Monthly includes: software access, unlimited buyer visualizations, ongoing support (option/price updates, occasional photo swaps).
-- No credit caps, no metering, no usage conversations. Flat rate, full experience. Generation costs are our problem to manage internally (pre-cache strategy, batch API).
+- Monthly includes: software access, unlimited buyer visualizations, ongoing support (option/price updates, occasional photo swaps), admin dashboard for their team.
+- No setup fees, no credit caps, no metering, no usage conversations. Flat rate, full experience.
+- Generation costs are our problem to manage internally (pre-cache strategy, batch API).
+- 12-month commitment after pilot conversion. Can add plans anytime, can't drop below 3.
 
-**Why 3 plans included in setup:** The real work is onboarding the builder — understanding their catalog, setting up the org, establishing the photo pipeline for the first plan. Plans 2-3 reuse the same option catalog and photo pipeline patterns. $1,500 for 3 nudges builders to start with multiple plans rather than testing with just 1.
+**Why no setup fee:** Our setup is largely automated — LLM catalog transcription, automated scraping, prompt playbook. Hard costs per floorplan setup are ~$50-100 in generation + 2-4 hours of time. Charging $1,500-2,500 upfront slows the sales cycle and gives competitors a price surface to undercut. Speed to 20 builders matters more than $50K in setup fees (1% of a $5M exit).
+
+**Why minimum 3 plans:** Filters out tire-kickers. Also, builders with 1 plan won't see enough impact to retain — they need coverage across their best-selling floorplans.
 
 **Stone Martin deal:** 5 floor plans free for 1 year. They're the proof-of-concept, not a paying customer (yet). The demo sells Finch to other builders — SM's value is as a case study and reference.
 
-**Year 1 costs for the builder:**
+**Annual costs for the builder:**
 
-| Plans | Setup | Monthly | Year 1 Total | Year 2+ |
-|---|---|---|---|---|
-| 3 | $1,500 | $1,500/mo | $19,500 | $18,000 |
-| 5 | $4,500 | $2,500/mo | $34,500 | $30,000 |
-| 8 | $9,000 | $4,000/mo | $57,000 | $48,000 |
-| 15 | $19,500 | $7,500/mo | $109,500 | $90,000 |
+| Plans | Monthly | Annual |
+|---|---|---|
+| 3 (minimum) | $1,500/mo | $18,000 |
+| 5 | $2,500/mo | $30,000 |
+| 8 | $4,000/mo | $48,000 |
+| 15 | $7,500/mo | $90,000 |
 
 **ROI at 10% upgrade lift on $10K avg upgrades ($1,000 extra/home):**
 
-| Builder size | Plans | Year 1 cost | Revenue lift | ROI |
+| Builder size | Plans | Annual cost | Revenue lift | ROI |
 |---|---|---|---|---|
-| 30 homes/yr | 3 | $19,500 | $30,000 | 1.5x |
-| 50 homes/yr | 3 | $19,500 | $50,000 | **2.6x** |
-| 60 homes/yr | 3 | $19,500 | $60,000 | **3.1x** |
-| 100 homes/yr | 5 | $34,500 | $100,000 | **2.9x** |
-| 150 homes/yr | 5 | $34,500 | $150,000 | **4.3x** |
-| 200 homes/yr | 8 | $57,000 | $200,000 | **3.5x** |
-| 500 homes/yr | 15 | $109,500 | $500,000 | **4.6x** |
+| 50 homes/yr | 3 | $18,000 | $50,000 | **2.8x** |
+| 60 homes/yr | 3 | $18,000 | $60,000 | **3.3x** |
+| 100 homes/yr | 5 | $30,000 | $100,000 | **3.3x** |
+| 150 homes/yr | 5 | $30,000 | $150,000 | **5.0x** |
+| 200 homes/yr | 8 | $48,000 | $200,000 | **4.2x** |
+| 500 homes/yr | 15 | $90,000 | $500,000 | **5.6x** |
 
-**3x ROI breakpoint: ~60 homes/year on 3 plans at 10% lift.** At 15% lift (reasonable for visual selling vs PDFs), 40 homes/year hits 3.1x. The $500/mo price point targets builders doing 50+ homes/year — below that, ROI is still positive but harder to pitch as a slam dunk.
+**3x ROI breakpoint: ~55 homes/year on 3 plans at 10% lift.** At 15% lift (reasonable for visual selling vs PDFs), 40 homes/year hits 3x+. The $500/mo price point targets builders doing 50+ homes/year.
 
-**Our margins (3 plans, moderate pre-cache):**
+**Our margins (3 plans):**
 
 | Item | Cost |
 |---|---|
-| Setup hard costs (3 plans × ~1K batch gen) | ~$300 |
-| Monthly generation COGS | ~$100-150/mo |
+| Monthly generation COGS | ~$25-50/mo |
 | Hosting/infra | ~$45/mo |
 | Revenue (3 × $500/mo) | $1,500/mo |
-| **Monthly margin after COGS** | **~$1,300-1,350/mo** |
+| **Monthly margin after COGS** | **~$1,400-1,430/mo (~95%)** |
 
-#### Pilot Program (Replaces "Founding Partners")
-
-Builders understand pilots. "Founding Partner" sounds like startup energy. Just make a straightforward offer.
+#### Pilot Program
 
 - We set up one floor plan at no cost
 - Builder uses it with real buyers for 60 days
 - We measure upgrade revenue together
-- If the numbers work, expand to full catalog at agreed pricing
+- If the numbers work, convert to 3+ plans at $500/mo each (12-month commitment)
 - If they don't, walk away — no obligation
 
-**The pitch:** "We'll set up your best-selling floor plan for free. Your buyers use it. We measure what happens. If upgrade revenue goes up, we talk about your other plans. If it doesn't, you walk away."
+**The pitch:** "One floorplan free for 60 days. After that, $500 per floorplan per month, minimum three. No setup fees, no usage caps, unlimited buyer visualizations. I handle everything."
 
-**Why:** First non-SM builder is worth more as a case study than revenue. Hard costs per pilot plan are minimal (~$100 batch gen + our time).
+**Why:** Pilot removes all price objections and shifts the conversation to results. Hard costs per pilot are ~$100-200 (our customer acquisition cost — absurdly cheap for B2B SaaS). After 60 days of proven lift, $500/plan is a rounding error to them.
+
+**Conversion psychology:** Don't negotiate price before the pilot. Don't negotiate price during the pilot. After the pilot, the builder has data — the conversation is "here are your results, here's the price," not "what price would make you comfortable."
 
 #### Interactive Demo (Replaces Trial)
 No free trial. Public demo on the landing page:
@@ -162,14 +159,26 @@ No free trial. Public demo on the landing page:
 
 **Why this beats a trial:** No signup friction, no expiration anxiety, no bad self-serve output. They see done-for-you quality on *their* photo immediately. The CTA after the demo is "Ready to set this up for your floor plans?"
 
+#### Pricing Defense — How to Hold $500/plan
+
+Builders negotiate everything. Every builder will push on price. Tactics:
+
+- **Never quote per-plan pricing first.** Quote the package: "$1,500/month for your catalog." Sounds different than "$500 × 3."
+- **Anchor on ROI, not cost.** "At 60 homes a year, even a 10% lift means $60K in extra revenue. The tool costs $18K. Where do you cut?" You're selling $60K for $18K.
+- **The pilot solves price objections.** Don't argue about price before they've seen results. After a successful pilot, $500/plan is obvious.
+- **Never give volume discounts unprompted.** If they ask for 5+ plans, maybe $450 — but only with all 5 upfront and annual terms. They give something to get something.
+- **"Case study" is not currency.** Every early builder will offer their name for a discount. The pilot is already free — that's the investment. Case study discussion comes after results, not before.
+- **Walk away power.** A builder who sees proven lift and won't pay $6K/year was never your customer. You only need 20.
+- **Don't set a floor.** If builder 1 pays $300, builder 2 hears about it at HBA events. $300 becomes your price. The pilot is the pressure release valve — free trial without cutting actual pricing.
+
 #### Pricing Principles
 - **No price on the landing page.** Drive to conversations. Learn from early pilots before publishing.
-- **No volume discounts published.** Handle ad hoc.
+- **No volume discounts published.** Handle ad hoc — and only in exchange for commitment (more plans, annual terms).
 - **No annual pricing yet.** Need flexibility to raise prices. Revisit at 5+ builders.
 - **"Floor plan" not "plan"** everywhere — avoids confusion with pricing tiers.
 - **Position as ROI, not cost.** Revenue framing, not feature lists.
 - **vs Zonda:** "Zonda Envision is built for the top 50 builders in America. Finch is built for everyone else." Don't be "cheap Zonda" — be "Zonda results for builders Zonda ignores."
-- **Frame setup as a deliverable, not a fee:** "Full option catalog, pre-generated images, QA'd and live in 48 hours."
+- **Competitive moat is density, not price.** Every builder you sign is one a competitor can't. Speed to 20 builders matters more than maximizing per-builder revenue.
 
 ### Ideal Customer Profile (ICP) — Under Refinement
 
@@ -218,86 +227,71 @@ Assumes 10% upgrade lift (conservative) on $10K avg upgrades = $1,000 more per h
 
 At 50+ homes, even $499/plan shows nearly 3x ROI. At 100+ homes, the tool is radically underpriced at any published number. Handle large builders in conversation.
 
-### Revenue Projections — Done-For-You Model
+### Revenue Projections
 
-All builders are done-for-you. No self-serve tier. Every builder requires setup labor (~4-6 hrs/plan after tooling improvements, down from ~20 hrs for SM).
+All builders are done-for-you at $500/plan/mo. Setup is largely automated — no setup fee.
 
-**At $299/plan/mo:**
+| Builders | Avg Plans | MRR | ARR |
+|----------|-----------|-----|-----|
+| 5 | 3 | $7,500 | $90K |
+| 10 | 4 | $20,000 | $240K |
+| 15 | 5 | $37,500 | $450K |
+| **20** | **5** | **$50,000** | **$600K** |
+| 30 | 5 | $75,000 | $900K |
 
-| Builders | Avg Plans | Monthly Revenue | Annual Revenue |
-|----------|-----------|-----------------|----------------|
-| 5 | 3 | $4,485 | $54K |
-| 10 | 4 | $11,960 | $144K |
-| 20 | 4 | $23,920 | $287K |
-| 50 | 5 | $74,750 | $897K |
+**Exit target: 20 builders × ~5 plans avg = $600K ARR.** At 8-10x revenue multiple = **$5M exit.** Achievable in 2-3 years at ~1-2 new builders/month.
 
-**At $499/plan/mo:**
+### Capacity & Scaling
 
-| Builders | Avg Plans | Monthly Revenue | Annual Revenue |
-|----------|-----------|-----------------|----------------|
-| 5 | 3 | $7,485 | $90K |
-| 10 | 4 | $19,960 | $240K |
-| 20 | 4 | $39,920 | $479K |
-| 50 | 5 | $124,750 | $1.5M |
+Setup is largely automated. The bottleneck is no longer labor — it's sales velocity.
 
-**The floor for a real business:** 20 builders × 3 plans × $199/mo = $143K/yr. Even the most conservative scenario works as a solo operation.
-
-### Capacity & Scaling — Done-For-You
-
-Every builder requires setup labor. The bottleneck is onboarding throughput.
-
-**Setup time per plan (improving):**
+**Setup time per plan (actual, improving):**
 - SM Kinkade (first ever): ~20 hrs/plan (380 elements, building all tooling from scratch)
-- With current tooling + seed script: ~4-6 hrs/plan (estimated)
-- With batch automation improvements: ~2-3 hrs/plan (target)
+- Lenox (second plan, on a plane): ~2 hrs (LLM did 90%, prompt playbook handled tuning)
+- Target for new builders: ~2-4 hrs/plan (depends on how messy source materials are)
 
-**Speed claim: 48 hours to first plan, then 10 plans/day.** This assumes dedicated focus and working tooling. Real throughput depends on how messy the builder's source materials are.
+**The hard part is swatch sourcing.** If the builder has a website with all their options and swatch images, scraping is automated. If swatches are scattered across manufacturer sites, that's manual hunting. Everything else — catalog transcription, prompt tuning, photo pipeline — is playbook-driven.
 
 | Builders/month onboarding | Plans | Setup hrs/month | Maintenance hrs/month | Total hrs | Feasible solo? |
 |---|---|---|---|---|---|
-| 1 (3 plans) | 3 | 12-18 | 2-4 | 14-22 | Easily |
-| 2 (6 plans) | 6 | 24-36 | 4-8 | 28-44 | Yes |
-| 4 (12 plans) | 12 | 48-72 | 8-12 | 56-84 | Tight — need to prioritize |
-| 6+ (18+ plans) | 18+ | 72-108 | 12-18 | 84-126 | Need help |
+| 1 (3 plans) | 3 | 6-12 | 2-4 | 8-16 | Easily |
+| 2 (6 plans) | 6 | 12-24 | 4-8 | 16-32 | Yes |
+| 4 (12 plans) | 12 | 24-48 | 8-12 | 32-60 | Tight — need to prioritize |
+| 6+ (18+ plans) | 18+ | 36-72 | 12-18 | 48-90 | Need help |
 
-**Hire when:** consistently onboarding 4+ builders/month AND maintaining 15+ active builders. That's ~$50-100K MRR depending on pricing — revenue supports the hire.
-
-**Key scaling lever:** Invest in self-serve onboarding quality — guided setup wizard, photo quality gates, templates, good docs. Every improvement to self-serve compounds across all Essentials builders. Concierge onboarding optimization matters less when it's only 5-10 builders.
-
+**Hire when:** consistently onboarding 3+ builders/month AND maintaining 12+ active builders. One general customer success/onboarding person. At that point MRR is ~$30-40K — easily covers a $50-60K salary. This person handles onboarding setup, option/price updates, photo pipeline QA, and builder support while you focus on selling.
 
 ### Builder ROI — Why the Tool Pays for Itself
 
 **Key stat**: Zonda Envision reports buyers spend **35% more on upgrades** when they can visualize their choices. Even at conservative estimates, the math is overwhelming.
 
-**Stone Martin-sized (~500 homes/year, ~$10K avg upgrades, 15 plans on Concierge)**
-Current upgrade revenue: ~$5M/year | Annual tool cost: ~$53.8K
+**Stone Martin-sized (~500 homes/year, ~$10K avg upgrades, 15 plans)**
+Current upgrade revenue: ~$5M/year | Annual tool cost: $90K
 
 *Regional context: In the AL/GA market, $42K in upgrades is considered extremely high. Most Stone Martin buyers spend $8-12K in upgrades. One frugal buyer (investment property, intentionally minimizing) went from $5,200 → $7,290 after using the tool — a $2,090 lift (40%) from someone actively trying NOT to spend more. Typical buyers spending $10K would likely see even larger lifts since they're already willing to spend on their home.*
 
 | Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
 |---|---|---|---|---|---|
-| 50% | $2,000 (conservative) | $500K | $53.8K | **$446K** | 9.3x |
-| 75% | $2,000 (conservative) | $750K | $53.8K | **$696K** | 13.9x |
+| 50% | $2,000 (conservative) | $500K | $90K | **$410K** | 5.6x |
+| 75% | $2,000 (conservative) | $750K | $90K | **$660K** | 8.3x |
 
-**Small AL/GA builder (~50 homes/year, ~$8K avg upgrades, 3 plans on Concierge)**2
-Current upgrade revenue: ~$400K/year | Annual tool cost: ~$10.8K
-
-| Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
-|---|---|---|---|---|---|
-| 50% | $1,200 (typical) | $30K | $10.8K | **$19.2K** | 2.8x |
-| 75% | $2,000 (conservative) | $75K | $10.8K | **$64.2K** | 6.9x |
-
-With the new pricing, small builders on 3 Concierge plans pay ~$10.8K/yr — well within ROI range even at conservative adoption. The **Founding Partner program** (3 months free) lets them see actual results before committing.
-
-**Small builder on Essentials (~3 plans, DIY)**
-Annual tool cost: ~$5.4K
+**Small AL/GA builder (~50 homes/year, ~$8K avg upgrades, 3 plans)**
+Current upgrade revenue: ~$400K/year | Annual tool cost: $18K
 
 | Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
 |---|---|---|---|---|---|
-| 50% | $1,200 (typical) | $30K | $5.4K | **$24.6K** | 5.6x |
-| 75% | $2,000 (conservative) | $75K | $5.4K | **$69.6K** | 13.9x |
+| 50% | $1,200 (typical) | $30K | $18K | **$12K** | 1.7x |
+| 75% | $2,000 (conservative) | $75K | $18K | **$57K** | 4.2x |
 
-Essentials's lower cost makes the ROI math easy — if the builder can provide decent photos and the output quality holds up.
+**Mid-size builder (~100 homes/year, ~$10K avg upgrades, 5 plans)**
+Current upgrade revenue: ~$1M/year | Annual tool cost: $30K
+
+| Buyer Adoption | Per-Sale Lift | Additional Revenue/Year | Annual Tool Cost | **Net Gain** | **ROI** |
+|---|---|---|---|---|---|
+| 50% | $1,500 | $75K | $30K | **$45K** | 2.5x |
+| 75% | $2,000 (conservative) | $150K | $30K | **$120K** | 5.0x |
+
+**3x ROI breakpoint: ~55 homes/year on 3 plans at 10% lift.** The pilot removes the risk — builders see real results before committing. After a successful pilot, the ROI conversation closes itself.
 
 ### Beyond Revenue — The Full Value Case
 
@@ -320,19 +314,20 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 **The pitch isn't just "you'll sell more upgrades."** It's: your buyers will be happier with what they chose, your team spends less time hand-holding, and they spend more. The before-and-after is a buyer flipping through a PDF in a design center vs. sitting on their couch with their spouse seeing their actual kitchen with the options they're choosing.
 
 ### Handling Objections
-- **"$1,500 is a lot upfront"** — That covers 3 floor plans, not 1. Each gets 10 room photos through a full pipeline — photo evaluation, masking, prompt tuning, test generation, QA. Plus your entire option catalog transcribed. Comparable to a Matterport package. And pilot first plan is free.
-- **"Only some of my buyers would use this"** — ROI tables above assume conservative adoption. At 60+ homes/year you're at 3x+ return.
-- **"$500/mo per plan?"** — Unlimited buyer visualizations, 24/7 platform access, option/pricing updates, ongoing photo support, and an admin dashboard for your team. No usage caps, no per-session fees. At 60 homes/year across 3 plans, you're looking at $1,000 extra revenue per home — the tool pays for itself many times over.
-- **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, pilot first plan is free for 60 days.
+- **"Only some of my buyers would use this"** — ROI tables above assume 50% adoption. At 60+ homes/year you're at 3x+ return even at that conservative number.
+- **"$500/mo per plan?"** — No setup fees. Unlimited buyer visualizations, 24/7 platform access, option/pricing updates, ongoing photo support, admin dashboard. No usage caps, no per-session fees. At 60 homes/year across 3 plans, even a 10% lift = $60K extra revenue. The tool costs $18K.
+- **"I just want to try it"** — Try the demo on our site — upload your own photo and see it work. When you're ready, we'll set up your best-selling floorplan free for 60 days.
+- **"Can we start with just 1 plan?"** — The pilot is 1 plan, free. When you convert, minimum is 3 — builders with 1 plan don't see enough coverage to get real results. 3 plans means your buyers see it regardless of which floorplan they're buying.
+- **"What about a discount for more plans?"** — Let's start with 3, see the results, and have that conversation once you're expanding. (Only offer 10%+ discounts in exchange for annual commitment + 5+ plans upfront.)
 
 ### Cost Structure
 
-**Self-hosted generation is not viable** (see D64). No open-source model can handle our pipeline (10-15 simultaneous swatch references, precise multi-surface editing, layout preservation). gpt-image-1.5 is the only model that works. All cost math is API-based.
+**Self-hosted generation is not viable** (see D64). No open-source model can handle our pipeline (10-15 simultaneous swatch references, precise multi-surface editing, layout preservation). Gemini was tested and reverted (D77) — faster/cheaper but hallucinated unpredictably. gpt-image-1.5 is the only model that works reliably. All cost math is API-based.
 
 **Pre-generation is non-negotiable.** Each image takes ~60 seconds to generate. Buyers won't wait — the tool must feel instant. Pre-cache common combos; long-tail generates on-demand.
 
-**Generation costs (gpt-image-1.5):**
-- ~$0.20/image (standard API, real-time) — used for on-demand buyer sessions
+**Generation costs (gpt-image-1.5, medium quality — D80):**
+- ~$0.05/image (standard API, medium quality, real-time) — used for on-demand buyer sessions
 - Batch API available (Tier 5) at ~50% discount, async (24hr turnaround) — use for all pre-generation
 
 **Pre-cache math (per floorplan, 10 photos):**
@@ -346,34 +341,35 @@ Not every combo needs pre-caching. Full combinatorial is absurd (e.g. 12 cabinet
 
 Typical builders have fewer options than SM (6-8 per category vs 12-17), so numbers skew toward the low end.
 
-| Pre-cache depth | Images/plan | Standard ($0.20) | Batch (~$0.10) |
+| Pre-cache depth | Images/plan | Standard ($0.05) | Batch (~$0.025) |
 |---|---|---|---|
-| Conservative (sweeps only) | ~500 | $100 | ~$50 |
-| Moderate (sweeps + top combos) | ~1,000 | $200 | ~$100 |
-| Aggressive (deep combo coverage) | ~2,000 | $400 | ~$200 |
+| Conservative (sweeps only) | ~500 | $25 | ~$13 |
+| Moderate (sweeps + top combos) | ~1,000 | $50 | ~$25 |
+| Aggressive (deep combo coverage) | ~2,000 | $100 | ~$50 |
 
-**Hard costs per builder onboarding (8 plans, moderate pre-cache):**
+**Hard costs per builder onboarding (3 plans, moderate pre-cache):**
 
 | Item | Cost |
 |------|------|
-| Your time (photo pipeline + setup) | — |
-| Photography (if needed) | ~$1,000 |
-| Pre-generation (8 plans × ~1K images, batch) | ~$800 |
-| Hosting/infra | ~$45/mo |
-| **Total hard costs** | **~$1,800** |
+| Your time (catalog + photo pipeline) | ~2-4 hrs/plan |
+| Pre-generation (3 plans × ~1K images, batch at ~$0.025) | ~$75 |
+| Photography (if needed — ad hoc) | ~$500-1,000 |
+| **Total hard costs (excl. time)** | **~$75-1,075** |
 
-**On-demand generation costs (our problem, not the builder's):**
-- Pre-cached images are free to serve (Supabase CDN). On-demand buyer generations (long-tail combos) cost ~$0.20 each at full gpt-image-1.5 standard rate.
+No setup fee means these are absorbed as customer acquisition cost. At $1,500/mo revenue, payback is month 1.
+
+**Ongoing generation costs (our problem, not the builder's):**
+- Pre-cached images are free to serve (Supabase CDN). On-demand buyer generations (long-tail combos) cost ~$0.05 each at medium quality (D80).
 - No credit cap exposed to builders. Unlimited visualizations is the pitch. We manage costs internally through aggressive pre-caching (batch API) and the permanent cache — every on-demand generation becomes a cached image for future sessions.
-- Typical: 3 plans × ~50 sessions/mo × ~5 on-demand gens = ~750/mo = ~$150/mo COGS. Well within $1,500/mo revenue (3 × $500).
-- Early months cost more (building the long-tail cache), costs decline over time as cache fills. Internal soft limits if needed — but never exposed to the builder.
+- Typical: 3 plans × ~50 sessions/mo × ~5 on-demand gens = ~750/mo = ~$37/mo COGS. Well within $1,500/mo revenue (3 × $500).
+- Early months cost more (building the long-tail cache), costs decline over time as cache fills.
 
 ## Technical Architecture
 
 ### Already Built (Stone Martin Demo)
 - Next.js 16 web app with step-based wizard UI
 - 5-step upgrade flow covering all categories from real pricing PDF
-- AI image generation pipeline (Gemini/OpenAI via Vercel AI SDK — model-swappable)
+- AI image generation pipeline (OpenAI gpt-image-1.5 via images.edit endpoint)
 - Supabase image cache (hash-based dedup, CDN-served)
 - 166 scraped swatch images
 - Real pricing data from Kinkade plan PDF
@@ -393,9 +389,10 @@ The current architecture supports multi-tenant with minimal changes:
 ### Pre-Generation Strategy
 For each builder's floor plan portfolio:
 - Identify top 5 visual subcategories (countertop, cabinet color, backsplash, flooring, cabinet style)
-- Pre-generate top 8-12 options per subcategory = **~3,000 images per plan**
-- Cost: ~$200-600/plan at API pricing, or near-zero with GPU
+- Single-category sweeps (hold others at default) + popular multi-combos = **~500-1,000 images per plan**
+- Cost: ~$50-100/plan at batch API pricing (~$0.10/image)
 - Result: **instant visualization for 80-90% of buyer selections**
+- Long-tail combos generate on-demand and permanently cache — costs decline over time
 
 Full research with 30+ builders across AL/GA, tiered by priority and organized by geography:
 
@@ -409,6 +406,36 @@ Highlights:
 - **30+ total prospects** across Montgomery, Birmingham, Atlanta, Huntsville, Gulf Coast
 - HBA directory links for ongoing prospecting
 
+## Exit Strategy — $5M in 2-3 Years
+
+**Target: $5M acquisition at 8-10x ARR.** No intention of selling parts. Build to a clean exit.
+
+**What "ready" looks like:**
+- ~20 builders, ~100 floorplans, ~$50K MRR, ~$600K ARR
+- Net revenue retention >100% (builders expanding plans)
+- Monthly churn <5%
+- 2-3 case studies with proven upgrade revenue lift
+- 1 hire (customer success/onboarding)
+
+**Who buys Finch:**
+- **Strategic acquirer (best outcome):** Zonda (fills AI gap), Constellation/Hyphen (adds visualization to ERP), proptech rollup fund. They pay premium because you fill a hole in their product.
+- **Financial buyer:** SaaS-focused PE fund rolling up vertical SaaS. Lower multiple but still viable at $600K+ ARR with strong margins.
+
+**Why it's achievable solo + 1 hire:**
+- ~1-2 new builders/month sustained over 2 years
+- Setup is largely automated (LLM transcription, scraping, prompt playbook)
+- Expansion revenue (3 → 5 → 8 plans) compounds without new sales
+- If ROI holds, churn is near zero — builders don't cancel tools that make them money
+- Regional density in AL/GA creates referral flywheel
+
+**Key risks to the timeline:**
+- Closing builders 1-3 takes longer than expected (sales cycle risk)
+- OpenAI dependency — price increase, deprecation, or quality degradation
+- Competitor with funding enters the space before you hit density
+- Photo pipeline doesn't scale as smoothly for builders with messier source materials
+
+**Mitigation:** Get to 5 paying builders as fast as possible. That gives you revenue, proof, and enough volume to invest in automation. It also makes you attractive enough to sell early at a lower number if the competitive landscape shifts.
+
 ## Go-to-Market
 
 ### Phase 1: Prove It (Now)
@@ -416,49 +443,44 @@ Highlights:
 - Generate compelling before/after: PDF sheet vs. interactive tool with AI visualization
 - Real data point: frugal buyer $5,200 → $7,290 (+$2,090, 40% lift) after using the tool — and they were trying to minimize spend
 
-### Phase 2: First Builder — Founding Partner (Q2 2026)
+### Phase 2: First Paying Builder — Pilot → Convert (Q2 2026)
 - Target builders still on PDFs/sample boards — Craftway, Lowder, Conner Brothers, etc.
 - Use SM demo to show what their tool would look like, then build theirs
-- Founding Partner deal: 3 plans, setup waived, 3 months free
+- Pilot: 1 floorplan free, 60 days. Convert to 3+ plans at $500/mo.
 - Measure upgrade revenue impact, get testimonial / case study
 
-### Phase 1.5: GPU Rental Setup (Before First Non-SM Builder)
-- Set up on-demand GPU rental (RunPod or Hyperstack, RTX A6000 at ~$0.49/hr)
-- Pre-generation on API is ~$200-750 per plan and takes weeks of continuous generation
-- On-demand GPU drops that to ~$25/plan and enables overnight batch generation
-- No upfront capital — spin up when needed, shut down when done
-- **Must have before onboarding any builder** — API margins don't work at scale
-
-### Phase 3: Launch Self-Serve + Local Concierge Sales (Q3-Q4 2026)
-- **Online**: Landing page with interactive demo → Essentials signups
-- **In Alabama**: Knock doors, HBA events, local networking → Concierge deals
-- Use founding partner results as proof: "Here's what it did for [builder]"
+### Phase 3: Regional Density Play (Q3-Q4 2026)
+- **In Alabama**: Knock doors, HBA events, local networking
+- **Online**: Landing page with interactive demo → inbound leads
+- Use pilot results as proof: "Here's what it did for [builder]"
 - Demo the actual tool (not a pitch deck) — show their competitor using it
-- **2026 exit target: 5-10 Essentials + 1-2 Concierge = $25-50K Year 1**
+- **2026 target: 5-8 builders = $7.5-20K MRR**
 
-### Phase 4: Scale Self-Serve (2027)
-- Invest in self-serve onboarding quality (guided wizard, photo gates, templates)
-- Expand beyond AL/GA — self-serve is geography-independent
-- Attend Southeast Building Conference (SEBC), International Builders' Show (IBS)
-- Concierge stays local/regional — it requires hands-on work
-- Essentials scales nationally through landing page, content marketing, HBA directories
-- **Target: 50+ Essentials builders + 5 Concierge = $322K/yr**
+### Phase 4: Scale to Exit (2027-2028)
+- Expand beyond AL/GA — HBA events, SEBC, IBS
+- Hire customer success/onboarding person (~builder 10-12)
+- Referrals and case studies compound — each builder makes the next easier to close
+- Invest in onboarding tooling (guided setup wizard, photo quality gates, templates)
+- **Target: 20 builders × 5 plans avg = $50K MRR = $600K ARR → $5M exit at 8-10x**
 
 ## Sales Approach
 
-### Two Channels
+### Cold Email Infrastructure
+- **Domain**: `heyfin.ch` — dedicated cold outreach domain, separate from `withfin.ch` to protect primary domain reputation
+- **DNS**: Vercel DNS (same provider, no wildcard needed)
+- **Email warming**: Mailreach.co — 2-3 weeks warming before first send, keep running during outreach
+- **Cadence**: Start 5-10/day, ramp to 30-50/day max per mailbox
+- **Setup**: Email hosting → SPF/DKIM/DMARC → Mailreach connection
 
-**Self-serve (Essentials)** — scales without you
-- Landing page demo converts to Essentials signups
-- In-app $1,500 setup upsell converts DIY builders who hit friction
-- Content marketing, HBA directory listings, SEO
-- Geography-independent — any production builder in the US
+### One Channel — Done-For-You, Relationship Sales
 
-**Local sales (Concierge)** — high-touch, high-value
-- Knock doors in Alabama when you're on the ground
-- HBA events, design center visits, builder meetups
-- Use SM demo + founding partner results as proof
-- Concierge deals are local/regional — requires coordinating photography
+Every builder is done-for-you. No self-serve tier. Every deal starts with a conversation.
+
+- **Inbound**: Landing page demo → builder reaches out → pilot → convert
+- **Outbound**: HBA events, door knocking, design center visits → demo on phone → pilot → convert
+- **Referral**: Existing builder tells another builder → pilot → convert
+
+All roads lead to the pilot. The pilot leads to $500/plan/mo. Simple.
 
 ### The One-Liner
 **"I help builders increase upgrade revenue with an AI-powered visualizer that lets buyers see their selections before they commit. It costs a fraction of what the big platforms charge and I can have you up and running in weeks."**

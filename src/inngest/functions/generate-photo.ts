@@ -123,7 +123,7 @@ export const generatePhoto = inngest.createFunction(
         model: modelName,
         image: inputImages,
         prompt,
-        quality: "high",
+        quality: "medium",
         size: "1536x1024",
         input_fidelity: "high",
       });
@@ -162,7 +162,7 @@ export const generatePhoto = inngest.createFunction(
             model: modelName,
             image: secondPassInput,
             prompt: resolvedPolicy.secondPass!.prompt,
-            quality: "high",
+            quality: "medium",
             size: "1536x1024",
             input_fidelity: resolvedPolicy.secondPass!.inputFidelity,
           });
@@ -238,7 +238,7 @@ export const generatePhoto = inngest.createFunction(
         orgSlug,
         floorplanSlug,
         image_size: "1536x1024",
-        image_quality: "high",
+        image_quality: "medium",
         second_pass: passes > 1,
       });
 

@@ -196,7 +196,7 @@ State shape:
 6. Client polls `/api/generate/photo/check` every 3s until result is ready
 7. Client displays in StepPhotoGrid (per-photo cards with retry via ImageLightbox)
 
-**Image approach**: OpenAI `gpt-image-1.5` via `images.edit` endpoint. Sends base room photo + individually attached swatch images (via `openai.toFile()`). Prompt lines explicitly map each item to `swatch #N` in deterministic order. Config: `quality: "high"`, `size: "1536x1024"`, `input_fidelity: "high"`. Typical generation time: 45-90s per pass.
+**Image approach**: OpenAI `gpt-image-1.5` via `images.edit` endpoint. Sends base room photo + individually attached swatch images (via `openai.toFile()`). Prompt lines explicitly map each item to `swatch #N` in deterministic order. Config: `quality: "medium"` (D80), `size: "1536x1024"`, `input_fidelity: "high"`. Typical generation time: ~30-40s per pass (was 45-90s at high quality). Cost: ~$0.05/image (was $0.20 at high).
 
 **Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Base rules are global; tenant/photo-specific constraints are layered via per-photo policy overrides (DB-backed, internal-only), including optional second-pass refinements.
 

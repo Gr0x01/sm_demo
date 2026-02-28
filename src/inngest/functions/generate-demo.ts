@@ -58,7 +58,7 @@ export const generateDemo = inngest.createFunction(
         model: IMAGE_MODEL,
         image: inputImages,
         prompt,
-        quality: "high",
+        quality: "medium",
         size: "1536x1024",
         input_fidelity: "high",
       });
@@ -117,7 +117,7 @@ export const generateDemo = inngest.createFunction(
         duration_ms: result.durationMs,
         cost_usd: estimateOpenAICost(IMAGE_MODEL, 1),
         image_size: "1536x1024",
-        image_quality: "high",
+        image_quality: "medium",
         second_pass: false,
       });
 
