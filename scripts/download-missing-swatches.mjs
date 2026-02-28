@@ -26,12 +26,12 @@ const PAINT_COLORS = [
   { name: "focus", label: "Focus", hex: "#E5E0D2", ppg: "PPG1008-1" },
   { name: "cold-foam", label: "Cold Foam", hex: "#E9E5D7", ppg: "PPG1097-1" },
   { name: "commercial-white", label: "Commercial White", hex: "#EDECE6", ppg: "PPG1025-1" },
-  { name: "in-the-cloud", label: "In the Cloud", hex: "#DEDBD2", ppg: "PPG0999-1" },
+  { name: "in-the-cloud", label: "In the Cloud", hex: "#DEDCD3", ppg: "PPG0999-1" },
   { name: "rabbits-ear", label: "Rabbits Ear", hex: "#C7C2B7", ppg: "PPG0999-2" },
   { name: "maiden-mist", label: "Maiden Mist", hex: "#B9C0C0", ppg: "PPG1039-2" },
   { name: "crushed-silk", label: "Crushed Silk", hex: "#D8CFBE", ppg: "PPG1024-3" },
   { name: "in-the-shadows", label: "In the Shadows", hex: "#656E72", ppg: "PPG1039-6" },
-  { name: "dark-woods", label: "Dark Woods", hex: "#635F59", ppg: "PPG0999-7" },
+  { name: "dark-woods", label: "Dark Woods", hex: "#635F5A", ppg: "PPG0999-7" },
   { name: "knights-armor", label: "Knights Armor", hex: "#5C5D5D", ppg: "PPG1001-6" },
 ];
 

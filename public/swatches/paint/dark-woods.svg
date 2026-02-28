@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
-  <rect width="400" height="400" fill="#635F59" rx="8"/>
+  <rect width="400" height="400" fill="#635F5A" rx="8"/>
   <rect x="0" y="310" width="400" height="90" fill="white" rx="0"/>
   <rect x="0" y="310" width="400" height="1" fill="#E5E7EB"/>
   <text x="200" y="348" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="600" fill="#1F2937">Dark Woods</text>
-  <text x="200" y="375" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#6B7280">#635F59</text>
+  <text x="200" y="375" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="13" fill="#6B7280">#635F5A</text>
 </svg>
