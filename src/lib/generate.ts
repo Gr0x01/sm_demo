@@ -17,7 +17,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v26";
+export const GENERATION_CACHE_VERSION = "v27";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -120,6 +120,7 @@ export async function buildEditPrompt(
     // Build fallback label when no swatch image is available.
     // Appliances: keep name + descriptor (AI needs model identification).
     // Finishes: use hex as sole color authority — never expose name/descriptor for color.
+    // No swatch + no hex: include option name so "No Wainscoting" etc. are visible to the AI.
     const buildFallbackLabel = () => {
       if (subCategory.isAppliance) {
         return `${applianceLabel} (no swatch image available; follow text exactly)`;
@@ -128,7 +129,7 @@ export async function buildEditPrompt(
       if (hex) {
         return `${targetLabel} (no swatch; target color ${hex})`;
       }
-      return `${targetLabel} (no swatch image available; keep existing color)`;
+      return `${targetLabel}: ${option.name}${descriptorSuffix} (no swatch image available)`;
     };
 
     if (option.swatchUrl && resolveSwatchBuffer) {
