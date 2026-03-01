@@ -2,9 +2,24 @@ import type { Metadata } from "next";
 import { DemoClient } from "./DemoClient";
 
 export const metadata: Metadata = {
-  title: "Try Finch — AI Kitchen Visualization Demo",
+  title: { absolute: "Try Finch — Interactive Upgrade Visualization Demo" },
   description:
-    "Upload a photo of your kitchen, pick materials, and see AI-generated visualizations in seconds. This is what your buyers experience with Finch.",
+    "Pick finishes and see the room update instantly. This is what your buyers experience with Finch.",
+  alternates: { canonical: "https://withfin.ch/try" },
+  openGraph: {
+    title: "Try Finch — Interactive Upgrade Visualization Demo",
+    description:
+      "Pick finishes and see the room update instantly. This is what your buyers experience with Finch.",
+    url: "https://withfin.ch/try",
+    siteName: "Finch",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Try Finch — Interactive Upgrade Visualization Demo",
+    description:
+      "Pick finishes and see the room update instantly.",
+  },
 };
 
 export default function DemoPage() {

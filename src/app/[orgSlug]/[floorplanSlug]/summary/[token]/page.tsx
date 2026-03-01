@@ -77,6 +77,7 @@ export async function generateMetadata({
       description,
     },
     referrer: "no-referrer",
+    robots: { index: false, follow: false },
   };
 }
 

@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { headers } from "next/headers";
 import Link from "next/link";
 import { getOrgBySlug, getFloorplansForOrg } from "@/lib/db-queries";
 import { parseLogoType, parseHeaderStyle, parseCornerStyle } from "@/lib/branding";
 import { ResumeSavedDesignLink } from "@/components/ResumeSavedDesignLink";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return { robots: { index: false, follow: false } };
+}
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 

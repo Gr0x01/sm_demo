@@ -14,7 +14,8 @@ export async function generateMetadata({
 
   return {
     title: `${org.name} — ${planName} Plan Upgrade Picker`,
-    description: `Visualize your ${planName} Plan upgrades with AI-powered room visualization`,
+    description: `Visualize your ${planName} Plan upgrades with ${org.name}`,
+    robots: { index: false, follow: false },
   };
 }
 
