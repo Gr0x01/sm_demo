@@ -44,7 +44,7 @@ const faqs = [
   },
   {
     q: "Can we update pricing and options ourselves?",
-    a: "Yes. Every builder gets an admin dashboard to update option pricing, add or remove finishes, and manage floor plans\u00a0\u2014\u00a0any time, no ticket required. If you need a bulk update done for you, we\u2019ll handle it for a flat fee.",
+    a: "Yes. Every builder gets an admin dashboard to update option pricing, add or remove finishes, and manage floor plans\u00a0\u2014\u00a0any time, no ticket required. If you need a bulk update done for you, we\u2019ll handle it.",
   },
 ];
 
@@ -477,20 +477,20 @@ export default function LandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 mb-4">
-                <Link
-                  href="/try"
-                  onClick={() => track("cta_clicked", { cta: "Try It Live", location: "hero" })}
-                  className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-                >
-                  Try It Live
-                </Link>
                 <a
                   href="#pilot"
                   onClick={() => track("cta_clicked", { cta: "Start a Pilot", location: "hero" })}
-                  className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+                  className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                 >
                   Start a Pilot
                 </a>
+                <Link
+                  href="/try"
+                  onClick={() => track("cta_clicked", { cta: "Try It Live", location: "hero" })}
+                  className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+                >
+                  Try It Live
+                </Link>
               </div>
 
             </div>
@@ -511,7 +511,7 @@ export default function LandingPage() {
           </div>
           <div>
             <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Done for you</p>
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">We build it. You sell from it.</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">We handle setup. You keep selling.</p>
           </div>
           <div>
             <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">1 plan</p>
@@ -651,8 +651,8 @@ export default function LandingPage() {
           <p className="text-2xl md:text-3xl text-slate-800 leading-tight mb-6">
             Buyers upgrade what they can see. The ones who can&apos;t picture it default to&nbsp;Standard.
           </p>
-          <p className="text-xs text-slate-400 max-w-2xl mx-auto">
-            Zonda reports 35% average lift with visualization across 225+ builder brands. In our first test, a buyer trying to hold the line on budget still chose 40% more after seeing their selections. We default to 15%.
+          <p className="text-xs text-slate-500 max-w-2xl mx-auto">
+            In our first test, a buyer actively trying to minimize spend still chose 40% more after seeing their selections. Industry data across 225+ builder brands averages 35%. We start at 15% because it&apos;s conservative.
           </p>
         </div>
       </Section>
@@ -694,7 +694,7 @@ export default function LandingPage() {
             <div key={step.n} data-reveal style={revealStyle(90 + index * 70)}>
               <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-300 mb-3">{step.n}</p>
               <h3 className="text-lg text-slate-900 leading-tight mb-2">{step.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">{step.desc}</p>
+              <p className="text-sm text-slate-600 leading-relaxed">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -732,15 +732,15 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
             <div>
               <p className="text-sm font-semibold text-slate-900 mb-1">48 hours to live</p>
-              <p className="text-sm text-slate-500">Send us your floor plan and options. We handle everything&nbsp;else.</p>
+              <p className="text-sm text-slate-600">Send us your floor plan and options. We handle everything&nbsp;else.</p>
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900 mb-1">60-day pilot</p>
-              <p className="text-sm text-slate-500">Real buyers, real selections, real upgrade revenue&nbsp;data.</p>
+              <p className="text-sm text-slate-600">Real buyers, real selections, real upgrade revenue&nbsp;data.</p>
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900 mb-1">Walk away anytime</p>
-              <p className="text-sm text-slate-500">If the numbers don&apos;t work, you owe nothing. No contract. No&nbsp;obligation.</p>
+              <p className="text-sm text-slate-600">If the numbers don&apos;t work, you owe nothing. No contract. No&nbsp;obligation.</p>
             </div>
           </div>
 
@@ -750,9 +750,9 @@ export default function LandingPage() {
         <p
           data-reveal
           style={revealStyle(160)}
-          className="text-sm text-slate-400 text-center mt-6"
+          className="text-sm text-slate-500 text-center mt-6"
         >
-          After the pilot, pricing is per floor plan per month.
+          After the pilot, we scope pricing to your floor plan count. We&apos;ll walk through it together once you&apos;ve seen the results.
         </p>
       </Section>
 
@@ -816,20 +816,20 @@ export default function LandingPage() {
             Upload a model home photo. Pick finishes. Watch the room change. This is what your buyers would see.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/try"
-              onClick={() => track("cta_clicked", { cta: "Try It Live", location: "contact" })}
-              className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-            >
-              Try It Live
-            </Link>
             <a
               href="#pilot"
               onClick={() => track("cta_clicked", { cta: "Start a Pilot", location: "contact" })}
-              className="inline-block px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+              className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
               Start a Pilot
             </a>
+            <Link
+              href="/try"
+              onClick={() => track("cta_clicked", { cta: "Try It Live", location: "contact" })}
+              className="inline-block px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+            >
+              Try It Live
+            </Link>
           </div>
           <p className="text-xs text-slate-400 mt-4">Questions? hello@withfin.ch</p>
         </div>

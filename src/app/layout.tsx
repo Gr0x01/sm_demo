@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Finch — Upgrade Visualization for Home Builders",
-  description: "AI-powered upgrade visualization that helps home builders close more upgrades",
+  description: "Upgrade visualization that helps home builders sell more upgrades per home",
 };
 
 export default function RootLayout({
