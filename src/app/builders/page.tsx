@@ -1,1 +1,5 @@
-export { default } from "../landing-full";
+import { redirect } from "next/navigation";
+
+export default function BuildersRedirect() {
+  redirect("/");
+}
