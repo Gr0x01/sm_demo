@@ -156,8 +156,10 @@ export default function LandingPage() {
 
         {/* Mobile: single combined card */}
         <div data-reveal style={revealStyle(90)} className="md:hidden bg-white border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-4 text-center">
+            <p className="text-sm font-semibold text-slate-900">What buyers see today</p>
+          </div>
           <div className="bg-slate-100 px-6 py-8">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-slate-400 mb-4 text-center">What buyers see today</p>
             <div className="max-w-[290px] mx-auto space-y-2">
               {[
                 { label: "BACKSPLASH \u2014 Herringbone Glacier", price: "$425" },
@@ -215,7 +217,7 @@ export default function LandingPage() {
               </div>
             </div>
             <div className="p-4 text-center">
-              <p className="text-sm font-semibold text-slate-500">What buyers see today</p>
+              <p className="text-sm font-semibold text-slate-900">What buyers see today</p>
             </div>
           </div>
 
@@ -495,6 +497,38 @@ export default function LandingPage() {
               priceCurrency: "USD",
               description: "Free pilot — first floor plan at no cost",
             },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((faq) => ({
+              "@type": "Question",
+              name: faq.q,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: faq.a,
+              },
+            })),
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            name: "Finch",
+            url: "https://withfin.ch",
+            logo: "https://withfin.ch/finch-logo.png",
+            email: "hello@withfin.ch",
+            description:
+              "Upgrade visualization for home builders. Buyers pick finishes and see the room change.",
           }),
         }}
       />
