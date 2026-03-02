@@ -6,7 +6,21 @@ import { getOrgBySlug, getFloorplansForOrg } from "@/lib/db-queries";
 import { parseLogoType, parseHeaderStyle, parseCornerStyle } from "@/lib/branding";
 import { ResumeSavedDesignLink } from "@/components/ResumeSavedDesignLink";
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ orgSlug: string }>;
+}): Promise<Metadata> {
+  const { orgSlug } = await params;
+  // Allow /demo to be indexed; block all other tenant pages
+  if (orgSlug === "demo") {
+    return {
+      title: "Finch Demo — Interactive Upgrade Visualization",
+      description:
+        "See how Finch works. Pick finishes and watch the room change with your selections applied.",
+      alternates: { canonical: "https://withfin.ch/demo" },
+    };
+  }
   return { robots: { index: false, follow: false } };
 }
 

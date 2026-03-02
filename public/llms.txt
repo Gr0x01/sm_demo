@@ -1,0 +1,64 @@
+# Finch
+
+> Finch is an interactive upgrade visualization tool for production home builders. Buyers pick finishes — countertops, cabinets, flooring, paint, hardware — and see a photorealistic image of the room with their selections applied. Builders increase upgrade revenue per home with no additional sales effort. Finch replaces PDF option sheets, sample boards, and static design center displays with a visual, web-based selection experience.
+
+## What Finch does
+
+Finch is design center software that shows buyers what their choices look like before they commit. Buyers open a link on any device — no app, no account — browse a builder's full upgrade catalog with real pricing, select finishes, and see a generated image of their actual floor plan room with those selections. Every session exports a priced selection sheet ready for the builder's sales team.
+
+The tool works alongside existing design appointments or replaces the PDF option sheet entirely. Builders send us their floor plans and pricing. We build a branded, interactive selection tool. The first floor plan is live in 48 hours.
+
+## Who it's for
+
+- Production home builders closing 50 to 5,000+ homes per year
+- Builders currently using PDF option sheets, printed price lists, sample boards, or physical design centers for upgrade selections
+- Design center managers who want buyers to arrive at selection appointments with confident choices already made
+- Builders looking to increase upgrade revenue, reduce design appointment time, and improve the new home buyer experience
+
+Finch is not for custom home builders (one-off designs), remodelers, or builders under 50 homes per year.
+
+## How it compares
+
+Finch is an alternative to Zonda Envision, BDX design tools, Constellation Design Studio, and traditional PDF option sheets.
+
+| | PDF option sheets | Zonda Envision | Finch |
+|---|---|---|---|
+| Buyer sees | Line items and prices | Pre-rendered 3D scenes | Their actual room with selections applied |
+| Time to live | N/A | 3-6 months | 48 hours |
+| Setup cost | None | Six figures | No setup fee — free 60-day pilot |
+| Builder effort | None | IT integration, dedicated team | Send option sheets and photos |
+| New floor plan | Reprint the PDF | Weeks | 1-2 days |
+| Visualization | None | Pre-rendered, limited flexibility | Generated on demand, unlimited combinations |
+
+## Key facts
+
+- First floor plan live in 48 hours
+- Free 60-day pilot on one floor plan — no commitment, no setup fee
+- Done-for-you setup: we handle configuration, no software to learn, no IT department required
+- Works on any device, no app download, no buyer account required
+- Builders get an admin dashboard to update pricing and options themselves
+- Unlimited buyer sessions — no per-use or per-visualization fees
+- Priced per floor plan per month, scoped to builder volume
+
+## Results
+
+Buyers choose standard options because they cannot picture the upgrade. When they can see what selections look like in their kitchen, they spend more. In early testing, a buyer who was actively trying to minimize spend still increased their upgrade total by 40% after using Finch. At scale across hundreds of homes, even a conservative lift pays for the tool many times over.
+
+## Pages
+
+- [Home](https://withfin.ch/): Product overview, ROI calculator, and pilot signup for home builders
+- [Try It Live](https://withfin.ch/try): Interactive demo — pick finishes and see the room change, no signup required
+- [Finch vs Zonda Envision](https://withfin.ch/vs/envision): Detailed comparison with Zonda Envision for builders evaluating design center visualization tools
+- [Finch vs PDF Option Sheets](https://withfin.ch/vs/pdf-option-sheets): Side-by-side comparison of visual selection vs traditional printed option sheets
+- [Sandbox Demo](https://withfin.ch/demo): Live demo environment with a sample floor plan and full upgrade catalog
+
+## Getting started
+
+The fastest way to evaluate Finch is to try the live demo at https://withfin.ch/try — no signup, no account, see it working in under a minute.
+
+For builders ready to test it with their own floor plans: Finch offers a free 60-day pilot on one floor plan. We set it up, you use it with real buyers, and we measure the impact on upgrade revenue together. No obligation if the numbers don't work.
+
+## Contact
+
+- Email: hello@withfin.ch
+- Website: https://withfin.ch

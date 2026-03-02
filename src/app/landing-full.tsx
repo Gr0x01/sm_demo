@@ -123,7 +123,7 @@ export default function LandingPage() {
 
       {/* ─── Speed Bar ─── */}
       <div className="px-6 py-12 md:py-16 bg-slate-100">
-        <div className="max-w-6xl mx-auto grid grid-cols-3 gap-6 text-center">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 text-center">
           <div>
             <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2" style={{ fontVariantNumeric: "tabular-nums" }}>48hrs</p>
             <p className="text-xs uppercase tracking-[0.16em] text-slate-400">First plan live</p>
@@ -336,7 +336,7 @@ export default function LandingPage() {
           className="max-w-3xl mx-auto text-center"
         >
           <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">Start Here</p>
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6">
+          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6 text-balance">
             One floor plan. Zero risk.
             <br />
             Prove the ROI first.
@@ -432,7 +432,7 @@ export default function LandingPage() {
           className="max-w-3xl mx-auto text-center"
         >
           <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
-            Your buyers can&apos;t upgrade what they can&apos;t see.
+            Your buyers can&apos;t upgrade what they can&apos;t&nbsp;see.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
             Upload a model home photo. Pick finishes. Watch the room change. This is what your buyers would see.
@@ -442,7 +442,7 @@ export default function LandingPage() {
               href="#pilot"
               event="cta_clicked"
               properties={{ cta: "Start a Pilot", location: "contact" }}
-              className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+              className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
               Start a Pilot
             </TrackedLink>
@@ -450,7 +450,7 @@ export default function LandingPage() {
               href="/try"
               event="cta_clicked"
               properties={{ cta: "Try It Live", location: "contact" }}
-              className="inline-block px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+              className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
             >
               Try It Live
             </TrackedLink>
