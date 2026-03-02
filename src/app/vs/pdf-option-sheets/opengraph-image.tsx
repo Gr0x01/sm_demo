@@ -3,7 +3,8 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 export const runtime = "nodejs";
-export const alt = "Finch — Upgrade Visualization for Home Builders";
+export const alt =
+  "Replace PDF Option Sheets — Visual Upgrade Selection for Builders";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -20,19 +21,14 @@ export default function OgImage() {
           display: "flex",
           flexDirection: "column",
           backgroundColor: "#F8FAFC",
-          position: "relative",
         }}
       >
         {/* Top accent bar */}
         <div
-          style={{
-            width: "100%",
-            height: "6px",
-            backgroundColor: "#1b2d4e",
-          }}
+          style={{ width: "100%", height: "6px", backgroundColor: "#1b2d4e" }}
         />
 
-        {/* Content */}
+        {/* Content — single centered group */}
         <div
           style={{
             flex: 1,
@@ -40,51 +36,33 @@ export default function OgImage() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "60px 80px",
+            padding: "0 80px",
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoSrc} height="56" alt="" />
+          <img src={logoSrc} height="64" alt="" />
           <p
             style={{
-              fontSize: 28,
-              color: "#64748b",
-              marginTop: 32,
-              textAlign: "center",
-              lineHeight: 1.4,
-            }}
-          >
-            Upgrade visualization for home builders.
-          </p>
-          <p
-            style={{
-              fontSize: 22,
-              color: "#94a3b8",
-              marginTop: 16,
-              textAlign: "center",
-            }}
-          >
-            First floor plan live in 48 hours. No software to learn.
-          </p>
-        </div>
-
-        {/* Bottom URL bar */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            padding: "20px 0 28px",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 18,
-              color: "#94a3b8",
-              letterSpacing: "0.08em",
+              fontSize: 16,
+              color: "#1b2d4e",
+              letterSpacing: "0.12em",
               textTransform: "uppercase" as const,
+              marginTop: 28,
             }}
           >
-            withfin.ch
+            Finch vs PDF Option Sheets
+          </p>
+          <p
+            style={{
+              fontSize: 36,
+              fontWeight: 700,
+              color: "#0f172a",
+              marginTop: 20,
+              textAlign: "center",
+              lineHeight: 1.3,
+            }}
+          >
+            A price sheet lists upgrades. Finch shows them.
           </p>
         </div>
       </div>

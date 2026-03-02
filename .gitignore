@@ -34,7 +34,8 @@ next-env.d.ts
 tmp/
 tmp/*
 
-# RunPod test outputs (large PNGs)
+# Test outputs (large PNGs)
 scripts/flux-test-outputs/
 scripts/omnigen2-test-outputs/
 scripts/nano-banana-test-outputs/
+scripts/quality-fidelity-test-outputs/

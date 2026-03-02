@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finch — Upgrade Visualization for Home Builders</title>
+  <style>
+    @page {
+      size: letter;
+      margin: 0.45in 0.55in;
+    }
+
+    :root {
+      --color-navy: #1b2d4e;
+      --color-accent: #2767b1;
+      --compare-columns: 1fr 1fr;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Helvetica, sans-serif;
+      color: var(--color-navy);
+      background: #ffffff;
+      line-height: 1.5;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-family: "Iowan Old Style", "Baskerville", "Times New Roman", serif;
+    }
+
+    .page {
+      max-width: 7.5in;
+      margin: 0 auto;
+      background: #ffffff;
+    }
+
+    /* ─── Header ─── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-bottom: 0.2in;
+      margin-bottom: 0.35in;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .logo svg {
+      height: 24px;
+      width: auto;
+    }
+
+    .header-right {
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      font-weight: 600;
+      text-align: right;
+    }
+
+    /* ─── Hero ─── */
+    .hero {
+      text-align: center;
+      margin-bottom: 0.35in;
+    }
+
+    .hero-headline {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+      color: #0f172a;
+      margin-bottom: 0.12in;
+    }
+
+    .hero-sub {
+      font-size: 13.5px;
+      color: #64748b;
+      max-width: 5.5in;
+      margin: 0 auto;
+      line-height: 1.45;
+    }
+
+    /* ─── Before / After ─── */
+    .compare-wrapper {
+      border: 1px solid #e2e8f0;
+      margin-bottom: 0.38in;
+      overflow: hidden;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+      break-inside: avoid;
+    }
+
+    .compare-head {
+      display: grid;
+      grid-template-columns: var(--compare-columns);
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .compare-head-item {
+      padding: 7px 12px;
+      font-size: 10px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .compare-head-item + .compare-head-item {
+      border-left: 1px solid #e2e8f0;
+    }
+
+    .compare {
+      display: grid;
+      grid-template-columns: var(--compare-columns);
+    }
+
+    .compare-before {
+      background: #f1f5f9;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0.18in 0.2in 0.2in;
+    }
+
+    .line-item {
+      display: flex;
+      justify-content: space-between;
+      font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", "Courier New", monospace;
+      font-size: 10px;
+      padding: 3px 0;
+    }
+
+    .line-item-name {
+      color: #94a3b8;
+    }
+
+    .line-item-price {
+      color: #64748b;
+    }
+
+    .line-item-total {
+      border-top: 1px solid #e2e8f0;
+      margin-top: 6px;
+      padding-top: 6px;
+    }
+
+    .line-item-total .line-item-name {
+      color: #64748b;
+      font-weight: 600;
+    }
+
+    .line-item-total .line-item-price {
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .compare-after {
+      position: relative;
+      min-height: 1.8in;
+      border-left: 1px solid #e2e8f0;
+      overflow: hidden;
+    }
+
+    .compare-after img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* ─── Speed Bar ─── */
+    .speed-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.2in;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 0.1in 0.2in;
+      margin-bottom: 0.16in;
+      text-align: center;
+    }
+
+    .speed-item {
+      padding: 0;
+    }
+
+    .speed-bar-number {
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      color: #0f172a;
+      margin-bottom: 4px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .speed-bar-label {
+      font-size: 9px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+
+    /* ─── Proof ─── */
+    .proof {
+      margin-bottom: 0.38in;
+      break-inside: avoid;
+    }
+
+    .proof-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+
+    .proof-text {
+      font-size: 13px;
+      color: #334155;
+      line-height: 1.5;
+    }
+
+    .proof-highlight {
+      color: #0f172a;
+      font-weight: 600;
+    }
+
+    /* ─── ROI ─── */
+    .roi {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.25;
+      color: #0f172a;
+      margin-bottom: 3px;
+    }
+
+    .roi-sub {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 0.16in;
+    }
+
+    /* ─── How It Works ─── */
+    .how {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 0.15in;
+      padding: 0.18in 0.2in;
+      background: #f8fafc;
+      margin-bottom: 0.3in;
+      break-inside: avoid;
+    }
+
+    .how-step {
+      padding: 0;
+    }
+
+    .how-step-number {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: #cbd5e1;
+      margin-bottom: 4px;
+    }
+
+    .how-step-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #0f172a;
+      line-height: 1.35;
+      margin-bottom: 3px;
+    }
+
+    .how-step-desc {
+      font-size: 10px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+
+    /* ─── Footer CTA ─── */
+    .footer {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      padding-top: 0.15in;
+      border-top: 1px solid #e2e8f0;
+    }
+
+    .footer-cta {
+      display: flex;
+      align-items: center;
+      gap: 0.25in;
+    }
+
+    .cta-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #0f172a;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .cta-contact {
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.5;
+    }
+
+    .cta-contact a {
+      color: #0f172a;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    @media (max-width: 980px) {
+      .hero-headline {
+        font-size: 36px;
+      }
+
+      .compare {
+        grid-template-columns: 1fr;
+      }
+
+      .compare-after {
+        min-height: 2.5in;
+        border-left: none;
+        border-top: 1px solid #e2e8f0;
+      }
+
+      .how {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 700px) {
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .header-right {
+        text-align: left;
+      }
+
+      .hero {
+        text-align: left;
+      }
+
+      .hero-headline {
+        font-size: 32px;
+      }
+
+      .hero-sub {
+        max-width: none;
+      }
+
+      .speed-bar {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .how {
+        grid-template-columns: 1fr;
+      }
+
+      .footer {
+        flex-direction: column;
+      }
+
+    }
+
+    /* ─── Print ─── */
+    @media print {
+      .page {
+        padding: 0;
+        max-width: none;
+        width: 100%;
+      }
+
+      /* Force desktop layout in print — override responsive breakpoints */
+      .hero-headline {
+        font-size: 36px !important;
+      }
+
+      .hero {
+        text-align: center !important;
+      }
+
+      .hero-sub {
+        max-width: 5.5in !important;
+      }
+
+      .compare-head,
+      .compare {
+        grid-template-columns: var(--compare-columns) !important;
+      }
+
+      .compare-after {
+        border-left: 1px solid #e2e8f0 !important;
+        border-top: none !important;
+        min-height: 1.8in !important;
+      }
+
+      .speed-bar {
+        grid-template-columns: 1fr 1fr 1fr !important;
+      }
+
+      .how {
+        grid-template-columns: 1fr 1fr 1fr 1fr !important;
+      }
+
+      .header {
+        flex-direction: row !important;
+        align-items: center !important;
+      }
+
+      .header-right {
+        text-align: right !important;
+      }
+
+      .footer {
+        flex-direction: row !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <svg width="100" height="24" viewBox="0 0 663 149" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M-9.73344e-05 3.60019H91.3999V25.6002H25.1999V64.4002H87.5999V85.6002H25.1999V145.2H-9.73344e-05V3.60019ZM134.648 3.60019H159.848V145.2H134.648V3.60019ZM211.094 3.60019H244.494L310.294 109.6H310.694V3.60019H335.894V145.2H303.894L236.694 35.8002H236.294V145.2H211.094V3.60019ZM489.348 36.8002C485.615 31.7335 480.748 28.0669 474.748 25.8002C468.748 23.4002 462.882 22.2002 457.148 22.2002C449.815 22.2002 443.148 23.5335 437.148 26.2002C431.148 28.8669 425.948 32.5335 421.548 37.2002C417.282 41.8669 413.948 47.3335 411.548 53.6002C409.282 59.8669 408.148 66.6669 408.148 74.0002C408.148 81.7335 409.282 88.8002 411.548 95.2002C413.815 101.6 417.015 107.134 421.148 111.8C425.415 116.334 430.482 119.867 436.348 122.4C442.215 124.934 448.815 126.2 456.148 126.2C463.748 126.2 470.482 124.734 476.348 121.8C482.215 118.734 486.948 114.734 490.548 109.8L510.748 124C504.482 131.867 496.815 138 487.748 142.4C478.682 146.667 468.082 148.8 455.948 148.8C444.882 148.8 434.682 147 425.348 143.4C416.148 139.667 408.215 134.534 401.548 128C394.882 121.334 389.682 113.467 385.948 104.4C382.215 95.2002 380.348 85.0669 380.348 74.0002C380.348 62.6669 382.282 52.4669 386.148 43.4002C390.148 34.2002 395.548 26.4002 402.348 20.0002C409.282 13.6002 417.415 8.66686 426.748 5.20019C436.082 1.73352 446.215 0.000193119 457.148 0.000193119C461.682 0.000193119 466.415 0.466858 471.348 1.40019C476.282 2.20018 481.015 3.53352 485.548 5.40018C490.082 7.13352 494.348 9.33352 498.348 12.0002C502.348 14.6669 505.748 17.8669 508.548 21.6002L489.348 36.8002ZM546.406 3.60019H571.606V60.8002H637.806V3.60019H663.006V145.2H637.806V82.4002H571.606V145.2H546.406V3.60019Z" fill="#0f172a"/>
+        </svg>
+      </div>
+      <div class="header-right">Upgrade Visualization for Production Builders</div>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1 class="hero-headline">
+        They always pick Standard.
+      </h1>
+      <p class="hero-sub">
+        Not because they want the base package. Because they can't picture what they're paying for.
+        Finch shows buyers what their upgrades look like in photos of your model home.
+        They pick finishes, see the room change, and spend&nbsp;more.
+      </p>
+    </div>
+
+    <!-- Before / After -->
+    <div class="compare-wrapper">
+      <div class="compare-head">
+        <div class="compare-head-item">What buyers see today</div>
+        <div class="compare-head-item">What buyers see with Finch</div>
+      </div>
+      <div class="compare">
+        <div class="compare-before">
+        <div class="line-item">
+          <span class="line-item-name">BACKSPLASH &mdash; Herringbone Glacier</span>
+          <span class="line-item-price">+$425</span>
+        </div>
+        <div class="line-item">
+          <span class="line-item-name">COUNTERTOP &mdash; Calacatta Venice</span>
+          <span class="line-item-price">+$2,450</span>
+        </div>
+        <div class="line-item">
+          <span class="line-item-name">HARDWARE &mdash; Dominique Gold</span>
+          <span class="line-item-price">+$300</span>
+        </div>
+        <div class="line-item">
+          <span class="line-item-name">FAUCET &mdash; Colfax Brushed Gold</span>
+          <span class="line-item-price">+$375</span>
+        </div>
+        <div class="line-item">
+          <span class="line-item-name">ISLAND &mdash; Admiral Blue</span>
+          <span class="line-item-price">+$200</span>
+        </div>
+        <div class="line-item line-item-total">
+          <span class="line-item-name">TOTAL UPGRADES</span>
+          <span class="line-item-price">+$3,750</span>
+        </div>
+      </div>
+      <div class="compare-after">
+        <img id="hero-img" src="../public/home-hero-generated.png" alt="Kitchen with buyer's selected upgrades visualized">
+      </div>
+      </div>
+    </div>
+
+    <!-- Proof + ROI -->
+    <div class="proof">
+      <div class="proof-label">First Results</div>
+      <p class="proof-text">
+        A buyer at a 500-home Alabama production builder purchased an investment property&thinsp;&mdash;&thinsp;actively
+        trying to minimize spend&thinsp;&mdash;&thinsp;and went from
+        <span class="proof-highlight">$5,200 to $7,290 in upgrades</span> after seeing their kitchen with Finch.
+        A <span class="proof-highlight">40% lift</span> from the least likely buyer to spend more.
+      </p>
+      <p class="roi" style="margin-top: 0.12in;">
+        At 50 homes a year, a 10% lift is $50,000 in additional upgrade revenue. At 200, it's $200,000.
+      </p>
+    </div>
+
+    <!-- How It Works -->
+    <div class="how">
+      <div class="how-step">
+        <div class="how-step-number">01</div>
+        <div class="how-step-title">Send us your floor plans and&nbsp;pricing</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-number">02</div>
+        <div class="how-step-title">We build your selection&nbsp;tool</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-number">03</div>
+        <div class="how-step-title">Buyers see their kitchen before they&nbsp;commit</div>
+      </div>
+      <div class="how-step">
+        <div class="how-step-number">04</div>
+        <div class="how-step-title">You get priced selections&nbsp;back</div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div>
+        <div class="footer-cta">
+          <a href="https://demo.withfin.ch/demo/the-nest" class="cta-button">Try the Demo</a>
+          <div class="cta-contact">
+            <a href="https://demo.withfin.ch/demo/the-nest">demo.withfin.ch</a><br>
+            <a href="mailto:hello@withfin.ch">hello@withfin.ch</a>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #64748b; margin-top: 10px;">One floor plan, free for 60 days. No obligation.</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 11px; color: #94a3b8; line-height: 1.55;">Built by Rashaad&thinsp;&mdash;&thinsp;product designer,<br>new-construction buyer, builder of&nbsp;Finch.</div>
+        <div style="font-size: 11px; color: #cbd5e1; margin-top: 3px;"><a href="https://withfin.ch/builders" style="color: #cbd5e1; text-decoration: none;">withfin.ch/builders</a></div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

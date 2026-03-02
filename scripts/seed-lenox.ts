@@ -62,8 +62,8 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "A window is on the RIGHT WALL immediately beside the fireplace corner. The LEFT WALL is also smooth painted drywall. " +
       "LVP flooring covers the entire floor. Crown molding lines the ceiling edges. White baseboard runs along all walls.",
     photoBaseline:
-      "Vaulted great room with white beam ceiling, brushed-nickel ceiling fan, warm-toned LVP flooring, light greige walls. " +
-      "Smooth painted drywall on the lower-left portion of the back wall; white fireplace mantel with white brick surround on the right portion of the back wall. " +
+      "Vaulted great room with white beam ceiling, ceiling fan, LVP flooring, light greige walls. " +
+      "Smooth painted drywall on the lower-left portion of the back wall; white fireplace mantel with tile surround; raised brick hearth at the base on the right portion of the back wall. " +
       "Window on the right wall beside the fireplace. Recessed lights throughout.",
     scopeSlugs: [
       "common-wall-paint", "ceiling-paint", "trim-paint", "baseboard", "crown-options",
@@ -83,7 +83,7 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "Crown molding runs along the ceiling. LVP flooring runs the length of the hallway. The front door with three glass panes is centered at the far end. " +
       "A sidelight window is on the right wall near the door. White baseboard at the floor line.",
     photoBaseline:
-      "Narrow entry foyer with tall white shaker wainscoting on both walls, light greige paint above, crown molding, warm-toned LVP flooring, " +
+      "Narrow entry foyer with wainscoting panels on both walls (upgrade: tall shaker style; default is shorter 36-inch flat-panel), light greige paint above, crown molding, LVP flooring, " +
       "brown Craftsman-style front door with three glass lites, sidelight window on the right, recessed ceiling light.",
     scopeSlugs: [
       "common-wall-paint", "trim-paint", "baseboard", "crown-options",
@@ -102,8 +102,8 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "A doorway on the back wall leads to a patio door. A paneled interior door is visible on the right wall. " +
       "Crown molding along the ceiling. LVP flooring throughout. White baseboard along all walls. Paint on all wall surfaces.",
     photoBaseline:
-      "Dining room with flat white ceiling, brushed-nickel ring chandelier, light greige walls, large window on the left overlooking the yard, " +
-      "patio door passthrough at the back, white interior door on the right, crown molding, white baseboard, warm-toned LVP flooring, recessed lights.",
+      "Dining room with flat white ceiling, chandelier, light greige walls, large window on the left overlooking the yard, " +
+      "patio door passthrough at the back, white interior door on the right, crown molding, white baseboard, LVP flooring, recessed lights.",
     scopeSlugs: [
       "common-wall-paint", "ceiling-paint", "trim-paint", "baseboard", "crown-options",
       "main-area-flooring-type", "main-area-flooring-color",
@@ -117,11 +117,11 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     isHero: false,
     sortOrder: 1,
     spatialHint:
-      "Primary bedroom with tray ceiling and crown molding at the tray edge. Dark-bladed ceiling fan centered in the tray. " +
+      "Primary bedroom with tray ceiling and crown molding at the tray edge. Ceiling fan centered in the tray. " +
       "Carpet covers the entire floor. Two windows on the left wall. A doorway on the right leads to the en-suite bathroom; " +
       "another doorway beside it leads to the walk-in closet. White baseboard along all walls. Paint on all wall surfaces.",
     photoBaseline:
-      "Primary bedroom with white tray ceiling, dark-bladed ceiling fan with light kit, neutral carpet flooring, light greige walls, " +
+      "Primary bedroom with white tray ceiling, ceiling fan with light kit, neutral carpet flooring, light greige walls, " +
       "two windows on the left wall, doorway to en-suite bath on the right, doorway to walk-in closet, white crown molding at tray edge, white baseboard.",
     scopeSlugs: [
       "common-wall-paint", "accent-color", "ceiling-paint", "trim-paint", "baseboard", "crown-options",
@@ -142,9 +142,9 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "Perimeter cabinets and backsplash on the back wall with range and microwave above. Double pantry doors on the far left. " +
       "Two glass pendant lights hang over the island. LVP flooring throughout. No refrigerator is visible in this shot.",
     photoBaseline:
-      "Kitchen with light grey shaker cabinets, white quartz countertops on island and perimeter, smooth white backsplash, " +
+      "Kitchen with shaker cabinets, countertops on island and perimeter, smooth white backsplash, " +
       "stainless gas range with microwave above, island with undermount sink and arched faucet, two glass pendant lights, " +
-      "brushed-nickel cabinet pulls, double white pantry doors on the left, warm-toned LVP flooring, recessed lights.",
+      "cabinet pulls, double white pantry doors on the left, LVP flooring, recessed lights.",
     scopeSlugs: [
       "counter-top", "countertop-edge", "backsplash",
       "kitchen-cabinet-color", "kitchen-island-cabinet-color", "kitchen-cabinet-hardware",
@@ -165,9 +165,9 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "Backsplash tile covers the ENTIRE perimeter wall between upper and lower cabinets — both to the right of the pantry doors (behind the range and microwave) and to the left of the pantry doors (where more upper cabinets and countertop continue). " +
       "Double pantry doors in the back center. Dining area visible through the opening on the far left with chandelier and windows. LVP flooring throughout.",
     photoBaseline:
-      "Side view of kitchen: light grey shaker island with stainless dishwasher panel, undermount sink and arched faucet on island top, " +
-      "white quartz countertops, perimeter cabinets with range and over-range microwave on the right, white backsplash, glass pendant lights, " +
-      "double pantry doors in background, dining area visible at left with ring chandelier, warm-toned LVP flooring.",
+      "Side view of kitchen: shaker island with stainless dishwasher panel, undermount sink and arched faucet on island top, " +
+      "countertops, perimeter cabinets with range and over-range microwave on the right, white backsplash, glass pendant lights, " +
+      "double pantry doors in background, dining area visible at left with chandelier, LVP flooring.",
     scopeSlugs: [
       "counter-top", "countertop-edge", "backsplash",
       "kitchen-cabinet-color", "kitchen-island-cabinet-color", "kitchen-cabinet-hardware",
@@ -189,9 +189,9 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
       "Towel ring is on the wall beside the vanity. Shower has a glass door with tile walls and mosaic tile floor. " +
       "Large-format tile covers the bathroom floor. The tub surround has tile wainscoting.",
     photoBaseline:
-      "Primary bath with light grey single vanity, white quartz top, brushed-nickel faucet, framed nickel mirror, glass sconce above, " +
-      "towel ring on the wall beside the vanity, glass-door walk-in shower with grey tile walls and mosaic tile floor, " +
-      "white soaking tub on the right with tile surround and large window above, grey large-format tile floor.",
+      "Primary bath with single vanity, countertop, faucet, framed mirror, glass sconce above, " +
+      "towel ring on the wall beside the vanity, glass-door walk-in shower with tile walls and mosaic tile floor, " +
+      "white soaking tub on the right with tile surround and large window above, large-format tile floor.",
     scopeSlugs: [
       "primary-bath-vanity", "primary-bath-cabinet-color", "bathroom-cabinet-hardware",
       "primary-bath-mirrors", "floor-tile-color", "primary-shower", "primary-shower-entry",
@@ -210,11 +210,11 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     spatialHint:
       "Small secondary bathroom. Single vanity on the left with undermount sink, brushed-nickel faucet, and framed mirror above. " +
       "White one-piece tub/shower combo against the back wall with brushed-nickel fixtures. Toilet between the vanity and tub. " +
-      "Towel bar on the right wall above the tub. Grey tile floor. White paneled door on the far right.",
+      "Towel bar on the right wall above the tub. Tile floor. White paneled door on the far right.",
     photoBaseline:
-      "Secondary bath with light grey single vanity, white quartz top, brushed-nickel faucet, framed nickel mirror, " +
-      "white one-piece tub/shower combo at the back, toilet between vanity and tub, brushed-nickel towel bar, " +
-      "grey tile floor, white paneled door on the right, white walls.",
+      "Secondary bath with single vanity, countertop, faucet, framed mirror, " +
+      "white one-piece tub/shower combo at the back, toilet between vanity and tub, towel bar, " +
+      "large-format tile floor, white paneled door on the right, white walls.",
     scopeSlugs: [
       "secondary-bath-cabinet-color", "bathroom-cabinet-hardware",
       "secondary-bath-mirrors", "secondary-shower", "floor-tile-color",
@@ -230,11 +230,11 @@ const LENOX_PHOTOS: LenoxPhotoDef[] = [
     isHero: false,
     sortOrder: 1,
     spatialHint:
-      "Simple secondary bedroom with flat ceiling. Dark-bladed ceiling fan centered on the ceiling. " +
+      "Simple secondary bedroom with flat ceiling. Ceiling fan centered on the ceiling. " +
       "One window on the right wall with white trim. Carpet covers the entire floor. White baseboard along all walls. " +
       "Paint on all wall surfaces.",
     photoBaseline:
-      "Secondary bedroom with flat white ceiling, dark-bladed ceiling fan with light kit, neutral carpet flooring, " +
+      "Secondary bedroom with flat white ceiling, ceiling fan with light kit, neutral carpet flooring, " +
       "light greige walls, single window on the right wall with white trim, white baseboard.",
     scopeSlugs: [
       "carpet-color", "main-area-flooring-type", "main-area-flooring-color",
@@ -770,11 +770,9 @@ async function main() {
   if (entrywayPhotoId) {
     const policy = {
       promptOverrides: {
-        invariantRulesWhenNotSelected: {
-          wainscoting: [
-            "IMPORTANT: The source photo shows tall shaker wainscoting panels on both hallway walls — this is an upgrade that was NOT selected. REMOVE all wainscoting panels from both walls and show smooth painted drywall from baseboard to crown molding. No battens, panels, grooves, rails, or trim banding.",
-          ],
-        },
+        invariantRulesAlways: [
+          "WAINSCOTING STYLE OVERRIDE: The source photo shows TALL SHAKER wainscoting (an upgrade, roughly chest-to-shoulder height with large rectangular recessed panels). The buyer's selected wainscoting may be a different style. If the selected style is the included 36-inch flat-panel wainscoting, REPLACE the tall shaker panels with shorter 36-inch flat-panel wainscoting (panels ending at roughly 36 inches / waist height with a simple cap rail) on both walls. Match the selected swatch for panel layout and finish. Show painted drywall above the shorter wainscoting up to the crown molding.",
+        ],
       },
     };
 

@@ -4,9 +4,12 @@ import type { NextConfig } from "next";
 // Excludes API routes, admin, framework paths, and any path whose first
 // segment contains a dot (static files like logo.svg, robots.txt, etc.)
 const PASSTHROUGH =
-  "(?!api|admin|_next|auth|try|floorplans|rooms|swatches|[^/]*\\.[^/]*)";
+  "(?!api|admin|_next|auth|try|vs|floorplans|rooms|swatches|ingest|[^/]*\\.[^/]*)";
 
 const nextConfig: NextConfig = {
+  // Required for PostHog reverse proxy — prevents Next.js from
+  // redirecting /ingest to /ingest/ which breaks the proxy
+  skipTrailingSlashRedirect: true,
   images: {
     remotePatterns: [
       {
@@ -30,6 +33,17 @@ const nextConfig: NextConfig = {
           source: `/:path(${PASSTHROUGH}.*)*`,
           has: [{ type: "host", value: "(?<orgSlug>[^.]+)\\.localhost" }],
           destination: "/:orgSlug/:path*",
+        },
+      ],
+      afterFiles: [
+        // PostHog reverse proxy — avoids ad blockers, keeps data flowing
+        {
+          source: "/ingest/static/:path*",
+          destination: "https://us-assets.i.posthog.com/static/:path*",
+        },
+        {
+          source: "/ingest/:path*",
+          destination: "https://us.i.posthog.com/:path*",
         },
       ],
     };
