@@ -3,7 +3,7 @@ import { inngest } from "@/inngest/client";
 import { buildDemoPrompt } from "@/lib/demo-prompt";
 import { DEMO_GENERATION_CACHE_VERSION } from "@/lib/demo-generate";
 import { getServiceClient } from "@/lib/supabase";
-import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
+import { captureAiEvent, captureAiError, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
 
 const openai = new OpenAI();
@@ -54,24 +54,36 @@ export const generateDemo = inngest.createFunction(
       console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${swatches.length} swatches) to ${IMAGE_MODEL}`);
 
       const genStart = performance.now();
-      const genResult = await openai.images.edit({
-        model: IMAGE_MODEL,
-        image: inputImages,
-        prompt,
-        quality: "medium",
-        size: "1536x1024",
-        input_fidelity: "high",
-      });
+      try {
+        const genResult = await openai.images.edit({
+          model: IMAGE_MODEL,
+          image: inputImages,
+          prompt,
+          quality: "medium",
+          size: "1536x1024",
+          input_fidelity: "high",
+        });
 
-      const imageData = genResult.data?.[0];
-      if (!imageData?.b64_json) {
-        throw new Error("No image was generated");
+        const imageData = genResult.data?.[0];
+        if (!imageData?.b64_json) {
+          throw new Error("No image was generated");
+        }
+
+        const durationMs = Math.round(performance.now() - genStart);
+        console.log(`[demo/generate] Generation complete in ${durationMs}ms`);
+
+        return { b64: imageData.b64_json, prompt, durationMs };
+      } catch (err) {
+        const durationMs = Math.round(performance.now() - genStart);
+        await captureAiError("anonymous", {
+          provider: "openai",
+          model: IMAGE_MODEL,
+          route: "/api/try/generate",
+          duration_ms: durationMs,
+          error: err,
+        });
+        throw err;
       }
-
-      const durationMs = Math.round(performance.now() - genStart);
-      console.log(`[demo/generate] Generation complete in ${durationMs}ms`);
-
-      return { b64: imageData.b64_json, prompt, durationMs };
     });
 
     // --- Step 2: Upload + persist ---

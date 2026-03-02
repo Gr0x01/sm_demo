@@ -7,7 +7,7 @@ import { generateText } from "ai";
 import sharp from "sharp";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { getServiceClient } from "@/lib/supabase";
-import { captureAiEvent, estimateGeminiCost } from "@/lib/posthog-server";
+import { captureAiEvent, captureAiError, estimateGeminiCost } from "@/lib/posthog-server";
 import { VISION_MODEL } from "@/lib/models";
 
 const requestSchema = z.object({
@@ -95,6 +95,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ spatial_hint: text });
   } catch (error) {
     console.error("[spatial-hint] Error:", error);
+    await captureAiError("unknown", {
+      provider: "google",
+      model: VISION_MODEL,
+      route: "/api/admin/spatial-hint",
+      duration_ms: 0,
+      error,
+    }).catch(() => {});
     return NextResponse.json({ error: "Failed to generate spatial hint" }, { status: 500 });
   }
 }

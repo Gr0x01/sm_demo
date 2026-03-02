@@ -7,7 +7,7 @@ import { generateObject } from "ai";
 import sharp from "sharp";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { getServiceClient } from "@/lib/supabase";
-import { captureAiEvent, estimateGeminiCost } from "@/lib/posthog-server";
+import { captureAiEvent, captureAiError, estimateGeminiCost } from "@/lib/posthog-server";
 import { VISION_MODEL } from "@/lib/models";
 
 const requestSchema = z.object({
@@ -151,6 +151,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ check_result, check_feedback });
   } catch (error) {
     console.error("[photo-check] Error:", error);
+    await captureAiError("unknown", {
+      provider: "google",
+      model: VISION_MODEL,
+      route: "/api/admin/photo-check",
+      duration_ms: 0,
+      error,
+    }).catch(() => {});
     return NextResponse.json({ error: "Failed to check photo" }, { status: 500 });
   }
 }

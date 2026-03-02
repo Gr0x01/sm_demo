@@ -397,7 +397,17 @@ public/
 
 ## Analytics
 
-Deferred. Will add PostHog later — the MCP integration is available when ready.
+**PostHog** — product analytics + LLM observability.
+
+**Client-side**: `posthog-js` initialized in `PostHogProvider.tsx`. Reverse proxy at `/ingest` (avoids ad blockers). Manual `$pageview` capture, `$pageleave` enabled. `useTrack()` hook for client components (auto-attaches orgSlug, floorplanSlug, sessionId). Buyer sessions identified via `posthog.identify()`.
+
+**Server-side**: `posthog-node` singleton in `src/lib/posthog-server.ts`. `flushAt: 1, flushInterval: 0` for serverless (immediate flush).
+
+**LLM Analytics**: All AI calls emit `$ai_generation` events with PostHog's standard `$ai_*` properties (`$ai_provider`, `$ai_model`, `$ai_latency`, `$ai_input_tokens`, `$ai_output_tokens`, `$ai_input_cost_usd`, `$ai_output_cost_usd`, `$ai_total_cost_usd`, `$ai_is_error`). Custom Finch properties (orgSlug, route, second_pass, etc.) are spread alongside.
+- `captureAiEvent()` — success events (6 call sites: generate-photo, generate-demo, validate-photo, spatial-hint, photo-check, generate-descriptor)
+- `captureAiError()` — failure events with `$ai_is_error: true`, `$ai_error: message`, zero cost. Inngest functions capture + re-throw (preserves retries). API routes capture in existing catch blocks.
+- Cost split: OpenAI image gen = all output cost (flat per-image). Gemini = independently computed input/output from token counts.
+- Org grouping: `groups: { org: orgSlug }` matches client-side `posthog.group()`.
 
 ## Performance Considerations
 

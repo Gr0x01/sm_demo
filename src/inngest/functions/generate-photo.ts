@@ -5,7 +5,7 @@ import { buildEditPrompt } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getOptionLookup } from "@/lib/db-queries";
-import { captureAiEvent, estimateOpenAICost } from "@/lib/posthog-server";
+import { captureAiEvent, captureAiError, estimateOpenAICost } from "@/lib/posthog-server";
 
 const openai = new OpenAI();
 
@@ -119,24 +119,39 @@ export const generatePhoto = inngest.createFunction(
       console.log(`[generate/photo] Sending ${inputImages.length} images to ${modelName} for photo ${stepPhotoId}`);
 
       const genStart = performance.now();
-      const result = await openai.images.edit({
-        model: modelName,
-        image: inputImages,
-        prompt,
-        quality: "medium",
-        size: "1536x1024",
-        input_fidelity: "high",
-      });
+      try {
+        const result = await openai.images.edit({
+          model: modelName,
+          image: inputImages,
+          prompt,
+          quality: "medium",
+          size: "1536x1024",
+          input_fidelity: "high",
+        });
 
-      const generatedData = result.data?.[0];
-      if (!generatedData?.b64_json) {
-        throw new Error("No image was generated");
+        const generatedData = result.data?.[0];
+        if (!generatedData?.b64_json) {
+          throw new Error("No image was generated");
+        }
+
+        const durationMs = Math.round(performance.now() - genStart);
+        console.log(`[generate/photo] First pass complete for ${stepPhotoId} in ${durationMs}ms`);
+
+        return { b64: generatedData.b64_json, prompt, durationMs };
+      } catch (err) {
+        const durationMs = Math.round(performance.now() - genStart);
+        await captureAiError(sessionId, {
+          provider: "openai",
+          model: modelName,
+          route: "/api/generate/photo",
+          duration_ms: durationMs,
+          error: err,
+          orgId,
+          orgSlug,
+          floorplanSlug,
+        });
+        throw err;
       }
-
-      const durationMs = Math.round(performance.now() - genStart);
-      console.log(`[generate/photo] First pass complete for ${stepPhotoId} in ${durationMs}ms`);
-
-      return { b64: generatedData.b64_json, prompt, durationMs };
     });
 
     // --- Step 2: Second pass (conditional, gets its own 120s) ---

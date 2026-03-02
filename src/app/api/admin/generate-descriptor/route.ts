@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
-import { captureAiEvent, estimateGeminiCost } from "@/lib/posthog-server";
+import { captureAiEvent, captureAiError, estimateGeminiCost } from "@/lib/posthog-server";
 import { VISION_MODEL } from "@/lib/models";
 
 const schema = z.object({
@@ -60,6 +60,13 @@ Write ONLY the descriptive phrase. No quotes, no explanation, no prefix. Focus o
     return NextResponse.json({ descriptor: text.trim() });
   } catch (err) {
     console.error("Descriptor generation error:", err);
+    await captureAiError("unknown", {
+      provider: "google",
+      model: VISION_MODEL,
+      route: "/api/admin/generate-descriptor",
+      duration_ms: 0,
+      error: err,
+    }).catch(() => {});
     return NextResponse.json({ error: "Failed to generate descriptor" }, { status: 500 });
   }
 }

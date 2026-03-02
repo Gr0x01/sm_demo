@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
-import { captureAiEvent, estimateGeminiCost } from "@/lib/posthog-server";
+import { captureAiEvent, captureAiError, estimateGeminiCost } from "@/lib/posthog-server";
 import { VISION_MODEL } from "@/lib/models";
 
 export async function POST(request: Request) {
@@ -133,6 +133,13 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[validate-photo] Error:", error);
+    await captureAiError("anonymous", {
+      provider: "google",
+      model: VISION_MODEL,
+      route: "/api/try/validate-photo",
+      duration_ms: 0,
+      error,
+    }).catch(() => {});
     return NextResponse.json(
       { accepted: false, reason: "Failed to validate photo. Please try again." },
       { status: 500 }
