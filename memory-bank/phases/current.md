@@ -6,14 +6,14 @@ Multi-tenant foundation is done (schema, routing, theming, caching, data layer).
 
 ## Active Workstreams
 
-### 1. Homepage — Temporary Prospect Mode
-Full marketing landing page preserved in `src/app/landing-full.tsx`. **Temporarily swapped** for a two-column personal page: left = intro letter + auto-loaded demo (sample kitchen), right = options picker, vertical rule divider. For SM team members who type `withfin.ch` after using `stonemartin.withfin.ch`.
+### 1. Homepage ✅
+Full marketing landing page restored to `/`. `/builders` redirects to `/`. Copy aligned with VISION.md (no "AI", no Zonda name, CTA hierarchy leads with "Start a Pilot").
 - [x] PostHog analytics setup
-- [x] `DemoClient` props: `bare` (no nav/CTAs), `autoSample` (auto-load sample kitchen), `headerContent` (inject intro into left column)
-- [x] `loadSamplePhoto()` exported from DemoUploader for reuse
-- [ ] Before/after visual (PDF sheet vs. Finch picker) — deferred to full homepage restore
+- [x] Landing page restored from `landing-full.tsx`
+- [x] Copy fixes: meta description, ROI footnote, FAQ, post-pilot pricing, speed bar
+- [x] CTA hierarchy: "Start a Pilot" primary everywhere, "Try It Live" secondary
+- [x] Body text contrast bumped for readability
 - [ ] OG meta tags for link previews
-- **Restore full homepage**: Rename `landing-full.tsx` → `page.tsx` when SM talks conclude
 - **Copy rules**: No "AI" in copy. No lecturing builders. Tone = passion/tinkerer, not critic. Email: `hello@withfin.ch`.
 - See `landing-page.md` for design doc
 

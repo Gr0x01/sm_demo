@@ -75,6 +75,7 @@ Keep docs lean. Intent over implementation.
 - **frontend-developer**: Frontend specialist for React/Next.js components
 - **ui-designer**: UI design for rapid, implementable interfaces
 - **backend-architect**: Backend system design and API architecture
+- **photo-architecture-specialist**: Image/photo pipeline specialist for scope backfills, spatial analysis, and data-driven prompt-rule migration
 
 **Brand & Growth:**
 - **brand-guardian**: Visual identity, voice, and design consistency — all other agents defer to brand guardian
@@ -91,6 +92,7 @@ Keep docs lean. Intent over implementation.
 6. **copywriter**: Use for any customer-facing text
 7. **growth-hacker**: Use for outreach strategy and acquisition experiments
 8. **legal-compliance-checker**: Use for privacy policies, ToS, compliance review
+9. **photo-architecture-specialist**: Use for photo scope setup, spatial hint workflows, and hardcoded-to-data-driven image architecture migrations
 
 ## SKILLS
 

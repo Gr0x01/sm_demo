@@ -1,116 +1,82 @@
 # Claude Subagent Guide: Photo Architecture Specialist
 
-This guide explains how to run photo-scope and prompt-rule migration work through a dedicated Claude subagent.
+This guide explains how to use the photo-architecture-specialist subagent for classifying and configuring room photos.
 
 ## Subagent Location
 
 - `.claude/agents/photo-architecture-specialist.md`
 
-## What This Subagent Is For
+## What This Subagent Does
 
-Use it for:
+- **Classifies new room photos**: Looks at the photo, identifies room type, determines which subcategories are visible
+- **Configures photo scope**: Sets `subcategory_ids`, `spatial_hint`, `photo_baseline`, `remap_accent_as_wall_paint`
+- **Sets generation rules**: Option-level rules, negative guards, cross-reference rules (e.g., hearth matches trim)
+- **Audits existing photos**: Finds scope gaps, missing spatial hints, misconfigured rules
+- **Outputs ready-to-run SQL**: Everything it recommends comes as executable SQL
 
-- Auditing `step_photos.subcategory_ids` quality and gaps.
-- Replacing filename-based scope heuristics with data-driven scope.
-- Migrating hardcoded prompt rules into subcategory data.
-- Preparing and validating safe SQL backfills and schema changes.
+It is multimodal — it looks at photos directly via the Read tool.
 
-It is image-aware and should inspect photos directly before proposing scope/rule changes.
+## Invocation Patterns
 
-## Image Analysis Commands
-
-Local file analysis (required when local photos are provided):
-
-```bash
-node scripts/analyze-local-photo.mjs <image-path>
-```
-
-Examples:
-
-```bash
-node scripts/analyze-local-photo.mjs public/rooms/kitchen-close.webp
-node scripts/analyze-local-photo.mjs public/rooms/fireplace.png --out tmp/fireplace.analysis.json
-```
-
-DB/admin workflow analysis:
-
-- Use `/api/admin/photo-check` to validate interior/clarity/framing readiness.
-- Use `/api/admin/spatial-hint` to generate concise spatial layout guidance.
-
-## Recommended Invocation Pattern
-
-Use a direct task request that explicitly asks Claude to use this specialist:
+### Classify a New Photo
 
 ```text
 Use the photo-architecture-specialist subagent.
-Audit current photo scope and hardcoded prompt rules, then produce:
-1) SQL migration/backfill plan
-2) code change list
-3) validation checklist
-for this repo.
+Look at this photo and classify it for generation:
+- Photo path: public/rooms/[builder]/[photo].webp
+- Org ID: [uuid]
+- Step photo ID: [uuid]
+- Available subcategories for this org: [list or "query the DB"]
+Output the UPDATE SQL for step_photos.
 ```
 
-For execution:
+### Classify Multiple Photos (New Builder Onboarding)
 
 ```text
 Use the photo-architecture-specialist subagent.
-Implement the approved image architecture migration end-to-end:
-- data migrations
-- code refactor
-- cache version bump
-- verification notes
-Set `remap_accent_as_wall_paint = true` on step_photos where accent color should render as wall paint.
+Classify and configure all photos for [builder name]:
+- Org ID: [uuid]
+- Photos: [list photo IDs/paths]
+For each photo, look at it, determine scope, write spatial hint and baseline, and output SQL.
 ```
 
-## Standard Task Templates
-
-### Template A: Scope Backfill Only
+### Audit Existing Photos
 
 ```text
 Use the photo-architecture-specialist subagent.
-Backfill missing step_photos.subcategory_ids for these photos:
-- <photo id or name list>
-Return idempotent SQL and post-update validation queries.
+Audit all step_photos for org [slug]. Find:
+- Photos with null or incomplete subcategory_ids
+- Missing spatial hints or photo baselines
+- Subcategories visible in the photo but not in scope
 ```
 
-### Template B: Prompt Rules Migration Only
+### Fix a Specific Generation Issue
 
 ```text
 Use the photo-architecture-specialist subagent.
-Move hardcoded conditional prompt rules in src/lib/generate.ts into DB-driven
-subcategory rules using generation_rules and generation_rules_when_not_selected.
-Keep appliance and universal structural rules unchanged.
+The [room] photo for [builder/floorplan] is [describe problem].
+Look at the photo, check the current scope and rules, and propose fixes.
+Photo ID: [uuid]
 ```
 
-### Template C: Full Migration
+## What to Provide
 
-```text
-Use the photo-architecture-specialist subagent.
-Execute the full two-pillar migration from hardcoded image logic to data-driven architecture.
-Require:
-- additive schema first
-- backfill second
-- compatibility code third
-- not-null contract last
-- prompt parity verification
-```
+- **Photo path or URL** — so the specialist can view it
+- **Org ID** — for DB queries
+- **Step photo ID** — for the UPDATE SQL target
+- **Context on the problem** — if fixing an issue, describe what went wrong
 
-## Required Inputs to Give the Subagent
-
-- Target org(s) and floorplan(s)
-- Any fixed list of photo IDs requiring scope updates
-- Whether subagent should produce SQL only or execute code changes too
-- Deployment constraints (single release vs phased rollout)
+The specialist will query the DB itself for subcategory lists and current configuration.
 
 ## Acceptance Criteria
 
-- No filename heuristics remain in runtime photo scope logic.
-- Hardcoded subcategory-specific prompt blocks are removed from `generate.ts`.
-- New negative rule column is used in prompt assembly for in-scope unselected subcategories.
-- Generate and check routes still compute matching selection hashes.
-- Build passes and representative image outputs show no regressions.
-- Target photos were actually analyzed (local script and/or admin vision endpoints), not inferred from filename alone.
+- Specialist actually viewed the photo (not guessed from filename)
+- Scope includes only subcategories whose surfaces are clearly visible
+- Spatial hint describes layout precisely (camera angle, surface locations, what's NOT there)
+- Photo baseline describes current materials as shown
+- Generation rules handle default-option gotchas (see Patterns in agent definition)
+- Output is executable SQL
 
 ## Related Docs
 
-- `docs/image-architecture-runbook.md`
+- `docs/image-architecture-runbook.md` — rule layering, DB columns, admin authoring

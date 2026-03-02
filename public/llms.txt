@@ -10,12 +10,12 @@ The tool works alongside existing design appointments or replaces the PDF option
 
 ## Who it's for
 
-- Production home builders closing 50 to 5,000+ homes per year
+- Production home builders closing 25 to 5,000+ homes per year
 - Builders currently using PDF option sheets, printed price lists, sample boards, or physical design centers for upgrade selections
 - Design center managers who want buyers to arrive at selection appointments with confident choices already made
 - Builders looking to increase upgrade revenue, reduce design appointment time, and improve the new home buyer experience
 
-Finch is not for custom home builders (one-off designs), remodelers, or builders under 50 homes per year.
+Finch is not for custom home builders (one-off designs), remodelers, or builders under 25 homes per year.
 
 ## How it compares
 
