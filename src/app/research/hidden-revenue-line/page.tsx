@@ -1509,7 +1509,7 @@ export default function HiddenRevenueLinePage() {
             Process drives upgrade&nbsp;revenue.
           </>
         }
-        subtitle="See what your buyers choose when they can see their selections applied to your model home photos. One floor plan. Free to set up. Live in 48 hours."
+        subtitle={<>See what your buyers choose when they can see their selections applied to your model home photos. One floor plan. Free to set up. Live in&nbsp;48&nbsp;hours.</>}
       />
 
       <SiteFooter />

@@ -23,8 +23,7 @@ export function PilotSection({
           )}
         </h2>
         <p className="text-lg md:text-xl text-slate-600 mb-12 max-w-2xl mx-auto">
-          {subtitle ??
-            "We set up your best-selling floor plan at no cost. Your finishes, your pricing, your photos. Buyers use it during real design appointments. We measure upgrade revenue together."}
+          {subtitle ?? (<>We set up your best-selling floor plan at no cost. Your finishes, your pricing, your photos. Buyers use it during real design appointments. We measure upgrade revenue&nbsp;together.</>)}
         </p>
       </div>
 
