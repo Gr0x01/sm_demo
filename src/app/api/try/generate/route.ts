@@ -1,14 +1,26 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS } from "@/lib/demo-options";
 import { hashDemoSelections } from "@/lib/demo-generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
 import { inngest } from "@/inngest/client";
 
+const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
+const MAX_DEMO_GENERATIONS = 5;
+
 export const maxDuration = 30;
 
 export async function POST(request: Request) {
   try {
+    // Server-side generation cap: count completed (non-pending) demo rows
+    // tied to this session's photo hashes. Use the session cookie as identity.
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get("finch_demo_session")?.value;
+    if (!sessionId) {
+      return NextResponse.json({ error: "Missing session" }, { status: 400 });
+    }
+
     const { photoBase64, photoHash, selections, sceneAnalysis } = await request.json() as {
       photoBase64?: string;
       photoHash?: string;
@@ -55,6 +67,22 @@ export async function POST(request: Request) {
 
     const supabase = getServiceClient();
 
+    // Server-side generation cap: count completed demo generations for this session
+    const { count: genCount } = await supabase
+      .from("generated_images")
+      .select("id", { count: "exact", head: true })
+      .eq("org_id", DEMO_ORG_ID)
+      .neq("image_path", "__pending__")
+      .like("selections_json->>_source", "demo")
+      .like("selections_json->>photo_hash", photoHash);
+
+    if ((genCount ?? 0) >= MAX_DEMO_GENERATIONS) {
+      return NextResponse.json(
+        { error: "Demo generation limit reached" },
+        { status: 429 },
+      );
+    }
+
     // Cache check
     const { data: cached } = await supabase
       .from("generated_images")
@@ -81,9 +109,6 @@ export async function POST(request: Request) {
       .eq("selections_hash", combinedHash)
       .eq("image_path", "__pending__")
       .lt("created_at", staleThreshold);
-
-    // Demo org ID (Finch Homes)
-    const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
 
     const { error: claimError } = await supabase
       .from("generated_images")

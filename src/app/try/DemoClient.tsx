@@ -170,7 +170,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
       });
 
       const checkData = await checkRes.json();
-      if (checkData.imageUrl) {
+      if (checkData.status === "complete" && checkData.imageUrl) {
         setGeneratedImageUrl(checkData.imageUrl);
         sessionStorage.setItem(SS_GENERATED, checkData.imageUrl);
         setPhase("result");
@@ -221,10 +221,15 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
           });
 
           const pollData = await pollRes.json();
-          if (pollData.imageUrl) {
+          if (pollData.status === "complete" && pollData.imageUrl) {
             imageUrl = pollData.imageUrl;
             break;
           }
+          if (pollData.status === "not_found") {
+            // Generation failed permanently — stop polling early
+            throw new Error("Generation failed — please try again");
+          }
+          // "pending" or "error" — keep polling
         }
 
         if (!imageUrl) {
