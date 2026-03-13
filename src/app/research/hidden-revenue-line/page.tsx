@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { PilotSection } from "@/components/PilotSection";
 import { RevealObserver, TrackedLink } from "@/app/landing-client";
 import { ResearchPageTracker, AnimatedBarCharts } from "./chart-client";
 import type { CSSProperties } from "react";
@@ -11,13 +12,13 @@ export const metadata: Metadata = {
       "The Hidden Revenue Line — Options & Upgrade Revenue Among Public Homebuilders",
   },
   description:
-    "An analysis of SEC filings reveals how much public builders earn from options & upgrades. $104K–$236K per home, 8–25% of ASP, and a 3–5 point margin premium most builders never benchmark.",
+    "An analysis of SEC filings reveals how much public builders earn from options & upgrades. $104K–$224K per home, 8–27% of ASP, and a margin premium most builders never benchmark.",
   alternates: { canonical: "https://withfin.ch/research/hidden-revenue-line" },
   openGraph: {
     title:
       "The Hidden Revenue Line — Options & Upgrade Revenue Among Public Homebuilders",
     description:
-      "SEC filings show Toll Brothers earns $203K per home in upgrades. PulteGroup: $104K. Most builders don't disclose — or benchmark — this revenue line at all.",
+      "SEC filings show Toll Brothers earns $206K per home in upgrades. PulteGroup: $104K. Most builders don't disclose — or benchmark — this revenue line at all.",
     url: "https://withfin.ch/research/hidden-revenue-line",
     siteName: "Finch",
     type: "article",
@@ -26,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "The Hidden Revenue Line — Upgrade Revenue Among Public Homebuilders",
     description:
-      "SEC filings show $104K–$236K per home in upgrade revenue. An original analysis of 14 public builders.",
+      "SEC filings show $104K–$224K per home in upgrade revenue. An original analysis of 14 public builders.",
   },
 };
 
@@ -39,9 +40,9 @@ const disclosedBuilders = [
     fy: "FY 2024",
     homes: "10,813",
     asp: "$976,900",
-    upgradeRev: "$203,000",
-    pctAsp: 20.8,
-    barWidth: 86,
+    upgradeRev: "$206,000",
+    pctAsp: 24.9,
+    barWidth: 94,
     source: "[1]",
     sourceLabel: "10-K, Earnings",
   },
@@ -50,10 +51,10 @@ const disclosedBuilders = [
     segment: "Luxury",
     fy: "FY 2023",
     homes: "9,597",
-    asp: "$1,029,000",
-    upgradeRev: "$236,000",
-    pctAsp: 22.9,
-    barWidth: 95,
+    asp: "$1,028,000",
+    upgradeRev: "$224,000",
+    pctAsp: 26.5,
+    barWidth: 100,
     source: "[2]",
     sourceLabel: "10-K, Earnings",
   },
@@ -62,10 +63,10 @@ const disclosedBuilders = [
     segment: "Luxury",
     fy: "FY 2022",
     homes: "10,515",
-    asp: "$923,000",
-    upgradeRev: "$186,000",
-    pctAsp: 20.1,
-    barWidth: 84,
+    asp: "$923,600",
+    upgradeRev: "$190,000",
+    pctAsp: 25.3,
+    barWidth: 95,
     source: "[2]",
     sourceLabel: "10-K, Earnings",
   },
@@ -75,21 +76,21 @@ const disclosedBuilders = [
     fy: "Q4 '24",
     homes: "—",
     asp: "—",
-    upgradeRev: "$206,000",
+    upgradeRev: "$203,000",
     pctAsp: 24.0,
-    barWidth: 100,
+    barWidth: 91,
     source: "[1]",
     sourceLabel: "Q4 Earnings",
   },
   {
     builder: "PulteGroup",
-    segment: "Move-Up",
+    segment: "Mixed",
     fy: "Q2 '24",
     homes: "—",
     asp: "$549,000",
     upgradeRev: "$104,000",
     pctAsp: 18.9,
-    barWidth: 79,
+    barWidth: 71,
     source: "[5]",
     sourceLabel: "Q2 Earnings",
   },
@@ -102,7 +103,7 @@ const nonDisclosingBuilders = [
     revenue: "$34.0B",
     homes: "89,690",
     asp: "$379,000",
-    strategy: "Studio Homes brand; limited customization",
+    strategy: "Express Homes brand; limited customization",
     disclosure: "Not disclosed",
   },
   {
@@ -110,14 +111,14 @@ const nonDisclosingBuilders = [
     segment: "Mixed",
     revenue: "—",
     homes: "—",
-    asp: "$391,000",
+    asp: "$423,000",
     strategy: '"Everything\'s Included" bundles upgrades into base price',
     disclosure: "Not disclosed",
   },
   {
     builder: "NVR",
     segment: "Move-Up",
-    revenue: "$10.5B",
+    revenue: "$10.3B",
     homes: "22,836",
     asp: "$450,700",
     strategy: "Options affect margins but not separately reported",
@@ -174,16 +175,16 @@ const nonDisclosingBuilders = [
     segment: "Mixed",
     revenue: "—",
     homes: "—",
-    asp: "$400,000",
-    strategy: "Smart Series (52% of sales) with limited options",
+    asp: "$497,000",
+    strategy: "Smart Series (~50% of sales) with limited options",
     disclosure: "Not disclosed",
   },
   {
     builder: "Smith Douglas",
     segment: "Entry-Level",
-    revenue: "$971M",
+    revenue: "$976M",
     homes: "—",
-    asp: "$334,000",
+    asp: "$340,000",
     strategy: "Value-focused; limited upgrade program",
     disclosure: "Not disclosed",
   },
@@ -228,16 +229,16 @@ const scenarioRows = [
 const disclosedChartData = [
   {
     label: "Toll Brothers (FY24)",
-    value: 86,
-    displayValue: "$203K",
+    value: 100,
+    displayValue: "$206K",
     segment: "Luxury",
-    note: "20.8% of ASP",
+    note: "24.9% of ASP",
   },
   {
     label: "PulteGroup (Q2 '24)",
-    value: 44,
+    value: 50,
     displayValue: "$104K",
-    segment: "Move-Up",
+    segment: "Mixed",
     note: "18.9% of ASP",
   },
   {
@@ -253,7 +254,7 @@ const benchmarkChartData = [
   {
     label: "Luxury / Semi-Custom",
     value: 100,
-    displayValue: "20–25%+",
+    displayValue: "24–27%",
     segment: "Luxury",
     note: "Incl. structural + lot",
   },
@@ -331,7 +332,7 @@ export default function HiddenRevenueLinePage() {
       <ResearchPageTracker />
       <SiteNav
         links={NAV_LINKS}
-        cta={{ label: "Start a Pilot", href: "/#pilot" }}
+        cta={{ label: "Start your pilot", href: "#pilot" }}
       />
 
       {/* ─── 1. Hero ─── */}
@@ -376,18 +377,18 @@ export default function HiddenRevenueLinePage() {
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
             {
-              stat: "$104K\u2013$236K",
+              stat: "$104K\u2013$224K",
               label:
                 "Options & upgrade revenue per home among builders who disclose",
             },
             {
-              stat: "8\u201325%",
+              stat: "8\u201327%",
               label:
                 "of ASP attributable to options & upgrades depending on segment and process",
             },
             {
               stat: "3\u20135 pts",
-              label: "Gross margin premium on options vs. base house",
+              label: "Gross margin premium on build-to-order vs. spec homes",
             },
           ].map((card, i) => (
             <div
@@ -437,7 +438,7 @@ export default function HiddenRevenueLinePage() {
               regional builder data, to pull out what we could about upgrade and
               options revenue. The picture: a revenue line that runs from
               8&ndash;15% of ASP for entry-level production builders to
-              20&ndash;25% for luxury and semi-custom, generates higher margins
+              24&ndash;27% for luxury and semi-custom, generates higher margins
               than the base house, and gets almost no attention in industry&nbsp;benchmarking.
             </p>
             <p>
@@ -552,9 +553,11 @@ export default function HiddenRevenueLinePage() {
           className="max-w-3xl mx-auto mt-8"
         >
           <p className="text-base text-slate-600 leading-relaxed">
-            Look at the percentages: a luxury builder at ~$977K ASP and a
-            move-up builder at ~$549K ASP both land between 19% and 24%. The
-            dollar amounts are different. The share of wallet is&nbsp;not.
+            Look at the percentages: Toll Brothers at ~$977K ASP consistently
+            captures 24&ndash;27% of ASP in options. PulteGroup, a diversified
+            builder at ~$549K ASP, captures ~19%. The absolute dollars differ,
+            but the pattern is clear&nbsp;&mdash; upgrade revenue is a
+            structural share of every home&nbsp;sold.
           </p>
         </div>
 
@@ -569,7 +572,7 @@ export default function HiddenRevenueLinePage() {
           </p>
           <p className="text-base text-slate-600 leading-relaxed">
             Toll Brothers&rsquo; implied upgrade and options revenue in FY2024
-            alone ($203K &times; 10,813 homes). Yearley has called the design
+            alone ($206K &times; 10,813 homes). Yearley has called the design
             studios &ldquo;highly accretive,&rdquo; noting they generate over
             $1 billion in annual sales. A standalone business inside
             a&nbsp;homebuilder.
@@ -594,23 +597,24 @@ export default function HiddenRevenueLinePage() {
           >
             <p>
               The most revealing number in Toll Brothers&rsquo; disclosures
-              isn&rsquo;t the $203K headline. It&rsquo;s what happens when you
+              isn&rsquo;t the $206K headline. It&rsquo;s what happens when you
               split spec vs. build-to-order.
             </p>
             <p>
               Between FY2023 and FY2024, Toll&rsquo;s spec mix rose from 27% to
-              49% of deliveries. Per-home options dropped from $236K to $203K
-              over the same period. Spec buyers spend less in the Design Studio
-              than BTO buyers who select from scratch. That&rsquo;s not
-              surprising. What&rsquo;s worth paying attention to is
-              how&nbsp;much&nbsp;less.
+              49% of deliveries. Per-home options dipped from $224K to $206K
+              over the same period&nbsp;&mdash; a modest $18K decline despite
+              nearly doubling the share of spec homes. Spec buyers spend less
+              in the Design Studio than BTO buyers who select from scratch.
+              That the per-home figure held up this well is the&nbsp;story.
             </p>
             <p>
-              Yearley stated on earnings calls that spec home margins run
-              roughly 200 to 250 basis points below the company average. BTO
-              homes with full Design Studio engagement hold adjusted gross
-              margins above 30%. Most of that gap traces back to Design Studio
-              revenue on spec&nbsp;homes.
+              Toll Brothers has disclosed that BTO homes with full Design
+              Studio engagement hold adjusted gross margins above 30%. The
+              company&rsquo;s blended margin runs several hundred basis points
+              lower, with spec homes dragging the average down. Most of that
+              gap traces back to lower Design Studio revenue on
+              spec&nbsp;homes.
             </p>
           </div>
 
@@ -624,10 +628,9 @@ export default function HiddenRevenueLinePage() {
               200&ndash;250 basis points
             </p>
             <p className="text-base text-slate-600 leading-relaxed">
-              The gross margin gap between spec homes and the company average at
-              Toll Brothers, per CEO Doug Yearley. BTO homes with full Design
-              Studio engagement run higher still. The primary driver: BTO buyers
-              spend an estimated $80&ndash;100K more in the Design Studio.
+              The gap between Toll Brothers&rsquo; blended gross margin
+              (~28%) and their BTO margins (above 30%). BTO homes with full
+              Design Studio engagement consistently outperform spec.
               Process determines&nbsp;revenue.
             </p>
           </div>
@@ -671,7 +674,7 @@ export default function HiddenRevenueLinePage() {
           className="max-w-3xl mx-auto mt-8"
         >
           <p className="text-sm text-slate-500 leading-relaxed">
-            Note: Toll Brothers&rsquo; 20&ndash;25% figure includes structural
+            Note: Toll Brothers&rsquo; 24&ndash;27% figure includes structural
             options and lot premiums alongside design studio selections. Pure
             design center spend (countertops, flooring, fixtures, smart home) is
             likely a lower share of ASP, though no builder breaks that out
@@ -846,10 +849,12 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              Earnings calls, investor presentations, and industry research all
-              point the same direction: options and upgrades carry higher gross
-              margins than the base house. The most commonly cited figure is a
-              3&ndash;5 percentage point&nbsp;premium.
+              Earnings calls and industry research point the same direction:
+              options and upgrades carry higher gross margins than the base
+              house. KB Home&rsquo;s earnings data shows build-to-order homes
+              running 3&ndash;5 percentage points above spec on gross margin.
+              Toll Brothers&rsquo; BTO margins above 30% vs. a ~28% blended
+              average tell a similar&nbsp;story.
             </p>
             <p>
               The reason is straightforward. Design studio selections and
@@ -929,8 +934,9 @@ export default function HiddenRevenueLinePage() {
             className="mt-8 text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              Then there&rsquo;s retention. Toll Brothers runs a 2.3%
-              cancellation rate, roughly half the industry average. Yearley
+              Then there&rsquo;s retention. Toll Brothers has historically
+              averaged a cancellation rate in the low single digits&nbsp;&mdash;
+              roughly 2&ndash;3%, well below the industry average. Yearley
               attributes part of that to the attachment buyers build through the
               design studio process. Once you&rsquo;ve spent hours picking
               finishes and making a home yours, you&rsquo;re less inclined to
@@ -1041,7 +1047,7 @@ export default function HiddenRevenueLinePage() {
           >
             <p>
               Private builders don&rsquo;t file with the SEC. Most of the
-              roughly 44,000 active homebuilders in the U.S. also don&rsquo;t
+              tens of thousands of active homebuilders in the U.S. also don&rsquo;t
               benchmark upgrade revenue against peers, because no peer dataset
               has&nbsp;existed.
             </p>
@@ -1090,8 +1096,8 @@ export default function HiddenRevenueLinePage() {
               <strong className="text-slate-900">
                 Upgrade investment correlates with retention.
               </strong>{" "}
-              Toll Brothers&rsquo; 2.3% cancellation rate, roughly half the
-              industry average, is partially attributed to
+              Toll Brothers&rsquo; historically low cancellation rate
+              (averaging roughly 2&ndash;3%) is partially attributed to
               the emotional attachment created by the design studio process. For
               a builder doing 200 homes a year, cutting cancellation rates from
               15% to 10% avoids 10 lost sales, their associated remarketing
@@ -1184,7 +1190,7 @@ export default function HiddenRevenueLinePage() {
           <p>
             Even at the conservative estimate, options and upgrades represent a
             $12+ billion revenue category among the top 10 public builders
-            alone. Add in the roughly 44,000 private builders and the total
+            alone. Add in the tens of thousands of private builders and the total
             market is far larger. And unlike base home pricing, which is boxed
             in by appraisals, comparables, and competitive pressure, upgrade
             revenue responds directly to how well the builder presents the
@@ -1256,7 +1262,7 @@ export default function HiddenRevenueLinePage() {
           >
             <strong>Limitations:</strong> This analysis relies on publicly
             available disclosures, which vary significantly by builder. Segment
-            benchmark ranges (8&ndash;15%, 12&ndash;20%, 20&ndash;25%) are
+            benchmark ranges (8&ndash;15%, 12&ndash;20%, 24&ndash;27%) are
             synthesized from limited data points and should be treated as
             directional. Toll Brothers&rsquo; disclosed figure includes
             structural options and lot premiums alongside design studio
@@ -1292,7 +1298,7 @@ export default function HiddenRevenueLinePage() {
               <ol className="list-decimal list-inside space-y-2">
                 <li>
                   <strong>Toll Brothers FY2024 10-K &amp; Earnings.</strong>{" "}
-                  10,813 homes, ~$977K ASP, $203K in design studio upgrades,
+                  10,813 homes, ~$977K ASP, $206K in design studio upgrades,
                   structural options, and lot premiums per home.{" "}
                   <a
                     href="https://investors.tollbrothers.com/news-and-events/press-releases/2024/12-09-2024-213038989"
@@ -1315,7 +1321,7 @@ export default function HiddenRevenueLinePage() {
                 </li>
                 <li>
                   <strong>Toll Brothers FY2023 10-K &amp; Earnings.</strong>{" "}
-                  ~9,597 homes, ~$1,029K ASP, $236K in options per home.{" "}
+                  ~9,597 homes, ~$1,028K ASP, $224K in options per home.{" "}
                   <a
                     href="https://investors.tollbrothers.com/news-and-events/press-releases/2023/12-05-2023-150146386"
                     className="underline underline-offset-2 hover:text-slate-900"
@@ -1333,9 +1339,9 @@ export default function HiddenRevenueLinePage() {
                 </li>
                 <li>
                   <strong>Toll Brothers Spec vs. BTO Data.</strong> Spec mix
-                  rose 27% to 49% FY2023&ndash;FY2024. Spec margins
-                  ~200&ndash;250 bps below average per CEO Doug Yearley. 2.3%
-                  cancellation rate attributed to design studio attachment.
+                  rose 27% to 49% FY2023&ndash;FY2024. BTO adjusted gross
+                  margins above 30% vs. ~28% blended. Historically low
+                  cancellation rate (~2&ndash;3%) attributed to design studio attachment.
                 </li>
                 <li>
                   <strong>PulteGroup Q2 2024 Earnings.</strong> Options and lot
@@ -1368,7 +1374,7 @@ export default function HiddenRevenueLinePage() {
                   .
                 </li>
                 <li>
-                  <strong>NVR FY2024.</strong> $10.52B revenue, 22,836 homes,
+                  <strong>NVR FY2024.</strong> $10.29B revenue, 22,836 homes,
                   ~$450.7K ASP. Zero upgrade disclosure.
                 </li>
                 <li>
@@ -1410,8 +1416,8 @@ export default function HiddenRevenueLinePage() {
                   <strong>
                     ProBuilder, &ldquo;Margin vs. Markup&rdquo;.
                   </strong>{" "}
-                  Uses $20K options on $200K home (10%) as baseline. Upgrades
-                  carry higher margin than base home.{" "}
+                  Margin vs. markup analysis using $20K options on $200K home
+                  (10%) as baseline example.{" "}
                   <a
                     href="https://www.probuilder.com/home/article/55229316/margin-vs-markup-the-true-impact-of-pricing-decisions-on-home-builder-profits"
                     className="underline underline-offset-2 hover:text-slate-900"
@@ -1434,7 +1440,7 @@ export default function HiddenRevenueLinePage() {
                 <li>
                   <strong>
                     Builder Magazine, &ldquo;Upgrades: The Art and
-                    Science&rdquo; (2025).
+                    Science.&rdquo;
                   </strong>{" "}
                   Ashton Woods design studios described as strategic margin
                   drivers on $400K&ndash;$500K ASP homes.
@@ -1458,7 +1464,7 @@ export default function HiddenRevenueLinePage() {
                 <li>
                   <strong>
                     Segment benchmark ranges (8&ndash;15%, 12&ndash;20%,
-                    20&ndash;25%).
+                    24&ndash;27%).
                   </strong>{" "}
                   Synthesized from Toll Brothers, PulteGroup, Robino-Corrozi,
                   and ProBuilder&rsquo;s 10&ndash;20% general range.
@@ -1467,7 +1473,7 @@ export default function HiddenRevenueLinePage() {
                   <strong>
                     $2.2B implied Toll Brothers upgrade revenue.
                   </strong>{" "}
-                  Calculated: $203K &times; 10,813 homes.
+                  Calculated: $206K &times; 10,813 homes.
                 </li>
                 <li>
                   <strong>$6.4M revenue gap for 200-home builder.</strong>{" "}
@@ -1505,46 +1511,17 @@ export default function HiddenRevenueLinePage() {
         </div>
       </Section>
 
-      {/* ─── 16. Footer CTA ─── */}
-      <section className="px-6 py-20 md:py-28 bg-white border-t border-slate-100">
-        <div
-          data-reveal
-          style={revealStyle(20)}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
+      {/* ─── 16. Pilot Section ─── */}
+      <PilotSection
+        headline={
+          <>
             The data is clear.
             <br />
             Process drives upgrade&nbsp;revenue.
-          </h2>
-          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            See what your buyers choose when they can see their selections
-            applied to your model home photos. One floor plan. Free to set up.
-            Live in 48&nbsp;hours.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <TrackedLink
-              href="/#pilot"
-              event="research_cta_clicked"
-              properties={{ cta: "Start a Pilot", location: "footer" }}
-              className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-            >
-              Start a Pilot
-            </TrackedLink>
-            <TrackedLink
-              href="/try"
-              event="research_cta_clicked"
-              properties={{ cta: "Try It Live", location: "footer" }}
-              className="inline-block px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
-            >
-              Try It Live
-            </TrackedLink>
-          </div>
-          <p className="text-xs text-slate-400 mt-4">
-            Questions? hello@withfin.ch
-          </p>
-        </div>
-      </section>
+          </>
+        }
+        subtitle="See what your buyers choose when they can see their selections applied to your model home photos. One floor plan. Free to set up. Live in 48 hours."
+      />
 
       <SiteFooter />
 
@@ -1558,7 +1535,7 @@ export default function HiddenRevenueLinePage() {
             headline:
               "The Hidden Revenue Line: Options & Upgrade Revenue Among Public Homebuilders",
             description:
-              "An analysis of SEC filings reveals how much public builders earn from options & upgrades — $104K–$236K per home, 8–25% of ASP, and a 3–5 point margin premium.",
+              "An analysis of SEC filings reveals how much public builders earn from options & upgrades — $104K–$224K per home, 8–27% of ASP, and a margin premium most builders never benchmark.",
             datePublished: "2026-03-13",
             dateModified: "2026-03-13",
             author: {
