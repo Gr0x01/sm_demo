@@ -1,7 +1,7 @@
 const LINKS = [
   { label: "Home", href: "/" },
   { label: "Try It", href: "/try" },
-  { label: "Pilot", href: "/#pilot" },
+  { label: "Get Started", href: "/#get-started" },
   { label: "Research", href: "/research/hidden-revenue-line" },
   { label: "Contact", href: "mailto:hello@withfin.ch" },
 ];

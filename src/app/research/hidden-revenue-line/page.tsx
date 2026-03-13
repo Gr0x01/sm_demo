@@ -320,7 +320,7 @@ export default function HiddenRevenueLinePage() {
       <ResearchPageTracker />
       <SiteNav
         links={NAV_LINKS}
-        cta={{ label: "Start your pilot", href: "#pilot" }}
+        cta={{ label: "Get Started", href: "#get-started" }}
       />
 
       {/* ─── 1. Hero ─── */}

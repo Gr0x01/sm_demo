@@ -105,7 +105,7 @@ export default function VsPdfPage() {
       <RevealObserver />
       <SiteNav
         links={NAV_LINKS}
-        cta={{ label: "Start your pilot", href: "/#pilot" }}
+        cta={{ label: "Get Started", href: "/#get-started" }}
       />
 
       {/* ─── Hero ─── */}
@@ -142,15 +142,15 @@ export default function VsPdfPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <TrackedLink
-              href="/#pilot"
+              href="/#get-started"
               event="cta_clicked"
               properties={{
-                cta: "Start your pilot",
+                cta: "Get Started",
                 location: "vs-pdf-hero",
               }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start your pilot
+              Get Started
             </TrackedLink>
             <TrackedLink
               href="/try"
@@ -423,15 +423,15 @@ export default function VsPdfPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink
-              href="/#pilot"
+              href="/#get-started"
               event="cta_clicked"
               properties={{
-                cta: "Start your pilot",
+                cta: "Get Started",
                 location: "vs-pdf-footer",
               }}
               className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start your pilot
+              Get Started
             </TrackedLink>
             <TrackedLink
               href="/try"

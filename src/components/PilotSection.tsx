@@ -1,6 +1,6 @@
 import { PilotForm } from "@/app/landing-client";
 
-export function PilotSection({
+export function GetStartedSection({
   headline,
   subtitle,
 }: {
@@ -8,7 +8,7 @@ export function PilotSection({
   subtitle?: React.ReactNode;
 }) {
   return (
-    <section id="pilot" className="px-6 py-20 md:py-28 bg-white">
+    <section id="get-started" className="px-6 py-20 md:py-28 bg-white">
       <div className="max-w-3xl mx-auto text-center">
         <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">
           Start Here
@@ -16,9 +16,9 @@ export function PilotSection({
         <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6 text-balance">
           {headline ?? (
             <>
-              One floor plan. Zero risk.
+              One floor plan. 48 hours.
               <br />
-              Prove the ROI first.
+              See the results.
             </>
           )}
         </h2>
@@ -40,7 +40,7 @@ export function PilotSection({
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900 mb-1">
-              60-day pilot
+              Your first plan is free
             </p>
             <p className="text-sm text-slate-600">
               Real buyers, real selections, real upgrade
@@ -62,10 +62,13 @@ export function PilotSection({
       </div>
 
       <p className="text-sm text-slate-500 text-center mt-6 max-w-3xl mx-auto">
-        After the pilot, we scope pricing to your floor plan count.
+        After your first plan, we scope pricing to your floor plan count.
         We&apos;ll walk through it together once you&apos;ve seen the
         results.
       </p>
     </section>
   );
 }
+
+/** @deprecated Use GetStartedSection */
+export const PilotSection = GetStartedSection;

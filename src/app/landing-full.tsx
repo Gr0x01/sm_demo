@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { PilotSection } from "@/components/PilotSection";
+import { GetStartedSection } from "@/components/PilotSection";
 import {
   RevealObserver,
   TrackedLink,
@@ -14,7 +14,7 @@ import {
 const HOMEPAGE_NAV_LINKS = [
   { label: "Try It", href: "/try" },
   { label: "How It Works", href: "#how" },
-  { label: "Pilot", href: "#pilot" },
+  { label: "Get Started", href: "#get-started" },
   { label: "FAQ", href: "#faq" },
 ];
 
@@ -24,7 +24,7 @@ const faqs = [
     a: "First floor plan is live in 48 hours. Additional plans are typically a day or two each. You send us your option sheets and model home photos. We do the rest.",
   },
   {
-    q: "What does a pilot look like?",
+    q: "How do I get started?",
     a: "We set up one floor plan at no cost. You use it with real buyers. We measure upgrade revenue together over 60 days. If the numbers work, we expand. If they don\u2019t, you walk away with no obligation.",
   },
   {
@@ -96,12 +96,12 @@ export default function LandingPage() {
 
               <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4 mb-4">
                 <TrackedLink
-                  href="#pilot"
+                  href="#get-started"
                   event="cta_clicked"
-                  properties={{ cta: "Start your pilot", location: "hero" }}
+                  properties={{ cta: "Get Started", location: "hero" }}
                   className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                 >
-                  Start your pilot
+                  Get Started
                 </TrackedLink>
                 <TrackedLink
                   href="/try"
@@ -329,8 +329,8 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      {/* ─── Pilot Program ─── */}
-      <PilotSection />
+      {/* ─── Get Started ─── */}
+      <GetStartedSection />
 
       {/* ─── Why This Exists ─── */}
       <Section gray id="why">
@@ -393,12 +393,12 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink
-              href="#pilot"
+              href="#get-started"
               event="cta_clicked"
-              properties={{ cta: "Start your pilot", location: "contact" }}
+              properties={{ cta: "Get Started", location: "contact" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start your pilot
+              Get Started
             </TrackedLink>
             <TrackedLink
               href="/try"
@@ -437,7 +437,7 @@ export default function LandingPage() {
               "@type": "Offer",
               price: "0",
               priceCurrency: "USD",
-              description: "Free pilot — first floor plan at no cost",
+              description: "First floor plan free — live in 48 hours",
             },
           }),
         }}

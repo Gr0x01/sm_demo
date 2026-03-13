@@ -414,11 +414,11 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
                     </>
                   )}
                   <a
-                    href="mailto:hello@withfin.ch?subject=Pilot%20Interest%20%E2%80%94%20Saw%20the%20Demo"
+                    href="mailto:hello@withfin.ch?subject=Getting%20Started%20%E2%80%94%20Saw%20the%20Demo"
                     onClick={() => track("demo_cta_clicked", { trigger: atCap ? "cap_interstitial" : "result_banner" })}
                     className="inline-block px-8 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                   >
-                    Start your pilot
+                    Get Started
                   </a>
                 </div>
               )}

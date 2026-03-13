@@ -16,12 +16,12 @@ export const metadata: Metadata = {
       "Finch vs Zonda Envision — Upgrade Visualization Without the Enterprise Rollout",
   },
   description:
-    "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in 48 hours with a free pilot. No six-figure contract, no IT team, no months of setup.",
+    "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in 48 hours. First floor plan free. No six-figure contract, no IT team, no months of setup.",
   alternates: { canonical: "https://withfin.ch/vs/envision" },
   openGraph: {
     title: "Finch vs Zonda Envision — Same Upgrade Lift, Live in 48 Hours",
     description:
-      "Envision takes months and six figures. Finch is done for you, live in 48 hours, with a free 60-day pilot. Compare the two approaches to upgrade visualization.",
+      "Envision takes months and six figures. Finch is done for you, live in 48 hours, first floor plan free. Compare the two approaches to upgrade visualization.",
     url: "https://withfin.ch/vs/envision",
     siteName: "Finch",
     type: "website",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Finch vs Zonda Envision — Same Upgrade Lift, Live in 48 Hours",
     description:
-      "Envision takes months and six figures. Finch is done for you, live in 48 hours, with a free 60-day pilot.",
+      "Envision takes months and six figures. Finch is done for you, live in 48 hours, first floor plan free.",
   },
 };
 
@@ -97,7 +97,7 @@ const comparisonRows = [
   {
     label: "Contract to start",
     envision: "Six-figure annual contract",
-    finch: "Free 60-day pilot",
+    finch: "Free to start",
   },
   {
     label: "Built for",
@@ -128,7 +128,7 @@ const faqs = [
     a: "Visual upgrade selection drives higher spend regardless of the rendering method. Envision\u2019s own data validates this across 225+ builder brands. In our first test, a buyer actively trying to minimize spend still chose 40% more. The lift comes from buyers seeing their selections, not from any specific technology.",
   },
   {
-    q: "What happens after the 60-day pilot?",
+    q: "What happens after 60 days?",
     a: "If the numbers work, we scope pricing to your floor plan count and volume. If they don\u2019t, you walk away with no obligation. We share the data either way.",
   },
   {
@@ -137,7 +137,7 @@ const faqs = [
   },
   {
     q: "What does this cost compared to Envision?",
-    a: "Envision requires a six-figure annual contract. Finch starts with a free pilot on one floor plan. After 60 days, pricing is scoped to your floor plan count. Most builders see ROI in the first month.",
+    a: "Envision requires a six-figure annual contract. Finch starts with one floor plan at no cost. After 60 days, pricing is scoped to your floor plan count. Most builders see ROI in the first month.",
   },
 ];
 
@@ -145,7 +145,7 @@ export default function VsEnvisionPage() {
   return (
     <div className="min-h-screen bg-white">
       <RevealObserver />
-      <SiteNav links={NAV_LINKS} cta={{ label: "Start your pilot", href: "/#pilot" }} />
+      <SiteNav links={NAV_LINKS} cta={{ label: "Get Started", href: "/#get-started" }} />
 
       {/* --- Hero --- */}
       <section className="px-6 pt-14 pb-16 md:pt-18 md:pb-20 lg:pt-20 lg:pb-24 bg-white">
@@ -181,12 +181,12 @@ export default function VsEnvisionPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <TrackedLink
-              href="/#pilot"
+              href="/#get-started"
               event="cta_clicked"
-              properties={{ cta: "Start your pilot", location: "vs-envision-hero" }}
+              properties={{ cta: "Get Started", location: "vs-envision-hero" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start your pilot
+              Get Started
             </TrackedLink>
             <TrackedLink
               href="/try"
@@ -410,7 +410,7 @@ export default function VsEnvisionPage() {
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
             { stat: "48 hrs", label: "First plan live" },
-            { stat: "60 days", label: "Free pilot" },
+            { stat: "60 days", label: "Free to prove it" },
             { stat: "$0", label: "Setup cost" },
           ].map((card, i) => (
             <div
@@ -654,15 +654,15 @@ export default function VsEnvisionPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink
-              href="/#pilot"
+              href="/#get-started"
               event="cta_clicked"
               properties={{
-                cta: "Start your pilot",
+                cta: "Get Started",
                 location: "vs-envision-footer",
               }}
               className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start your pilot
+              Get Started
             </TrackedLink>
             <TrackedLink
               href="/try"
