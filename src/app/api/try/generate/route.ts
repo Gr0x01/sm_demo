@@ -82,11 +82,16 @@ export async function POST(request: Request) {
       .eq("image_path", "__pending__")
       .lt("created_at", staleThreshold);
 
+    // Demo org ID (Finch Homes)
+    const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
+
     const { error: claimError } = await supabase
       .from("generated_images")
       .insert({
         selections_hash: combinedHash,
+        selections_json: { _source: "demo", ...effectiveSelections },
         image_path: "__pending__",
+        org_id: DEMO_ORG_ID,
         step_id: null,
       });
 

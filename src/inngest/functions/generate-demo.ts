@@ -104,6 +104,7 @@ export const generateDemo = inngest.createFunction(
       }
 
       // Cache the result (upsert replaces __pending__ placeholder)
+      const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
       const { error: upsertError } = await supabase.from("generated_images").upsert({
         selections_hash: combinedHash,
         selections_json: {
@@ -116,6 +117,7 @@ export const generateDemo = inngest.createFunction(
         prompt: result.prompt,
         step_id: null,
         model: IMAGE_MODEL,
+        org_id: DEMO_ORG_ID,
       }, { onConflict: "selections_hash" });
 
       if (upsertError) {
