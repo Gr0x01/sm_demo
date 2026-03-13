@@ -198,7 +198,7 @@ export function DemoViewer({
               href="mailto:hello@withfin.ch?subject=Pilot%20Interest%20%E2%80%94%20Saw%20the%20Demo"
               className="px-4 py-1.5 bg-white text-slate-900 text-xs font-semibold uppercase tracking-wider hover:bg-slate-100 transition-colors"
             >
-              Start a Pilot
+              Start your pilot
             </a>
           </div>
         </div>

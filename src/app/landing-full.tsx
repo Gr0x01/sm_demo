@@ -2,13 +2,13 @@ import type { CSSProperties } from "react";
 import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { PilotSection } from "@/components/PilotSection";
 import {
   RevealObserver,
   TrackedLink,
   RoiCalculator,
   HeroProofCard,
   FaqItem,
-  PilotForm,
 } from "./landing-client";
 
 const HOMEPAGE_NAV_LINKS = [
@@ -98,10 +98,10 @@ export default function LandingPage() {
                 <TrackedLink
                   href="#pilot"
                   event="cta_clicked"
-                  properties={{ cta: "Start a Pilot", location: "hero" }}
+                  properties={{ cta: "Start your pilot", location: "hero" }}
                   className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                 >
-                  Start a Pilot
+                  Start your pilot
                 </TrackedLink>
                 <TrackedLink
                   href="/try"
@@ -330,54 +330,7 @@ export default function LandingPage() {
       </Section>
 
       {/* ─── Pilot Program ─── */}
-      <Section id="pilot">
-        <div
-          data-reveal
-          style={revealStyle(20)}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">Start Here</p>
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6 text-balance">
-            One floor plan. Zero risk.
-            <br />
-            Prove the ROI first.
-          </h2>
-          <p className="text-lg md:text-xl text-slate-600 mb-12 max-w-2xl mx-auto">
-            We set up your best-selling floor plan at no cost. Your finishes, your pricing, your photos. Buyers use it during real design appointments. We measure upgrade revenue together.
-          </p>
-        </div>
-
-        <div
-          data-reveal
-          style={revealStyle(90)}
-          className="max-w-3xl mx-auto border border-slate-200 bg-white p-6 md:p-8"
-        >
-          <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
-            <div>
-              <p className="text-sm font-semibold text-slate-900 mb-1">48 hours to live</p>
-              <p className="text-sm text-slate-600">Send us your floor plan and options. We handle everything&nbsp;else.</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900 mb-1">60-day pilot</p>
-              <p className="text-sm text-slate-600">Real buyers, real selections, real upgrade revenue&nbsp;data.</p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900 mb-1">Walk away anytime</p>
-              <p className="text-sm text-slate-600">If the numbers don&apos;t work, you owe nothing. No contract. No&nbsp;obligation.</p>
-            </div>
-          </div>
-
-          <PilotForm />
-        </div>
-
-        <p
-          data-reveal
-          style={revealStyle(160)}
-          className="text-sm text-slate-500 text-center mt-6"
-        >
-          After the pilot, we scope pricing to your floor plan count. We&apos;ll walk through it together once you&apos;ve seen the results.
-        </p>
-      </Section>
+      <PilotSection />
 
       {/* ─── Why This Exists ─── */}
       <Section gray id="why">
@@ -442,10 +395,10 @@ export default function LandingPage() {
             <TrackedLink
               href="#pilot"
               event="cta_clicked"
-              properties={{ cta: "Start a Pilot", location: "contact" }}
+              properties={{ cta: "Start your pilot", location: "contact" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start a Pilot
+              Start your pilot
             </TrackedLink>
             <TrackedLink
               href="/try"

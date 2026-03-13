@@ -421,7 +421,7 @@ export function PilotForm({ onSubmitted }: { onSubmitted?: () => void }) {
           disabled={status === "submitting"}
           className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {status === "submitting" ? "Sending..." : "Start a Pilot"}
+          {status === "submitting" ? "Sending..." : "Start your pilot"}
         </button>
       </div>
       {status === "error" && (

@@ -1,0 +1,72 @@
+import { PilotForm } from "@/app/landing-client";
+
+export function PilotSection({
+  headline,
+  subtitle,
+}: {
+  headline?: React.ReactNode;
+  subtitle?: React.ReactNode;
+}) {
+  return (
+    <section id="pilot" className="px-6 py-20 md:py-28 bg-white">
+      <div className="max-w-3xl mx-auto text-center">
+        <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">
+          Start Here
+        </p>
+        <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6 text-balance">
+          {headline ?? (
+            <>
+              One floor plan. Zero risk.
+              <br />
+              Prove the ROI first.
+            </>
+          )}
+        </h2>
+        <p className="text-lg md:text-xl text-slate-600 mb-12 max-w-2xl mx-auto">
+          {subtitle ??
+            "We set up your best-selling floor plan at no cost. Your finishes, your pricing, your photos. Buyers use it during real design appointments. We measure upgrade revenue together."}
+        </p>
+      </div>
+
+      <div className="max-w-3xl mx-auto border border-slate-200 bg-white p-6 md:p-8">
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
+          <div>
+            <p className="text-sm font-semibold text-slate-900 mb-1">
+              48 hours to live
+            </p>
+            <p className="text-sm text-slate-600">
+              Send us your floor plan and options. We handle
+              everything&nbsp;else.
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900 mb-1">
+              60-day pilot
+            </p>
+            <p className="text-sm text-slate-600">
+              Real buyers, real selections, real upgrade
+              revenue&nbsp;data.
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-slate-900 mb-1">
+              Walk away anytime
+            </p>
+            <p className="text-sm text-slate-600">
+              If the numbers don&apos;t work, you owe nothing. No contract.
+              No&nbsp;obligation.
+            </p>
+          </div>
+        </div>
+
+        <PilotForm />
+      </div>
+
+      <p className="text-sm text-slate-500 text-center mt-6 max-w-3xl mx-auto">
+        After the pilot, we scope pricing to your floor plan count.
+        We&apos;ll walk through it together once you&apos;ve seen the
+        results.
+      </p>
+    </section>
+  );
+}

@@ -145,7 +145,7 @@ export default function VsEnvisionPage() {
   return (
     <div className="min-h-screen bg-white">
       <RevealObserver />
-      <SiteNav links={NAV_LINKS} cta={{ label: "Start a Pilot", href: "/#pilot" }} />
+      <SiteNav links={NAV_LINKS} cta={{ label: "Start your pilot", href: "/#pilot" }} />
 
       {/* --- Hero --- */}
       <section className="px-6 pt-14 pb-16 md:pt-18 md:pb-20 lg:pt-20 lg:pb-24 bg-white">
@@ -183,10 +183,10 @@ export default function VsEnvisionPage() {
             <TrackedLink
               href="/#pilot"
               event="cta_clicked"
-              properties={{ cta: "Start a Pilot", location: "vs-envision-hero" }}
+              properties={{ cta: "Start your pilot", location: "vs-envision-hero" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start a Pilot
+              Start your pilot
             </TrackedLink>
             <TrackedLink
               href="/try"
@@ -657,12 +657,12 @@ export default function VsEnvisionPage() {
               href="/#pilot"
               event="cta_clicked"
               properties={{
-                cta: "Start a Pilot",
+                cta: "Start your pilot",
                 location: "vs-envision-footer",
               }}
               className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Start a Pilot
+              Start your pilot
             </TrackedLink>
             <TrackedLink
               href="/try"

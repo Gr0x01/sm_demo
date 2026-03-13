@@ -418,7 +418,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
                     onClick={() => track("demo_cta_clicked", { trigger: atCap ? "cap_interstitial" : "result_banner" })}
                     className="inline-block px-8 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                   >
-                    Start a Pilot
+                    Start your pilot
                   </a>
                 </div>
               )}
