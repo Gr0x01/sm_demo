@@ -88,9 +88,9 @@ const nonDisclosingBuilders = [
   {
     builder: "D.R. Horton",
     segment: "Entry-Level",
-    revenue: "$34.0B",
+    revenue: "$33.9B",
     homes: "89,690",
-    asp: "$379,000",
+    asp: "$378,000",
     strategy: "Express Homes brand; limited customization",
     disclosure: "Not disclosed",
   },
@@ -106,7 +106,7 @@ const nonDisclosingBuilders = [
   {
     builder: "NVR",
     segment: "Move-Up",
-    revenue: "$10.3B",
+    revenue: "$10.5B",
     homes: "22,836",
     asp: "$450,700",
     strategy: "Options affect margins but not separately reported",
@@ -126,7 +126,7 @@ const nonDisclosingBuilders = [
     segment: "Entry-Level",
     revenue: "$6.3B",
     homes: "15,611",
-    asp: "$406,200",
+    asp: "$404,000",
     strategy: "Redesigned selection: 20+ hrs to 3 hrs via curated collections",
     disclosure: "Wakefield study",
   },
@@ -163,7 +163,7 @@ const nonDisclosingBuilders = [
     segment: "Mixed",
     revenue: "—",
     homes: "—",
-    asp: "$497,000",
+    asp: "$483,000",
     strategy: "Smart Series (~50% of sales) with limited options",
     disclosure: "Not disclosed",
   },
@@ -585,7 +585,7 @@ export default function HiddenRevenueLinePage() {
           >
             <p>
               The most revealing number in Toll Brothers&rsquo; disclosures
-              isn&rsquo;t the $206K headline. It&rsquo;s what happens when you
+              isn&rsquo;t the $203K headline. It&rsquo;s what happens when you
               split spec vs. build-to-order.
             </p>
             <p>
@@ -1349,8 +1349,8 @@ export default function HiddenRevenueLinePage() {
                   prefer incentive dollars in design studio over rate buydowns.
                 </li>
                 <li>
-                  <strong>D.R. Horton FY2024.</strong> $34.0B revenue, 89,690
-                  closings, ~$379K ASP.{" "}
+                  <strong>D.R. Horton FY2024.</strong> $33.9B home closing
+                  revenue, 89,690 closings, ~$378K ASP.{" "}
                   <a
                     href="https://investor.drhorton.com/~/media/Files/D/D-R-Horton-IR/press-release/q4-and-fy24-earnings-release.pdf"
                     className="underline underline-offset-2 hover:text-slate-900"
@@ -1362,7 +1362,7 @@ export default function HiddenRevenueLinePage() {
                   .
                 </li>
                 <li>
-                  <strong>NVR FY2024.</strong> $10.29B revenue, 22,836 homes,
+                  <strong>NVR FY2024.</strong> $10.5B revenue, 22,836 homes,
                   ~$450.7K ASP. Zero upgrade disclosure.
                 </li>
                 <li>
@@ -1371,7 +1371,7 @@ export default function HiddenRevenueLinePage() {
                 </li>
                 <li>
                   <strong>Meritage Homes FY2024.</strong> $6.3B revenue, 15,611
-                  homes, ~$406K ASP.
+                  homes, ~$404K ASP.
                 </li>
               </ol>
             </div>
@@ -1524,7 +1524,7 @@ export default function HiddenRevenueLinePage() {
             headline:
               "The Hidden Revenue Line: Options & Upgrade Revenue Among Public Homebuilders",
             description:
-              "An analysis of SEC filings reveals how much public builders earn from options & upgrades — $104K–$224K per home, 8–27% of ASP, and a margin premium most builders never benchmark.",
+              "An analysis of SEC filings reveals how much public builders earn from options & upgrades — $104K–$236K per home, 8–25% of ASP, and a margin premium most builders never benchmark.",
             datePublished: "2026-03-13",
             dateModified: "2026-03-13",
             author: {
