@@ -13,7 +13,10 @@ Full marketing landing page restored to `/`. `/builders` redirects to `/`. Copy 
 - [x] Copy fixes: meta description, ROI footnote, FAQ, post-pilot pricing, speed bar
 - [x] CTA hierarchy: "Start a Pilot" primary everywhere, "Try It Live" secondary
 - [x] Body text contrast bumped for readability
-- [ ] OG meta tags for link previews
+- [x] OG images for homepage, /vs/envision, /vs/pdf-option-sheets (generated via opengraph-image.tsx)
+- [x] Mobile polish: consistent full-width CTA buttons, speed bar vertical stack, text-balance on pilot heading, nbsp orphan fix
+- [x] SEO hardening: robots.txt blocks tenant routes + /api/ + /auth/, allows /demo/; sitemap includes /demo; /demo gets real metadata
+- [x] `llms.txt` for LLM search discovery (competitive positioning, ICP scoping, getting-started paths)
 - **Copy rules**: No "AI" in copy. No lecturing builders. Tone = passion/tinkerer, not critic. Email: `hello@withfin.ch`.
 - See `landing-page.md` for design doc
 
@@ -173,6 +176,14 @@ Replaced cloned Kinkade photos with 9 actual Lenox room photos, each with comple
 - [x] Exterior cover photo uploaded, floorplan visible in org landing page picker
 - [x] 55 pricing overrides seeded (after `option_floorplan_pricing` migration applied)
 - [x] Code review + backend architect review: caught missing `range` in kitchen hero scopeSlugs (would have silently broken second-pass), added refrigerator invariant rules to Kitchen & Dining policy
+
+### 18. Research Page: /research/hidden-revenue-line ✅
+Original research report analyzing SEC filings on public builder upgrade revenue. Positions Finch as understanding builder economics. Used as cold email/LinkedIn outreach collateral.
+- [x] `src/app/research/hidden-revenue-line/page.tsx` — server component, 18 sections: hero, stat bar, 2 data tables (disclosed + non-disclosing builders), scenario table, animated bar charts, callouts, methodology, sources with SEC links, JSON-LD Article schema
+- [x] `src/app/research/hidden-revenue-line/chart-client.tsx` — client component: `ResearchPageTracker` (fires `research_page_viewed`), `AnimatedBarCharts` (IntersectionObserver-triggered with staggered transitions, fires `research_chart_viewed`)
+- [x] `TrackedLink` CTAs: mid-report → `/try` and footer → `/#pilot` + `/try`, event: `research_cta_clicked` with location
+- [x] Sitemap + robots updated
+- [x] `SiteFooter` extracted as shared component (`src/components/SiteFooter.tsx`) — replaces inline footers on homepage, /vs/envision, /vs/pdf-option-sheets, and research page. Consistent links: Home, Try It, Pilot, Research, Contact.
 
 ### 15. V1 Workstream E: Branding Controls ✅
 **Depends on A (admin auth).** Org-level branding customization applied to buyer-facing pages.

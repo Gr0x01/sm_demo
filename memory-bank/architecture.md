@@ -230,8 +230,17 @@ Need stock images: Countertop materials, backsplash tiles, flooring, sinks.
 src/
 ├── app/
 │   ├── page.tsx                    # Finch landing page (server component)
+│   ├── landing-full.tsx            # Homepage content (server component, imported by page.tsx)
+│   ├── landing-client.tsx          # Client components: RevealObserver, TrackedLink, RoiCalculator, PilotForm, FaqItem
 │   ├── layout.tsx                  # Root layout — Finch branding
 │   ├── globals.css
+│   ├── vs/
+│   │   ├── envision/page.tsx       # /vs/envision comparison page
+│   │   └── pdf-option-sheets/page.tsx # /vs/pdf-option-sheets comparison page
+│   ├── research/
+│   │   └── hidden-revenue-line/
+│   │       ├── page.tsx            # SEC filings research report (server component)
+│   │       └── chart-client.tsx    # Animated bar charts + page tracker (client component)
 │   ├── [orgSlug]/
 │   │   ├── page.tsx               # Org landing — redirect (1 fp) or chooser (multiple)
 │   │   └── [floorplanSlug]/
@@ -300,6 +309,9 @@ src/
 │   ├── UpgradeSummary.tsx       # Room images grid, upgrade table, PDF via window.print
 │   ├── SaveSelectionsModal.tsx # Email save + resume-by-email modal
 │   └── ResumeSavedDesignLink.tsx # Resume design modal (used by org landing page)
+├── components/
+│   ├── SiteNav.tsx            # Shared marketing nav (sticky, mobile hamburger, configurable links + CTA)
+│   └── SiteFooter.tsx         # Shared marketing footer (Home, Try It, Pilot, Research, Contact)
 ├── components/admin/
 │   ├── OptionTree.tsx       # Full CRUD tree with drag reorder, inline edit, swatch upload
 │   ├── SwatchUpload.tsx     # Swatch image upload to Supabase Storage

@@ -27,6 +27,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
+      url: "https://withfin.ch/research/hidden-revenue-line",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
       url: "https://withfin.ch/demo",
       lastModified: new Date(),
       changeFrequency: "monthly",

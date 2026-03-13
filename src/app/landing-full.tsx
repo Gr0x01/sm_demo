@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
 import {
   RevealObserver,
   TrackedLink,
@@ -459,19 +460,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Footer ─── */}
-      <footer className="px-6 py-10 border-t border-slate-100 bg-slate-50">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-          <p className="text-sm font-semibold text-slate-900 tracking-[0.04em]">Finch</p>
-          <div className="flex items-center gap-6">
-            <a href="#how" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">How It Works</a>
-            <a href="#pilot" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">Pilot</a>
-            <a href="#faq" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">FAQ</a>
-            <a href="mailto:hello@withfin.ch" className="text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors">Contact</a>
-          </div>
-          <p className="text-xs text-slate-400">&copy; {new Date().getFullYear()} Finch. All rights reserved.</p>
-        </div>
-      </footer>
+      <SiteFooter />
 
       {/* ─── JSON-LD Structured Data ─── */}
       <script
