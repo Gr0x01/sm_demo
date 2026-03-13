@@ -301,7 +301,7 @@ function Section({
 
 function SegmentTag({ segment }: { segment: string }) {
   const base =
-    "inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium";
+    "inline-block px-2 py-0.5 text-[10px] uppercase tracking-wider font-medium whitespace-nowrap";
   const styles: Record<string, string> = {
     Luxury: `${base} bg-slate-900 text-white`,
     "Move-Up": `${base} bg-slate-200 text-slate-800`,
@@ -472,8 +472,8 @@ export default function HiddenRevenueLinePage() {
 
         {/* Disclosed builders table */}
         <div data-reveal style={revealStyle(160)}>
-          <div className="relative">
-            <div className="overflow-x-auto -mx-6 px-6">
+          <div className="relative -mx-6 px-6 overflow-hidden">
+            <div className="overflow-x-auto">
               <table className="w-full min-w-[640px] text-sm">
                 <thead>
                   <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400">
@@ -696,9 +696,9 @@ export default function HiddenRevenueLinePage() {
         </div>
 
         <div data-reveal style={revealStyle(160)}>
-          <div className="relative">
-            <div className="overflow-x-auto -mx-6 px-6">
-              <table className="w-full min-w-[640px] text-sm">
+          <div className="relative -mx-6 px-6 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[860px] text-sm">
                 <thead>
                   <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400">
                     <th className="text-left p-3 font-medium">Builder</th>
@@ -737,7 +737,7 @@ export default function HiddenRevenueLinePage() {
                       <td className="p-3 text-right text-slate-600 tabular-nums">
                         {row.asp}
                       </td>
-                      <td className="p-3 text-slate-600 max-w-[200px]">
+                      <td className="p-3 text-slate-600">
                         {row.strategy}
                       </td>
                       <td className="p-3 text-slate-400 whitespace-nowrap">
@@ -748,7 +748,7 @@ export default function HiddenRevenueLinePage() {
                 </tbody>
               </table>
             </div>
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none md:hidden" />
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-100 to-transparent pointer-events-none md:hidden" />
           </div>
         </div>
       </Section>
@@ -1130,8 +1130,8 @@ export default function HiddenRevenueLinePage() {
         </div>
 
         <div data-reveal style={revealStyle(160)}>
-          <div className="relative max-w-3xl mx-auto">
-            <div className="overflow-x-auto -mx-6 px-6">
+          <div className="relative max-w-3xl mx-auto -mx-6 px-6 overflow-hidden">
+            <div className="overflow-x-auto">
               <table className="w-full min-w-[480px] text-sm">
                 <thead>
                   <tr className="bg-slate-50 text-xs uppercase tracking-wider text-slate-400">

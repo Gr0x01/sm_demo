@@ -1,5 +1,4 @@
 const LINKS = [
-  { label: "Home", href: "/" },
   { label: "Try It", href: "/try" },
   { label: "Get Started", href: "/#get-started" },
   { label: "Research", href: "/research/hidden-revenue-line" },
@@ -10,10 +9,10 @@ export function SiteFooter() {
   return (
     <footer className="px-6 py-10 border-t border-slate-100 bg-slate-50">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-        <p className="text-sm font-semibold text-slate-900 tracking-[0.04em]">
+        <a href="/" className="text-sm font-semibold text-slate-900 tracking-[0.04em] hover:text-slate-700 transition-colors">
           Finch
-        </p>
-        <div className="flex items-center gap-6">
+        </a>
+        <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2">
           {LINKS.map((link) => (
             <a
               key={link.href}
