@@ -16,12 +16,12 @@ export const metadata: Metadata = {
       "Finch vs Zonda Envision — Upgrade Visualization Without the Enterprise Rollout",
   },
   description:
-    "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in 48 hours. First floor plan free. No six-figure contract, no IT team, no months of setup.",
+    "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in 48 hours. Done for you. No six-figure contract, no IT team, no months of setup.",
   alternates: { canonical: "https://withfin.ch/vs/envision" },
   openGraph: {
     title: "Finch vs Zonda Envision — Same Upgrade Lift, Live in 48 Hours",
     description:
-      "Envision takes months and six figures. Finch is done for you, live in 48 hours, first floor plan free. Compare the two approaches to upgrade visualization.",
+      "Envision takes months and six figures. Finch is done for you, live in 48 hours. Compare the two approaches to upgrade visualization.",
     url: "https://withfin.ch/vs/envision",
     siteName: "Finch",
     type: "website",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Finch vs Zonda Envision — Same Upgrade Lift, Live in 48 Hours",
     description:
-      "Envision takes months and six figures. Finch is done for you, live in 48 hours, first floor plan free.",
+      "Envision takes months and six figures. Finch is done for you, live in 48 hours.",
   },
 };
 
@@ -97,7 +97,7 @@ const comparisonRows = [
   {
     label: "Contract to start",
     envision: "Six-figure annual contract",
-    finch: "Free to start",
+    finch: "Send option sheets, live in 48 hours",
   },
   {
     label: "Built for",
@@ -129,7 +129,7 @@ const faqs = [
   },
   {
     q: "What happens after 60 days?",
-    a: "If the numbers work, we scope pricing to your floor plan count and volume. If they don\u2019t, you walk away with no obligation. We share the data either way.",
+    a: "If the numbers work, we scope pricing to your community count. If they don\u2019t, you walk away with no obligation. We share the data either way.",
   },
   {
     q: "Do we need IT involvement?",
@@ -137,7 +137,7 @@ const faqs = [
   },
   {
     q: "What does this cost compared to Envision?",
-    a: "Envision requires a six-figure annual contract. Finch starts with one floor plan at no cost. After 60 days, pricing is scoped to your floor plan count. Most builders see ROI in the first month.",
+    a: "Envision requires a six-figure annual contract. Finch sets up your first community at no cost. After 60 days, pricing is scoped to your community count. Most builders see ROI in the first month.",
   },
 ];
 
@@ -409,9 +409,9 @@ export default function VsEnvisionPage() {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
-            { stat: "48 hrs", label: "First plan live" },
-            { stat: "60 days", label: "Free to prove it" },
-            { stat: "$0", label: "Setup cost" },
+            { stat: "48 hrs", label: "First community live" },
+            { stat: "Done for you", label: "We handle setup" },
+            { stat: "$0", label: "Builder effort" },
           ].map((card, i) => (
             <div
               key={card.label}
@@ -438,7 +438,7 @@ export default function VsEnvisionPage() {
           className="text-center mt-10 max-w-2xl mx-auto"
         >
           <p className="text-base text-slate-600">
-            One floor plan. Your finishes, your pricing, your photos. If upgrade
+            One community. Your finishes, your pricing, your photos. If upgrade
             revenue doesn&apos;t move in 60 days, walk&nbsp;away.
           </p>
         </div>
@@ -649,8 +649,7 @@ export default function VsEnvisionPage() {
             No six-month&nbsp;wait.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            One floor plan. Free to set up. Live in 48 hours. See the lift
-            before you commit to anything.
+            One community. Live in 48 hours. We handle everything.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink

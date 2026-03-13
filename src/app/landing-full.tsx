@@ -21,11 +21,11 @@ const HOMEPAGE_NAV_LINKS = [
 const faqs = [
   {
     q: "How long does setup take?",
-    a: "First floor plan is live in 48 hours. Additional plans are typically a day or two each. You send us your option sheets and model home photos. We do the rest.",
+    a: "First community is live in 48 hours. Additional floor plans are typically a day or two each. You send us your option sheets and model home photos. We do the rest.",
   },
   {
     q: "How do I get started?",
-    a: "We set up one floor plan at no cost. You use it with real buyers. We measure upgrade revenue together over 60 days. If the numbers work, we expand. If they don\u2019t, you walk away with no obligation.",
+    a: "Pick your best-selling community. Send us the option sheets and model home photos. We build it in 48 hours. Real buyers use it during real design appointments. We measure upgrade revenue together. If the numbers work, we expand to more communities. If they don\u2019t, you walk away.",
   },
   {
     q: "What does the buyer experience look like?",
@@ -37,7 +37,7 @@ const faqs = [
   },
   {
     q: "What does this cost?",
-    a: "Pricing is scoped to your floor plan count and volume. Your first plan is free so we can prove the value before we talk numbers. Reach out and we\u2019ll walk through it together.",
+    a: "We set up your first community at no cost so we can prove the value together. After that, pricing is scoped to your community count. We\u2019ll walk through it once you\u2019ve seen the results.",
   },
   {
     q: "How is this different from Envision or other platforms?",
@@ -127,15 +127,15 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 text-center">
           <div>
             <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2" style={{ fontVariantNumeric: "tabular-nums" }}>48hrs</p>
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">First plan live</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">First community live</p>
           </div>
           <div>
             <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Done for you</p>
             <p className="text-xs uppercase tracking-[0.16em] text-slate-400">We handle setup. You keep selling.</p>
           </div>
           <div>
-            <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">1 plan</p>
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Free to prove it works</p>
+            <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Zero disruption</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Same appointments. Same workflow.</p>
           </div>
         </div>
       </div>
@@ -437,7 +437,7 @@ export default function LandingPage() {
               "@type": "Offer",
               price: "0",
               priceCurrency: "USD",
-              description: "First floor plan free — live in 48 hours",
+              description: "First community live in 48 hours. Done for you.",
             },
           }),
         }}

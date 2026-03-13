@@ -418,8 +418,7 @@ export default function VsPdfPage() {
             Your buyers can&apos;t upgrade what they can&apos;t&nbsp;see.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            One floor plan. Free to set up. Live in 48 hours. Prove the ROI
-            before you commit to anything.
+            One community. Live in 48 hours. We handle everything.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink

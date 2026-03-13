@@ -16,14 +16,14 @@ export function GetStartedSection({
         <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6 text-balance">
           {headline ?? (
             <>
-              One floor plan. 48 hours.
+              Send us your option sheets.
               <br />
-              See the results.
+              We handle everything&nbsp;else.
             </>
           )}
         </h2>
         <p className="text-lg md:text-xl text-slate-600 mb-12 max-w-2xl mx-auto">
-          {subtitle ?? (<>We set up your best-selling floor plan at no cost. Your finishes, your pricing, your photos. Buyers use it during real design appointments. We measure upgrade revenue&nbsp;together.</>)}
+          {subtitle ?? (<>Pick your best-selling community. We build the experience using your finishes, your pricing, your model home photos. Buyers use it during real appointments. We measure upgrade revenue&nbsp;together.</>)}
         </p>
       </div>
 
@@ -34,26 +34,23 @@ export function GetStartedSection({
               48 hours to live
             </p>
             <p className="text-sm text-slate-600">
-              Send us your floor plan and options. We handle
-              everything&nbsp;else.
+              Send us your option sheets and model home photos. We build it. You don&apos;t touch a&nbsp;thing.
             </p>
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900 mb-1">
-              Your first plan is free
+              Nothing changes for your team
             </p>
             <p className="text-sm text-slate-600">
-              Real buyers, real selections, real upgrade
-              revenue&nbsp;data.
+              Same design appointments, same workflow. Buyers use it themselves. Your team gets a priced selection&nbsp;sheet.
             </p>
           </div>
           <div>
             <p className="text-sm font-semibold text-slate-900 mb-1">
-              Walk away anytime
+              Start with one community
             </p>
             <p className="text-sm text-slate-600">
-              If the numbers don&apos;t work, you owe nothing. No contract.
-              No&nbsp;obligation.
+              We set it up, your buyers use it, we measure upgrade revenue together. Expand when the numbers make&nbsp;sense.
             </p>
           </div>
         </div>
@@ -62,9 +59,8 @@ export function GetStartedSection({
       </div>
 
       <p className="text-sm text-slate-500 text-center mt-6 max-w-3xl mx-auto">
-        After your first plan, we scope pricing to your floor plan count.
-        We&apos;ll walk through it together once you&apos;ve seen the
-        results.
+        No upfront cost. After you&apos;ve seen the results, we scope
+        pricing to your community count. We&apos;ll walk through it&nbsp;together.
       </p>
     </section>
   );
