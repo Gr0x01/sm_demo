@@ -24,6 +24,7 @@ export interface PhotoGenerateRequestedData {
 export interface DemoGenerateRequestedData {
   combinedHash: string;
   photoHash: string;
+  sessionId: string;
   effectiveSelections: Record<string, string>;
   sceneAnalysis: DemoSceneAnalysis | null;
 }

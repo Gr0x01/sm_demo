@@ -1,7 +1,7 @@
 import OpenAI, { toFile } from "openai";
 import { inngest } from "@/inngest/client";
 import { buildDemoPrompt } from "@/lib/demo-prompt";
-import { DEMO_GENERATION_CACHE_VERSION } from "@/lib/demo-generate";
+import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
 import { getServiceClient } from "@/lib/supabase";
 import { captureAiEvent, captureAiError, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
@@ -16,7 +16,7 @@ export const generateDemo = inngest.createFunction(
   },
   { event: "demo/generate.requested" },
   async ({ event, step }) => {
-    const { combinedHash, photoHash, effectiveSelections, sceneAnalysis } = event.data;
+    const { combinedHash, photoHash, sessionId, effectiveSelections, sceneAnalysis } = event.data;
 
     // --- Step 1: Prep + generate ---
     const result = await step.run("generate", async () => {
@@ -104,12 +104,12 @@ export const generateDemo = inngest.createFunction(
       }
 
       // Cache the result (upsert replaces __pending__ placeholder)
-      const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
       const { error: upsertError } = await supabase.from("generated_images").upsert({
         selections_hash: combinedHash,
         selections_json: {
           _source: "demo",
           _cacheVersion: DEMO_GENERATION_CACHE_VERSION,
+          session_id: sessionId,
           photo_hash: photoHash,
           ...effectiveSelections,
         },

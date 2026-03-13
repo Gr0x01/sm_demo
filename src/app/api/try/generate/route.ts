@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS } from "@/lib/demo-options";
-import { hashDemoSelections } from "@/lib/demo-generate";
+import { hashDemoSelections, DEMO_ORG_ID } from "@/lib/demo-generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
 import { inngest } from "@/inngest/client";
 
-const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
 const MAX_DEMO_GENERATIONS = 5;
 
 export const maxDuration = 30;
@@ -73,8 +72,8 @@ export async function POST(request: Request) {
       .select("id", { count: "exact", head: true })
       .eq("org_id", DEMO_ORG_ID)
       .neq("image_path", "__pending__")
-      .like("selections_json->>_source", "demo")
-      .like("selections_json->>photo_hash", photoHash);
+      .eq("selections_json->>_source", "demo")
+      .eq("selections_json->>session_id", sessionId);
 
     if ((genCount ?? 0) >= MAX_DEMO_GENERATIONS) {
       return NextResponse.json(
@@ -114,7 +113,7 @@ export async function POST(request: Request) {
       .from("generated_images")
       .insert({
         selections_hash: combinedHash,
-        selections_json: { _source: "demo", ...effectiveSelections },
+        selections_json: { _source: "demo", session_id: sessionId, ...effectiveSelections },
         image_path: "__pending__",
         org_id: DEMO_ORG_ID,
         step_id: null,
@@ -148,6 +147,7 @@ export async function POST(request: Request) {
         data: {
           combinedHash,
           photoHash,
+          sessionId,
           effectiveSelections,
           sceneAnalysis: sceneAnalysis ?? null,
         },
