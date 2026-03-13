@@ -25,6 +25,7 @@ export async function POST(request: Request) {
       .from("generated_images")
       .select("image_path")
       .eq("selections_hash", combinedHash)
+      .neq("image_path", "__pending__")
       .single();
 
     if (cached?.image_path) {
