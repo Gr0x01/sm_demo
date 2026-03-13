@@ -35,10 +35,7 @@ export const metadata: Metadata = {
   },
 };
 
-const NAV_LINKS = [
-  { label: "Home", href: "/" },
-  { label: "Try It", href: "/try" },
-];
+const NAV_LINKS = [{ label: "Try It", href: "/try" }];
 
 const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
