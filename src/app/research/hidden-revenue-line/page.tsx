@@ -426,26 +426,25 @@ export default function HiddenRevenueLinePage() {
             <p>
               Public homebuilders file 10-K annual reports with the SEC. Some of
               the largest break out &ldquo;lot premiums, options, and
-              upgrades&rdquo; as a measurable component of revenue. Most do not.
-              The data is scattered across filings, earnings call transcripts,
-              and investor presentations&nbsp;&mdash; and until now, nobody has
-              assembled it into a single&nbsp;view.
+              upgrades&rdquo; as a measurable component of revenue. Most
+              don&rsquo;t. The data is scattered across filings, earnings call
+              transcripts, and investor presentations. Nobody has put it all in
+              one&nbsp;place.
             </p>
             <p>
-              We reviewed SEC filings and earnings disclosures from 14 publicly
-              traded homebuilders, supplemented by industry surveys and regional
-              builder data, to extract what we could about upgrade and options
-              revenue. What emerged is a picture of a revenue line that ranges
-              from 8&ndash;15% of ASP for entry-level production builders to
-              20&ndash;25% for luxury and semi-custom, generates meaningfully
-              higher margins than the base house, and is almost entirely
-              undiscussed in industry&nbsp;benchmarking.
+              We went through SEC filings and earnings disclosures from 14
+              publicly traded homebuilders, supplemented by industry surveys and
+              regional builder data, to pull out what we could about upgrade and
+              options revenue. The picture: a revenue line that runs from
+              8&ndash;15% of ASP for entry-level production builders to
+              20&ndash;25% for luxury and semi-custom, generates higher margins
+              than the base house, and gets almost no attention in industry&nbsp;benchmarking.
             </p>
             <p>
-              This matters for every builder&nbsp;&mdash; public or private, 50
-              homes a year or 5,000&nbsp;&mdash; because the gap between
-              builders who optimize this line and those who don&rsquo;t is likely
-              measured in hundreds of basis points of&nbsp;margin.
+              This matters for every builder, public or private, 50 homes a year
+              or 5,000. The gap between builders who optimize this line and those
+              who don&rsquo;t is likely measured in hundreds of basis points
+              of&nbsp;margin.
             </p>
           </div>
         </div>
@@ -467,17 +466,17 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              Of the 14 public builders we reviewed, only two&nbsp;&mdash; Toll
-              Brothers and PulteGroup&nbsp;&mdash; disclose upgrade and options
-              revenue at a level of specificity useful for benchmarking. A third,
-              Tri Pointe Homes, has publicly confirmed that buyers prefer
-              incentive dollars directed to design studio selections over
-              mortgage rate buydowns. The rest aggregate upgrade revenue into
-              total home sales with no separate&nbsp;breakout.
+              Of the 14 public builders we reviewed, only two disclose upgrade
+              and options revenue at a level useful for benchmarking: Toll
+              Brothers and PulteGroup. A third, Tri Pointe Homes, has publicly
+              confirmed that buyers prefer incentive dollars directed to design
+              studio selections over mortgage rate buydowns. The rest roll
+              upgrade revenue into total home sales with no
+              separate&nbsp;breakout.
             </p>
             <p>
-              That itself is a finding. The industry&rsquo;s most margin-rich
-              revenue stream is effectively invisible in public financial&nbsp;reporting.
+              The industry&rsquo;s most margin-rich revenue stream is invisible
+              in public financial&nbsp;reporting.
             </p>
           </div>
         </div>
@@ -553,11 +552,9 @@ export default function HiddenRevenueLinePage() {
           className="max-w-3xl mx-auto mt-8"
         >
           <p className="text-base text-slate-600 leading-relaxed">
-            Note what the table reveals: even between a luxury builder (Toll
-            Brothers, ~$977K ASP) and a move-up builder (PulteGroup, ~$549K
-            ASP), the percentage of revenue coming from options and upgrades is
-            remarkably consistent&nbsp;&mdash; 19% to 24%. The absolute dollar
-            amount differs, but the share of wallet is structurally&nbsp;similar.
+            Look at the percentages: a luxury builder at ~$977K ASP and a
+            move-up builder at ~$549K ASP both land between 19% and 24%. The
+            dollar amounts are different. The share of wallet is&nbsp;not.
           </p>
         </div>
 
@@ -572,10 +569,10 @@ export default function HiddenRevenueLinePage() {
           </p>
           <p className="text-base text-slate-600 leading-relaxed">
             Toll Brothers&rsquo; implied upgrade and options revenue in FY2024
-            alone ($203K &times; 10,813 homes). CEO Yearley has noted the design
-            studios generate over $1 billion in annual sales&nbsp;&mdash; what he
-            calls &ldquo;highly accretive&rdquo; revenue. A standalone business
-            inside a&nbsp;homebuilder.
+            alone ($203K &times; 10,813 homes). Yearley has called the design
+            studios &ldquo;highly accretive,&rdquo; noting they generate over
+            $1 billion in annual sales. A standalone business inside
+            a&nbsp;homebuilder.
           </p>
         </div>
       </Section>
@@ -596,25 +593,24 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              The most revealing data in Toll Brothers&rsquo; disclosures
-              isn&rsquo;t the headline $203K figure&nbsp;&mdash; it&rsquo;s what
-              happens when you split it by spec vs. build-to-order&nbsp;homes.
+              The most revealing number in Toll Brothers&rsquo; disclosures
+              isn&rsquo;t the $203K headline. It&rsquo;s what happens when you
+              split spec vs. build-to-order.
             </p>
             <p>
-              Between FY2023 and FY2024, Toll Brothers&rsquo; spec mix rose from
-              27% to 49% of deliveries. Over the same period, average options
-              per home dropped from $236K to $203K. The reason is structural:
-              spec buyers, who choose from finished or near-finished inventory,
-              spend an estimated $80&ndash;100K less in the Design Studio than
-              build-to-order buyers who select from&nbsp;scratch.
+              Between FY2023 and FY2024, Toll&rsquo;s spec mix rose from 27% to
+              49% of deliveries. Per-home options dropped from $236K to $203K
+              over the same period. Spec buyers spend less in the Design Studio
+              than BTO buyers who select from scratch. That&rsquo;s not
+              surprising. What&rsquo;s worth paying attention to is
+              how&nbsp;much&nbsp;less.
             </p>
             <p>
-              The margin impact is measurable. CEO Doug Yearley stated on
-              earnings calls that spec home margins run approximately 200 to 250
-              basis points below the company average. Build-to-order homes, with
-              full Design Studio engagement, consistently maintain adjusted gross
-              margins above 30%. Most of that gap traces directly to lower
-              Design Studio revenue on spec&nbsp;homes.
+              Yearley stated on earnings calls that spec home margins run
+              roughly 200 to 250 basis points below the company average. BTO
+              homes with full Design Studio engagement hold adjusted gross
+              margins above 30%. Most of that gap traces back to Design Studio
+              revenue on spec&nbsp;homes.
             </p>
           </div>
 
@@ -642,13 +638,11 @@ export default function HiddenRevenueLinePage() {
             className="mt-8 text-lg md:text-xl text-slate-600 leading-relaxed"
           >
             <p>
-              This is the single most important finding in the data. Upgrade
-              revenue is not primarily a function of buyer wealth or home
-              price&nbsp;&mdash; it&rsquo;s a function of how the builder
-              structures the selection experience. The same buyer, at the same
-              price point, in the same community, generates meaningfully
-              different upgrade revenue depending on whether they&rsquo;re guided
-              through a design studio process or handed a finished&nbsp;home.
+              Same builder. Same communities. Same base prices. Wildly different
+              upgrade revenue depending on whether the buyer walks through a
+              design studio or walks into a finished home. Upgrade revenue
+              isn&rsquo;t about buyer wealth or home price. It&rsquo;s about how
+              the builder runs the selection&nbsp;process.
             </p>
           </div>
         </div>
@@ -679,12 +673,11 @@ export default function HiddenRevenueLinePage() {
           <p className="text-sm text-slate-500 leading-relaxed">
             Note: Toll Brothers&rsquo; 20&ndash;25% figure includes structural
             options and lot premiums alongside design studio selections. Pure
-            design center spend&nbsp;&mdash; countertops, flooring, fixtures,
-            smart home&nbsp;&mdash; likely accounts for a lower share of ASP,
-            though no builder discloses this breakdown separately. This
-            distinction matters: a builder&rsquo;s upgrade revenue is the sum of
+            design center spend (countertops, flooring, fixtures, smart home) is
+            likely a lower share of ASP, though no builder breaks that out
+            separately. The distinction matters: upgrade revenue is the sum of
             lot premiums, structural options, and design center selections, and
-            each has different margin&nbsp;profiles.
+            each carries a different margin&nbsp;profile.
           </p>
         </div>
       </Section>
@@ -704,9 +697,10 @@ export default function HiddenRevenueLinePage() {
             style={revealStyle(90)}
             className="text-lg md:text-xl text-slate-600 leading-relaxed"
           >
-            The other 12 public builders we reviewed do not disclose upgrade
-            revenue separately. But their filings, earnings calls, and investor
-            presentations tell a consistent story through indirect&nbsp;evidence.
+            The other 12 public builders we reviewed don&rsquo;t disclose
+            upgrade revenue separately. But their filings, earnings calls, and
+            investor presentations drop enough clues to fill in
+            some&nbsp;blanks.
           </p>
         </div>
 
@@ -784,18 +778,16 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              The data points converge on a clear pattern. For move-up and
-              semi-custom builders&nbsp;&mdash; the segment where most private
-              builders compete&nbsp;&mdash; the range runs from roughly 12% to
-              20% of ASP. For a builder with a $400K average selling price,
-              that&rsquo;s the difference between $48,000 and $80,000 in upgrade
-              revenue per&nbsp;closing.
+              For move-up and semi-custom builders (the segment where most
+              private builders compete), the range runs from roughly 12% to 20%
+              of ASP. On a $400K average selling price, that&rsquo;s the
+              difference between $48,000 and $80,000 in upgrade revenue
+              per&nbsp;closing.
             </p>
             <p>
-              Multiply that across a builder doing 200 homes a year, and
-              you&rsquo;re looking at a spread of $6.4 million in
-              revenue&nbsp;&mdash; before accounting for the 3&ndash;5 percentage
-              point margin premium that options carry over the base&nbsp;house.
+              Across 200 homes a year, that&rsquo;s a $6.4 million spread in
+              revenue. At margins 3&ndash;5 points above the base house, the
+              gross profit gap is roughly $2.5&ndash;3.5M.
             </p>
           </div>
 
@@ -854,28 +846,25 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              Multiple sources&nbsp;&mdash; earnings calls, investor
-              presentations, and industry research&nbsp;&mdash; converge on the
-              same point: options and upgrades carry meaningfully higher gross
+              Earnings calls, investor presentations, and industry research all
+              point the same direction: options and upgrades carry higher gross
               margins than the base house. The most commonly cited figure is a
               3&ndash;5 percentage point&nbsp;premium.
             </p>
             <p>
-              This makes structural sense. Design studio selections and
-              structural options are priced at retail, often with limited
-              competitive pressure (the buyer has already committed to the
-              builder and community). Material and labor costs for upgrades are
-              well-known. And many of the highest-margin upgrades&nbsp;&mdash;
-              lot premiums, elevation changes, extended patios&nbsp;&mdash;
-              involve minimal incremental&nbsp;cost.
+              The reason is straightforward. Design studio selections and
+              structural options are priced at retail, with limited competitive
+              pressure. The buyer has already committed to the builder and the
+              community. Material and labor costs for upgrades are well-known.
+              And many of the highest-margin upgrades (lot premiums, elevation
+              changes, extended patios) involve minimal
+              incremental&nbsp;cost.
             </p>
             <p>
-              Importantly, option margins appear more resilient to incentive
-              pressure than the base house price. When builders offer
-              concessions, base prices compress&nbsp;&mdash; but design studio
-              selections, priced at retail in a non-competitive context, hold
-              their margins. This dynamic becomes even clearer when you look at
-              the buyer psychology&nbsp;data.
+              Option margins also appear more resilient to incentive pressure
+              than the base house price. When builders offer concessions, base
+              prices compress. Design studio selections, priced at retail in a
+              captive context, hold their&nbsp;margins.
             </p>
           </div>
         </div>
@@ -897,24 +886,22 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              The financial data tells one story. Buyer behavior data tells
-              another&nbsp;&mdash; and it reinforces the same&nbsp;conclusion.
+              The financial data is one piece. Buyer behavior is&nbsp;another.
             </p>
             <p>
               In 2020, Meritage Homes commissioned a study through Wakefield
-              Research on the new home upgrade experience. The findings paint a
-              picture of a process that is simultaneously high-revenue and deeply
-              flawed: 45% of new home buyers exceeded their upgrade budget,
-              overspending by an average of $21,000. One in four found the
-              process stressful. And 37% said their finished homes didn&rsquo;t
-              turn out as they&nbsp;expected.
+              Research on the new home upgrade experience. The numbers: 45% of
+              buyers exceeded their upgrade budget, overspending by an average
+              of $21,000. One in four found the process stressful. And 37% said
+              their finished homes didn&rsquo;t turn out as
+              they&nbsp;expected.
             </p>
             <p>
-              Meritage&rsquo;s response was to redesign the process
-              entirely&nbsp;&mdash; cutting design center time from 20+ hours per
-              buyer down to roughly 3 hours using curated collections. Their bet:
-              a faster, less stressful process would maintain (or increase)
-              upgrade revenue while reducing friction and buyer&nbsp;regret.
+              Meritage responded by redesigning the process from scratch. They
+              cut design center time from 20+ hours per buyer to about 3 hours
+              using curated collections. The idea: a faster, less stressful
+              process could maintain upgrade revenue while cutting friction and
+              buyer&nbsp;regret.
             </p>
           </div>
 
@@ -930,10 +917,9 @@ export default function HiddenRevenueLinePage() {
             <p className="text-base text-slate-600 leading-relaxed">
               of buyers exceeded their upgrade budget by $21K+ on average.
               Meritage Homes / Wakefield Research, 2020. On an ASP of ~$400K,
-              the average buyer intended to spend a certain amount on upgrades
-              and then spent significantly more&nbsp;&mdash; suggesting the
-              upgrade experience itself drives incremental revenue beyond
-              initial&nbsp;intent.
+              buyers planned to spend one amount on upgrades and spent
+              considerably more. The experience itself drives revenue beyond
+              what buyers initially&nbsp;intend.
             </p>
           </div>
 
@@ -943,31 +929,25 @@ export default function HiddenRevenueLinePage() {
             className="mt-8 text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              The cancellation rate data adds another dimension. Toll Brothers
-              CEO Doug Yearley has attributed the company&rsquo;s industry-low
-              2.3% cancellation rate in part to the emotional attachment buyers
-              develop through the design studio process. Buyers who have spent
-              hours selecting finishes, choosing structural options, and
-              customizing &ldquo;their&rdquo; home are significantly less likely
-              to walk away&nbsp;&mdash; even in a market where rate buydowns and
-              price concessions create exit&nbsp;opportunities.
+              Then there&rsquo;s retention. Toll Brothers runs a 2.3%
+              cancellation rate, roughly half the industry average. Yearley
+              attributes part of that to the attachment buyers build through the
+              design studio process. Once you&rsquo;ve spent hours picking
+              finishes and making a home yours, you&rsquo;re less inclined to
+              walk&nbsp;away.
             </p>
             <p>
-              Multiple builders have noted the same dynamic on earnings calls:
-              both Toll Brothers and Tri Pointe Homes have stated that buyers
+              Both Toll and Tri Pointe have said on earnings calls that buyers
               prefer incentive dollars directed toward design studio upgrades
-              rather than mortgage rate reductions. The implication is that the
-              upgrade experience creates a form of switching cost&nbsp;&mdash;
-              buyers are not just buying a house, they&rsquo;re buying the
-              specific home they&nbsp;designed.
+              over mortgage rate reductions. The upgrade experience becomes its
+              own form of switching&nbsp;cost.
             </p>
             <p>
-              This has direct margin implications. Cancellations are among the
-              most expensive events in homebuilding: a cancelled home means
-              remarketing costs, potential price reductions, carrying costs, and
-              lost momentum in the community. If a well-designed upgrade process
-              reduces cancellations even modestly, the avoided cost contributes
-              directly to&nbsp;margin.
+              Cancellations are among the most expensive events in homebuilding:
+              remarketing costs, price reductions, carrying costs, lost momentum
+              in the community. If a well-run upgrade process reduces
+              cancellations even modestly, the avoided cost goes straight
+              to&nbsp;margin.
             </p>
           </div>
         </div>
@@ -989,7 +969,7 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              Three structural factors explain the gap in available&nbsp;benchmarking:
+              Three reasons this data doesn&rsquo;t&nbsp;exist:
             </p>
             <p>
               <strong className="text-slate-900">
@@ -1036,9 +1016,9 @@ export default function HiddenRevenueLinePage() {
               Lennar bundles many upgrades into the base price as a standard
               feature package, making direct comparison impossible. Their model
               effectively embeds upgrade revenue into ASP rather than reporting
-              it separately. This strategy prioritizes operational efficiency
-              over per-home customization revenue&nbsp;&mdash; a fundamentally
-              different approach to the upgrade&nbsp;question.
+              it separately. It&rsquo;s a different strategy
+              entirely&nbsp;&mdash; prioritizing operational efficiency over
+              per-home customization&nbsp;revenue.
             </p>
           </div>
         </div>
@@ -1060,15 +1040,14 @@ export default function HiddenRevenueLinePage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              Private builders&nbsp;&mdash; the vast majority of the roughly
-              44,000 active homebuilders in the United States&nbsp;&mdash;
-              don&rsquo;t file with the SEC. They also don&rsquo;t typically
+              Private builders don&rsquo;t file with the SEC. Most of the
+              roughly 44,000 active homebuilders in the U.S. also don&rsquo;t
               benchmark upgrade revenue against peers, because no peer dataset
               has&nbsp;existed.
             </p>
             <p>
-              The data from public builders, combined with the limited regional
-              builder data available, suggests several things worth&nbsp;considering:
+              A few things stand out when you combine the public data with
+              what limited regional builder data&nbsp;exists:
             </p>
             <p>
               <strong className="text-slate-900">
@@ -1076,7 +1055,7 @@ export default function HiddenRevenueLinePage() {
                 realize.
               </strong>{" "}
               Entry-level builders may assume 8&ndash;10% is normal, but
-              Robino-Corrozi&nbsp;&mdash; a ~300-home regional builder&nbsp;&mdash;
+              Robino-Corrozi, a ~300-home regional builder,
               reported that lower-end buyers spent 15&ndash;25% of selling price
               on upgrades, and that adding a formal design center increased
               option revenue by roughly 10% over the model home-only approach.
@@ -1099,20 +1078,20 @@ export default function HiddenRevenueLinePage() {
               <strong className="text-slate-900">
                 The most-cited industry benchmark is nearly two decades old.
               </strong>{" "}
-              The ProBuilder buyer survey from 2007&nbsp;&mdash; which
-              established the commonly referenced 10&ndash;20% range for design
-              center spend&nbsp;&mdash; remains the most-cited source in the
-              industry. No comprehensive update has been published since. Market
-              dynamics, buyer expectations, and the sophistication of design
-              studio operations have changed substantially. This analysis
-              represents a step toward a current&nbsp;benchmark.
+              The ProBuilder buyer survey from 2007, which established the
+              commonly referenced 10&ndash;20% range for design center spend,
+              is still the most-cited source in the industry. Nothing
+              comprehensive has been published since. Buyer expectations,
+              design studio operations, and the universe of available upgrades
+              look nothing like they did in 2007. This analysis is a step
+              toward a current&nbsp;benchmark.
             </p>
             <p>
               <strong className="text-slate-900">
                 Upgrade investment correlates with retention.
               </strong>{" "}
-              Toll Brothers&rsquo; 2.3% cancellation rate&nbsp;&mdash; roughly
-              half the industry average&nbsp;&mdash; is partially attributed to
+              Toll Brothers&rsquo; 2.3% cancellation rate, roughly half the
+              industry average, is partially attributed to
               the emotional attachment created by the design studio process. For
               a builder doing 200 homes a year, cutting cancellation rates from
               15% to 10% avoids 10 lost sales, their associated remarketing
@@ -1125,9 +1104,9 @@ export default function HiddenRevenueLinePage() {
               Tri Pointe Homes confirming that buyers prefer design studio
               incentive dollars over rate buydowns, Ashton Woods describing
               design studios as strategic margin drivers, and Meritage Homes
-              fundamentally redesigning their selection process all signal that
-              sophisticated builders view this as a primary lever&nbsp;&mdash;
-              not a back-office&nbsp;function.
+              rebuilding their selection process from the ground up all signal
+              that the best builders treat this as a primary revenue
+              lever, not a back-office&nbsp;function.
             </p>
           </div>
         </div>
@@ -1205,12 +1184,11 @@ export default function HiddenRevenueLinePage() {
           <p>
             Even at the conservative estimate, options and upgrades represent a
             $12+ billion revenue category among the top 10 public builders
-            alone. Extend that to the full industry&nbsp;&mdash; including the
-            roughly 44,000 private builders&nbsp;&mdash; and the total
-            addressable upgrade market is substantially larger. And unlike base
-            home pricing, which is constrained by appraisals, comparables, and
-            competitive pressure, upgrade revenue responds directly to how well
-            the builder presents and structures the selection&nbsp;experience.
+            alone. Add in the roughly 44,000 private builders and the total
+            market is far larger. And unlike base home pricing, which is boxed
+            in by appraisals, comparables, and competitive pressure, upgrade
+            revenue responds directly to how well the builder presents the
+            selection&nbsp;experience.
           </p>
         </div>
       </Section>
