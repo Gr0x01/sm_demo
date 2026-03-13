@@ -184,6 +184,11 @@ Original research report analyzing SEC filings on public builder upgrade revenue
 - [x] `TrackedLink` CTAs: mid-report → `/try` and footer → `/#pilot` + `/try`, event: `research_cta_clicked` with location
 - [x] Sitemap + robots updated
 - [x] `SiteFooter` extracted as shared component (`src/components/SiteFooter.tsx`) — replaces inline footers on homepage, /vs/envision, /vs/pdf-option-sheets, and research page. Consistent links: Home, Try It, Pilot, Research, Contact.
+- [x] Fact-check pass: corrected M/I Homes ASP, NVR revenue, D.R. Horton revenue+ASP, Meritage ASP against actual SEC filings
+- [x] LinkedIn article: `memory-bank/research/linkedin-hidden-revenue-line.md` with corrected numbers (cancellation rate, spec vs BTO gap derivation)
+- [x] 5 chart images for LinkedIn article via `next/og` route (`/research/hidden-revenue-line/charts?chart=hero|stats|disclosed|segments|gap`), Baskerville TTF extracted from macOS system font, Finch brand colors
+- [x] Published as LinkedIn article on Finch company page + personal reshare
+- [x] UTM tracking on article links: `utm_source=linkedin&utm_medium=article&utm_campaign=hidden-revenue-line`
 
 ### 15. V1 Workstream E: Branding Controls ✅
 **Depends on A (admin auth).** Org-level branding customization applied to buyer-facing pages.

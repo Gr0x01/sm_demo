@@ -1,8 +1,12 @@
 # What SEC Filings Reveal About Upgrade Revenue in Homebuilding
 
+<!-- IMAGE: linkedin-charts/hero.png -->
+
 Upgrade revenue accounts for 8–25% of average selling price among public homebuilders. It carries a 3–5 point margin premium over the base house. And there is no current industry benchmark for it. The most-cited source on design center upgrade spending is a ProBuilder survey from 2007. Nothing comprehensive has been published since.
 
 We went through filings and earnings disclosures from 14 publicly traded builders to pull out what we could about this revenue line. The picture that came back: a category that nobody in the industry talks about in benchmarking, despite it being the most margin-rich line on the P&L.
+
+<!-- IMAGE: linkedin-charts/stats.png -->
 
 ---
 
@@ -17,6 +21,8 @@ That's $2.2 billion in implied upgrade revenue in FY2024 alone. CEO Doug Yearley
 
 **PulteGroup (Move-Up, Q2 2024)**
 $549K ASP. $104,000 in options and lot premiums per home. 18.9% of ASP.
+
+<!-- IMAGE: linkedin-charts/disclosed.png -->
 
 **The other 12 builders** (D.R. Horton, Lennar, NVR, KB Home, Meritage, Taylor Morrison, Tri Pointe, Century Communities, M/I Homes, Smith Douglas, Dream Finders, Beazer) do not disclose upgrade revenue separately. They roll it into total homebuilding revenue with no breakout.
 
@@ -47,6 +53,8 @@ Combining the disclosed numbers with industry surveys and a few regional builder
 - **Entry-Level / Production:** 8–15% of ASP (limited selections)
 - **Weighted Average (design center only):** 10–15% of ASP
 
+<!-- IMAGE: linkedin-charts/segments.png -->
+
 These are directional, not precise. That's part of the point: the data to build precise benchmarks doesn't exist publicly.
 
 One caveat: Toll Brothers' figures include structural options and lot premiums alongside design studio selections. Pure design center spend (countertops, flooring, fixtures, smart home) is a lower share of ASP, though no builder breaks that out separately.
@@ -61,6 +69,8 @@ Across 200 closings, that's $6.4 million in annual revenue. At margins 3–5 poi
 
 That's within the same segment. Not luxury vs. entry-level. Just the spread between typical and optimized within the move-up category.
 
+<!-- IMAGE: linkedin-charts/gap.png -->
+
 ---
 
 ## The Buyer Psychology
@@ -69,7 +79,7 @@ In 2020, Meritage Homes commissioned a study through Wakefield Research. 45% of 
 
 Meritage's response was to redesign the process from scratch. They cut design center time from 20+ hours per buyer to about 3 hours using curated collections. The idea: a faster, less stressful process could maintain upgrade revenue while reducing friction and regret.
 
-Then there's retention. Toll Brothers runs a 2.3% cancellation rate, roughly half the industry average. Yearley attributes part of that to the attachment buyers build through the design studio process. Once you've spent hours picking finishes and making a home yours, you're less inclined to walk away.
+Then there's retention. Toll Brothers runs a cancellation rate in the low single digits — roughly 2–3%, well below the industry average. Yearley attributes part of that to the attachment buyers build through the design studio process. Once you've spent hours picking finishes and making a home yours, you're less inclined to walk away.
 
 Both Toll and Tri Pointe have said on earnings calls that buyers prefer incentive dollars directed toward design studio upgrades over mortgage rate reductions. The upgrade experience becomes its own form of switching cost.
 
@@ -122,7 +132,7 @@ All data is sourced from publicly available SEC filings, earnings call transcrip
 - ProBuilder, "Design Centers Capture Customers" (2007)
 - Builder Magazine, "Meritage Homes Takes a New Design Center Tack" (Wakefield Research data, 2020)
 
-Segment benchmark ranges (8–15%, 12–20%, 20–25%) are synthesized from disclosed data points and industry surveys. The $80–100K spec vs. BTO gap is our estimate, derived from the shift in per-home options as spec mix changed. It's not a number any builder has disclosed.
+Segment benchmark ranges (8–15%, 12–20%, 20–25%) are synthesized from disclosed data points and industry surveys. The spec vs. BTO gap is derived from the shift in per-home options ($236K → $203K) as spec mix rose from 27% to 49%. Back-of-envelope math suggests BTO buyers average ~$275K in options vs. ~$125K for spec — a ~$150K gap per home. It's not a number any builder has disclosed.
 
 Full report with sourced links: withfin.ch/research/hidden-revenue-line
 
