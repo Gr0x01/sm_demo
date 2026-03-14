@@ -37,9 +37,11 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 | Service | Purpose |
 |---------|---------|
 | **Next.js 16** | App framework |
-| **Google Gemini (gemini-3-pro-image-preview)** | Image generation (primary) |
+| **OpenAI gpt-image-1.5** | Image generation (via `images.edit`) |
 | **Supabase** | Database (multi-tenant, RLS) + Storage (swatches, generated images) + Auth (admin) |
+| **Inngest** | Background job execution (generation pipeline) |
 | **Tailwind CSS v4** | Styling |
+| **Vitest** | Unit + integration tests |
 | **Vercel** | Hosting |
 
 ## Commands
@@ -47,6 +49,8 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 ```bash
 npm run dev -p 3003  # local dev (port 3003)
 npm run build        # production build
+npm test             # run test suite (129 tests, <1s)
+npm run test:watch   # watch mode
 npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a new builder org
 ```
 

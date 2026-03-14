@@ -25,6 +25,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# test coverage
+coverage/
+
 # misc
 .DS_Store
 *.tsbuildinfo

@@ -338,9 +338,12 @@ src/
 │   ├── pricing.ts           # Price calculation (accepts categories as param)
 │   ├── buyer-session.ts     # Session helpers (mapRowToPublicSession, validateEmail, SESSION_COLUMNS)
 │   ├── email.ts             # Resend email utility (sendResumeEmail, lazy-initialized client)
-│   ├── generate.ts          # Prompt construction, buildPromptContextSignature, hashSelections (shared by generation + check routes)
+│   ├── generate.ts          # Prompt construction, buildPromptContextSignature, hashSelections, deriveGenerationContext (shared by generation + check routes)
 │   ├── models.ts            # IMAGE_MODEL (gpt-image-1.5), VISION_MODEL (gemini-3-flash-preview)
-│   └── photo-generation-policy.ts # Internal per-photo policy resolver (DB-backed + fallback)
+│   ├── photo-generation-policy.ts # Internal per-photo policy resolver (DB-backed + fallback)
+│   └── __fixtures__/
+│       ├── generation.ts    # Test fixtures: aiConfig, optionLookup, selections, policies (SM Kinkade patterns)
+│       └── supabase-mock.ts # Shared chainable Supabase client mock for route tests
 ├── inngest/
 │   ├── client.ts              # Inngest client singleton + typed event schemas
 │   └── functions/

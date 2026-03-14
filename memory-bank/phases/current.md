@@ -199,6 +199,15 @@ Original research report analyzing SEC filings on public builder upgrade revenue
 - [x] Buyer-facing dynamic theming: CSS variable injection (`--color-navy`, `--color-accent`, `--color-secondary`) on org landing + demo pages
 - [x] Org landing page: dynamic header style, logo display, primary/secondary color application, corner style on cards
 
+### 19. Test Infrastructure ✅
+Vitest test suite covering the generation pipeline end-to-end. 129 tests in <1s. Three layers:
+- [x] **Layer 1: Unit tests** (6 files) — pure functions: photo scoping, selection reconciliation, flooring resolution, hash derivation, prompt signature, policy resolution, pricing
+- [x] **Layer 2: Pipeline integration tests** — `deriveGenerationContext` with realistic fixture data: scoping, flooring, accent remap, policy, negative-guard rules, hash consistency
+- [x] **Layer 3: Route handler tests** (2 files) — `/api/generate/photo` and `/api/generate/photo/check` with mocked Supabase + Inngest: validation, ownership chain, cache hit/miss, 429 double-click guard, retry flow, Inngest dispatch, error handling
+- [x] Shared fixtures (`src/lib/__fixtures__/generation.ts`) modeling SM Kinkade kitchen/bedroom/living room patterns
+- [x] Shared Supabase mock helper (`src/lib/__fixtures__/supabase-mock.ts`)
+- [x] `.test.ts` excluded from production tsconfig, `coverage/` in .gitignore
+
 ## What's Done
 
 ### Multi-Tenant Foundation (Complete)
