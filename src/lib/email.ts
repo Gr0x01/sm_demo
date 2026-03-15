@@ -19,8 +19,7 @@ export async function sendResumeEmail(
 ) {
   const from = process.env.RESEND_FROM_EMAIL;
   if (!from) {
-    console.error("[email] Missing RESEND_FROM_EMAIL env var");
-    return;
+    throw new Error("[email] Missing RESEND_FROM_EMAIL env var");
   }
 
   const { html, text } = buyerResumeEmail({
@@ -50,8 +49,7 @@ export async function sendAdminInviteEmail(
 ) {
   const from = process.env.RESEND_FROM_EMAIL;
   if (!from) {
-    console.error("[email] Missing RESEND_FROM_EMAIL env var");
-    return;
+    throw new Error("[email] Missing RESEND_FROM_EMAIL env var");
   }
 
   const { html, text } = adminInviteEmail({
@@ -79,8 +77,7 @@ export async function sendPilotInterestEmail(lead: {
 }) {
   const from = process.env.RESEND_FROM_EMAIL;
   if (!from) {
-    console.error("[email] Missing RESEND_FROM_EMAIL env var");
-    return;
+    throw new Error("[email] Missing RESEND_FROM_EMAIL env var");
   }
 
   const { html, text } = pilotInterestNotification(lead);
