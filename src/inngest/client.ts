@@ -29,12 +29,22 @@ export interface DemoGenerateRequestedData {
   sceneAnalysis: DemoSceneAnalysis | null;
 }
 
+export interface PilotLeadReceivedData {
+  name: string;
+  company: string;
+  email: string;
+  phone: string | null;
+}
+
 type Events = {
   "photo/generate.requested": {
     data: PhotoGenerateRequestedData;
   };
   "demo/generate.requested": {
     data: DemoGenerateRequestedData;
+  };
+  "pilot/lead.received": {
+    data: PilotLeadReceivedData;
   };
 };
 

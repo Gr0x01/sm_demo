@@ -146,6 +146,19 @@ export async function captureAiError(distinctId: string, properties: AiErrorEven
   await ph.flush();
 }
 
+/** Capture a generic server-side event (non-AI). */
+export async function captureEvent(
+  distinctId: string,
+  event: string,
+  properties?: Record<string, unknown>,
+): Promise<void> {
+  const ph = getClient();
+  if (!ph) return;
+
+  ph.capture({ distinctId, event, properties });
+  await ph.flush();
+}
+
 export function estimateOpenAICost(model: string, passes: number): number {
   return (OPENAI_IMAGE_COST[model] ?? DEFAULT_OPENAI_IMAGE_COST) * passes;
 }
