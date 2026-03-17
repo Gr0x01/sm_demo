@@ -430,6 +430,7 @@ const ROOM_PHOTOS: RoomPhotoDef[] = [
       "common-wall-paint", "baseboard", "crown-options", "interior-door-style",
       "fireplace-mantel", "lighting", "great-room-fan",
       "kitchen-cabinet-color", "kitchen-island-cabinet-color", "kitchen-cabinet-hardware", "kitchen-faucet",
+      "refrigerator",
     ],
   },
   {
@@ -984,6 +985,16 @@ async function main() {
           "Do NOT add any new kitchen structures in the great-room area: no new islands, perimeter cabinets, countertops, appliances, sinks, faucets, or backsplash walls.",
           "Kitchen edits are allowed ONLY on existing kitchen elements already visible in the source background kitchen zone. Do NOT expand the kitchen footprint into the living room.",
         ],
+        invariantRulesWhenSelected: {
+          refrigerator: [
+            "Place the selected refrigerator in the kitchen background in its alcove/opening. Keep the refrigerator proportional to the background kitchen scale.",
+          ],
+        },
+        invariantRulesWhenNotSelected: {
+          refrigerator: [
+            "Keep the refrigerator alcove/opening in the background kitchen unchanged. Do NOT add a refrigerator or modify that space.",
+          ],
+        },
       },
     };
 
