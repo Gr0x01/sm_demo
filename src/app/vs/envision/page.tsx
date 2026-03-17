@@ -16,21 +16,21 @@ export const metadata: Metadata = {
       "Finch vs Zonda Envision — Upgrade Visualization Without the Enterprise Rollout",
   },
   description:
-    "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in 48 hours. Done for you. No six-figure contract, no IT team, no months of setup.",
+    "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in days, not months. Done for you. No six-figure contract, no IT team.",
   alternates: { canonical: "https://withfin.ch/vs/envision" },
   openGraph: {
-    title: "Finch vs Zonda Envision — Same Upgrade Lift, Live in 48 Hours",
+    title: "Finch vs Zonda Envision — Same Upgrade Lift, Days Not Months",
     description:
-      "Envision takes months and six figures. Finch is done for you, live in 48 hours. Compare the two approaches to upgrade visualization.",
+      "Envision takes months and six figures. Finch is done for you, live in days. Compare the two approaches to upgrade visualization.",
     url: "https://withfin.ch/vs/envision",
     siteName: "Finch",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Finch vs Zonda Envision — Same Upgrade Lift, Live in 48 Hours",
+    title: "Finch vs Zonda Envision — Same Upgrade Lift, Days Not Months",
     description:
-      "Envision takes months and six figures. Finch is done for you, live in 48 hours.",
+      "Envision takes months and six figures. Finch is done for you, live in days.",
   },
 };
 
@@ -60,7 +60,7 @@ function Section({
 }
 
 const comparisonRows = [
-  { label: "Time to live", envision: "3-6 months", finch: "48 hours" },
+  { label: "Time to live", envision: "3-6 months", finch: "Under a week" },
   {
     label: "Setup work (your side)",
     envision: "Dedicated team, IT integration",
@@ -94,7 +94,7 @@ const comparisonRows = [
   {
     label: "Contract to start",
     envision: "Six-figure annual contract",
-    finch: "Send option sheets, live in 48 hours",
+    finch: "Send option sheets, live in days",
   },
   {
     label: "Built for",
@@ -118,7 +118,7 @@ const faqs = [
   },
   {
     q: "We already use Envision. Can we switch?",
-    a: "Yes. Send us your option sheets and model home photos. We can have your first floor plan live in 48 hours, running alongside Envision while you compare results.",
+    a: "Yes. Send us your option sheets and model home photos. We can have your first floor plan live in under a week, running alongside Envision while you compare results.",
   },
   {
     q: "How do you match Envision\u2019s 35% upgrade lift?",
@@ -170,7 +170,7 @@ export default function VsEnvisionPage() {
           >
             Zonda Envision takes months to implement and a team to run. Finch is
             done for you. Send us your option sheets and model home photos. Your
-            buyers see their kitchen in 48&nbsp;hours.
+            buyers see their kitchen in days, not&nbsp;months.
           </p>
           <div
             data-reveal
@@ -205,7 +205,7 @@ export default function VsEnvisionPage() {
           className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-5xl leading-[0.98] tracking-[-0.02em] text-slate-900">
-            Six months vs. 48&nbsp;hours
+            Months vs.&nbsp;days
           </h2>
         </div>
 
@@ -406,7 +406,7 @@ export default function VsEnvisionPage() {
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
-            { stat: "48 hrs", label: "First community live" },
+            { stat: "Days", label: "First community live" },
             { stat: "Done for you", label: "We handle setup" },
             { stat: "$0", label: "Builder effort" },
           ].map((card, i) => (
@@ -487,7 +487,7 @@ export default function VsEnvisionPage() {
             How It Works
           </p>
           <h2 className="text-3xl md:text-5xl leading-[0.98] tracking-[-0.02em] text-slate-900">
-            Live in 48 hours. Here&apos;s&nbsp;how.
+            Live in days, not months. Here&apos;s&nbsp;how.
           </h2>
         </div>
 
@@ -531,7 +531,7 @@ export default function VsEnvisionPage() {
           <p className="text-sm text-slate-500">
             No software to learn. No data entry. No IT department required.
             Envision takes a dedicated team and months of integration. Finch
-            takes a phone call and 48&nbsp;hours.
+            takes a phone call and a few&nbsp;days.
           </p>
         </div>
       </Section>
@@ -565,7 +565,7 @@ export default function VsEnvisionPage() {
             </p>
             <p className="text-slate-800 font-medium">
               You send us your option sheets. We send you a working experience
-              in 48&nbsp;hours. Your buyers see their kitchen before they
+              in days, not months. Your buyers see their kitchen before they
               commit. That&apos;s&nbsp;it.
             </p>
           </div>
@@ -646,7 +646,7 @@ export default function VsEnvisionPage() {
             No six-month&nbsp;wait.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            One community. Live in 48 hours. We handle everything.
+            One community. Live in days, not months. We handle everything.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink

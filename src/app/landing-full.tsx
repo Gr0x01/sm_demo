@@ -21,11 +21,11 @@ const HOMEPAGE_NAV_LINKS = [
 const faqs = [
   {
     q: "How long does setup take?",
-    a: "First community is live in 48 hours. Additional floor plans are typically a day or two each. You send us your option sheets and model home photos. We do the rest.",
+    a: "First community is live in under a week. Additional floor plans are typically a day or two each. You send us your option sheets and model home photos. We do the rest.",
   },
   {
     q: "How do I get started?",
-    a: "Pick your best-selling community. Send us the option sheets and model home photos. We build it in 48 hours. Real buyers use it during real design appointments. We measure upgrade revenue together. If the numbers work, we expand to more communities. If they don\u2019t, you walk away.",
+    a: "Pick your best-selling community. Send us the option sheets and model home photos. We build it in days, not months. Real buyers use it during real design appointments. We measure upgrade revenue together. If the numbers work, we expand to more communities. If they don\u2019t, you walk away.",
   },
   {
     q: "What does the buyer experience look like?",
@@ -41,7 +41,7 @@ const faqs = [
   },
   {
     q: "How is this different from Envision or other platforms?",
-    a: "Envision takes months to implement and requires significant infrastructure. Finch is live in 48 hours, handles all the setup for you, and is built for production builders who want to sell more upgrades without a massive platform commitment.",
+    a: "Envision takes months to implement and requires significant infrastructure. Finch is live in days, handles all the setup for you, and is built for production builders who want to sell more upgrades without a massive platform commitment.",
   },
   {
     q: "Can this work with our current design center software?",
@@ -126,8 +126,8 @@ export default function LandingPage() {
       <div className="px-6 py-12 md:py-16 bg-slate-100">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 text-center">
           <div>
-            <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2" style={{ fontVariantNumeric: "tabular-nums" }}>48hrs</p>
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">First community live</p>
+            <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Days</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Not months to go live</p>
           </div>
           <div>
             <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Done for you</p>
@@ -301,7 +301,7 @@ export default function LandingPage() {
             {
               n: "02",
               title: "We build your upgrade\u00a0experience",
-              desc: "Your finishes, your prices, your brand. First plan live in 48\u00a0hours. Update pricing or swap options yourself through the admin dashboard\u00a0\u2014\u00a0or send us the\u00a0changes.",
+              desc: "Your finishes, your prices, your brand. First plan live in under a\u00a0week. Update pricing or swap options yourself through the admin dashboard\u00a0\u2014\u00a0or send us the\u00a0changes.",
             },
             {
               n: "03",
@@ -324,7 +324,7 @@ export default function LandingPage() {
 
         <div data-reveal style={revealStyle(370)} className="text-center mt-12">
           <p className="text-sm text-slate-500">
-            No software to learn. No data entry. No IT department required. First plan in 48 hours. Full catalog in days, not&nbsp;months.
+            No software to learn. No data entry. No IT department required. First plan in under a week. Full catalog in days, not&nbsp;months.
           </p>
         </div>
       </Section>
@@ -437,7 +437,7 @@ export default function LandingPage() {
               "@type": "Offer",
               price: "0",
               priceCurrency: "USD",
-              description: "First community live in 48 hours. Done for you.",
+              description: "First community live in under a week. Done for you.",
             },
           }),
         }}

@@ -64,7 +64,7 @@ export default function OgImage() {
               textAlign: "center",
             }}
           >
-            First floor plan live in 48 hours. No software to learn.
+            First floor plan live in days, not months. No software to learn.
           </p>
         </div>
 

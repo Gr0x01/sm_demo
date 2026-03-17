@@ -405,7 +405,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
                         You&apos;ve seen what Finch can do.
                       </p>
                       <p className="text-base text-slate-500 mb-6 max-w-lg mx-auto">
-                        Your version uses your floor plans, your options, your pricing. First plan is free. Live in 48 hours.
+                        Your version uses your floor plans, your options, your pricing. First plan is free. Live in under a week.
                       </p>
                     </>
                   ) : (
@@ -414,7 +414,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
                         Your buyers would see this instantly, with your floor plans and pricing.
                       </p>
                       <p className="text-sm text-slate-500 mb-4">
-                        First plan is free. Live in 48 hours.
+                        First plan is free. Live in under a week.
                       </p>
                     </>
                   )}

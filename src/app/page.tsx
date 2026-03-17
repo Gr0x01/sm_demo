@@ -4,12 +4,12 @@ import LandingPage from "./landing-full";
 export const metadata: Metadata = {
   title: { absolute: "Finch — Upgrade Visualization for Home Builders" },
   description:
-    "Home builders who use Finch sell more upgrades per home. First floor plan live in 48 hours. No software to learn.",
+    "Home builders who use Finch sell more upgrades per home. First floor plan live in days, not months. No software to learn.",
   alternates: { canonical: "https://withfin.ch/" },
   openGraph: {
     title: "Finch — Upgrade Visualization for Home Builders",
     description:
-      "Home builders who use Finch sell more upgrades per home. First floor plan live in 48 hours.",
+      "Home builders who use Finch sell more upgrades per home. First floor plan live in days, not months.",
     url: "https://withfin.ch/",
     siteName: "Finch",
     type: "website",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Finch — Upgrade Visualization for Home Builders",
     description:
-      "Home builders who use Finch sell more upgrades per home. First floor plan live in 48 hours.",
+      "Home builders who use Finch sell more upgrades per home. First floor plan live in days, not months.",
   },
 };
 

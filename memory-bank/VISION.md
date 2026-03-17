@@ -85,7 +85,7 @@ One model: we handle all setup, they pay per floor plan per month. No setup fee 
 - Configuration, branding, testing
 - Unlimited buyer sessions, no per-session fees
 
-**Speed advantage:** First floor plan live in 48 hours. Additional plans same day after initial setup. Competitors (Zonda, Hyphen, Aareas) take 2-3 months.
+**Speed advantage:** First floor plan live in under a week. Additional plans 1-2 days each after initial setup. Competitors (Zonda, Hyphen, Aareas) take 2-3 months.
 
 **Photography:** Evaluate during sales conversation. Clean, well-lit model home photos = use them. Otherwise bake photography cost into an ad-hoc quote. Some photos will be rejected — "this bathroom has bad lighting, we need a reshoot" is part of the process.
 

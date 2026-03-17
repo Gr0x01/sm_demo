@@ -15,7 +15,7 @@ export const metadata: Metadata = {
       "Replace PDF Option Sheets — Visual Upgrade Selection for Builders",
   },
   description:
-    "A price sheet lists upgrades. Finch shows them. Buyers see their kitchen with selections applied, pick finishes, and export a priced selection sheet. Live in 48 hours.",
+    "A price sheet lists upgrades. Finch shows them. Buyers see their kitchen with selections applied, pick finishes, and export a priced selection sheet. Live in days, not months.",
   alternates: { canonical: "https://withfin.ch/vs/pdf-option-sheets" },
   openGraph: {
     title:
@@ -397,7 +397,7 @@ export default function VsPdfPage() {
               priced selection sheet back, same as&nbsp;today.
             </p>
             <p className="text-slate-800 font-medium">
-              First floor plan in 48 hours. Full catalog in days,
+              First floor plan in under a week. Full catalog in days,
               not&nbsp;months.
             </p>
           </div>
@@ -415,7 +415,7 @@ export default function VsPdfPage() {
             Your buyers can&apos;t upgrade what they can&apos;t&nbsp;see.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            One community. Live in 48 hours. We handle everything.
+            One community. Live in days, not months. We handle everything.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink

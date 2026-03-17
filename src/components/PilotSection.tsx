@@ -31,7 +31,7 @@ export function GetStartedSection({
         <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
           <div>
             <p className="text-sm font-semibold text-slate-900 mb-1">
-              48 hours to live
+              Live in days, not months
             </p>
             <p className="text-sm text-slate-600">
               Send us your option sheets and model home photos. We build it. You don&apos;t touch a&nbsp;thing.

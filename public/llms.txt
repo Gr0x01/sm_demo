@@ -6,7 +6,7 @@
 
 Finch is design center software that shows buyers what their choices look like before they commit. Buyers open a link on any device — no app, no account — browse a builder's full upgrade catalog with real pricing, select finishes, and see a generated image of their actual floor plan room with those selections. Every session exports a priced selection sheet ready for the builder's sales team.
 
-The tool works alongside existing design appointments or replaces the PDF option sheet entirely. Builders send us their floor plans and pricing. We build a branded, interactive selection tool. The first floor plan is live in 48 hours.
+The tool works alongside existing design appointments or replaces the PDF option sheet entirely. Builders send us their floor plans and pricing. We build a branded, interactive selection tool. The first floor plan is live in under a week.
 
 ## Who it's for
 
@@ -24,7 +24,7 @@ Finch is an alternative to Zonda Envision, BDX design tools, Constellation Desig
 | | PDF option sheets | Zonda Envision | Finch |
 |---|---|---|---|
 | Buyer sees | Line items and prices | Pre-rendered 3D scenes | Their actual room with selections applied |
-| Time to live | N/A | 3-6 months | 48 hours |
+| Time to live | N/A | 3-6 months | Under a week |
 | Setup cost | None | Six figures | No setup fee — free 60-day pilot |
 | Builder effort | None | IT integration, dedicated team | Send option sheets and photos |
 | New floor plan | Reprint the PDF | Weeks | 1-2 days |
@@ -32,7 +32,7 @@ Finch is an alternative to Zonda Envision, BDX design tools, Constellation Desig
 
 ## Key facts
 
-- First floor plan live in 48 hours
+- First floor plan live in under a week
 - Free 60-day pilot on one floor plan — no commitment, no setup fee
 - Done-for-you setup: we handle configuration, no software to learn, no IT department required
 - Works on any device, no app download, no buyer account required
