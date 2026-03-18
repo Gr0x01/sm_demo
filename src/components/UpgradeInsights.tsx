@@ -38,7 +38,7 @@ export function UpgradeInsights({
       )}
 
       <p className="mt-3 text-[10px] text-gray-300 leading-tight">
-        Sources: public SEC filings, Zonda research
+        Sources: public SEC filings (Toll Brothers, PulteGroup)
       </p>
     </div>
   );

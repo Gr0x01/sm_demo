@@ -224,6 +224,22 @@ Personalized sales pages for outreach. Each page shows a prospect's own room pho
 - [x] Cold call script rewritten around *Cold Calling Sucks* framework (problem proposition, Mr. Miyagi objections, voicemail-to-email)
 - [x] LinkedIn outreach playbook updated with Loom follow-up strategy and prospect demo workflow
 - [x] First prospect: Stylecraft Homes (Doug French) — The 1651 kitchen from Rancho San Gabriel
+- [x] Upgrade insights sidebar: `UpgradeInsights` component below price tracker, `sidebarFooter` prop threaded through UpgradePicker → SidebarPanel, `prospect_insights` JSONB column on floorplans for per-prospect customization. Uses defensible SEC/industry data only (no Zonda 35% claim).
+- [x] Prospect page polish (brand guardian + growth hacker audit):
+  - Sources line fixed: "public SEC filings (Toll Brothers, PulteGroup)" — removed Zonda attribution
+  - Stylecraft insights updated to actual volume (200 homes/year, $200K closing line)
+  - Hero restructured: floorplan name as small label, h1 "What your buyers could see"
+  - Micro-copy instruction added to hero body text
+  - Sidebar Calendly CTA added below UpgradeInsights (PostHog `location: "sidebar"`)
+  - Removed redundant "Try It" nav CTA and "Home" link on prospect pages
+  - Nav "Research" renamed to "Upgrade Revenue Research"
+  - Loom iframe accessibility (`title` attribute)
+  - Bottom Calendly CTA PostHog tracking consistency (`location: "bottom"`)
+- [x] Before/after comparison toggle on photo cards + lightbox:
+  - `PhotoViewerCard`: "Before"/"After" button in toolbar, instant toggle via `invisible` class
+  - `ImageLightbox`: click image to toggle, "Before"/"After" label + button, one-time hint
+  - Works on all pages (prospect, buyer, all orgs) — not prospect-specific
+  - `key={activePhoto.id}` prevents state leaking between photos
 
 ## What's Done
 

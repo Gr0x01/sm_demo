@@ -133,22 +133,25 @@ export function ProspectDemoClient({
     <div className="min-h-screen bg-white">
       <SiteNav
         links={[
-          { label: "Home", href: "/" },
-          { label: "Research", href: "/research/hidden-revenue-line" },
+          { label: "Upgrade Revenue Research", href: "/research/hidden-revenue-line" },
         ]}
+        cta={null}
       />
 
       {/* Hero */}
       <section className="px-6 pt-8 pb-4 md:pt-20 md:pb-14">
         <div className="max-w-5xl mx-auto flex flex-col-reverse md:flex-row items-center gap-6 md:gap-14">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-400 mb-2">
               {floorplanName}
+            </p>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
+              What your buyers could see
             </h1>
             <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
               I grabbed a photo from your model and set up a quick version of the
-              tool I&rsquo;ve been building. Figured it was easier to show you than
-              explain it.
+              tool I&rsquo;ve been building. Pick some upgrades below and hit
+              Visualize to see them in the room.
             </p>
           </div>
           {coverImageUrl && (
@@ -173,6 +176,7 @@ export function ProspectDemoClient({
             >
               <iframe
                 src={loomEmbedUrl}
+                title="Walkthrough video"
                 allowFullScreen
                 className="absolute inset-0 w-full h-full"
                 onLoad={() => trackEvent("prospect_loom_loaded")}
@@ -205,10 +209,25 @@ export function ProspectDemoClient({
           onNavigateHome={() => {}}
           hideWizardControls
           sidebarFooter={
-            <UpgradeInsights
-              prospectInsights={prospectInsights?.insights}
-              closingLine={prospectInsights?.closingLine}
-            />
+            <>
+              <UpgradeInsights
+                prospectInsights={prospectInsights?.insights}
+                closingLine={prospectInsights?.closingLine}
+              />
+              {safeCalendlyUrl && (
+                <div className="border-t border-gray-200 pt-3 mt-3">
+                  <a
+                    href={safeCalendlyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => trackEvent("prospect_calendly_clicked", { location: "sidebar" })}
+                    className="block w-full text-center px-4 py-2.5 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+                  >
+                    Book 15 Minutes
+                  </a>
+                </div>
+              )}
+            </>
           }
         />
       </section>
@@ -226,7 +245,7 @@ export function ProspectDemoClient({
                 href={safeCalendlyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackEvent("prospect_calendly_clicked")}
+                onClick={() => trackEvent("prospect_calendly_clicked", { location: "bottom" })}
                 className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
               >
                 Book 15 Minutes
