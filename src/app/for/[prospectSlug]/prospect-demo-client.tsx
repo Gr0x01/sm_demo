@@ -135,10 +135,10 @@ export function ProspectDemoClient({
       />
 
       {/* Hero */}
-      <section className="px-6 pt-14 pb-10 md:pt-20 md:pb-14">
-        <div className="max-w-5xl mx-auto flex flex-col-reverse md:flex-row items-center gap-10 md:gap-14">
+      <section className="px-6 pt-8 pb-4 md:pt-20 md:pb-14">
+        <div className="max-w-5xl mx-auto flex flex-col-reverse md:flex-row items-center gap-6 md:gap-14">
           <div className="flex-1 min-w-0">
-            <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-4">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
               {floorplanName}
             </h1>
             <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
@@ -179,7 +179,7 @@ export function ProspectDemoClient({
       )}
 
       {/* Upgrade picker — single step, no wizard chrome */}
-      <section className="pb-16 md:pb-24">
+      <section className="pb-4 md:pb-12">
         <UpgradePicker
           orgId={orgId}
           orgSlug="demo"

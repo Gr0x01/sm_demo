@@ -944,7 +944,7 @@ export function UpgradePicker({
           )}
 
           {/* Right Column — scrollable options or gallery */}
-          <div className="flex-1 min-w-0 pb-36 lg:pb-5">
+          <div className={`flex-1 min-w-0 ${hideWizardControls ? "pb-5" : "pb-36 lg:pb-5"}`}>
             {activeStep.id === "__gallery" ? (
               <GalleryView
                 steps={steps}
