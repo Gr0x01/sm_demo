@@ -44,6 +44,8 @@ interface UpgradePickerProps {
   syncPairs: { a: string; b: string; label: string }[];
   /** Hide Finish button, step nav, and mobile Continue/Save — for single-step prospect demos */
   hideWizardControls?: boolean;
+  /** Optional footer content rendered below the price tracker in the sidebar */
+  sidebarFooter?: React.ReactNode;
 }
 
 function getDefaultSelectionsFromCategories(categories: Category[]): Record<string, string> {
@@ -114,6 +116,7 @@ export function UpgradePicker({
   contractLockedIds,
   syncPairs,
   hideWizardControls = false,
+  sidebarFooter,
 }: UpgradePickerProps) {
   const track = useTrack({ orgSlug, floorplanSlug, sessionId });
 
@@ -939,6 +942,7 @@ export function UpgradePicker({
                 getPhotoVisualSelections={getPhotoVisualSelections}
                 selections={state.selections}
                 hideWizardControls={hideWizardControls}
+                sidebarFooter={sidebarFooter}
               />
             </div>
           )}

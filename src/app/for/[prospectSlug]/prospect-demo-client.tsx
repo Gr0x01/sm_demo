@@ -6,6 +6,8 @@ import { UpgradePicker } from "@/components/UpgradePicker";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { MobileStickyFooter } from "@/components/MobileStickyFooter";
+import { UpgradeInsights } from "@/components/UpgradeInsights";
+import type { ProspectInsight } from "@/components/UpgradeInsights";
 import type { Category } from "@/types";
 import type { StepConfig } from "@/lib/step-config";
 
@@ -36,6 +38,7 @@ interface ProspectDemoClientProps {
   steps: StepConfig[];
   loomUrl: string | null;
   calendlyUrl: string | null;
+  prospectInsights: { insights: ProspectInsight[]; closingLine?: string } | null;
 }
 
 export function ProspectDemoClient({
@@ -48,6 +51,7 @@ export function ProspectDemoClient({
   steps,
   loomUrl,
   calendlyUrl,
+  prospectInsights,
 }: ProspectDemoClientProps) {
   const posthog = usePostHog();
   const viewedRef = useRef(false);
@@ -200,6 +204,12 @@ export function ProspectDemoClient({
           onSessionResumed={() => {}}
           onNavigateHome={() => {}}
           hideWizardControls
+          sidebarFooter={
+            <UpgradeInsights
+              prospectInsights={prospectInsights?.insights}
+              closingLine={prospectInsights?.closingLine}
+            />
+          }
         />
       </section>
 

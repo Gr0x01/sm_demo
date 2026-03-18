@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type { StepConfig, StepPhoto } from "@/lib/step-config";
 import { StepHero } from "./StepHero";
@@ -56,6 +57,8 @@ interface SidebarPanelProps {
   generatedWithSelections?: Record<string, string>;
   getPhotoVisualSelections?: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
   selections?: Record<string, string>;
+  /** Optional footer content rendered below the price tracker (e.g. upgrade insights) */
+  sidebarFooter?: ReactNode;
 }
 
 export function SidebarPanel({
@@ -76,6 +79,7 @@ export function SidebarPanel({
   getPhotoVisualSelections,
   selections,
   hideWizardControls = false,
+  sidebarFooter,
 }: SidebarPanelProps) {
   const [activeSectionTitle, setActiveSectionTitle] = useState<string>(
     step.sections[0]?.title ?? ""
@@ -224,6 +228,9 @@ export function SidebarPanel({
           </span>
         </div>
       </div>
+
+      {/* Optional footer (e.g. upgrade insights for prospect demos) */}
+      {sidebarFooter}
 
       {/* Action buttons */}
       {!hideWizardControls && (
