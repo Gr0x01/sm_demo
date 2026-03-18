@@ -146,7 +146,7 @@ export function ProspectDemoClient({
               {floorplanName}
             </p>
             <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
-              What your buyers could see
+              What your buyers could&nbsp;see
             </h1>
             <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
               I grabbed a photo from your model and set up a quick version of the
