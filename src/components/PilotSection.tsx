@@ -1,4 +1,6 @@
-import { PilotForm } from "@/app/landing-client";
+import { PilotForm, TrackedLink } from "@/app/landing-client";
+
+import { CALENDLY_URL } from "@/lib/urls";
 
 export function GetStartedSection({
   headline,
@@ -56,6 +58,26 @@ export function GetStartedSection({
         </div>
 
         <PilotForm />
+      </div>
+
+      {/* Calendly fast-track */}
+      <div className="max-w-3xl mx-auto text-center mt-8">
+        <div className="flex items-center gap-4 mb-5">
+          <div className="flex-1 border-t border-slate-200" />
+          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">or</p>
+          <div className="flex-1 border-t border-slate-200" />
+        </div>
+        <p className="text-sm text-slate-600 mb-4">
+          Rather talk it through? 15 minutes. Your floor plans.
+        </p>
+        <TrackedLink
+          href={CALENDLY_URL}
+          event="cta_clicked"
+          properties={{ cta: "Book a Walkthrough", location: "get_started", destination: "calendly" }}
+          className="inline-block px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+        >
+          Book a Walkthrough
+        </TrackedLink>
       </div>
 
       <p className="text-sm text-slate-500 text-center mt-6 max-w-3xl mx-auto">

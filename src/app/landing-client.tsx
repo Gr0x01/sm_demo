@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, type CSSProperties, type FormEvent } 
 import Link from "next/link";
 import Image from "next/image";
 import { useTrack } from "@/hooks/useTrack";
+import { CALENDLY_URL } from "@/lib/urls";
 
 const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
@@ -62,15 +63,30 @@ export function TrackedLink({
   properties?: Record<string, unknown>;
 }) {
   const track = useTrack();
+  const isExternal = href.startsWith("http");
+
+  if (isExternal) {
+    return (
+      <a
+        href={href}
+        className={className}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => track(event, properties)}
+      >
+        {children}
+      </a>
+    );
+  }
 
   return (
-    <a
+    <Link
       href={href}
       className={className}
       onClick={() => track(event, properties)}
     >
       {children}
-    </a>
+    </Link>
   );
 }
 
@@ -366,12 +382,22 @@ export function PilotForm({ onSubmitted }: { onSubmitted?: () => void }) {
     return (
       <div className="text-center py-6">
         <p className="text-lg font-semibold text-slate-900 mb-2">We&apos;ll be in touch within 24 hours.</p>
-        <Link
-          href="/try"
-          className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700 transition-colors"
-        >
-          Try It Live while you wait
-        </Link>
+        <div className="flex flex-col items-center gap-3 mt-4">
+          <TrackedLink
+            href={CALENDLY_URL}
+            event="cta_clicked"
+            properties={{ cta: "Book a Walkthrough", location: "pilot_form_success", destination: "calendly" }}
+            className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+          >
+            Book a Walkthrough Now
+          </TrackedLink>
+          <Link
+            href="/try"
+            className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700 transition-colors"
+          >
+            or Try It Live while you wait
+          </Link>
+        </div>
       </div>
     );
   }

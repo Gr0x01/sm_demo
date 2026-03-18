@@ -3,6 +3,7 @@ import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { GetStartedSection } from "@/components/PilotSection";
+import { CALENDLY_URL } from "@/lib/urls";
 import {
   RevealObserver,
   TrackedLink,
@@ -241,7 +242,7 @@ export default function LandingPage() {
             This demo uses a real builder&apos;s catalog and pricing. Yours will show your finishes, your prices, your floor plans.
           </p>
           <TrackedLink
-            href="/try"
+            href="https://demo.withfin.ch"
             event="cta_clicked"
             properties={{ cta: "Try It Live", location: "compare" }}
             className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
@@ -389,24 +390,24 @@ export default function LandingPage() {
             Your buyers can&apos;t upgrade what they can&apos;t&nbsp;see.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            Upload a model home photo. Pick finishes. Watch the room change. This is what your buyers would see.
+            Pick finishes from a real builder&apos;s catalog. Watch the room change. This is what your buyers would&nbsp;see.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink
-              href="#get-started"
+              href={CALENDLY_URL}
               event="cta_clicked"
-              properties={{ cta: "Get Started", location: "contact" }}
+              properties={{ cta: "Book a Walkthrough", location: "contact", destination: "calendly" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Get Started
+              Book a 15-Minute Walkthrough
             </TrackedLink>
             <TrackedLink
-              href="/try"
+              href="https://demo.withfin.ch"
               event="cta_clicked"
-              properties={{ cta: "Try It Live", location: "contact" }}
+              properties={{ cta: "See the Full Demo", location: "contact" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
             >
-              Try It Live
+              See the Full Demo
             </TrackedLink>
           </div>
           <p className="text-xs text-slate-400 mt-4">Questions? hello@withfin.ch</p>
