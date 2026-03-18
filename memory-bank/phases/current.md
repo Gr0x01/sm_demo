@@ -17,6 +17,8 @@ Full marketing landing page restored to `/`. `/builders` redirects to `/`. Copy 
 - [x] Mobile polish: consistent full-width CTA buttons, speed bar vertical stack, text-balance on pilot heading, nbsp orphan fix
 - [x] SEO hardening: robots.txt blocks tenant routes + /api/ + /auth/, allows /demo/; sitemap includes /demo; /demo gets real metadata
 - [x] `llms.txt` for LLM search discovery (competitive positioning, ICP scoping, getting-started paths)
+- [x] Lead capture: pilot form → `pilot_leads` table (Supabase) + email notification to `hello@withfin.ch` (Resend, best-effort)
+- [x] PostHog tracking on all CTAs (`cta_clicked`, `pilot_form_submitted`, `demo_cta_clicked`, `research_cta_clicked`)
 - **Copy rules**: No "AI" in copy. No lecturing builders. Tone = passion/tinkerer, not critic. Email: `hello@withfin.ch`.
 - See `landing-page.md` for design doc
 
@@ -207,6 +209,21 @@ Vitest test suite covering the generation pipeline end-to-end. 129 tests in <1s.
 - [x] Shared fixtures (`src/lib/__fixtures__/generation.ts`) modeling SM Kinkade kitchen/bedroom/living room patterns
 - [x] Shared Supabase mock helper (`src/lib/__fixtures__/supabase-mock.ts`)
 - [x] `.test.ts` excluded from production tsconfig, `coverage/` in .gitignore
+
+### 20. Prospect Demo Pages ✅
+Personalized sales pages for outreach. Each page shows a prospect's own room photo in a single-step upgrade picker with optional Loom embed and Calendly booking link.
+- [x] DB migration: `loom_url`, `calendly_url`, `is_prospect_demo` on `floorplans`
+- [x] `/for/[prospectSlug]` route — resolves prospect slug as floorplan in Demo org
+- [x] `ProspectDemoClient` — hero (cover image + greeting), Loom embed, single-step picker, Calendly CTA, SiteFooter
+- [x] `hideWizardControls` prop on UpgradePicker/SidebarPanel — hides Finish/Save/Next Step/Clear, suppresses gallery step
+- [x] `MobileStickyFooter` — reusable component extracted from `/try` page. Used by both `/try` and `/for/` pages.
+- [x] Prospect floorplans filtered from Demo org landing page
+- [x] Auto-creates anonymous buyer session on mount
+- [x] PostHog events: `prospect_page_viewed`, `prospect_loom_loaded`, `prospect_calendly_clicked`
+- [x] URL validation for Loom and Calendly origins
+- [x] Cold call script rewritten around *Cold Calling Sucks* framework (problem proposition, Mr. Miyagi objections, voicemail-to-email)
+- [x] LinkedIn outreach playbook updated with Loom follow-up strategy and prospect demo workflow
+- [x] First prospect: Stylecraft Homes (Doug French) — The 1651 kitchen from Rancho San Gabriel
 
 ## What's Done
 

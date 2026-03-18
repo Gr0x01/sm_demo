@@ -5,6 +5,7 @@
 ```
 Browser (Next.js client)
   ├── / — Finch landing page (static, server component)
+  ├── /for/[prospectSlug] — Prospect demo page (single-step picker + Loom + Calendly)
   ├── /[orgSlug] — Org landing page (1 floorplan → redirect, multiple → DB-driven chooser with org branding)
   ├── /[orgSlug]/[floorplanSlug] — Upgrade Picker (per-builder demo)
   │     ├── page.tsx — async server component, fetches floorplan-scoped categories from Supabase
@@ -35,6 +36,7 @@ Server (Next.js API routes + Inngest background functions)
   │     ├── Validates demo selections, computes hash, uploads user photo
   │     ├── Cache HIT → return 200 with URL
   │     └── Cache MISS → claim __pending__ slot → dispatch Inngest event → return 202
+  ├── POST /api/pilot-interest — persist lead to pilot_leads + notify hello@withfin.ch (upsert on email+source)
   ├── POST /api/inngest — Inngest serve endpoint (GET/POST/PUT)
   └── Inngest background functions (src/inngest/functions/):
         ├── generate-photo — 3 steps: generate → refine (policy 2nd pass, conditional) → persist
@@ -52,6 +54,7 @@ Supabase
   ├── Table: generated_images (cache — step_id, model, step_photo_id, buyer_session_id, selections_fingerprint)
   ├── Table: step_photo_generation_policies (internal-only per-photo prompt/second-pass policy JSON)
   ├── Table: option_floorplan_pricing (per-floorplan price overrides, composite PK: option_id + floorplan_id)
+  ├── Table: pilot_leads (name, company, email, phone, source — UNIQUE on email+source, service-role only)
   ├── Table: buyer_sessions (anonymous + email-saved)
   ├── Table: buyer_selections (DEPRECATED — replaced by buyer_sessions, API route deleted)
   ├── RPC: swap_hero_photo(p_photo_id, p_step_id) — atomic hero swap
@@ -77,6 +80,24 @@ Supabase
 - `/[orgSlug]/[floorplanSlug]` → builder demo (e.g. `/stonemartin/kinkade`)
 - `/admin` → static route, not caught by dynamic segments
 - `/api/*` → static routes, unaffected
+
+**Prospect demo pages** (`/for/[prospectSlug]`):
+- Personalized sales pages for outreach. Each prospect is a floorplan in the Demo org with `is_prospect_demo = true`.
+- URL: `withfin.ch/for/stylecraft` — the `/for/` prefix avoids collision with org slugs.
+- DB columns on `floorplans`: `loom_url`, `calendly_url`, `is_prospect_demo`.
+- Prospect floorplans filtered from Demo org landing page (`getFloorplansForOrg` uses `.neq("is_prospect_demo", true)`).
+- Page layout: SiteNav, hero (cover image + personal greeting), optional Loom embed, single-step UpgradePicker (`hideWizardControls`), Calendly CTA, SiteFooter.
+- `hideWizardControls` prop on UpgradePicker: hides Finish/Save/Next Step/Clear buttons, suppresses gallery virtual step, removes mobile PriceTracker navigation.
+- `MobileStickyFooter` component: reusable sticky bottom bar with expandable preview drawer + two-column action buttons. Used by both `/try` and `/for/` pages.
+- Session: auto-creates anonymous buyer session on mount (cookie: `finch_prospect_{slug}`). Required for generation.
+- URL validation: `loom_url` must start with `https://www.loom.com/`, `calendly_url` must start with `https://calendly.com/`.
+- Setup: grab prospect's room photo from their website, upload to Demo org, create single-step floorplan with kitchen subcategories (slugs, not UUIDs), set spatial hints, photo baseline (natural language description), and per-subcategory spatial hints on the step.
+- PostHog events: `prospect_page_viewed`, `prospect_loom_loaded`, `prospect_calendly_clicked`.
+
+**Important gotchas for prospect demo setup:**
+- `step_photos.subcategory_ids` must be **slugs** (e.g. `kitchen-cabinet-color`), not UUIDs. The entire selection system keys on slugs.
+- `step.sections` JSONB uses `subcategory_ids` (snake_case). The query layer maps to camelCase.
+- `photo_baseline` is a **text description** of what's in the photo, not a JSON object.
 
 **Production URLs** (decided: subdomains):
 - `getfinch.app` → Finch landing page
