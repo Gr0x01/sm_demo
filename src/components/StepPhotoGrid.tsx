@@ -251,6 +251,7 @@ function PhotoViewerCard({
               <button
                 onClick={(e) => { e.stopPropagation(); if (hasGenerated && !isStale) { onRetry(); } else { onGenerate(); } }}
                 className="px-2 py-1 bg-[var(--color-navy)] text-white text-[10px] font-semibold hover:bg-[var(--color-navy-hover)] transition-colors cursor-pointer"
+                data-visualize-btn
               >
                 {hasGenerated && isStale ? "Update" : hasGenerated ? "Retry" : "Visualize"}
               </button>

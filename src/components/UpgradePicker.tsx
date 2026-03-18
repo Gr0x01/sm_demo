@@ -42,6 +42,8 @@ interface UpgradePickerProps {
   steps: StepConfig[];
   contractLockedIds: string[];
   syncPairs: { a: string; b: string; label: string }[];
+  /** Hide Finish button, step nav, and mobile Continue/Save — for single-step prospect demos */
+  hideWizardControls?: boolean;
 }
 
 function getDefaultSelectionsFromCategories(categories: Category[]): Record<string, string> {
@@ -111,6 +113,7 @@ export function UpgradePicker({
   steps,
   contractLockedIds,
   syncPairs,
+  hideWizardControls = false,
 }: UpgradePickerProps) {
   const track = useTrack({ orgSlug, floorplanSlug, sessionId });
 
@@ -607,8 +610,8 @@ export function UpgradePicker({
     sections: [],
   }), [steps.length]);
   const allSteps = useMemo(
-    () => hasAnyPhotos ? [...steps, galleryStep] : steps,
-    [steps, hasAnyPhotos, galleryStep]
+    () => (hasAnyPhotos && !hideWizardControls) ? [...steps, galleryStep] : steps,
+    [steps, hasAnyPhotos, galleryStep, hideWizardControls]
   );
   allStepsRef.current = allSteps;
 
@@ -882,7 +885,7 @@ export function UpgradePicker({
 
           {/* Right spacer on mobile + actions on desktop/tablet */}
           <div className="w-12 sm:w-32 lg:w-auto shrink-0 flex items-center justify-end">
-            {sessionId && (
+            {!hideWizardControls && sessionId && (
               <button
                 onClick={() => setShowSaveModal(true)}
                 className="sm:hidden px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-700 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
@@ -890,22 +893,24 @@ export function UpgradePicker({
                 Save
               </button>
             )}
-            <div className="hidden sm:flex items-center gap-2">
-              {sessionId && (
+            {!hideWizardControls && (
+              <div className="hidden sm:flex items-center gap-2">
+                {sessionId && (
+                  <button
+                    onClick={() => setShowSaveModal(true)}
+                    className="px-2.5 md:px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+                  >
+                    Save
+                  </button>
+                )}
                 <button
-                  onClick={() => setShowSaveModal(true)}
-                  className="px-2.5 md:px-3 py-1.5 text-sm font-medium border border-gray-300 text-gray-600 hover:border-[var(--color-navy)] hover:text-[var(--color-navy)] transition-colors cursor-pointer"
+                  onClick={handleFinish}
+                  className="px-2.5 md:px-3 py-1.5 text-sm font-semibold bg-[var(--color-navy)] text-white hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
                 >
-                  Save
+                  Finish
                 </button>
-              )}
-              <button
-                onClick={handleFinish}
-                className="px-2.5 md:px-3 py-1.5 text-sm font-semibold bg-[var(--color-navy)] text-white hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
-              >
-                Finish
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -933,6 +938,7 @@ export function UpgradePicker({
                 generatedWithSelections={state.generatedWithSelections}
                 getPhotoVisualSelections={getPhotoVisualSelections}
                 selections={state.selections}
+                hideWizardControls={hideWizardControls}
               />
             </div>
           )}
@@ -997,9 +1003,9 @@ export function UpgradePicker({
           previewImageUrl={activePreviewImageUrl}
           previewTitle={activeStep.name}
           previewSummary={activeSelectionSummary}
-          showNavigation
-          onBack={safeActiveStepIndex > 0 ? handleBack : undefined}
-          onPrimaryAction={isLastStep ? handleFinish : handleContinue}
+          showNavigation={!hideWizardControls}
+          onBack={!hideWizardControls && safeActiveStepIndex > 0 ? handleBack : undefined}
+          onPrimaryAction={!hideWizardControls ? (isLastStep ? handleFinish : handleContinue) : undefined}
           primaryActionLabel={isLastStep ? "Finish" : "Continue"}
           backDisabled={safeActiveStepIndex === 0}
         />

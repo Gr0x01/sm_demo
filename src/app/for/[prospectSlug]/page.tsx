@@ -43,12 +43,17 @@ export default async function ProspectDemoPage({
 
   if (categories.length === 0 || steps.length === 0) notFound();
 
+  const coverImageUrl = floorplan.cover_image_path
+    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/rooms/${floorplan.cover_image_path}`
+    : null;
+
   return (
     <ProspectDemoClient
       orgId={org.id}
       floorplanId={floorplan.id}
       floorplanSlug={prospectSlug}
       floorplanName={floorplan.name}
+      coverImageUrl={coverImageUrl}
       categories={categories}
       steps={steps}
       loomUrl={floorplan.loom_url ?? null}

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
 import { usePostHog } from "posthog-js/react";
 import { UpgradePicker } from "@/components/UpgradePicker";
+import { SiteNav } from "@/components/SiteNav";
+import { SiteFooter } from "@/components/SiteFooter";
+import { MobileStickyFooter } from "@/components/MobileStickyFooter";
 import type { Category } from "@/types";
 import type { StepConfig } from "@/lib/step-config";
 
@@ -29,6 +31,7 @@ interface ProspectDemoClientProps {
   floorplanId: string;
   floorplanSlug: string;
   floorplanName: string;
+  coverImageUrl: string | null;
   categories: Category[];
   steps: StepConfig[];
   loomUrl: string | null;
@@ -40,6 +43,7 @@ export function ProspectDemoClient({
   floorplanId,
   floorplanSlug,
   floorplanName,
+  coverImageUrl,
   categories,
   steps,
   loomUrl,
@@ -109,38 +113,49 @@ export function ProspectDemoClient({
     [posthog, floorplanSlug],
   );
 
-  // Extract Loom video ID for embed
-  const loomEmbedUrl = loomUrl
+  // Validate and extract Loom embed URL
+  const loomEmbedUrl = loomUrl?.startsWith("https://www.loom.com/")
     ? loomUrl.includes("/embed/")
       ? loomUrl
       : loomUrl.replace("/share/", "/embed/")
     : null;
 
+  // Validate Calendly URL
+  const safeCalendlyUrl = calendlyUrl?.startsWith("https://calendly.com/")
+    ? calendlyUrl
+    : null;
+
   return (
     <div className="min-h-screen bg-white">
-      {/* Minimal nav — Finch wordmark only */}
-      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 flex items-center h-14">
-          <Link
-            href="/"
-            className="text-base font-semibold text-slate-900 tracking-[0.16em] uppercase"
-          >
-            Finch
-          </Link>
-        </div>
-      </nav>
+      <SiteNav
+        links={[
+          { label: "Home", href: "/" },
+          { label: "Research", href: "/research/hidden-revenue-line" },
+        ]}
+      />
 
-      {/* Personal greeting */}
+      {/* Hero */}
       <section className="px-6 pt-14 pb-10 md:pt-20 md:pb-14">
-        <div className="max-w-3xl mx-auto">
-          <h1 className="text-3xl md:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-4">
-            {floorplanName}
-          </h1>
-          <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-2xl">
-            I grabbed a photo from your model and set up a quick version of the
-            tool I&rsquo;ve been building. Figured it was easier to show you than
-            explain it.
-          </p>
+        <div className="max-w-5xl mx-auto flex flex-col-reverse md:flex-row items-center gap-10 md:gap-14">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-4">
+              {floorplanName}
+            </h1>
+            <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
+              I grabbed a photo from your model and set up a quick version of the
+              tool I&rsquo;ve been building. Figured it was easier to show you than
+              explain it.
+            </p>
+          </div>
+          {coverImageUrl && (
+            <div className="w-full md:w-[340px] lg:w-[400px] shrink-0">
+              <img
+                src={coverImageUrl}
+                alt={floorplanName}
+                className="w-full shadow-lg"
+              />
+            </div>
+          )}
         </div>
       </section>
 
@@ -163,15 +178,6 @@ export function ProspectDemoClient({
         </section>
       )}
 
-      {/* Transition copy */}
-      <section className="px-6 pb-8 md:pb-10">
-        <div className="max-w-3xl mx-auto">
-          <p className="text-sm uppercase tracking-[0.16em] text-slate-400 font-semibold">
-            This is live. Pick an option and watch the room change.
-          </p>
-        </div>
-      </section>
-
       {/* Upgrade picker — single step, no wizard chrome */}
       <section className="pb-16 md:pb-24">
         <UpgradePicker
@@ -193,11 +199,12 @@ export function ProspectDemoClient({
           onSessionSaved={() => {}}
           onSessionResumed={() => {}}
           onNavigateHome={() => {}}
+          hideWizardControls
         />
       </section>
 
       {/* Calendly CTA */}
-      {calendlyUrl && (
+      {safeCalendlyUrl && (
         <section className="px-6 pb-20 md:pb-28">
           <div className="max-w-3xl mx-auto text-center">
             <div className="border-t border-slate-100 pt-12">
@@ -206,7 +213,7 @@ export function ProspectDemoClient({
                 works on your end. 15 minutes.
               </p>
               <a
-                href={calendlyUrl}
+                href={safeCalendlyUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => trackEvent("prospect_calendly_clicked")}
@@ -228,20 +235,24 @@ export function ProspectDemoClient({
         </section>
       )}
 
-      {/* Footer */}
-      <footer className="px-6 py-8 border-t border-slate-100">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-xs text-slate-300 uppercase tracking-[0.14em]">
-            Finch
-          </span>
-          <a
-            href="https://withfin.ch"
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            withfin.ch
-          </a>
-        </div>
-      </footer>
+      <SiteFooter />
+
+      {/* Mobile sticky footer — Preview + Visualize */}
+      <MobileStickyFooter
+        previewImageUrl={steps[0]?.photos?.[0]?.imageUrl ?? null}
+        previewLabel={steps[0]?.photos?.[0]?.label ?? "Kitchen"}
+        primaryAction={{
+          label: "Visualize",
+          onClick: () => {
+            // Scroll to the photo card's Visualize button
+            const btn = document.querySelector("[data-visualize-btn]") as HTMLElement | null;
+            if (btn) {
+              btn.scrollIntoView({ behavior: "smooth", block: "center" });
+              btn.click();
+            }
+          },
+        }}
+      />
     </div>
   );
 }

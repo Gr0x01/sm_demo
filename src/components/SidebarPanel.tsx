@@ -46,6 +46,7 @@ interface SidebarPanelProps {
   isLastStep: boolean;
   headerHeight: number;
   onFinish: () => void;
+  hideWizardControls?: boolean;
   photos?: StepPhoto[];
   generatedImageUrls?: Record<string, string>;
   generatingPhotoKeys?: Set<string>;
@@ -74,6 +75,7 @@ export function SidebarPanel({
   generatedWithSelections,
   getPhotoVisualSelections,
   selections,
+  hideWizardControls = false,
 }: SidebarPanelProps) {
   const [activeSectionTitle, setActiveSectionTitle] = useState<string>(
     step.sections[0]?.title ?? ""
@@ -224,24 +226,26 @@ export function SidebarPanel({
       </div>
 
       {/* Action buttons */}
-      <div className="flex gap-2">
-        <ClearButton onClear={onClearSelections} />
-        {isLastStep ? (
-          <button
-            onClick={onFinish}
-            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
-          >
-            Finish &rarr;
-          </button>
-        ) : (
-          <button
-            onClick={onContinue}
-            className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
-          >
-            Next Step &rarr;
-          </button>
-        )}
-      </div>
+      {!hideWizardControls && (
+        <div className="flex gap-2">
+          <ClearButton onClear={onClearSelections} />
+          {isLastStep ? (
+            <button
+              onClick={onFinish}
+              className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+            >
+              Finish &rarr;
+            </button>
+          ) : (
+            <button
+              onClick={onContinue}
+              className="flex-1 py-3 px-6 bg-[var(--color-navy)] text-white font-semibold text-sm hover:bg-[var(--color-navy-hover)] transition-colors duration-150 cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+            >
+              Next Step &rarr;
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
