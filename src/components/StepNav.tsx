@@ -10,6 +10,10 @@ interface StepNavProps {
 }
 
 export function StepNav({ steps, activeStepId, completionMap, onSelectStep }: StepNavProps) {
+  // Hide step nav when there's only one real step (gallery is virtual with __gallery id)
+  const realSteps = steps.filter((s) => s.id !== "__gallery");
+  if (realSteps.length <= 1) return null;
+
   const activeIndex = steps.findIndex((s) => s.id === activeStepId);
   const safeActiveIndex = activeIndex >= 0 ? activeIndex : 0;
 

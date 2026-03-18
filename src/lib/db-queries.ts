@@ -38,7 +38,7 @@ const _getFloorplan = async (orgId: string, floorplanSlug: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("floorplans")
-    .select("id, name, slug, community, price_sheet_label, contract_locked_ids, sync_pairs, is_active, cover_image_path")
+    .select("id, name, slug, community, price_sheet_label, contract_locked_ids, sync_pairs, is_active, cover_image_path, loom_url, calendly_url, is_prospect_demo")
     .eq("org_id", orgId)
     .eq("slug", floorplanSlug)
     .single();
@@ -60,8 +60,9 @@ const _getFloorplansForOrg = async (orgId: string) => {
   const supabase = getServiceClient();
   const { data, error } = await supabase
     .from("floorplans")
-    .select("id, name, slug, is_active, cover_image_path")
+    .select("id, name, slug, is_active, cover_image_path, is_prospect_demo")
     .eq("org_id", orgId)
+    .neq("is_prospect_demo", true)
     .order("name");
 
   if (error || !data) return [];
