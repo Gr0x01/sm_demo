@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     "Home builders who use Finch sell more upgrades per home. First floor plan live in days, not months. No software to learn.",
   alternates: { canonical: "https://withfin.ch/" },
   openGraph: {
-    title: "Finch — Upgrade Visualization for Home Builders",
+    title: "Your buyers upgrade what they can see.",
     description:
       "Home builders who use Finch sell more upgrades per home. First floor plan live in days, not months.",
     url: "https://withfin.ch/",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Finch — Upgrade Visualization for Home Builders",
+    title: "Your buyers upgrade what they can see.",
     description:
       "Home builders who use Finch sell more upgrades per home. First floor plan live in days, not months.",
   },

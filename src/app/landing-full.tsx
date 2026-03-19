@@ -3,7 +3,6 @@ import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { GetStartedSection } from "@/components/PilotSection";
-import { CALENDLY_URL } from "@/lib/urls";
 import {
   RevealObserver,
   TrackedLink,
@@ -13,10 +12,9 @@ import {
 } from "./landing-client";
 
 const HOMEPAGE_NAV_LINKS = [
-  { label: "Try It", href: "/try" },
   { label: "How It Works", href: "#how" },
+  { label: "Research", href: "/research/hidden-revenue-line" },
   { label: "Get Started", href: "#get-started" },
-  { label: "FAQ", href: "#faq" },
 ];
 
 const faqs = [
@@ -50,7 +48,7 @@ const faqs = [
   },
   {
     q: "Can we update pricing and options ourselves?",
-    a: "Yes. Every builder gets an admin dashboard to update option pricing, add or remove finishes, and manage floor plans\u00a0\u2014\u00a0any time, no ticket required. If you need a bulk update done for you, we\u2019ll handle it.",
+    a: "Yes. Every builder gets an admin dashboard to update option pricing, add or remove finishes, and manage floor plans. Any time, no ticket required. If you need a bulk update done for you, we\u2019ll handle it.",
   },
 ];
 
@@ -127,8 +125,8 @@ export default function LandingPage() {
       <div className="px-6 py-12 md:py-16 bg-slate-100">
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 text-center">
           <div>
-            <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Days</p>
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Not months to go live</p>
+            <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Under a week</p>
+            <p className="text-xs uppercase tracking-[0.16em] text-slate-400">Send option sheets. Buyers use it by Friday.</p>
           </div>
           <div>
             <p className="text-3xl md:text-4xl leading-none tracking-tight text-slate-900 mb-2">Done for you</p>
@@ -242,7 +240,7 @@ export default function LandingPage() {
             This demo uses a real builder&apos;s catalog and pricing. Yours will show your finishes, your prices, your floor plans.
           </p>
           <TrackedLink
-            href="https://demo.withfin.ch"
+            href="/try"
             event="cta_clicked"
             properties={{ cta: "Try It Live", location: "compare" }}
             className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
@@ -276,8 +274,67 @@ export default function LandingPage() {
             Buyers upgrade what they can see. The ones who can&apos;t picture it default to&nbsp;Standard.
           </p>
           <p className="text-xs text-slate-500 max-w-2xl mx-auto">
-            In our first test, a buyer actively trying to minimize spend still chose 40% more after seeing their selections. Industry data across 225+ builder brands averages 35%. We start at 15% because it&apos;s conservative.
+            In our first test, a buyer actively trying to minimize spend still chose 40% more after seeing their selections. We start at 15% because it&apos;s conservative.{" "}
+            <TrackedLink
+              href="/research/hidden-revenue-line"
+              event="cta_clicked"
+              properties={{ cta: "See how public builders compare", location: "roi" }}
+              className="underline hover:text-slate-700 transition-colors"
+            >
+              See how public builders compare.
+            </TrackedLink>
           </p>
+        </div>
+      </Section>
+
+      {/* ─── Why This Exists ─── */}
+      <Section gray id="why">
+        <div
+          data-reveal
+          style={revealStyle(20)}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Why This Exists</p>
+          <h2 className="text-4xl md:text-5xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-8">
+            We spent 40% more and felt better about every&nbsp;dollar.
+          </h2>
+          <div className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5 text-left max-w-2xl mx-auto">
+            <p>
+              My wife and I bought a new construction home in Auburn, Alabama, partly as an investment, so the goal was to keep costs&nbsp;low. We wanted to upgrade the kitchen, but all we had was a price sheet. Even with samples in hand, you can touch each piece, but you still can&apos;t see what it all looks like&nbsp;together.
+            </p>
+            <p>
+              So I built a tool that showed us. We spent 40% more than planned, felt great about every choice, and never second-guessed a single&nbsp;one.
+            </p>
+            <p className="text-slate-800 font-medium">
+              Your buyers want to upgrade. They just need to see it&nbsp;first.
+            </p>
+          </div>
+          <p className="text-sm text-slate-400 mt-8">Rashaad, Finch</p>
+        </div>
+      </Section>
+
+      {/* ─── Research Callout ─── */}
+      <Section id="research">
+        <div
+          data-reveal
+          style={revealStyle(20)}
+          className="max-w-3xl mx-auto text-center"
+        >
+          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-4">The Data</p>
+          <h2 className="text-4xl md:text-5xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6">
+            $78K per home. That&apos;s what public builders report in upgrade&nbsp;revenue.
+          </h2>
+          <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-8">
+            Toll Brothers and PulteGroup disclose it in SEC filings. Most builders don&apos;t track it this closely. We pulled the&nbsp;numbers.
+          </p>
+          <TrackedLink
+            href="/research/hidden-revenue-line"
+            event="cta_clicked"
+            properties={{ cta: "Read the Research", location: "research_callout" }}
+            className="inline-block px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+          >
+            Read the Research
+          </TrackedLink>
         </div>
       </Section>
 
@@ -302,7 +359,7 @@ export default function LandingPage() {
             {
               n: "02",
               title: "We build your upgrade\u00a0experience",
-              desc: "Your finishes, your prices, your brand. First plan live in under a\u00a0week. Update pricing or swap options yourself through the admin dashboard\u00a0\u2014\u00a0or send us the\u00a0changes.",
+              desc: "Your finishes, your prices, your brand. First plan live in under a\u00a0week. Update pricing or swap options yourself through the admin dashboard or send us the\u00a0changes.",
             },
             {
               n: "03",
@@ -333,34 +390,8 @@ export default function LandingPage() {
       {/* ─── Get Started ─── */}
       <GetStartedSection />
 
-      {/* ─── Why This Exists ─── */}
-      <Section gray id="why">
-        <div
-          data-reveal
-          style={revealStyle(20)}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <p className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6">Why This Exists</p>
-          <h2 className="text-4xl md:text-5xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-8">
-            We spent 40% more &mdash; and felt better about every&nbsp;dollar.
-          </h2>
-          <div className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5 text-left max-w-2xl mx-auto">
-            <p>
-              My wife and I just bought a new construction home, partly as an investment, so the goal was to keep costs&nbsp;low. We wanted to upgrade the kitchen, but all we had was a price sheet. Even with samples in hand, you can touch each piece, but you still can&apos;t see what it all looks like&nbsp;together.
-            </p>
-            <p>
-              So I built a tool that showed us. We spent 40% more than planned, felt great about every choice, and never second-guessed a single&nbsp;one.
-            </p>
-            <p className="text-slate-800 font-medium">
-              Your buyers want to upgrade. They just need to see it&nbsp;first.
-            </p>
-          </div>
-          <p className="text-sm text-slate-400 mt-8">&mdash; Rashaad, Finch</p>
-        </div>
-      </Section>
-
       {/* ─── FAQ ─── */}
-      <Section id="faq">
+      <Section gray id="faq">
         <div className="max-w-3xl mx-auto">
           <h2
             data-reveal
@@ -390,24 +421,24 @@ export default function LandingPage() {
             Your buyers can&apos;t upgrade what they can&apos;t&nbsp;see.
           </h2>
           <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            Pick finishes from a real builder&apos;s catalog. Watch the room change. This is what your buyers would&nbsp;see.
+            Send us your option sheets. We&apos;ll have your first community ready in&nbsp;days.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <TrackedLink
-              href={CALENDLY_URL}
+              href="#get-started"
               event="cta_clicked"
-              properties={{ cta: "Book a Walkthrough", location: "contact", destination: "calendly" }}
+              properties={{ cta: "Get Started", location: "contact" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
-              Book a 15-Minute Walkthrough
+              Get Started
             </TrackedLink>
             <TrackedLink
-              href="https://demo.withfin.ch"
+              href="/try"
               event="cta_clicked"
-              properties={{ cta: "See the Full Demo", location: "contact" }}
+              properties={{ cta: "Try It Live", location: "contact" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
             >
-              See the Full Demo
+              Try It Live
             </TrackedLink>
           </div>
           <p className="text-xs text-slate-400 mt-4">Questions? hello@withfin.ch</p>
