@@ -152,7 +152,7 @@ export default function VsEnvisionPage() {
             style={revealStyle(60)}
             className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6"
           >
-            Finch vs Zonda Envision
+            Finch vs Zonda Envision <span className="font-normal">&middot; Updated March 2026</span>
           </p>
           <h1
             data-reveal
@@ -687,6 +687,7 @@ export default function VsEnvisionPage() {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "FAQPage",
+            dateModified: "2026-03-22",
             mainEntity: faqs.map((faq) => ({
               "@type": "Question",
               name: faq.q,

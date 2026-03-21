@@ -241,6 +241,20 @@ Personalized sales pages for outreach. Each page shows a prospect's own room pho
   - Works on all pages (prospect, buyer, all orgs) — not prospect-specific
   - `key={activePhoto.id}` prevents state leaking between photos
 
+### 21. SEO Strategy + Baseline Fixes
+SEO research (DataForSEO keyword data, Tavily competitive analysis) → strategy doc → baseline technical fixes.
+- [x] Keyword research: DataForSEO volume/CPC/competition for builder + buyer keyword clusters
+- [x] Competitive analysis: Tavily search for competitor content, SERP analysis, domain metrics
+- [x] Strategy doc: `memory-bank/seo-strategy.md` with buyer-pull flywheel as core play
+- [x] JSON-LD Organization schema moved to root layout (all pages inherit)
+- [x] Web manifest (`manifest.ts`)
+- [x] Homepage OG image updated with headline copy
+- [x] Research page dedicated OG image (was using generic fallback)
+- [ ] Verify withfin.ch in Google Search Console
+- [x] **Phase 4: LLM Search Optimization** — tested AI search (zero visibility), rewrote `llms.txt` with Finch3D disambiguation + competitive landscape, created `llms-full.txt` with full comparison data/research/FAQs, enhanced JSON-LD across all pages (`alternateName`, `knowsAbout`, `applicationSubCategory`, `dateModified`), added JSON-LD to /vs/pdf-option-sheets, explicit AI bot rules in robots.txt (GPTBot/ClaudeBot/PerplexityBot/etc.), visible "Updated" timestamps on /vs/ pages
+- **Key insight**: Builder B2B keywords are tiny volume (<70/mo). Buyer-side content ("new construction upgrades" 170/mo, "[builder] upgrade price list" cluster ~400-500/mo) is the demand engine. Flywheel: buyer finds content → tries demo → asks builder → builder calls us.
+- **Next**: Anchor content page (`/learn/new-construction-upgrades`), builder-specific upgrade guides, "Ask your builder" form
+
 ## What's Done
 
 ### Multi-Tenant Foundation (Complete)
@@ -271,6 +285,7 @@ Personalized sales pages for outreach. Each page shows a prospect's own room pho
 | `product-architecture.md` | Multi-tenant schema, URL structure, user roles, migration path |
 | `landing-page.md` | Marketing site design doc |
 | `VISION.md` | Business plan, pricing, ROI, GTM |
+| `seo-strategy.md` | SEO keyword research, buyer-pull flywheel, content strategy |
 
 ## Domain
 

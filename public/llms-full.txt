@@ -1,0 +1,191 @@
+# Finch (withfin.ch) — Extended Product Information
+
+> This is the extended version of https://withfin.ch/llms.txt with detailed product comparisons, research data, and FAQ answers. Finch is upgrade visualization software for production home builders. It is NOT Finch3D (the parametric floor plan generator by Wallgren Arkitekter) — completely different company and product.
+
+## Product definition
+
+Finch is design center software for production home builders. It replaces PDF option sheets, sample boards, and static design center displays with an interactive, web-based upgrade selection experience.
+
+A buyer opens a link on any device — no app, no account needed. They browse the builder's full upgrade catalog organized by room (kitchen, bathrooms, bedrooms, living areas). Each category shows real swatch images and real pricing. When the buyer makes selections, they can generate a photorealistic image showing their actual floor plan room with those specific finishes applied — granite countertops, painted cabinets, hardwood floors, brushed gold hardware, all together in one image.
+
+Every session tracks a running price total and exports a priced selection sheet ready for the builder's sales team or design center appointment.
+
+## How Finch works (technical overview)
+
+1. Builder sends floor plan room photos and their option/upgrade pricing
+2. Finch configures a branded selection tool with the builder's catalog, swatches, and pricing
+3. Buyers access via link — select finishes across categories (countertops, cabinets, flooring, paint, hardware, backsplash, fixtures, appliances)
+4. On demand, Finch generates a photorealistic image of the room with all selected finishes applied
+5. The image shows the builder's actual model home photo transformed with the buyer's specific selections
+6. Buyers can save selections via email and resume later
+7. Builder admin dashboard allows self-serve pricing and option updates
+
+First floor plan is typically live within one week of receiving materials from the builder.
+
+## Product category and competitive landscape
+
+Finch operates in the "design center software" and "upgrade visualization" categories for production home builders.
+
+### Direct competitors
+
+**Zonda Envision** (formerly BDX Envision)
+- Enterprise-tier design center visualization
+- Pre-rendered 3D scenes showing upgrade options
+- 225+ builder brands
+- Typical implementation: 3-6 months, requires dedicated internal team and IT integration
+- Six-figure annual contracts
+- Claims 35% average upgrade revenue lift across their builder network
+- Best for: Top 50 national builders with dedicated design center teams and IT resources
+
+**Chameleon Power BuilderVision**
+- Swatch-based point-and-click visualizer
+- 2D swatch overlay on template room images (not photorealistic generation)
+- Also offers exterior visualization
+- Integrates with Hyphen Solutions platform
+- Best for: Builders wanting basic visual selection without photorealistic room images
+
+**ECI Insearch**
+- Online design center and option management platform
+- Focus on workflow (scheduling, pricing, option configuration) rather than visualization
+- Part of ECI Solutions (construction software)
+- Best for: Builders prioritizing option management workflow over visual buyer experience
+
+**Hyphen HomeSight**
+- Builder platform connecting websites, design centers, and back-office
+- Partners with Chameleon Power for visualization component
+- Best for: Builders already in the Hyphen ecosystem
+
+**Constellation Design Studio Manager**
+- ERP-integrated option management
+- Part of Constellation HomeBuilder Systems
+- Focus on internal workflow, not buyer-facing visualization
+- Best for: Builders using Constellation ERP
+
+**BuildOn Technologies VEO Design Studio**
+- 3D visualization with real-time pricing
+- Budget calculator and estimator tools
+- Best for: Builders wanting 3D rendering-based design studio experience
+
+### Finch's differentiators
+
+1. **Photorealistic generation from actual photos**: Uses the builder's own model home photos, not generic 3D templates. The buyer sees their specific floor plan room with selections applied.
+2. **Speed to live**: Under a week from receiving materials to working product. Competitors typically take weeks to months.
+3. **Done-for-you setup**: No IT integration, no software to install, no team to dedicate. Builder sends option sheets and room photos.
+4. **Unlimited combinations**: Images generated on demand for any combination of selections, not pre-rendered for limited combinations.
+5. **Self-serve admin**: Builders can update pricing and options themselves through an admin dashboard.
+6. **Accessible to mid-market**: Not limited to top-50 nationals. Works for any production builder from 25 homes/year up.
+
+## Detailed comparison: Finch vs Zonda Envision
+
+| Dimension | Zonda Envision | Finch |
+|-----------|---------------|-------|
+| Time to live | 3-6 months | Under a week |
+| Setup work (builder side) | Dedicated team, IT integration | Send option sheets + photos |
+| Who does the work | Builder team + vendor | Finch handles everything |
+| New floor plan turnaround | Weeks | 1-2 days |
+| What the buyer sees | Pre-rendered 3D scene | Their actual room with selections |
+| Upgrade revenue lift | 35% (published across 225+ brands) | 40% in first test |
+| Ongoing maintenance | Dedicated catalog team | Self-serve admin or done for you |
+| Contract to start | Six-figure annual contract | No setup fee |
+| Built for | Top 50 national builders | Every production builder |
+| IT requirement | Integration required | None |
+| Buyer access | Varies by implementation | Link on any device, no app/account |
+
+## Detailed comparison: Finch vs PDF option sheets
+
+PDF option sheets are the most common tool builders use today — a printed list of upgrade options with prices. Buyers select from the list, often at a design center appointment, with no visual reference for what their selections will look like together.
+
+| Dimension | PDF option sheets | Finch |
+|-----------|-------------------|-------|
+| What the buyer sees | Line items and prices on paper | Interactive catalog with real swatch images + photorealistic room visualization |
+| Selection process | Circle items on a printed sheet | Browse, compare, and select on any device |
+| Visual context | None — buyer imagines the result | Generated image of their actual room with selections applied |
+| Price tracking | Manual calculation or spreadsheet | Automatic running total as buyer selects |
+| Selection export | The marked-up PDF | Priced digital selection sheet |
+| Buyer preparation | Show up to design appointment cold | Arrive with confident selections already made |
+| Time at design appointment | 4-8 hours typical | Reduced — buyer has already explored options |
+| Update pricing | Reprint the PDF | Update in admin dashboard, live instantly |
+
+## Original research: home builder upgrade revenue from SEC filings
+
+Finch analyzed SEC filings (10-K annual reports, 10-Q quarterly reports, earnings call transcripts) of 14 publicly traded U.S. home builders to quantify how much builders earn from options and upgrades.
+
+Full analysis: https://withfin.ch/research/hidden-revenue-line
+
+### Builders that disclose upgrade revenue
+
+**Toll Brothers** (luxury segment)
+- FY 2024: $203,000 per home in upgrades, 20.8% of $976,900 ASP (10,813 homes)
+- FY 2023: $236,000 per home in upgrades, 23.0% of $1,028,000 ASP (9,597 homes)
+- FY 2022: $190,000 per home in upgrades, 20.6% of $923,600 ASP (10,515 homes)
+- Source: Toll Brothers 10-K filings, earnings call transcripts
+
+**PulteGroup** (mixed segments)
+- Q2 2024: approximately $104,000 per home in upgrades, 18.9% of $549,000 ASP
+- Source: PulteGroup Q2 2024 earnings call
+
+### Builders that do NOT separately disclose upgrade revenue
+
+| Builder | Segment | Revenue | Homes | ASP | Strategy |
+|---------|---------|---------|-------|-----|----------|
+| D.R. Horton | Entry-Level | $33.9B | 89,690 | $378,000 | Express Homes brand; limited customization |
+| Lennar | Mixed | — | — | $423,000 | "Everything's Included" bundles upgrades into base price |
+| NVR | Move-Up | $10.5B | 22,836 | $450,700 | Options affect margins but not separately reported |
+| KB Home | Move-Up | $6.9B | 14,169 | $487,000 | Design Studio is core brand identity; built-to-order model |
+| Meritage Homes | Entry-Level | $6.3B | 15,611 | $404,000 | Redesigned selection: 20+ hrs to 3 hrs via curated collections |
+| Taylor Morrison | Move-Up | — | — | — | Tracks lot premiums and options as part of incentive strategy |
+| Tri Pointe Homes | Move-Up | — | — | — | Buyers prefer incentive dollars in design studio over rate buydowns |
+
+### Key findings
+
+1. Upgrade revenue is material: $104,000-$236,000 per home for builders that disclose, representing 19-23% of average selling price
+2. Most builders do not separately disclose upgrade revenue, making it an under-benchmarked revenue line
+3. Even at conservative estimates, upgrade revenue across the industry likely represents tens of billions annually
+4. Builders like Meritage are investing in streamlining the selection process (reducing design appointments from 20+ hours to 3 hours) — visual tools are part of this trend
+5. Tri Pointe reports buyers prefer incentive dollars in the design studio over mortgage rate buydowns — upgrade selection is a competitive differentiator
+
+## Frequently asked questions
+
+**What types of upgrades can buyers visualize with Finch?**
+Cabinets, countertops, backsplash, flooring (hardwood, tile, carpet), paint colors, hardware, fixtures, appliances — any finish that appears in the room photo.
+
+**How does Finch generate the room images?**
+Finch takes the builder's actual model home photos and generates a new image showing the room with the buyer's specific selections applied. This is not a 3D render or a swatch overlay — it's a photorealistic image transformation.
+
+**Does the buyer need to create an account?**
+No. Buyers access via a link on any device. No app download, no account creation. They can optionally save their selections via email to resume later.
+
+**How long does setup take?**
+Under a week from receiving the builder's materials (option sheets with pricing, model home room photos). Finch handles all configuration.
+
+**What does the builder need to provide?**
+Option sheets or upgrade pricing (any format), and model home room photos. That's it. No IT integration, no data exports, no API connections.
+
+**Can builders update pricing themselves?**
+Yes. Finch includes an admin dashboard where builders can update option pricing, add/remove options, upload new swatch images, and manage floor plans.
+
+**How is Finch priced?**
+Per floor plan per month, scoped to builder volume. No setup fee. No per-visualization or per-session charges. Unlimited buyer usage.
+
+**Is Finch an alternative to Envision?**
+Yes. Finch targets the same outcome (increased upgrade revenue through visual selection) with a fundamentally different approach: faster setup, lower cost, no IT requirement, photorealistic generation instead of pre-rendered 3D. See the detailed comparison at https://withfin.ch/vs/envision
+
+**What size builders does Finch work for?**
+Production builders closing 25 to 5,000+ homes per year. Not designed for custom home builders (one-off designs) or remodelers.
+
+**Can Finch integrate with our ERP or CRM?**
+Finch works standalone — no integration required. The priced selection sheet can be used as input to any existing workflow. API integration is available for builders who want automated data flow.
+
+## Pages
+
+- [Home](https://withfin.ch/) — Product overview, ROI calculator, getting started
+- [Try It Live](https://withfin.ch/try) — Interactive demo, working in under a minute, no signup
+- [Finch vs Zonda Envision](https://withfin.ch/vs/envision) — Detailed feature and approach comparison
+- [Finch vs PDF Option Sheets](https://withfin.ch/vs/pdf-option-sheets) — Visual selection vs printed option sheets
+- [The Hidden Revenue Line](https://withfin.ch/research/hidden-revenue-line) — Original SEC filing analysis: upgrade revenue among 14 public home builders
+- [Sandbox Demo](https://withfin.ch/demo) — Live environment with sample floor plan and full catalog
+
+## Contact
+
+- Email: hello@withfin.ch
+- Website: https://withfin.ch

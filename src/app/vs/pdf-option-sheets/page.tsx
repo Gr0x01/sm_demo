@@ -113,7 +113,7 @@ export default function VsPdfPage() {
             style={revealStyle(60)}
             className="text-xs uppercase tracking-[0.2em] font-semibold text-slate-400 mb-6"
           >
-            Finch vs PDF Option Sheets
+            Finch vs PDF Option Sheets <span className="font-normal">&middot; Updated March 2026</span>
           </p>
           <h1
             data-reveal
@@ -446,6 +446,27 @@ export default function VsPdfPage() {
           </p>
         </div>
       </section>
+
+      {/* --- JSON-LD Structured Data --- */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            name: "Replace PDF Option Sheets — Visual Upgrade Selection for Builders",
+            description:
+              "A price sheet lists upgrades. Finch shows them. Buyers see their kitchen with selections applied, pick finishes, and export a priced selection sheet.",
+            url: "https://withfin.ch/vs/pdf-option-sheets",
+            dateModified: "2026-03-22",
+            publisher: {
+              "@type": "Organization",
+              name: "Finch",
+              url: "https://withfin.ch",
+            },
+          }),
+        }}
+      />
 
       <SiteFooter />
     </div>

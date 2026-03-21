@@ -1,7 +1,7 @@
 # Finch SEO Strategy
 
-**Last updated**: 2026-03-21
-**Status**: Research complete, strategy draft
+**Last updated**: 2026-03-22
+**Status**: Baseline fixes shipped (d855860). Strategy defined. Buyer-pull flywheel is the core play.
 
 ## The Honest Starting Point
 
@@ -227,16 +227,18 @@ Traditional B2B: Sell to the builder. Builder decides. Slow.
 
 That email has data, specificity, and a trivial ROI case. Way stronger than "hi, we make upgrade visualization software."
 
-### Phase 1: Technical Fixes (1 afternoon)
+### Phase 1: Technical Fixes ✅ (shipped d855860, 2026-03-21)
 
-Quick wins that improve existing pages:
-
-- [ ] JSON-LD Organization schema on root layout
-- [ ] JSON-LD FAQPage schema on homepage (already has FAQ content)
-- [ ] JSON-LD Article schema on research page
-- [ ] Favicon + apple-touch-icon + manifest.json
-- [ ] Page-specific OG images for homepage and research page
-- [ ] Verify withfin.ch in Google Search Console (if not already)
+- [x] JSON-LD Organization schema on root layout (moved from landing page, all pages inherit)
+- [x] JSON-LD FAQPage schema on homepage (already existed)
+- [x] JSON-LD Article schema on research page (already existed)
+- [x] JSON-LD SoftwareApplication on homepage (already existed)
+- [x] JSON-LD FAQPage on /vs/envision (already existed)
+- [x] Favicon (`icon.png`) + apple-touch-icon (`apple-icon.png`) (already existed)
+- [x] Web manifest (`manifest.ts`)
+- [x] Page-specific OG image for homepage (updated with headline copy)
+- [x] Page-specific OG image for research page (new, was using generic fallback)
+- [x] Verify withfin.ch in Google Search Console
 
 ### Phase 2: Buyer-Side Content (the demand engine)
 
@@ -290,15 +292,6 @@ Content per page:
 
 **Start with**: Toll Brothers, Pulte, KB Home (highest volume + public SEC data). Add more based on traction.
 
-#### 2c: "Ask Your Builder" Form
-
-Simple component embedded in all buyer content pages:
-- "Which builder are you working with?" (text input or dropdown of known builders)
-- "Which community/floorplan?" (optional text)
-- Email (optional, for "we'll let you know when it's available")
-- Fires PostHog event: `buyer_builder_request` with builder name, community, source page
-
-This form is the bridge between content traffic and builder outreach. Every submission is a warm lead — not for the buyer, but for the builder.
 
 ### Phase 3: B2B Comparison Pages (ongoing, low effort)
 
@@ -312,13 +305,19 @@ Target: "builder design center" / "design center software" / "upgrade visualizat
 
 **Why Phase 3 not Phase 2**: These are low-volume, high-intent pages. Worth having, but they won't drive the flywheel. Build them as outreach collateral — link to them in cold emails when a builder mentions they're evaluating Envision or Chameleon.
 
-### Phase 4: LLM Search Optimization (background)
+### Phase 4: LLM Search Optimization ✅ (2026-03-22)
 
-- [ ] Test AI search results for key queries (Perplexity, ChatGPT, Gemini)
-- [ ] Ensure `llms.txt` is comprehensive and up-to-date
-- [ ] Structure content for AI citation (clear definitions, structured comparisons, original data)
-- [ ] Monitor whether the SEC research report gets cited by AI models
-- [ ] Buyer content pages should be structured for AI extraction (clear headings, factual claims, embedded tool references)
+- [x] Test AI search results for key queries — **zero visibility** across all queries. Finch3D dominates "Finch" + architecture. No competitors investing in content either.
+- [x] `llms.txt` rewritten: disambiguates from Finch3D, adds product category/competitive landscape, comparison tables, research findings, link to llms-full.txt
+- [x] `llms-full.txt` created: extended version with full comparison tables (vs Envision, vs PDF sheets), SEC research data, all FAQs, detailed competitive landscape
+- [x] Structure content for AI citation: enhanced Organization JSON-LD (`alternateName`, `knowsAbout`), added WebPage JSON-LD to /vs/pdf-option-sheets, verified existing Article/FAQPage/SoftwareApplication schemas
+- [x] SEC research report NOT cited by AI models yet — domain is too new, no backlinks. Will improve as domain ages and content compounds.
+- [x] `/for/` prospect pages kept OUT of robots.txt — personalized sales collateral, not public marketing content
+- [x] Explicit AI bot rules in robots.txt: GPTBot, ChatGPT-User, ClaudeBot, PerplexityBot, Google-Extended all explicitly allowed on marketing pages
+- [x] Visible "Updated March 2026" timestamps on /vs/envision and /vs/pdf-option-sheets (AI models show recency bias, content >3 months old drops citations)
+- [x] `dateModified` added to JSON-LD on homepage (SoftwareApplication), /vs/envision (FAQPage), /vs/pdf-option-sheets (WebPage)
+- [x] Homepage SoftwareApplication JSON-LD enhanced: `alternateName`, `applicationSubCategory: "Design Center Software"`, more specific description
+- [x] **Not yet addressed** (offsite work): YouTube presence (16% of AI citations), third-party mentions/reviews for multi-source consensus, Reddit/forum participation. These are outreach tasks, not technical fixes.
 
 ---
 
@@ -331,15 +330,23 @@ Target: "builder design center" / "design center software" / "upgrade visualizat
 - **No competitor has interactive demos** embedded in content
 - **Industry publications** (HousingWire, Builder Innovator, Zonda/BLDR) cover builder tech but have zero coverage of AI upgrade visualization as a category
 
-### Adjacent players worth watching
-| Player | What they do | Threat level |
-|--------|-------------|-------------|
-| ECI Insearch | Online design center, option management, pricing | Medium — workflow overlap, no visualization |
-| Hyphen HomeSight + Chameleon Power | Builder platform + swatch-based visualizer | Medium — closest visual competitor |
-| Chameleon Power (standalone) | Point-and-click interior/exterior visualizer | Medium — different approach (3D vs AI photos) |
-| Anewgo | Marketing platform (renderings, site plans, sales app) | Low — different product entirely |
-| Renoworks | AI-enhanced exterior viz for contractors | Low — renovation market, not new construction |
-| HomeGPT | Consumer AI photo redesign | Low — B2C, no builder workflow |
+### Corrected competitive landscape (2026-03-22)
+Previous version significantly underestimated competitors. See `VISION.md` for full updated table. Key corrections:
+- **ECI Insearch**: Has 3D visualization (not just workflow). Case study: +20% sales, -75% change orders.
+- **Roomored/ILG**: Has photoreal 3D walkthroughs. Shea Homes flagship. Blackstone-backed ($1.79B rev parent).
+- **Aareas Interactive**: Full 3D configurator, 35 years in business. Claims 70% upgrade sales increase. Actively positioning against AI.
+- **Constellation/NEEZO**: Has 3D visualization via NEEZO partnership (since 2019). Not "no visualization."
+- **Chameleon Power/Hyphen**: Bigger than thought. Hyphen serves 21 of top 26 builders.
+- **Higharc**: Well-funded new entrant. Real-time 3D configurator. Partnered with ECI.
+
+**Content gap still holds**: None of these competitors create buyer-facing content. None publish original research. None have interactive demos embedded in SEO content. The content strategy is unaffected by the competitive correction.
+
+### Research content asset: "The Visualization Effect"
+New research page planned: `/research/visualization-lift`. See `memory-bank/research/visualization-lift-research.md` for full data compilation.
+- 3 tiers of evidence: independent studies, named builder case studies, vendor claims
+- Honest framing: no independent study exists, but 10+ companies over 20+ years all point the same direction
+- Companion to `/research/hidden-revenue-line` (size of revenue line → impact of visualization)
+- LinkedIn article to follow, same pattern as first research piece
 
 ---
 
@@ -356,6 +363,42 @@ Target: "builder design center" / "design center software" / "upgrade visualizat
 - **Ranking positions** for target keywords (DataForSEO rank tracker)
 - **Organic traffic to content pages** (PostHog)
 - **Pilot form submissions from organic** (PostHog attribution)
+
+---
+
+## Ongoing Maintenance
+
+### Quarterly content freshness cycle (every ~3 months)
+
+AI models penalize stale content. Pages updated within 2 months earn ~28% more citations; content >3 months old drops sharply. Our category has zero competition so quarterly is sufficient for now.
+
+**Next due: June 2026**
+
+Every cycle, do all of:
+
+1. **Make at least one real content update per page** — refreshed stat, new FAQ, updated comparison row. Don't bump timestamps without actual changes (Google considers that deceptive).
+2. **Bump visible timestamps**:
+   - `/vs/envision` hero: "Updated [Month Year]"
+   - `/vs/pdf-option-sheets` hero: "Updated [Month Year]"
+   - `/research/hidden-revenue-line` hero already shows "March 2026" — update if content changes
+3. **Bump `dateModified` in JSON-LD**:
+   - `src/app/landing-full.tsx` — SoftwareApplication schema
+   - `src/app/vs/envision/page.tsx` — FAQPage schema
+   - `src/app/vs/pdf-option-sheets/page.tsx` — WebPage schema
+   - `src/app/research/hidden-revenue-line/page.tsx` — Article schema
+4. **Review `public/llms.txt` and `public/llms-full.txt`** for accuracy against current site state
+5. **Check robots.txt AI bot list** — new AI crawlers appear regularly (add any new major ones)
+
+### AI search audit (every ~6 months)
+
+Re-run the key query tests to check if Finch is appearing:
+- "home builder upgrade visualization tool"
+- "design center software for home builders"
+- "new construction home upgrades"
+- "home builder upgrade revenue SEC filings"
+- "withfin.ch" / "finch upgrade visualization"
+
+Check Perplexity, ChatGPT, and Google AI Mode specifically. Track whether the SEC research report starts getting cited.
 
 ---
 

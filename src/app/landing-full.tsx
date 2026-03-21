@@ -455,11 +455,14 @@ export default function LandingPage() {
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
             name: "Finch",
+            alternateName: "Finch Upgrade Visualization",
             description:
-              "Upgrade visualization for home builders. Buyers pick finishes and see the room update with their selections.",
+              "Design center software for production home builders. Buyers pick finishes and see photorealistic images of their actual room with selections applied.",
             url: "https://withfin.ch",
             applicationCategory: "BusinessApplication",
+            applicationSubCategory: "Design Center Software",
             operatingSystem: "Web",
+            dateModified: "2026-03-22",
             provider: {
               "@type": "Organization",
               name: "Finch",
