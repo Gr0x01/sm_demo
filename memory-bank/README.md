@@ -57,11 +57,15 @@ npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a
 ## Environment Variables
 
 ```
-OPENAI_API_KEY=              # For image generation (kept for fallback)
-GOOGLE_API_KEY=              # For Gemini image generation (gemini-3-pro-image-preview)
+OPENAI_API_KEY=              # Image generation (gpt-image-1.5)
+GOOGLE_GENERATIVE_AI_API_KEY= # Gemini (quality check, spatial hints, AI descriptors)
 NEXT_PUBLIC_SUPABASE_URL=    # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase anon key
 SUPABASE_SERVICE_ROLE_KEY=   # Supabase service role (server-side only)
+RESEND_API_KEY=              # Transactional email (Resend)
+RESEND_FROM_EMAIL=           # Email sender (e.g. "Finch <hello@withfin.ch>")
+NEXT_PUBLIC_POSTHOG_KEY=     # PostHog analytics
+INNGEST_SIGNING_KEY=         # Inngest (auto-injected on Vercel)
 ```
 
 ## Doc Map
@@ -77,4 +81,5 @@ SUPABASE_SERVICE_ROLE_KEY=   # Supabase service role (server-side only)
 | `landing-page.md` | Building the marketing site |
 | `VISION.md` | Business strategy, pricing, GTM, competitive landscape |
 | `decisions.md` | Understanding "why" behind choices |
+| `seo-strategy.md` | SEO keyword research, content strategy, competitive landscape |
 | `research/` | Builder prospect lists for sales outreach |

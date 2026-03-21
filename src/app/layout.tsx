@@ -11,6 +11,17 @@ export const metadata: Metadata = {
   description: "Upgrade visualization for home builders.",
 };
 
+const orgJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Finch",
+  url: "https://withfin.ch",
+  logo: "https://withfin.ch/finch-logo.png",
+  email: "hello@withfin.ch",
+  description:
+    "Upgrade visualization for home builders. Buyers pick finishes and see the room change.",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -20,6 +31,10 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <PostHogProvider>{children}</PostHogProvider>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        />
       </body>
     </html>
   );

@@ -491,21 +491,6 @@ export default function LandingPage() {
           }),
         }}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "Organization",
-            name: "Finch",
-            url: "https://withfin.ch",
-            logo: "https://withfin.ch/finch-logo.png",
-            email: "hello@withfin.ch",
-            description:
-              "Upgrade visualization for home builders. Buyers pick finishes and see the room change.",
-          }),
-        }}
-      />
     </div>
   );
 }

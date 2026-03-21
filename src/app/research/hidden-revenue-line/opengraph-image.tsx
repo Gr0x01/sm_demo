@@ -3,7 +3,8 @@ import { readFileSync } from "fs";
 import { join } from "path";
 
 export const runtime = "nodejs";
-export const alt = "Finch — Upgrade Visualization for Home Builders";
+export const alt =
+  "The Hidden Revenue Line — Upgrade Revenue Among Public Homebuilders";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -39,29 +40,50 @@ export default function OgImage() {
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoSrc} height="56" alt="" />
+          <img src={logoSrc} height="48" alt="" />
           <p
             style={{
-              fontSize: 42,
+              fontSize: 16,
+              color: "#1b2d4e",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase" as const,
+              marginTop: 24,
+            }}
+          >
+            Original Research
+          </p>
+          <p
+            style={{
+              fontSize: 38,
               fontWeight: 700,
               color: "#0f172a",
-              marginTop: 28,
+              marginTop: 16,
               textAlign: "center",
               lineHeight: 1.2,
             }}
           >
-            Your buyers upgrade what they can see.
+            The Hidden Revenue Line
           </p>
           <p
             style={{
               fontSize: 22,
               color: "#64748b",
-              marginTop: 20,
+              marginTop: 16,
               textAlign: "center",
               lineHeight: 1.5,
             }}
           >
-            First floor plan live in days. No software to learn.
+            SEC filings show $104K-$236K per home in upgrade revenue.
+          </p>
+          <p
+            style={{
+              fontSize: 18,
+              color: "#94a3b8",
+              marginTop: 8,
+              textAlign: "center",
+            }}
+          >
+            An analysis of 14 public homebuilders.
           </p>
         </div>
 
@@ -81,7 +103,7 @@ export default function OgImage() {
               textTransform: "uppercase" as const,
             }}
           >
-            withfin.ch
+            withfin.ch/research
           </p>
         </div>
       </div>
