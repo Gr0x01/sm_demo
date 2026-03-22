@@ -1,4 +1,6 @@
-# Landing Page Design Doc
+# Landing Page Design Doc (Historical — Feb 2026)
+
+> **Archive note:** This describes the original design. The live site has evolved — see the code for current state.
 
 ## Purpose
 

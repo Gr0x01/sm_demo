@@ -1,4 +1,6 @@
-# Finch V1 Product Spec
+# Finch V1 Product Spec (Historical — Feb 2026)
+
+> **Archive note:** V1 is fully shipped. This spec describes the original design. See `phases/completed.md` for what was built.
 
 The SM demo proved the concept. The multi-tenant DB is in place. V1 is the product that builders actually use day-to-day: they manage their own options, buyers pick upgrades and save selections, and the visualization experience is better than the linear step wizard.
 

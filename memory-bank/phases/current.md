@@ -1,327 +1,43 @@
-# Current Phase: V1 Product Build + Polish
+# Current Phase: SEO + Sales Outreach
 
 ## Context
 
-Multi-tenant foundation is done (schema, routing, theming, caching, data layer). V1 product spec written (`v1-product.md`). Domain is `withfin.ch`. All workstreams (A–D) complete. SM fully migrated to multi-tenant. Now executing on: homepage refinement, interactive demo, and prompt tuning.
+V1 product is fully shipped. Multi-tenant foundation, admin UI, buyer save, gallery visualization, branding controls — all complete. SM and Demo orgs are live. Homepage, research pages, learn hub, VS comparisons, prospect demo pages — all live. See `completed.md` for the full history.
+
+Now focused on: SEO content expansion, Google Search Console verification, and builder outreach.
 
 ## Active Workstreams
 
-### 1. Homepage ✅
-Full marketing landing page restored to `/`. `/builders` redirects to `/`. Copy aligned with VISION.md (no "AI", no Zonda name, CTA hierarchy leads with "Start a Pilot").
-- [x] PostHog analytics setup
-- [x] Landing page restored from `landing-full.tsx`
-- [x] Copy fixes: meta description, ROI footnote, FAQ, post-pilot pricing, speed bar
-- [x] CTA hierarchy: "Start a Pilot" primary everywhere, "Try It Live" secondary
-- [x] Body text contrast bumped for readability
-- [x] OG images for homepage, /vs/envision, /vs/pdf-option-sheets (generated via opengraph-image.tsx)
-- [x] Mobile polish: consistent full-width CTA buttons, speed bar vertical stack, text-balance on pilot heading, nbsp orphan fix
-- [x] SEO hardening: robots.txt blocks tenant routes + /api/ + /auth/, allows /demo/; sitemap includes /demo; /demo gets real metadata
-- [x] `llms.txt` for LLM search discovery (competitive positioning, ICP scoping, getting-started paths)
-- [x] Lead capture: pilot form → `pilot_leads` table (Supabase) + email notification to `hello@withfin.ch` (Resend, best-effort)
-- [x] PostHog tracking on all CTAs (`cta_clicked`, `pilot_form_submitted`, `demo_cta_clicked`, `research_cta_clicked`)
-- **Copy rules**: No "AI" in copy. No lecturing builders. Tone = passion/tinkerer, not critic. Email: `hello@withfin.ch`.
-- See `landing-page.md` for design doc
+### 1. SEO Strategy + Content (Section 21 from prior current.md)
 
-### 2. Interactive Demo ✅
-Public demo on the landing page is complete.
+**Completed:** Keyword research, competitive analysis, strategy doc (`seo-strategy.md`), JSON-LD + manifest + OG images, LLM search optimization (`llms.txt`/`llms-full.txt`), anchor page (`/learn/new-construction-upgrades`), upgrade guide visual polish, builder design center pages (Pulte, Arbor, Ryan, Richmond American), visualization lift research page, `/research` and `/learn` index hubs, VS page optimization (`/vs/envision`, `/vs/pdf-option-sheets`), `/vs/eci-insearch` comparison page, IndexNow submission script, SiteNav/SiteFooter defaults.
 
-### 3. Prompt Tuning — SM + Demo ✅
-Both orgs now have full prompt tuning applied:
-- [x] SM Kinkade: 8 photos with photo_baseline, spatial_hint, subcategory_ids scoping, step scene_description + spatial_hints, generation policies (fireplace anti-hallucination, kitchen slide-in range second pass)
-- [x] Demo Nest: 4 photos (living room, kitchen, bathroom, bedroom) with photo_baseline, spatial_hint, step scene_description + spatial_hints, generation policies (greatroom zone protection, kitchen slide-in range second pass)
-- [x] Flooring resolver (code-level, all tenants): single effective flooring instruction, `always_send` on carpet-color + main-area-flooring-type
-- [x] Anti-hallucination prompt rules (code-level, all tenants)
-- [x] Photo scope authority: subcategory_ids as full scope (no also_include_ids merge)
-- See `architecture.md` and `generation-reliability-playbook.md`
-
-### 4. V1 Workstream A: Builder Admin — Auth, RLS, Option Management ✅
-**The first product workstream.** See `v1-product.md` Section 9 for full breakdown.
-- [x] Admin auth: magic link + 6-digit OTP (Supabase Auth, `@supabase/ssr` PKCE flow)
-- [x] Auth callback route (`/auth/callback`) with open-redirect protection
-- [x] Invite flow: `POST /api/admin/invite` — pending `org_users` row + Resend email + auto-link on sign-in
-- [x] `link_pending_invites` trigger (replaces hardcoded email trigger) — generic, links by email on auth.users INSERT
-- [x] `get_auth_user_id_by_email` RPC for direct-linking existing auth users at invite time
-- [x] `onAuthStateChange` listener in AdminSidebar — redirects to login on session expiry
-- [x] Sign-out button in admin sidebar
-- [x] Custom magic link email template (dark theme, OTP code prominent, magic link secondary)
-- [x] RLS policies on all tables (service role bypasses for buyer-facing; user-scoped for admin)
-- [x] Category/subcategory/option tree UI (CRUD, drag reorder, inline price edit)
-- [x] Floorplan scoping (category junction table + `floorplan_ids` array columns on sub/opt)
-- [x] AI prompt descriptor generation (Gemini Flash, name + description)
-- [x] Swatch/photo upload per option (Supabase Storage)
-- [x] UUID PKs on categories/subcategories/options (slug column for buyer-facing compatibility)
-- [x] Security hardening: auth on all admin routes, floorplan ownership validation, verified storage deletes, 404 error semantics
-- [x] ESLint flat config setup
-
-### 5. V1 Workstream B: Floorplan & Photo Pipeline ✅
-**Depends on A (admin auth).** Full floorplan/step/photo management for builders.
-- [x] `step_photos` table with RLS, composite FK (org_id consistency), hero uniqueness index
-- [x] `rooms` storage bucket (public read, admin upload/delete scoped by org prefix)
-- [x] Floorplan CRUD (create/edit/delete, slug generation, active toggle)
-- [x] Step CRUD (create/edit/delete, dnd-kit drag reorder, section subcategory assignment)
-- [x] Photo upload with client-side validation (20MB, 1024x1024 min, format check)
-- [x] Photo quality check (Gemini 2.5 Flash vision — pass/warn/fail with feedback)
-- [x] Spatial hint AI generation (Gemini 2.5 Flash — layout description for image editing)
-- [x] Hero photo toggle with atomic DB swap (`swap_hero_photo` RPC)
-- [x] Photo baseline + spatial hint textarea editing with auto-save on blur
-- [x] Security: path traversal protection, tenant boundary on all mutations, orphan storage cleanup
-- [x] Cache invalidation extended with floorplanId/floorplanSlug tags
-
-### 6. V1 Workstream C: Buyer Save (Email-Only) ✅
-**Depends on A (admin auth).** Anonymous session persistence, email save with resume link, builder dashboard.
-- [x] `buyer_sessions` table with RLS, updated_at trigger, resume token index, email index
-- [x] Anonymous session creation + cookie persistence (`finch_session_{orgSlug}_{fpSlug}`)
-- [x] Auto-save selections (debounced PUT with server-side price calculation)
-- [x] Email save with resume token (`crypto.randomBytes(32)`) + Resend transactional email
-- [x] Token-based resume (GET by token, cross-org redirect detection)
-- [x] Email-based resume (rate-limited, non-enumerating 404s)
-- [x] SaveSelectionsModal component (save + resume flows)
-- [x] DemoPageClient session lifecycle (cookie → load → create, replaces `BUYER_ID` hack)
-- [x] Admin buyer dashboard (list + detail pages, user-scoped Supabase client)
-- [x] pg_cron cleanup for anonymous sessions >30 days
-- [x] Security: ownership verification on all session routes, resume token not leaked in responses, input validation, generic error messages
-- [x] ~~`generation_count` column~~ (removed in D70 — generation caps dropped)
-
-### 7. V1 Workstream D: Gallery Visualization ✅
-**Depends on B + C.** Per-photo AI visualization, gallery view, retry flow.
-- [x] DB migrations: `step_photo_id`/`buyer_session_id`/`selections_fingerprint` on `generated_images`, `generated-images` storage bucket
-- [x] `StepPhoto` type on `StepConfig`, `step_photos` join in `getStepsWithConfig`, `getStepPhotoAiConfig` query
-- [x] `SwatchBufferResolver` callback in `buildEditPrompt` (Supabase Storage for all tenants)
-- [x] `/api/generate/photo` — multi-tenant per-photo generation with ownership validation, DB-based dedup (`__pending__` placeholder rows), stale lock cleanup (5 min TTL), SVG swatch filtering (JPEG/PNG/WebP only)
-- [x] `/api/generate/photo/check` — multi-tenant per-photo cache check
-- [x] Internal per-photo policy layer (DB-backed `step_photo_generation_policies` with code fallback): prompt invariant overrides + optional policy-driven pass-2 refinement
-- [x] Prompt context wiring completed: `step_photos.spatial_hint` now included in generation prompt context; cache hash includes prompt-context signature (`scene_description`, `photo_baseline`, `spatial_hint`, `spatial_hints`)
-- [x] `/api/generate/photo/feedback` — retry flow: deletes cached row, then client regenerates
-- [x] Extended `SelectionState`/`SelectionAction` with per-photo keys
-- [x] UpgradePicker: per-photo generation, gallery virtual step, Visualize All (max 20 concurrent), stale detection per photo, initial cache restore for multi-tenant photos on session resume
-- [x] Replaced thumbs up/down with retry button in `ImageLightbox` (overlay on bottom gradient bar) — feedback was vanity data with no actionable use
-- [x] `StepPhotoGrid` component — per-step photo cards in sidebar (hero first, stale badge, lightbox)
-- [x] `GalleryView` component — full gallery grid grouped by step, Visualize All
-- [x] `SidebarPanel` updated — photo grid replaces StepHero when step has photos
-- [x] Generation caps removed (D70) — unlimited visualizations, costs in monthly pricing
-- [x] Admin login Suspense fix for `useSearchParams()`
-
-### 8. Floorplan Onboarding: Skeleton Steps + Duplicate ✅
-- [x] Auto-populate 5 skeleton steps on floorplan creation (Set Your Style, Design Your Kitchen, Primary Bath, Secondary Spaces, Finishing Touches)
-- [x] Duplicate floorplan API (`POST /api/admin/floorplans/[id]/duplicate`) — clones steps, sections, photos (storage copy), remaps `also_include_ids`
-- [x] Duplicate button in FloorplanList UI (Copy icon between edit/delete, global busy guard)
-
-### 9. SM Multi-Tenant Migration ✅
-Migrated Stone Martin from legacy single-tenant generation to full multi-tenant photo system.
-- [x] Migration script (`scripts/migrate-sm-storage.ts`): uploads room photos + swatches to Supabase Storage, creates `step_photos` rows, updates `swatch_url` to Storage URLs
-- [x] Deleted legacy routes: `/api/generate/route.ts`, `/api/generate/check/route.ts`
-- [x] Deleted `GenerateButton.tsx` (dead code)
-- [x] Cleaned UpgradePicker: removed `handleGenerate`, SM cache checks, added mobile `StepPhotoGrid`
-- [x] Cleaned SidebarPanel: removed `onGenerate` prop and legacy hero generate button
-- [x] Cleaned PriceTracker: removed `onGenerate`, `isGenerating`, `hasChanges`, `hasGeneratedPreview` props
-- [x] Cleaned generate.ts: removed filesystem swatch fallback, dead helpers (`solidColorPng`, `crc32`, `extractHexFromSvg`)
-- [x] Restored reliability path: slide-in range second-pass refinement reintroduced via internal per-photo policy (Stone Martin kitchen-close)
-
-### 10. SM Photo Placement Fix ✅
-Corrected room photo → step assignments for Kinkade floorplan.
-- [x] Moved `primary-bedroom.webp` from Step 4 → Step 1 (non-hero, sortOrder 2)
-- [x] Moved `bath-closet.webp` from Step 4 → Step 3 (non-hero, sortOrder 2)
-- [x] Added `secondary-bedroom.webp` as Step 4 hero (only photo)
-- [x] Updated `step-config.ts` heroImage fallback for Step 4
-- [x] Fixed spatial hints: primary bedroom was incorrectly described as carpeted (has hardwood/LVP), bath-closet referenced non-visible tub/shower
-- [x] Fixed photoBaseline descriptions to match actual photo contents
-- [x] Migration script cleanup order: orphan deletion now runs before inserts (avoids unique constraint conflicts)
-
-### 11. Self-Hosted Image Generation — Evaluated, Not Viable ✅
-No open-source model can replace gpt-image-1.5 for our pipeline (see D64). Revisit when open-source multi-reference instruction editing matures.
-
-### 16. Gemini Image Generation Migration — REVERTED
-Attempted migration to Gemini `gemini-3-pro-image-preview` (D74). Faster and cheaper but hallucinated unpredictably in production — random room layout mutations, furniture appearing/disappearing, spatial distortions. Prompt hardening (anti-mirror guard, fireplace fixes) couldn't solve the underlying inconsistency. Reverted to OpenAI `gpt-image-1.5` (D77). `gemini-image.ts` deleted, Inngest functions restored to clean 3-step flow. Test script retained for future re-evaluation.
-
-### 17. Generation Rules Admin UI + Rule Text Authoring (D78 completion) ✅
-Made generation rules fully authorable and editable through admin UI. Previously Zod schemas stripped generation fields, admin query didn't fetch them, and `common-wall-paint` had an unconditional "ALL walls" rule that contradicted accent-color.
-- [x] Admin query: added `generation_hint`, `generation_rules`, `generation_rules_when_not_selected`, `is_appliance` to subcategory SELECT; `generation_rules` to option SELECT
-- [x] Admin types: added fields to `AdminSubcategory` and `AdminOption`
-- [x] Zod schemas: added generation fields to subcategory + option PATCH routes (were silently stripped)
-- [x] OptionTree: collapsible "AI Rules" panel on subcategory rows (sparkles icon toggle) — generation hint dropdown, appliance checkbox, two rule textareas with local draft state + blur-save
-- [x] OptionTree: generation rules textarea in option editor modal, saved as part of normal Save flow
-- [x] Badges: purple `appliance` and emerald `rules` badges on subcategory rows
-- [x] Error handling: `handleUpdateSubcategory`/`handleUpdateOption` re-throw on failure; AI rules blur handlers revert + show red "Save failed" badge; option modal catches errors and shows inline instead of closing
-- [x] DB fix: `common-wall-paint.generation_rules` updated for SM + Demo with conditional accent-color logic ("If Accent Color is also selected, apply only to non-accent zones")
-- [x] Supabase migration: `fix_common_wall_paint_conditional_accent_rules` codifies the rule text update
-
-### 12. SM Photo Prompt/Scope Reliability Tuning ✅
-Targeted fixes for cross-room contamination and flooring correctness.
-- [x] Photo scope authority: `step_photos.subcategory_ids` now treated as full scope (no `also_include_ids` merge) in generate/check/fingerprinting paths
-- [x] Scene authority: use `step_photos.photo_baseline` as primary scene context; `steps.scene_description` is fallback only
-- [x] Filter `steps.spatial_hints` to per-photo scope before prompt build/hash
-- [x] Admin support for editing `step_photos.subcategory_ids` directly in Photo Manager
-- [x] Added anti-hallucination prompt rules (no TV/built-ins unless selected, no bathroom fixture-type swaps unless explicitly targeted, no cross-doorway bleed)
-- [x] Flooring resolver added (client + server): bedroom photos send one effective flooring material instruction (carpet vs hard-surface) instead of conflicting pairs
-- [x] Flooring control subcategories forced through picker filtering when in-scope (`carpet-color`, `main-area-flooring-type`, `main-area-flooring-color`)
-- [x] SM data tuning applied in Supabase for key photos: Fireplace, Bath & Closet, Shower, Vanity, Secondary Bedroom, Primary Bedroom
-- [x] Updated `carpet-color` + `main-area-flooring-type` to `generation_hint=always_send` for SM
-- [x] Prompt cache version bumped through these semantics (`v9` → `v13`)
-
-### 13. Per-Floorplan Pricing + Lenox Floorplan ✅
-Enables different prices per floorplan for the same shared option catalog. Lenox is larger than Kinkade, so flooring, countertops, trim, etc. cost more.
-- [x] `option_floorplan_pricing` table (composite PK: option_id + floorplan_id) with RLS + cross-org validation
-- [x] Buyer-facing query overlay in `db-queries.ts` (`_getCategoriesForFloorplan` parallel fetch)
-- [x] Admin API: GET/PUT/DELETE `/api/admin/pricing-overrides` with org ownership validation
-- [x] Admin UI: floorplan dropdown in OptionTree toolbar, override indicators (amber dot), inline edit routes to override API, reset-to-base
-- [x] Version-based fetch (`fetchVersionRef`) to prevent race conditions on rapid floorplan switching
-- [x] Seed script `scripts/seed-lenox.ts`: duplicates Kinkade → Lenox, seeds 55 real pricing overrides from PDF
-- [x] Code review + backend architect review fixes: cross-org RLS, negative price check, stale closure, migration re-runnability, bulk upsert, photo basename collision
-
-### 14. Lenox Room Photos — Full AI Generation Pipeline ✅
-Replaced cloned Kinkade photos with 9 actual Lenox room photos, each with complete AI generation metadata.
-- [x] 9 Lenox photos uploaded from `tmp/Lenox/` to Supabase Storage with full metadata (spatial_hint, photo_baseline, subcategory_ids)
-- [x] Photo → step mapping: 4 in Set Your Style (living room hero, entryway, dining, primary bedroom), 2 in Kitchen (kitchen hero, kitchen & dining), 1 in Primary Bath, 2 in Secondary Spaces (bath hero, bedroom)
-- [x] Step-level metadata updated: scene_description + spatial_hints for all 4 generate-enabled steps, stale Kinkade photo_baseline cleared
-- [x] 3 generation policies seeded: kitchen hero (slide-in range second pass), kitchen & dining (slide-in range second pass + refrigerator invariants), living room (zone protection)
-- [x] Removed `models: ["gpt-image-1.5"]` hardcoding from all second-pass policies (Kinkade, Lenox, Demo) — second pass now fires for any model
-- [x] Exterior cover photo uploaded, floorplan visible in org landing page picker
-- [x] 55 pricing overrides seeded (after `option_floorplan_pricing` migration applied)
-- [x] Code review + backend architect review: caught missing `range` in kitchen hero scopeSlugs (would have silently broken second-pass), added refrigerator invariant rules to Kitchen & Dining policy
-
-### 18. Research Page: /research/hidden-revenue-line ✅
-Original research report analyzing SEC filings on public builder upgrade revenue. Positions Finch as understanding builder economics. Used as cold email/LinkedIn outreach collateral.
-- [x] `src/app/research/hidden-revenue-line/page.tsx` — server component, 18 sections: hero, stat bar, 2 data tables (disclosed + non-disclosing builders), scenario table, animated bar charts, callouts, methodology, sources with SEC links, JSON-LD Article schema
-- [x] `src/app/research/hidden-revenue-line/chart-client.tsx` — client component: `ResearchPageTracker` (fires `research_page_viewed`), `AnimatedBarCharts` (IntersectionObserver-triggered with staggered transitions, fires `research_chart_viewed`)
-- [x] `TrackedLink` CTAs: mid-report → `/try` and footer → `/#pilot` + `/try`, event: `research_cta_clicked` with location
-- [x] Sitemap + robots updated
-- [x] `SiteFooter` extracted as shared component (`src/components/SiteFooter.tsx`) — replaces inline footers on homepage, /vs/envision, /vs/pdf-option-sheets, and research page. Consistent links: Home, Try It, Pilot, Research, Contact.
-- [x] Fact-check pass: corrected M/I Homes ASP, NVR revenue, D.R. Horton revenue+ASP, Meritage ASP against actual SEC filings
-- [x] LinkedIn article: `memory-bank/research/linkedin-hidden-revenue-line.md` with corrected numbers (cancellation rate, spec vs BTO gap derivation)
-- [x] 5 chart images for LinkedIn article via `next/og` route (`/research/hidden-revenue-line/charts?chart=hero|stats|disclosed|segments|gap`), Baskerville TTF extracted from macOS system font, Finch brand colors
-- [x] Published as LinkedIn article on Finch company page + personal reshare
-- [x] UTM tracking on article links: `utm_source=linkedin&utm_medium=article&utm_campaign=hidden-revenue-line`
-
-### 15. V1 Workstream E: Branding Controls ✅
-**Depends on A (admin auth).** Org-level branding customization applied to buyer-facing pages.
-- [x] DB columns on `organizations`: `logo_url`, `logo_type`, `primary_color`, `secondary_color`, `accent_color`, `header_style`, `corner_style`
-- [x] Admin UI (`BrandingSettings.tsx`): logo upload (PNG/JPG/WebP/SVG, <5MB), color pickers (hex + visual), header style toggle (light/dark), corner style toggle (sharp/rounded), logo type (icon/wordmark)
-- [x] `PATCH /api/admin/organizations/[id]` with Zod validation, auth, cache invalidation
-- [x] Type-safe enum parsing (`src/lib/branding.ts`) with fallback defaults
-- [x] Buyer-facing dynamic theming: CSS variable injection (`--color-navy`, `--color-accent`, `--color-secondary`) on org landing + demo pages
-- [x] Org landing page: dynamic header style, logo display, primary/secondary color application, corner style on cards
-
-### 19. Test Infrastructure ✅
-Vitest test suite covering the generation pipeline end-to-end. 129 tests in <1s. Three layers:
-- [x] **Layer 1: Unit tests** (6 files) — pure functions: photo scoping, selection reconciliation, flooring resolution, hash derivation, prompt signature, policy resolution, pricing
-- [x] **Layer 2: Pipeline integration tests** — `deriveGenerationContext` with realistic fixture data: scoping, flooring, accent remap, policy, negative-guard rules, hash consistency
-- [x] **Layer 3: Route handler tests** (2 files) — `/api/generate/photo` and `/api/generate/photo/check` with mocked Supabase + Inngest: validation, ownership chain, cache hit/miss, 429 double-click guard, retry flow, Inngest dispatch, error handling
-- [x] Shared fixtures (`src/lib/__fixtures__/generation.ts`) modeling SM Kinkade kitchen/bedroom/living room patterns
-- [x] Shared Supabase mock helper (`src/lib/__fixtures__/supabase-mock.ts`)
-- [x] `.test.ts` excluded from production tsconfig, `coverage/` in .gitignore
-
-### 20. Prospect Demo Pages ✅
-Personalized sales pages for outreach. Each page shows a prospect's own room photo in a single-step upgrade picker with optional Loom embed and Calendly booking link.
-- [x] DB migration: `loom_url`, `calendly_url`, `is_prospect_demo` on `floorplans`
-- [x] `/for/[prospectSlug]` route — resolves prospect slug as floorplan in Demo org
-- [x] `ProspectDemoClient` — hero (cover image + greeting), Loom embed, single-step picker, Calendly CTA, SiteFooter
-- [x] `hideWizardControls` prop on UpgradePicker/SidebarPanel — hides Finish/Save/Next Step/Clear, suppresses gallery step
-- [x] `MobileStickyFooter` — reusable component extracted from `/try` page. Used by both `/try` and `/for/` pages.
-- [x] Prospect floorplans filtered from Demo org landing page
-- [x] Auto-creates anonymous buyer session on mount
-- [x] PostHog events: `prospect_page_viewed`, `prospect_loom_loaded`, `prospect_calendly_clicked`
-- [x] URL validation for Loom and Calendly origins
-- [x] Cold call script rewritten around *Cold Calling Sucks* framework (problem proposition, Mr. Miyagi objections, voicemail-to-email)
-- [x] LinkedIn outreach playbook updated with Loom follow-up strategy and prospect demo workflow
-- [x] First prospect: Stylecraft Homes (Doug French) — The 1651 kitchen from Rancho San Gabriel
-- [x] Upgrade insights sidebar: `UpgradeInsights` component below price tracker, `sidebarFooter` prop threaded through UpgradePicker → SidebarPanel, `prospect_insights` JSONB column on floorplans for per-prospect customization. Uses defensible SEC/industry data only (no Zonda 35% claim).
-- [x] Prospect page polish (brand guardian + growth hacker audit):
-  - Sources line fixed: "public SEC filings (Toll Brothers, PulteGroup)" — removed Zonda attribution
-  - Stylecraft insights updated to actual volume (200 homes/year, $200K closing line)
-  - Hero restructured: floorplan name as small label, h1 "What your buyers could see"
-  - Micro-copy instruction added to hero body text
-  - Sidebar Calendly CTA added below UpgradeInsights (PostHog `location: "sidebar"`)
-  - Removed redundant "Try It" nav CTA and "Home" link on prospect pages
-  - Nav "Research" renamed to "Upgrade Revenue Research"
-  - Loom iframe accessibility (`title` attribute)
-  - Bottom Calendly CTA PostHog tracking consistency (`location: "bottom"`)
-- [x] Before/after comparison toggle on photo cards + lightbox:
-  - `PhotoViewerCard`: "Before"/"After" button in toolbar, instant toggle via `invisible` class
-  - `ImageLightbox`: click image to toggle, "Before"/"After" label + button, one-time hint
-  - Works on all pages (prospect, buyer, all orgs) — not prospect-specific
-  - `key={activePhoto.id}` prevents state leaking between photos
-
-### 21. SEO Strategy + Baseline Fixes
-SEO research (DataForSEO keyword data, Tavily competitive analysis) → strategy doc → baseline technical fixes.
-- [x] Keyword research: DataForSEO volume/CPC/competition for builder + buyer keyword clusters
-- [x] Competitive analysis: Tavily search for competitor content, SERP analysis, domain metrics
-- [x] Strategy doc: `memory-bank/seo-strategy.md` with buyer-pull flywheel as core play
-- [x] JSON-LD Organization schema moved to root layout (all pages inherit)
-- [x] Web manifest (`manifest.ts`)
-- [x] Homepage OG image updated with headline copy
-- [x] Research page dedicated OG image (was using generic fallback)
+**Remaining:**
 - [ ] Verify withfin.ch in Google Search Console
-- [x] **Phase 4: LLM Search Optimization** — tested AI search (zero visibility), rewrote `llms.txt` with Finch3D disambiguation + competitive landscape, created `llms-full.txt` with full comparison data/research/FAQs, enhanced JSON-LD across all pages (`alternateName`, `knowsAbout`, `applicationSubCategory`, `dateModified`), added JSON-LD to /vs/pdf-option-sheets, explicit AI bot rules in robots.txt (GPTBot/ClaudeBot/PerplexityBot/etc.), visible "Updated" timestamps on /vs/ pages
-- [x] **Phase 2a: Anchor page** (`/learn/new-construction-upgrades`) — "The Complete Guide to New Construction Upgrades." Buyer-facing SEO page targeting ~370/mo searches. 8 sections: hero, stat bar, upgrade categories, structural vs cosmetic, SEC data, design center appointment tips, demo CTA, final CTA. Article JSON-LD, OG image, PostHog tracking. Brand guardian + growth hacker reviewed. Contextual Finch mention in design center tips. Buyer-pull CTA hierarchy (Try It Live primary, Get Started secondary).
-- [x] **Upgrade guide visual polish** — AI-generated room photos (Nano Banana / gemini-3-pro-image-preview) + thin line SVG icons for upgrade categories. 4 photos in `public/learn/`: kitchen-greatroom (21:9 capstone above category grid with gradient overlay), bathroom-vanity (4:3 side-by-side with "practical approach" callout in structural/cosmetic section), kitchen-detail (3:2 content card wrapping "preview your selections" tip), living-room-wide (closing CTA split layout). Consolidated redundant CTA sections 7+8 into single dark (`bg-slate-800`) two-column closing with photo + single CTA. Generation script: `scripts/generate-learn-photos.ts`.
-- [x] **SiteNav defaults** — shared nav links (Try It, Upgrade Guide, Research, Get Started CTA) defined in SiteNav component. All marketing pages use defaults. Homepage overrides with anchor links. Removed per-page NAV_LINKS duplication.
-- [x] **SiteFooter** — added "Upgrade Guide" link
-- [x] `robots.ts` — added `/learn/` to MARKETING_ALLOW
-- [x] `llms.txt` + `llms-full.txt` — added page listing
-- **"Ask your builder" form**: Cut. A form submission isn't warm outreach. PostHog already tracks demo starts from content pages.
-- [x] **Phase 2c: Visualization lift research page** (`/research/visualization-lift`) — "The Visualization Effect." Companion to SEC research. Data compiled from independent studies (3D Cloud/Provoke Insights, NAR staging), named builder case studies (ECI/Signature, Roomored/Shea, Higharc/Buffington), and vendor claims (Anewgo, Aareas, Zonda, Chameleon, CPS). Honest framing with source quality labeled. Animated bar charts (two-tone: named builder vs vendor claim). Article JSON-LD, OG image, PostHog tracking.
-- [x] **`/research` index page** — lightweight hub listing all research articles. Cards with title, description, date, tag. Scales for future case studies.
-- [x] **Nav/footer links updated** — SiteNav defaults, SiteFooter, homepage, prospect pages all point to `/research` index. In-content links to specific articles left as-is.
-- **Key insight**: Builder B2B keywords are tiny volume (<70/mo). Buyer-side content ("new construction upgrades" 170/mo, "[builder] upgrade price list" cluster ~400-500/mo) is the demand engine. Flywheel: buyer finds content → tries demo → asks builder → builder calls us.
-- [x] **IndexNow** — key file + submission script (`scripts/indexnow.ts`) for instant Bing/Yandex indexing of all 9 marketing URLs. Run after deploys: `npx tsx scripts/indexnow.ts`
-- [x] **Upgrade guide layout fix** — bathroom photo+text block broken out of `max-w-3xl` to use full `max-w-6xl` section width. Image gets 60% (`grid-cols-[3fr_2fr]`), `aspect-[4/3]` on mobile, fills height on desktop. Text card vertically centered.
-- [x] **Phase 2b: Builder-specific design center pages** — `/learn/design-center/[builder-slug]` template. First page: Pulte Homes (590/mo "pulte homes design center"). Genuinely helpful buyer prep guide: what the appointment is like, 15 Pulte-specific selection categories with SVG icons, 7 prep tips (walk models, budget, leave kids at home, selections are final), structural vs cosmetic spend guidance, contextual demo CTA. No SEC data, no price lists, no forms. Goal: buyer tries demo → gets excited → asks builder. Brand guardian + growth hacker reviewed and all findings applied: keyword in H1/title/first-100-words, FAQPage JSON-LD (5 Q/As), inline mid-page CTA in "junction that matters" callout, bridge sentence managing non-Pulte demo expectations, cross-link to anchor page.
-- [x] **`/learn` index page** — hub listing upgrade guide + builder-specific design center pages. Cards with title, description, date, tag (matches `/research` index pattern). WebPage JSON-LD with `mainEntity` linking to children. PostHog `learn_page_viewed` with `page: "learn-index"`. Title: "New Home Design Center Guides | Finch".
-- [x] **Nav/footer "Upgrade Guide" → `/learn`** — SiteNav, SiteFooter, and homepage all point to `/learn` hub instead of directly to anchor page. Anchor page cross-links to Pulte page in design center tips section.
-- [x] **Anchor page brand fixes** — 3 em dashes replaced with periods, SVG `rx` rounded corners removed from icon rects.
-- [x] **Arbor Homes design center page** (`/learn/design-center/arbor`) — targeting "arbor homes design center" (170/mo). 9 Arbor-specific selection categories (vs Pulte's 15), Arbor-specific details: Saturday 9-1 walk-in browsing, contract-holders-only policy, Merillat/laminate/Shaw/GE base inclusions, HomeBuildingJourney.com portal, Clayton/Berkshire parent, shared Design Center with Silverthorne. Bold `font-semibold` lead-ins on appointment paragraphs for scannability. Same pattern applied to Pulte page. FAQPage JSON-LD (5 Q/As), Article JSON-LD, PostHog tracking, sitemap, IndexNow, llms.txt/llms-full.txt, learn index card all updated.
-- **Next**: Verify withfin.ch in Google Search Console, remaining builder pages (Toll Brothers, Ryan Homes), add visuals to anchor page (demo screenshot/before-after)
+- [ ] Toll Brothers design center page
+- [ ] Add visuals to anchor page (demo screenshot / before-after)
 
-### 22. Homepage CTA Restructure
-Flipped the "Get Started" section from form-primary to Calendly-primary. The old "Send us your option sheets" headline asked for too much commitment from builders who haven't talked to anyone yet.
-- [x] **Headline/subtitle rewrite** — "Fifteen minutes on a real floorplan." + subtitle describing the walkthrough experience. Honest about what the call is (we show our demo, not their data).
-- [x] **Calendly popup as primary CTA** — `CalendlyPopupButton` component loads Calendly widget JS/CSS on click (not on mount), triggers `initPopupWidget`. Fallback opens new tab if script fails to load.
-- [x] **Form demoted to secondary** — simplified to 3 fields (name/company/email), positioned below value props with "Not ready to book?" framing.
-- [x] **Value props reframed** — same 3 props but copy adjusted ("We handle setup using your option sheets" instead of "Send us your option sheets")
-- [x] **Killed "or" divider** — single clear hierarchy instead of two competing CTAs
-- [x] **"No upfront cost" line** moved near primary CTA
-- [x] Applies to all pages using `GetStartedSection` (homepage, research pages). Research pages keep custom headline/subtitle props.
+**Key insight:** Builder B2B keywords are tiny volume (<70/mo). Buyer-side content ("new construction upgrades" 170/mo, "[builder] upgrade price list" cluster ~400-500/mo) is the demand engine. Flywheel: buyer finds content → tries demo → asks builder → builder calls us.
 
-### 23. Super Footer
-Replaced thin single-row strip footer with a full columnar super footer used across all marketing pages.
-- [x] **Columnar layout** — brand column (wider, 2fr) with tagline ("Your buyers upgrade what they can see."), Book a Call popup (Calendly), LinkedIn icon. Three link columns: Product (Try It, Get Started), Learn (Upgrade Guide, Pulte/Arbor Design Center), Research (Upgrade Revenue, Visualization Lift).
-- [x] **Book a Call** — uses `CalendlyPopupButton` via `FooterCalendlyButton` client island component. PostHog tracks with `location: "footer"`.
-- [x] **Bottom bar** — copyright + `hello@withfin.ch` mailto
-- [x] **`--color-dark: #1c2028`** — CSS variable in `:root` for dark sections. Used by footer + closing CTA sections on upgrade guide, Pulte, and Arbor pages (replaced `bg-slate-800`).
-- [x] **LinkedIn** — `https://www.linkedin.com/company/112412489/`
-- [x] Mobile: brand block stacks above 3-col link grid, bottom bar centers
+### 2. Sales Outreach
 
-## What's Done
-
-### Multi-Tenant Foundation (Complete)
-- [x] Supabase schema: organizations, floorplans, categories/subcategories/options
-- [x] UUID PKs on categories/subcategories/options with `slug` column + `UNIQUE(org_id, slug)`
-- [x] Dynamic routing: `/{org-slug}/{floorplan-slug}` (will become subdomain routing)
-- [x] Seed script (slug-based upsert with UUID FK lookup maps), data-fetching layer, org-scoped theming, caching
-- [x] Query optimization (4 queries/page, 0 on cache hit)
-- [x] V1 product spec (`v1-product.md`)
-
-### SM Demo (Fully Multi-Tenant)
-- [x] 5-step wizard, 350+ options, 166 swatches
-- [x] Kinkade: 8 room photos with full prompt tuning
-- [x] Lenox: 9 room photos with full prompt tuning, 55 pricing overrides, 3 generation policies
-- [x] Mobile UI, contract phase locking, generation reliability hardening
-- [x] Now uses multi-tenant `/api/generate/photo` path (same as all builders)
-
-### Finch Demo Sandbox (Complete)
-- [x] "Finch Demo" org (slug: `demo`), "The Nest" floorplan at `demo.withfin.ch`
-- [x] 4 room photos with full prompt tuning (baselines, spatial hints, scene descriptions, generation policies)
-- [x] Shareable with prospects without exposing SM data
+Active research and playbooks in `memory-bank/research/`:
+- Cold call script (`cold-call-script.md`)
+- LinkedIn outreach playbook (`linkedin-outreach-playbook.md`)
+- Cowork contractor guide (`cowork-linkedin-research-guide.md`)
+- Trade publication pitches (`trade-publication-pitches.md`)
+- Research distribution targets (`research-distribution-targets.md`)
+- Prospect lists: AL/GA, West Coast, National Tier 1-3
 
 ## Key References
 
 | Doc | Content |
 |-----|---------|
-| `v1-product.md` | V1 spec: option CRUD, floorplans, buyer save, branding, gallery viz, workstreams |
-| `product-architecture.md` | Multi-tenant schema, URL structure, user roles, migration path |
-| `landing-page.md` | Marketing site design doc |
+| `completed.md` | All finished workstreams (V1 product, SM migration, etc.) |
+| `product-architecture.md` | Multi-tenant schema, URL structure, user roles |
 | `VISION.md` | Business plan, pricing, ROI, GTM |
 | `seo-strategy.md` | SEO keyword research, buyer-pull flywheel, content strategy |
+| `decisions.md` | Key choices and rationale |
 
 ## Domain
 
