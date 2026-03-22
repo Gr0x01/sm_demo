@@ -133,7 +133,7 @@ export function ProspectDemoClient({
     <div className="min-h-screen bg-white">
       <SiteNav
         links={[
-          { label: "Upgrade Revenue Research", href: "/research/hidden-revenue-line" },
+          { label: "Research", href: "/research" },
         ]}
         cta={null}
       />
