@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { GetStartedSection } from "@/components/PilotSection";
 import {
   RevealObserver,
   TrackedLink,
   RoiCalculator,
+  CalendlyPopupButton,
+  FaqItem,
 } from "@/app/landing-client";
+import { PdfOptionSheetsPageTracker } from "../vs-client";
 import type { CSSProperties } from "react";
 
 export const metadata: Metadata = {
@@ -24,7 +28,7 @@ export const metadata: Metadata = {
       "A price sheet lists upgrades. Finch shows them. Buyers see their kitchen with selections applied.",
     url: "https://withfin.ch/vs/pdf-option-sheets",
     siteName: "Finch",
-    type: "website",
+    type: "article",
   },
   twitter: {
     card: "summary_large_image",
@@ -34,7 +38,6 @@ export const metadata: Metadata = {
       "A price sheet lists upgrades. Finch shows them. Buyers see their kitchen with selections applied.",
   },
 };
-
 
 const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
@@ -95,13 +98,41 @@ const experienceRows = [
   },
 ];
 
+const faqs = [
+  {
+    q: "Can buyers still get a printed selection sheet?",
+    a: "Yes. Buyers export a priced selection sheet when they\u2019re done. Same document your team processes today, with cleaner formatting and no re-entry needed.",
+  },
+  {
+    q: "Do we need to digitize our entire option catalog?",
+    a: "No. Send us your PDFs and model home photos. We handle the data entry and setup. Whatever you have works.",
+  },
+  {
+    q: "What if we have hundreds of options?",
+    a: "That\u2019s normal. We organize them into the same categories your buyers already know: countertops, cabinets, flooring, hardware, and so on. The experience scales to any catalog size.",
+  },
+  {
+    q: "How long does setup take?",
+    a: "First floor plan in under a week. Full catalog depends on size, but most builders are fully live in days, not months. No IT or data entry on your end.",
+  },
+  {
+    q: "How does pricing work?",
+    a: "Pricing scales with your community count. We start with one community so you see the numbers before expanding. No long-term lock-in.",
+  },
+  {
+    q: "What happens when we add new options or change pricing?",
+    a: "Update it in the admin or tell us. Changes are live immediately. No new PDFs to print, no version control headaches.",
+  },
+];
+
 export default function VsPdfPage() {
   return (
     <div className="min-h-screen bg-white">
       <RevealObserver />
+      <PdfOptionSheetsPageTracker />
       <SiteNav />
 
-      {/* ─── Hero ─── */}
+      {/* --- Hero --- */}
       <section className="px-6 pt-14 pb-16 md:pt-18 md:pb-20 lg:pt-20 lg:pb-24 bg-white">
         <div className="max-w-4xl mx-auto text-center">
           <p
@@ -135,7 +166,7 @@ export default function VsPdfPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <TrackedLink
-              href="/#get-started"
+              href="#get-started"
               event="cta_clicked"
               properties={{
                 cta: "Get Started",
@@ -160,7 +191,7 @@ export default function VsPdfPage() {
         </div>
       </section>
 
-      {/* ─── Before / After ─── */}
+      {/* --- Before / After --- */}
       <Section gray>
         <div
           data-reveal
@@ -205,6 +236,7 @@ export default function VsPdfPage() {
               src="/home-hero-generated.png"
               alt="Kitchen upgrade visualization"
               fill
+              sizes="100vw"
               className="object-cover"
             />
           </div>
@@ -262,6 +294,7 @@ export default function VsPdfPage() {
                 src="/home-hero-generated.png"
                 alt="Kitchen upgrade visualization"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover"
               />
             </div>
@@ -274,7 +307,7 @@ export default function VsPdfPage() {
         </div>
       </Section>
 
-      {/* ─── Revenue Gap ─── */}
+      {/* --- Revenue Gap --- */}
       <Section id="roi">
         <div
           data-reveal
@@ -296,20 +329,27 @@ export default function VsPdfPage() {
           style={revealStyle(330)}
           className="text-center max-w-3xl mx-auto"
         >
-          <p className="text-2xl md:text-3xl text-slate-800 leading-tight mb-6">
+          <p className="text-2xl md:text-3xl text-slate-800 leading-tight">
             Buyers upgrade what they can see. The ones reading a price sheet
             default to&nbsp;Standard.
           </p>
-          <p className="text-xs text-slate-500 max-w-2xl mx-auto">
-            In our first test, a buyer actively trying to minimize spend still
-            chose 40% more after seeing their selections. Industry data across
-            225+ builder brands averages 35%. We start at 15% because
-            it&apos;s conservative.
+        </div>
+
+        {/* Mid-page Calendly CTA */}
+        <div data-reveal style={revealStyle(390)} className="text-center mt-12">
+          <CalendlyPopupButton
+            location="vs-pdf-roi"
+            className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            Book a 15-Minute Walkthrough
+          </CalendlyPopupButton>
+          <p className="text-xs text-slate-400 mt-3">
+            We&apos;ll plug in your actual numbers together.
           </p>
         </div>
       </Section>
 
-      {/* ─── What Changes ─── */}
+      {/* --- What Changes --- */}
       <Section gray>
         <div
           data-reveal
@@ -363,9 +403,21 @@ export default function VsPdfPage() {
             </div>
           ))}
         </div>
+
+        {/* Mid-page CTA */}
+        <div data-reveal style={revealStyle(160)} className="mt-12 text-center">
+          <TrackedLink
+            href="/try"
+            event="cta_clicked"
+            properties={{ cta: "See What It Looks Like", location: "vs-pdf-mid" }}
+            className="inline-block px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+          >
+            Try It on Your Kitchen
+          </TrackedLink>
+        </div>
       </Section>
 
-      {/* ─── No Software to Learn ─── */}
+      {/* --- No Software to Learn --- */}
       <Section>
         <div className="max-w-3xl mx-auto text-center">
           <h2
@@ -400,48 +452,76 @@ export default function VsPdfPage() {
         </div>
       </Section>
 
-      {/* ─── Final CTA ─── */}
-      <section className="px-6 py-20 md:py-28 bg-white border-t border-slate-100">
-        <div
-          data-reveal
-          style={revealStyle(20)}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
-            Your buyers can&apos;t upgrade what they can&apos;t&nbsp;see.
+      {/* --- FAQ --- */}
+      <Section gray id="faq">
+        <div className="max-w-3xl mx-auto">
+          <h2
+            data-reveal
+            style={revealStyle(20)}
+            className="text-3xl md:text-5xl leading-[1] tracking-[-0.02em] text-slate-900 text-center mb-12"
+          >
+            Common questions about replacing PDF&nbsp;sheets
           </h2>
-          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            One community. Live in days, not months. We handle everything.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <TrackedLink
-              href="/#get-started"
-              event="cta_clicked"
-              properties={{
-                cta: "Get Started",
-                location: "vs-pdf-footer",
-              }}
-              className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-            >
-              Get Started
-            </TrackedLink>
-            <TrackedLink
-              href="/try"
-              event="cta_clicked"
-              properties={{
-                cta: "Try It Live",
-                location: "vs-pdf-footer",
-              }}
-              className="inline-block px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
-            >
-              Try It Live
-            </TrackedLink>
+          <div>
+            {faqs.map((faq, index) => (
+              <div
+                key={faq.q}
+                data-reveal
+                style={revealStyle(90 + index * 70)}
+              >
+                <FaqItem q={faq.q} a={faq.a} />
+              </div>
+            ))}
           </div>
-          <p className="text-xs text-slate-400 mt-4">
-            Questions? hello@withfin.ch
-          </p>
+
+          {/* Related Research — anchored to FAQ section */}
+          <div
+            data-reveal
+            style={revealStyle(90 + faqs.length * 70)}
+            className="mt-14"
+          >
+            <p className="text-xs uppercase tracking-[0.16em] font-semibold text-slate-400 mb-5">
+              Related Research
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <TrackedLink
+                href="/research/visualization-lift"
+                event="cta_clicked"
+                properties={{ cta: "Visualization Lift", location: "vs-pdf-crosslinks" }}
+                className="group block border border-slate-200 bg-white p-5 hover:border-slate-400 transition-colors"
+              >
+                <p className="text-sm font-medium text-slate-900 group-hover:text-slate-700 mb-1">
+                  The Visualization Effect
+                </p>
+                <p className="text-xs text-slate-500">
+                  What happens when buyers can see their upgrades
+                </p>
+              </TrackedLink>
+              <TrackedLink
+                href="/research/hidden-revenue-line"
+                event="cta_clicked"
+                properties={{ cta: "Hidden Revenue Line", location: "vs-pdf-crosslinks" }}
+                className="group block border border-slate-200 bg-white p-5 hover:border-slate-400 transition-colors"
+              >
+                <p className="text-sm font-medium text-slate-900 group-hover:text-slate-700 mb-1">
+                  The Hidden Revenue Line
+                </p>
+                <p className="text-xs text-slate-500">
+                  SEC filings on upgrade revenue among public homebuilders
+                </p>
+              </TrackedLink>
+            </div>
+          </div>
         </div>
-      </section>
+      </Section>
+
+      {/* --- Get Started --- */}
+      <GetStartedSection
+        headline={<>Your buyers can&apos;t upgrade<br />what they can&apos;t&nbsp;see.</>}
+        subtitle="One community. Live in days, not months. We handle everything."
+      />
+
+      <SiteFooter />
 
       {/* --- JSON-LD Structured Data --- */}
       <script
@@ -449,22 +529,47 @@ export default function VsPdfPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "WebPage",
-            name: "Replace PDF Option Sheets — Visual Upgrade Selection for Builders",
+            "@type": "Article",
+            headline:
+              "Replace PDF Option Sheets — Visual Upgrade Selection for Builders",
             description:
               "A price sheet lists upgrades. Finch shows them. Buyers see their kitchen with selections applied, pick finishes, and export a priced selection sheet.",
-            url: "https://withfin.ch/vs/pdf-option-sheets",
+            datePublished: "2026-03-22",
             dateModified: "2026-03-22",
+            author: {
+              "@type": "Organization",
+              name: "Finch",
+              url: "https://withfin.ch",
+            },
             publisher: {
               "@type": "Organization",
               name: "Finch",
               url: "https://withfin.ch",
             },
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": "https://withfin.ch/vs/pdf-option-sheets",
+            },
           }),
         }}
       />
-
-      <SiteFooter />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: faqs.map((faq) => ({
+              "@type": "Question",
+              name: faq.q,
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: faq.a,
+              },
+            })),
+          }),
+        }}
+      />
     </div>
   );
 }

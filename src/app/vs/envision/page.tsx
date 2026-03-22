@@ -2,12 +2,15 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
+import { GetStartedSection } from "@/components/PilotSection";
 import {
   RevealObserver,
   TrackedLink,
   RoiCalculator,
+  CalendlyPopupButton,
   FaqItem,
 } from "@/app/landing-client";
+import { EnvisionPageTracker } from "../vs-client";
 import type { CSSProperties } from "react";
 
 export const metadata: Metadata = {
@@ -16,7 +19,7 @@ export const metadata: Metadata = {
       "Finch vs Zonda Envision — Upgrade Visualization Without the Enterprise Rollout",
   },
   description:
-    "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in days, not months. Done for you. No six-figure contract, no IT team.",
+    "Looking for a Zonda Envision or anewgo alternative? Finch delivers the same upgrade revenue lift in days, not months. Done for you. No six-figure contract, no IT team.",
   alternates: { canonical: "https://withfin.ch/vs/envision" },
   openGraph: {
     title: "Finch vs Zonda Envision — Same Upgrade Lift, Days Not Months",
@@ -24,7 +27,7 @@ export const metadata: Metadata = {
       "Envision takes months and six figures. Finch is done for you, live in days. Compare the two approaches to upgrade visualization.",
     url: "https://withfin.ch/vs/envision",
     siteName: "Finch",
-    type: "website",
+    type: "article",
   },
   twitter: {
     card: "summary_large_image",
@@ -33,7 +36,6 @@ export const metadata: Metadata = {
       "Envision takes months and six figures. Finch is done for you, live in days.",
   },
 };
-
 
 const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
@@ -82,8 +84,8 @@ const comparisonRows = [
   },
   {
     label: "Upgrade revenue lift",
-    envision: "35% (their published data)",
-    finch: "40% in first test",
+    envision: "Published data, no named builders",
+    finch: "Measured per community, starting with yours",
   },
   {
     label: "Ongoing maintenance",
@@ -120,12 +122,12 @@ const faqs = [
     a: "Yes. Send us your option sheets and model home photos. We can have your first floor plan live in under a week, running alongside Envision while you compare results.",
   },
   {
-    q: "How do you match Envision\u2019s 35% upgrade lift?",
-    a: "Visual upgrade selection drives higher spend regardless of the rendering method. Envision\u2019s own data validates this across 225+ builder brands. In our first test, a buyer actively trying to minimize spend still chose 40% more. The lift comes from buyers seeing their selections, not from any specific technology.",
+    q: "Does visualization actually increase upgrade revenue?",
+    a: "In our first test, a buyer actively trying to minimize spend still chose 40% more after seeing their selections. Multiple vendors in this space report 20-70% lifts across their builder networks. The mechanism is straightforward: buyers upgrade what they can see. The ones reading a price sheet default to Standard.",
   },
   {
-    q: "What happens after 60 days?",
-    a: "If the numbers work, we scope pricing to your community count. If they don\u2019t, you walk away with no obligation. We share the data either way.",
+    q: "How does pricing work?",
+    a: "Pricing scales with your community count. We start with one community so you see the numbers before expanding. No six-figure contract, no long-term lock-in.",
   },
   {
     q: "Do we need IT involvement?",
@@ -133,7 +135,15 @@ const faqs = [
   },
   {
     q: "What does this cost compared to Envision?",
-    a: "Envision requires a six-figure annual contract. Finch sets up your first community at no cost. After 60 days, pricing is scoped to your community count. Most builders see ROI in the first month.",
+    a: "Envision requires a six-figure annual contract plus a team to manage it. Finch pricing scales with your community count, and most builders see ROI in the first month.",
+  },
+  {
+    q: "What happens when we add new options or change pricing?",
+    a: "Update it in the admin or tell us. Changes are live immediately. No re-rendering, no waiting weeks for new 3D scenes.",
+  },
+  {
+    q: "How does Finch compare to anewgo?",
+    a: "Similar to Envision, anewgo uses pre-rendered 3D scenes that require modeling each room and option combination upfront. Finch works from your actual model home photos and generates any combination on demand. No 3D modeling, no render queue, live in days.",
   },
 ];
 
@@ -141,6 +151,7 @@ export default function VsEnvisionPage() {
   return (
     <div className="min-h-screen bg-white">
       <RevealObserver />
+      <EnvisionPageTracker />
       <SiteNav />
 
       {/* --- Hero --- */}
@@ -177,7 +188,7 @@ export default function VsEnvisionPage() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             <TrackedLink
-              href="/#get-started"
+              href="#get-started"
               event="cta_clicked"
               properties={{ cta: "Get Started", location: "vs-envision-hero" }}
               className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
@@ -304,6 +315,7 @@ export default function VsEnvisionPage() {
               src="/home-hero-generated.png"
               alt="Kitchen with buyer selections applied"
               fill
+              sizes="100vw"
               className="object-cover"
             />
           </div>
@@ -361,6 +373,7 @@ export default function VsEnvisionPage() {
                 src="/home-hero-generated.png"
                 alt="Kitchen with buyer selections applied"
                 fill
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover"
               />
             </div>
@@ -384,6 +397,18 @@ export default function VsEnvisionPage() {
             photos. New option? Live in minutes.
           </p>
         </div>
+
+        {/* Mid-page CTA */}
+        <div data-reveal style={revealStyle(260)} className="mt-12 text-center">
+          <TrackedLink
+            href="/try"
+            event="cta_clicked"
+            properties={{ cta: "See What It Looks Like", location: "vs-envision-mid" }}
+            className="inline-block px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
+          >
+            Try It on Your Kitchen
+          </TrackedLink>
+        </div>
       </Section>
 
       {/* --- The Real Cost --- */}
@@ -397,17 +422,17 @@ export default function VsEnvisionPage() {
             The Real Cost
           </p>
           <h2 className="text-3xl md:text-5xl leading-[0.98] tracking-[-0.02em] text-slate-900">
-            Envision charges six figures before your first buyer sees&nbsp;it.
+            Six figures before a single buyer sees&nbsp;it.
             <br />
-            <span className="text-slate-500">Finch starts at&nbsp;zero.</span>
+            <span className="text-slate-500">Or&nbsp;zero.</span>
           </h2>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {[
             { stat: "Days", label: "First community live" },
-            { stat: "Done for you", label: "We handle setup" },
-            { stat: "$0", label: "Builder effort" },
+            { stat: "$0", label: "Setup work on your end" },
+            { stat: "Zero", label: "IT involvement" },
           ].map((card, i) => (
             <div
               key={card.label}
@@ -434,8 +459,8 @@ export default function VsEnvisionPage() {
           className="text-center mt-10 max-w-2xl mx-auto"
         >
           <p className="text-base text-slate-600">
-            One community. Your finishes, your pricing, your photos. If upgrade
-            revenue doesn&apos;t move in 60 days, walk&nbsp;away.
+            One community. Your finishes, your pricing, your photos. Start with
+            real buyers, measure the results, expand when the numbers&nbsp;work.
           </p>
         </div>
       </Section>
@@ -462,15 +487,22 @@ export default function VsEnvisionPage() {
           style={revealStyle(330)}
           className="text-center max-w-3xl mx-auto"
         >
-          <p className="text-2xl md:text-3xl text-slate-800 leading-tight mb-6">
+          <p className="text-2xl md:text-3xl text-slate-800 leading-tight">
             Buyers upgrade what they can see. The ones reading a price sheet
             default to&nbsp;Standard.
           </p>
-          <p className="text-xs text-slate-500 max-w-2xl mx-auto">
-            In our first test, a buyer actively trying to minimize spend still
-            chose 40% more after seeing their selections. Envision&apos;s own
-            data across 225+ builder brands averages 35%. We start at 15%
-            because it&apos;s conservative.
+        </div>
+
+        {/* Mid-page Calendly CTA */}
+        <div data-reveal style={revealStyle(390)} className="text-center mt-12">
+          <CalendlyPopupButton
+            location="vs-envision-roi"
+            className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            Book a 15-Minute Walkthrough
+          </CalendlyPopupButton>
+          <p className="text-xs text-slate-400 mt-3">
+            We&apos;ll plug in your actual numbers together.
           </p>
         </div>
       </Section>
@@ -588,20 +620,28 @@ export default function VsEnvisionPage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5 max-w-2xl mx-auto"
           >
             <p>
-              Envision&apos;s own data across 225+ builder brands shows a 35%
-              increase in upgrade spend when buyers can see their
-              selections.
-            </p>
-            <p>
-              In our first test, a buyer who was actively trying to minimize
-              spend still chose 40% more after seeing their kitchen with
-              selections applied.
+              Every visualization vendor in this space reports the same thing:
+              buyers who see their selections spend more on upgrades. The data
+              ranges from 20% to 70% depending on the builder and the
+              methodology. We compiled the independent studies, named builder
+              case studies, and vendor claims in one place.
             </p>
             <p className="text-slate-800 font-medium">
               The lift comes from showing buyers what they&apos;re getting. Not
               from any specific rendering method. Not from a six-figure
               platform.
             </p>
+          </div>
+
+          <div data-reveal style={revealStyle(160)} className="mt-8">
+            <TrackedLink
+              href="/research/visualization-lift"
+              event="cta_clicked"
+              properties={{ cta: "Read the Research", location: "vs-envision-validation" }}
+              className="text-sm text-slate-700 underline underline-offset-2 hover:text-slate-900 transition-colors"
+            >
+              Read the full research: The Visualization Effect
+            </TrackedLink>
           </div>
         </div>
       </Section>
@@ -627,55 +667,53 @@ export default function VsEnvisionPage() {
               </div>
             ))}
           </div>
+
+          {/* Related Research — anchored to FAQ section */}
+          <div
+            data-reveal
+            style={revealStyle(90 + faqs.length * 70)}
+            className="mt-14"
+          >
+            <p className="text-xs uppercase tracking-[0.16em] font-semibold text-slate-400 mb-5">
+              Related Research
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <TrackedLink
+                href="/research/visualization-lift"
+                event="cta_clicked"
+                properties={{ cta: "Visualization Lift", location: "vs-envision-crosslinks" }}
+                className="group block border border-slate-200 p-5 hover:border-slate-400 transition-colors"
+              >
+                <p className="text-sm font-medium text-slate-900 group-hover:text-slate-700 mb-1">
+                  The Visualization Effect
+                </p>
+                <p className="text-xs text-slate-500">
+                  What happens when buyers can see their upgrades
+                </p>
+              </TrackedLink>
+              <TrackedLink
+                href="/research/hidden-revenue-line"
+                event="cta_clicked"
+                properties={{ cta: "Hidden Revenue Line", location: "vs-envision-crosslinks" }}
+                className="group block border border-slate-200 p-5 hover:border-slate-400 transition-colors"
+              >
+                <p className="text-sm font-medium text-slate-900 group-hover:text-slate-700 mb-1">
+                  The Hidden Revenue Line
+                </p>
+                <p className="text-xs text-slate-500">
+                  SEC filings on upgrade revenue among public homebuilders
+                </p>
+              </TrackedLink>
+            </div>
+          </div>
         </div>
       </Section>
 
-      {/* --- Final CTA --- */}
-      <section className="px-6 py-20 md:py-28 bg-white border-t border-slate-100">
-        <div
-          data-reveal
-          style={revealStyle(20)}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
-            Same upgrade results.
-            <br />
-            No six-figure contract.
-            <br />
-            No six-month&nbsp;wait.
-          </h2>
-          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            One community. Live in days, not months. We handle everything.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <TrackedLink
-              href="/#get-started"
-              event="cta_clicked"
-              properties={{
-                cta: "Get Started",
-                location: "vs-envision-footer",
-              }}
-              className="inline-block px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-            >
-              Get Started
-            </TrackedLink>
-            <TrackedLink
-              href="/try"
-              event="cta_clicked"
-              properties={{
-                cta: "Try It Live",
-                location: "vs-envision-footer",
-              }}
-              className="inline-block px-6 py-3 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
-            >
-              Try It Live
-            </TrackedLink>
-          </div>
-          <p className="text-xs text-slate-400 mt-4">
-            Questions? hello@withfin.ch
-          </p>
-        </div>
-      </section>
+      {/* --- Get Started --- */}
+      <GetStartedSection
+        headline={<>Same upgrade results.<br />No six-figure contract.</>}
+        subtitle="One community. Live in days, not months. We handle everything."
+      />
 
       <SiteFooter />
 
@@ -685,8 +723,36 @@ export default function VsEnvisionPage() {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "FAQPage",
+            "@type": "Article",
+            headline:
+              "Finch vs Zonda Envision — Upgrade Visualization Without the Enterprise Rollout",
+            description:
+              "Looking for a Zonda Envision alternative? Finch delivers the same upgrade revenue lift in days, not months.",
+            datePublished: "2026-03-22",
             dateModified: "2026-03-22",
+            author: {
+              "@type": "Organization",
+              name: "Finch",
+              url: "https://withfin.ch",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "Finch",
+              url: "https://withfin.ch",
+            },
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": "https://withfin.ch/vs/envision",
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
             mainEntity: faqs.map((faq) => ({
               "@type": "Question",
               name: faq.q,

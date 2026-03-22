@@ -18,6 +18,11 @@ const RESEARCH_LINKS = [
   { label: "Visualization Lift", href: "/research/visualization-lift" },
 ];
 
+const COMPARE_LINKS = [
+  { label: "Finch vs Envision", href: "/vs/envision" },
+  { label: "Finch vs PDF Sheets", href: "/vs/pdf-option-sheets" },
+];
+
 function LinkColumn({
   title,
   links,
@@ -51,7 +56,7 @@ export function SiteFooter() {
     <footer className="px-6 py-14 bg-[var(--color-dark)]">
       <div className="max-w-6xl mx-auto">
         {/* Main grid */}
-        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr] gap-10 md:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-10 md:gap-12">
           {/* Brand column */}
           <div>
             <a
@@ -85,10 +90,11 @@ export function SiteFooter() {
           </div>
 
           {/* Link columns — 3-col grid on mobile, dissolve into parent grid on md+ */}
-          <div className="grid grid-cols-3 gap-6 md:contents">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 md:contents">
             <LinkColumn title="Product" links={PRODUCT_LINKS} />
             <LinkColumn title="Learn" links={LEARN_LINKS} />
             <LinkColumn title="Research" links={RESEARCH_LINKS} />
+            <LinkColumn title="Compare" links={COMPARE_LINKS} />
           </div>
         </div>
 
