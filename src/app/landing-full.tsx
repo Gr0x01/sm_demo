@@ -410,41 +410,6 @@ export default function LandingPage() {
         </div>
       </Section>
 
-      {/* ─── Final CTA ─── */}
-      <section id="contact" className="px-6 py-20 md:py-28 bg-white border-t border-slate-100">
-        <div
-          data-reveal
-          style={revealStyle(20)}
-          className="max-w-3xl mx-auto text-center"
-        >
-          <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-5">
-            Your buyers can&apos;t upgrade what they can&apos;t&nbsp;see.
-          </h2>
-          <p className="text-lg text-slate-600 mb-10 max-w-2xl mx-auto text-balance">
-            Send us your option sheets. We&apos;ll have your first community ready in&nbsp;days.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <TrackedLink
-              href="#get-started"
-              event="cta_clicked"
-              properties={{ cta: "Get Started", location: "contact" }}
-              className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-            >
-              Get Started
-            </TrackedLink>
-            <TrackedLink
-              href="/try"
-              event="cta_clicked"
-              properties={{ cta: "Try It Live", location: "contact" }}
-              className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
-            >
-              Try It Live
-            </TrackedLink>
-          </div>
-          <p className="text-xs text-slate-400 mt-4">Questions? hello@withfin.ch</p>
-        </div>
-      </section>
-
       <SiteFooter />
 
       {/* ─── JSON-LD Structured Data ─── */}
