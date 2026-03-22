@@ -74,14 +74,11 @@ INNGEST_SIGNING_KEY=         # Inngest (auto-injected on Vercel)
 | Doc | Read when... |
 |-----|------------|
 | `phases/current.md` | Starting work (ALWAYS) |
-| `product.md` | Working on the SM demo or buyer-facing UI |
-| `architecture.md` | Working on SM demo backend/API/image pipeline |
-| `generation-reliability-playbook.md` | Fixing image-generation failures quickly (prompt/mask/cache tactics) |
-| `product-architecture.md` | Multi-tenant schema, UUID PK design, migration path |
-| `v1-product.md` | V1 spec: option CRUD, floorplans, buyer save, branding, gallery viz, workstreams. Workstreams A+B complete. |
-| `landing-page.md` | Building the marketing site |
+| `phases/completed.md` | Need history of what was built |
+| `architecture.md` | System design, API patterns, admin, generation pipeline, business models |
+| `generation-reliability-playbook.md` | Fixing image-generation failures (prompt/mask/cache tactics) |
 | `VISION.md` | Business strategy, pricing, GTM, competitive landscape |
 | `decisions.md` | Understanding "why" behind choices |
-| `seo-strategy.md` | SEO keyword research, content strategy, competitive landscape |
-| `research/` | Builder prospect lists for sales outreach |
-| `research/visualization-lift-research.md` | Data compilation for "Does visualization work?" research page |
+| `seo-strategy.md` | SEO keyword research, content strategy |
+| `v1-product.md` | Historical — original V1 spec (shipped, archived) |
+| `research/` | Builder prospect lists + outreach playbooks |

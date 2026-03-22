@@ -8,25 +8,23 @@ Read `memory-bank/README.md` → `memory-bank/phases/current.md` on startup. Rea
 ```
 memory-bank/
 ├── README.md              → project context, commands, env vars
-├── product.md             → SM demo: user flows, data schema, features
-├── architecture.md        → SM demo: system design, API patterns, tech details
-├── product-architecture.md → Finch product: multi-tenant schema, migration path
-├── landing-page.md        → Finch marketing site design doc
+├── architecture.md        → system design, API patterns, generation pipeline, business models
 ├── VISION.md              → business plan, pricing, GTM, competitive landscape
 ├── decisions.md           → key choices and rationale ("why")
-├── research/              → builder prospect lists for sales
+├── seo-strategy.md        → SEO keyword research, content strategy
+├── generation-reliability-playbook.md → prompt/cache troubleshooting
+├── v1-product.md          → (historical) original V1 spec
+├── research/              → builder prospect lists + outreach playbooks
 └── phases/
     ├── current.md         → what to work on RIGHT NOW
-    └── roadmap.md         → future phases overview
+    └── completed.md       → finished workstreams archive
 ```
 
 ### Startup Procedure
 1. **Always read first**: `README.md` → `phases/current.md`
-2. **When working on SM demo**: Also read `product.md` + `architecture.md`
-3. **When building Finch product infra**: Also read `product-architecture.md`
-4. **When building landing page**: Also read `landing-page.md`
-5. **When you need business context**: Check `VISION.md`
-6. **When you need "why"**: Check `decisions.md`
+2. **When working on product/backend**: Also read `architecture.md`
+3. **When you need business context**: Check `VISION.md`
+4. **When you need "why"**: Check `decisions.md`
 
 ### Documentation Updates
 Update the memory bank when:

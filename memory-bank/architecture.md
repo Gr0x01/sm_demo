@@ -451,3 +451,29 @@ public/
 - Pre-cached combos: ~200ms (Supabase Storage CDN)
 - Show skeleton/progress indicator during generation
 - Guided first experience targets a pre-cached combo for instant wow
+
+## Why Setup Is the Moat
+
+AI visualization isn't plug-and-play. Each builder needs:
+1. **Base photos** — high-quality, properly framed shots of the actual model home
+2. **Spatial labels** — tell the AI where things are (without these, layouts hallucinate)
+3. **Prompt descriptors** — hand-tuned phrases per visual option (generic names → generic results)
+4. **Photo baselines** — what's already in the photo so the AI doesn't re-describe it
+5. **Swatch targeting** — which options send images vs text-only (too many overwhelms the model)
+
+This setup work is what makes output actually good. Self-serve requires tooling for each step.
+
+## Two Business Models
+
+### Model A: Setup Service (Now)
+Builder sends pricing PDF + model home photos + brand assets. We deliver a fully configured picker. Revenue: setup fee + monthly SaaS.
+
+### Model B: Self-Serve (Future)
+Builder onboards through admin panel: upload pricing data, upload photos, system generates descriptors (AI-assisted, human-reviewed). Revenue: monthly SaaS, tiered by floorplans/generations.
+
+## Open Questions
+
+- **Photo shooting service**: Offer to shoot model homes, or provide a shot guide?
+- **Swatch sourcing at scale**: Manufacturer CDNs, builder uploads, or shared catalog?
+- **CRM integration**: Which CRMs do regional builders use? (BuilderLinq, Lasso, custom)
+- **Analytics depth**: Beyond "most popular upgrades" — price sensitivity signals from viewed-but-not-selected?

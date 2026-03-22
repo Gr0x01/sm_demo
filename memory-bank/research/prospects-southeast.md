@@ -1,6 +1,6 @@
-# Builder Contact Research — AL/GA Prospect List
+# Southeast Builder Prospects — AL/GA
 
-Last updated: 2026-03-09
+Last updated: 2026-03-09. Consolidated from al-ga-builders.md, no-builderlinq-prospects.md, and builder-contacts.md.
 
 ---
 
@@ -220,3 +220,41 @@ Last updated: 2026-03-09
 - **Dilworth Development** — Acquired by Harris Doyle. Target Harris Doyle instead.
 - **Conner Brothers** — Conservative legacy operation, small volume.
 - **Benchmark Homes** — Small, one-man operation. Good for Gulf Coast entry but low volume.
+
+---
+
+## Existing Visualization Tech in Market
+
+| Builder | What They Use |
+|---------|---------------|
+| Smith Douglas Homes | Interactive online design tools (exterior colors, floorplans, interior selections) |
+| Stone Martin Builders | Our tool (the benchmark) |
+| Hyde Homes (Huntsville) | Anewgo MyHome App |
+| Traton Homes | Physical design center with consultants |
+| Holland Homes | Custom Virtual Design Center |
+| BC Stone Homes | Claims "leading edge of technology" with state-of-the-art Sales and Design Studios |
+| Signature Homes | Unknown — smart home tech focus suggests possible |
+
+## Tech Assessment — Small AL Builders
+
+| Builder | Markets | Est. Volume | Tech Level |
+|---------|---------|-------------|------------|
+| Conner Brothers | Auburn, Opelika | ~50-100/yr | Very Low |
+| Craftway Homes | Enterprise, Dale/Coffee County | ~20-50/yr | Very Low |
+| Southern Home Builders | Dothan/Wiregrass | ~10-30/yr | Very Low |
+| Omega Builders | Dothan/Wiregrass | ~10-30/yr | Very Low |
+| Tolleson Construction | Dothan/Wiregrass | ~10-30/yr | Very Low |
+| Adams Homes | Statewide + SE US | ~1,000+/yr nationally | Low-Medium |
+
+Most Alabama builders in the 50-300 homes/year range use PDF/paper sheets or in-person Design Center/Studio with samples. No builder found offers AI-generated visualization.
+
+## HBA Directories
+
+- [Greater Montgomery HBA](http://findapro.gmhba.org/list/category/homebuilder-183)
+- [Home Builders Association of Alabama](https://hbaa.org/wp/)
+- [Greater Birmingham Association of Home Builders](https://members.gbahb.com/professionalservicesdirectory)
+- [Huntsville Madison County Builders Association](https://huntsvillemadisoncountyba.growthzoneapp.com/hmcbamemberdirectory)
+- [Baldwin County HBA](https://business.bchba.com/list/category/residential-custom-home-builder-39)
+- [Home Builders Association of Tuscaloosa](https://www.tuscaloosahba.com/)
+- [Home Builders Association of Dothan](https://www.hbaofdothan.org/)
+- [Enterprise Home Builders Association](https://enterprisehba.com/builders)
