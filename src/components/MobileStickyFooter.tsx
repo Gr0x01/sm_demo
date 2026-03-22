@@ -11,10 +11,11 @@ interface MobileStickyFooterProps {
   previewExtra?: React.ReactNode;
   /** Middle row content between preview drawer and action buttons (e.g., GenerationCounter) */
   statusContent?: React.ReactNode;
-  /** Primary action button config (right side) */
+  /** Primary action button config (right side). Use href for link-style actions. */
   primaryAction: {
     label: string;
-    onClick: () => void;
+    onClick?: () => void;
+    href?: string;
     disabled?: boolean;
   };
   /** Secondary action button config (left side). If omitted, defaults to Preview toggle */
@@ -116,13 +117,25 @@ export function MobileStickyFooter({
             </button>
           )}
 
-          <button
-            onClick={primaryAction.onClick}
-            disabled={primaryAction.disabled}
-            className="h-11 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {primaryAction.label}
-          </button>
+          {primaryAction.href ? (
+            <a
+              href={primaryAction.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={primaryAction.onClick}
+              className="h-11 inline-flex items-center justify-center bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+            >
+              {primaryAction.label}
+            </a>
+          ) : (
+            <button
+              onClick={primaryAction.onClick}
+              disabled={primaryAction.disabled}
+              className="h-11 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {primaryAction.label}
+            </button>
+          )}
         </div>
 
         {/* Error row */}

@@ -7,9 +7,12 @@ import { DemoPickerPanel } from "./DemoPickerPanel";
 import { DemoViewer } from "./DemoViewer";
 import { GenerationCounter } from "./GenerationCounter";
 import { MobileStickyFooter } from "@/components/MobileStickyFooter";
+import { SiteFooter } from "@/components/SiteFooter";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
 import { useTrack } from "@/hooks/useTrack";
+
+const CALENDLY_URL = "https://calendly.com/finch-rashaad/finch-demo";
 
 type DemoPhase = "picking" | "generating" | "result";
 
@@ -306,8 +309,11 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
     <div className={`${bare ? "" : "min-h-screen "}bg-slate-50 flex flex-col`} style={{ "--color-accent": "#0f172a", "--color-navy": "#0f172a" } as React.CSSProperties}>
       {!bare && (
         <SiteNav
-          links={[]}
-          cta={{ label: "Book a Walkthrough", href: "mailto:hello@withfin.ch?subject=Finch Demo Interest" }}
+          links={[
+            { label: "How It Works", href: "/#how" },
+            { label: "Research", href: "/research" },
+          ]}
+          cta={{ label: "Book a Walkthrough", href: CALENDLY_URL }}
         />
       )}
 
@@ -363,17 +369,25 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
                       <div className="order-1 md:order-2 flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
                         <GenerationCounter used={generationsUsed} max={5} onRecall={handleRecallGeneration} />
-                        <button
-                          onClick={handleGenerate}
-                          disabled={selectedCount < 1 || isGenerating || atCap}
-                          className="w-full sm:w-auto sm:min-w-[260px] py-3.5 px-6 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                          {isGenerating
-                            ? "Generating..."
-                            : atCap
-                              ? "Generation limit reached"
-                              : "Visualize My Kitchen"}
-                        </button>
+                        {atCap ? (
+                          <a
+                            href={CALENDLY_URL}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => track("demo_cta_clicked", { trigger: "cap_generate_button" })}
+                            className="w-full sm:w-auto sm:min-w-[260px] py-3.5 px-6 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors text-center"
+                          >
+                            Book a Walkthrough
+                          </a>
+                        ) : (
+                          <button
+                            onClick={handleGenerate}
+                            disabled={selectedCount < 1 || isGenerating}
+                            className="w-full sm:w-auto sm:min-w-[260px] py-3.5 px-6 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            {isGenerating ? "Generating..." : "Visualize My Kitchen"}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -386,47 +400,84 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
             {/* Right: scrollable picker */}
             <section className={`demo-enter demo-enter-delay-2 ${bare ? "lg:pl-5 pt-4 md:pt-6 lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px)] lg:overflow-y-auto" : "lg:pr-1"}`}>
+              {/* Cap banner — above picker at highest-intent moment */}
+              {!bare && atCap && (
+                <div className="mb-4 md:mb-5 px-5 md:px-6 py-6 border border-slate-200 bg-white text-center">
+                  <p className="text-2xl md:text-3xl leading-tight tracking-[-0.02em] text-slate-900 mb-3">
+                    Your version uses your floor plans, your options, your pricing.
+                  </p>
+                  <p className="text-base text-slate-500 mb-6 max-w-lg mx-auto">
+                    We build your first community at no cost. Pick a time and we&apos;ll walk through yours.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a
+                      href={CALENDLY_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => track("demo_cta_clicked", { trigger: "cap_interstitial" })}
+                      className="inline-block px-8 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+                    >
+                      Book a Walkthrough
+                    </a>
+                    <a
+                      href="/#get-started"
+                      onClick={() => track("demo_cta_clicked", { trigger: "cap_form_link" })}
+                      className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                      or send us your details
+                    </a>
+                  </div>
+                  <a
+                    href="/research"
+                    onClick={() => track("demo_cta_clicked", { trigger: "cap_research_link" })}
+                    className="inline-block mt-4 text-xs uppercase tracking-[0.16em] text-slate-400 hover:text-slate-700 transition-colors"
+                  >
+                    Read the research
+                  </a>
+                </div>
+              )}
+
               <DemoPickerPanel
                 selections={selections}
                 sceneAnalysis={uploadedPhoto?.sceneAnalysis}
                 onSelect={handleSelectionChange}
               />
 
-              {/* CTA Banner */}
-              {!bare && (phase === "result" || atCap) && (
+              {/* Post-result banner — below picker, only before cap */}
+              {!bare && phase === "result" && !atCap && (
                 <div className="mt-4 md:mt-5 px-5 md:px-6 py-6 border border-slate-200 bg-white text-center">
-                  {atCap ? (
-                    <>
-                      <p className="text-2xl md:text-3xl leading-tight tracking-[-0.02em] text-slate-900 mb-3">
-                        You&apos;ve seen what Finch can do.
-                      </p>
-                      <p className="text-base text-slate-500 mb-6 max-w-lg mx-auto">
-                        Your version uses your floor plans, your options, your pricing. First plan is free. Live in under a week.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-lg font-semibold text-slate-900 mb-2">
-                        Your buyers would see this instantly, with your floor plans and pricing.
-                      </p>
-                      <p className="text-sm text-slate-500 mb-4">
-                        First plan is free. Live in under a week.
-                      </p>
-                    </>
-                  )}
-                  <a
-                    href="mailto:hello@withfin.ch?subject=Getting%20Started%20%E2%80%94%20Saw%20the%20Demo"
-                    onClick={() => track("demo_cta_clicked", { trigger: atCap ? "cap_interstitial" : "result_banner" })}
-                    className="inline-block px-8 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-                  >
-                    Get Started
-                  </a>
+                  <p className="text-lg font-semibold text-slate-900 mb-2">
+                    Your buyers would see this with your floor plans and your pricing.
+                  </p>
+                  <p className="text-sm text-slate-500 mb-4">
+                    We set up your first community at no cost. Live in under a week.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <a
+                      href={CALENDLY_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => track("demo_cta_clicked", { trigger: "result_banner" })}
+                      className="inline-block px-8 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
+                    >
+                      Book a Walkthrough
+                    </a>
+                    <a
+                      href="/#get-started"
+                      onClick={() => track("demo_cta_clicked", { trigger: "result_form_link" })}
+                      className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
+                    >
+                      or send us your details
+                    </a>
+                  </div>
                 </div>
               )}
             </section>
           </div>
         </div>
       </main>
+
+      {!bare && <SiteFooter />}
 
       {uploadedPhoto ? (
         <MobileStickyFooter
@@ -444,10 +495,14 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
           statusContent={
             <GenerationCounter used={generationsUsed} max={5} onRecall={handleRecallGeneration} />
           }
-          primaryAction={{
-            label: isGenerating ? "Generating..." : atCap ? "Limit Reached" : "Visualize",
+          primaryAction={atCap ? {
+            label: "Book a Walkthrough",
+            href: CALENDLY_URL,
+            onClick: () => track("demo_cta_clicked", { trigger: "cap_mobile_button" }),
+          } : {
+            label: isGenerating ? "Generating..." : "Visualize",
             onClick: handleGenerate,
-            disabled: selectedCount < 1 || isGenerating || atCap,
+            disabled: selectedCount < 1 || isGenerating,
           }}
           error={error}
         />

@@ -182,7 +182,7 @@ export function DemoViewer({
       {phase === "result" && generatedImageUrl && !isGenerating && (
         <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-slate-900/80 via-slate-900/50 to-transparent pt-10 pb-3 px-4 flex items-end justify-between">
           <p className="text-sm text-white/90 leading-snug max-w-xs hidden sm:block">
-            Your buyers would see this instantly, with your floor plans and pricing.
+            Your buyers would see this with your floor plans and your pricing.
           </p>
           <div className="flex items-center gap-2 ml-auto">
             <button
@@ -195,10 +195,12 @@ export function DemoViewer({
               Save
             </button>
             <a
-              href="mailto:hello@withfin.ch?subject=Getting%20Started%20%E2%80%94%20Saw%20the%20Demo"
+              href="https://calendly.com/finch-rashaad/finch-demo"
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-4 py-1.5 bg-white text-slate-900 text-xs font-semibold uppercase tracking-wider hover:bg-slate-100 transition-colors"
             >
-              Get Started
+              Book a Walkthrough
             </a>
           </div>
         </div>
