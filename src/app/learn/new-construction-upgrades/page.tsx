@@ -580,9 +580,25 @@ export default function NewConstructionUpgradesPage() {
               <p className="text-base text-slate-600 leading-relaxed">
                 Where cabinet meets countertop meets backsplash. This is the
                 junction you&apos;re trying to picture from a 4-inch sample.
-                Some builders offer visualization tools that let you preview
-                selections in your actual rooms before your appointment. Ask
-                yours. Walking in with a starting point saves a lot of time.
+                Finch is a tool that lets you pick finishes from real swatches
+                and generates a photo of the room with your selections applied.
+                You can{" "}
+                <TrackedLink
+                  href="/try"
+                  event="cta_clicked"
+                  properties={{
+                    cta: "try a demo",
+                    location: "learn-upgrades-tip-card",
+                  }}
+                  className="text-slate-900 font-medium border-b border-slate-300 hover:border-slate-900 transition-colors pb-px"
+                >
+                  try a demo
+                </TrackedLink>{" "}
+                to see how it works. The demo uses sample finishes, not your
+                builder&apos;s actual catalog, but imagine the same thing with
+                your real floorplan and your builder&apos;s real options. If
+                your builder doesn&apos;t offer it yet, it&apos;s worth
+                asking&nbsp;about.
               </p>
             </div>
           </div>
@@ -590,7 +606,7 @@ export default function NewConstructionUpgradesPage() {
       </Section>
 
       {/* ─── 7. Closing CTA ─── */}
-      <section className="bg-slate-800">
+      <section className="bg-[var(--color-dark)]">
         <div
           data-reveal
           style={revealStyle(20)}
@@ -614,8 +630,11 @@ export default function NewConstructionUpgradesPage() {
               Upgrades Before You&nbsp;Buy?
             </h2>
             <p className="text-base md:text-lg text-white/70 leading-relaxed mb-8">
-              Pick finishes, see them in a real room together, and walk into
-              your design center appointment with a starting&nbsp;point.
+              Finch lets you pick from real finish swatches and generates a
+              photo of the room with those selections applied. The demo below
+              uses sample finishes, but it shows you what the experience is
+              like when a builder offers Finch with their own catalog
+              and&nbsp;floorplans.
             </p>
             <div>
               <TrackedLink
@@ -630,7 +649,12 @@ export default function NewConstructionUpgradesPage() {
                 Try It Yourself
               </TrackedLink>
             </div>
-            <p className="text-sm text-white/40 mt-8">
+            <p className="text-sm text-white/50 mt-4">
+              If your builder offered this with your actual options and
+              floorplan, you&apos;d walk into your appointment knowing
+              exactly what you&nbsp;want.
+            </p>
+            <p className="text-sm text-white/40 mt-4">
               Are you a builder?{" "}
               <TrackedLink
                 href="/#get-started"

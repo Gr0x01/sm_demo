@@ -628,27 +628,28 @@ export default function PulteDesignCenterPage() {
               the combination you&apos;re trying to picture from three
               separate 4-inch samples on a shelf. Getting these right together
               is more important than getting any one of them right
-              individually. That&apos;s the kind of thing that&apos;s easier to
-              judge when you can{" "}
+              individually. That&apos;s exactly what Finch does: you pick
+              finishes and it generates a photo of the room with those
+              selections applied. You can{" "}
               <TrackedLink
                 href="/try"
                 event="cta_clicked"
                 properties={{
-                  cta: "see it in a full room",
+                  cta: "try a demo with sample finishes",
                   location: "design-center-pulte-inline",
                 }}
                 className="text-slate-900 font-medium border-b border-slate-300 hover:border-slate-900 transition-colors pb-px"
               >
-                see it in a full room
+                try a demo with sample finishes
               </TrackedLink>{" "}
-              rather than from separate samples.
+              to see how it works.
             </p>
           </div>
         </div>
       </Section>
 
       {/* ─── 6. Demo CTA ─── */}
-      <section className="bg-slate-800">
+      <section className="bg-[var(--color-dark)]">
         <div
           data-reveal
           style={revealStyle(20)}
@@ -677,11 +678,12 @@ export default function PulteDesignCenterPage() {
               samples and trying to imagine them in a full room.
             </p>
             <p className="text-base md:text-lg text-white/70 leading-relaxed mb-8">
-              Try picking finishes and seeing them in a real kitchen before
-              your appointment. The selections below aren&apos;t from
-              Pulte&apos;s catalog, but the categories are the same ones
-              you&apos;ll see at the studio. It&apos;s a good way to practice
-              before the real thing.
+              Finch solves that. You pick finishes from real swatches and it
+              generates a photo of the room with your selections applied. The
+              demo below uses sample finishes, not Pulte&apos;s actual
+              catalog, but it shows you what the experience looks like.
+              Imagine doing this with your real floorplan and the actual
+              options from the&nbsp;studio.
             </p>
             <div>
               <TrackedLink
@@ -726,7 +728,22 @@ export default function PulteDesignCenterPage() {
             get to choose everything, and when it&apos;s done right,
             you walk into a house that feels like yours from day one.
             The trick is going in prepared, knowing where to invest, and
-            being able to picture how it all comes together.
+            being able to picture how it all comes together. That last part
+            is what Finch was built for. You can{" "}
+            <TrackedLink
+              href="/try"
+              event="cta_clicked"
+              properties={{
+                cta: "try the demo",
+                location: "design-center-pulte-closing-note",
+              }}
+              className="text-slate-900 font-medium border-b border-slate-300 hover:border-slate-900 transition-colors pb-px"
+            >
+              try the demo
+            </TrackedLink>{" "}
+            to see what it&apos;s like, and if you want the real thing with
+            your builder&apos;s catalog, it&apos;s worth mentioning to your
+            sales&nbsp;rep.
           </p>
           <div
             data-reveal
