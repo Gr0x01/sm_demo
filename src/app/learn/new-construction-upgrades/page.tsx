@@ -74,7 +74,7 @@ function FlooringIcon() {
 function PaintIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="3" width="16" height="10" rx="1" />
+      <rect x="4" y="3" width="16" height="10" />
       <path d="M12 13v4" />
       <path d="M10 17h4v3H10z" />
     </svg>
@@ -107,11 +107,11 @@ function HardwareIcon() {
 function AppliancesIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="2" width="16" height="20" rx="1" />
+      <rect x="4" y="2" width="16" height="20" />
       <line x1="4" y1="7" x2="20" y2="7" />
       <circle cx="8" cy="4.5" r="0.75" fill="currentColor" stroke="none" />
       <circle cx="12" cy="4.5" r="0.75" fill="currentColor" stroke="none" />
-      <rect x="7" y="10" width="10" height="9" rx="0.5" />
+      <rect x="7" y="10" width="10" height="9" />
     </svg>
   );
 }
@@ -325,7 +325,7 @@ export default function NewConstructionUpgradesPage() {
             </p>
             <p className="text-white/70 text-xs md:text-sm max-w-lg">
               Cabinets, countertops, flooring, backsplash, hardware, and
-              lighting — six categories working together in one room.
+              lighting. Six categories working together in one room.
             </p>
           </div>
         </div>
@@ -414,7 +414,7 @@ export default function NewConstructionUpgradesPage() {
               for&nbsp;last.
             </p>
             <p className="text-xs text-slate-400 mt-4">
-              Vanity, countertop, faucet, hardware — four cosmetic decisions
+              Vanity, countertop, faucet, hardware. Four cosmetic decisions
               in one bathroom. Changing any of them after closing means
               ripping out what&apos;s already installed.
             </p>
@@ -539,6 +539,25 @@ export default function NewConstructionUpgradesPage() {
             ))}
           </div>
 
+          {/* Builder-specific guides */}
+          <div data-reveal style={revealStyle(370)} className="mt-10">
+            <p className="text-base text-slate-600 leading-relaxed">
+              We also have builder-specific guides for{" "}
+              <TrackedLink
+                href="/learn/design-center/pulte"
+                event="cta_clicked"
+                properties={{
+                  cta: "Pulte design center guide",
+                  location: "learn-upgrades-builder-link",
+                }}
+                className="text-slate-900 font-medium border-b border-slate-300 hover:border-slate-900 transition-colors pb-px"
+              >
+                Pulte Homes
+              </TrackedLink>
+              , with more builders coming soon.
+            </p>
+          </div>
+
           {/* "Preview your selections" tip — photo card */}
           <div
             data-reveal
@@ -559,7 +578,7 @@ export default function NewConstructionUpgradesPage() {
                 Preview your selections before you go
               </h3>
               <p className="text-base text-slate-600 leading-relaxed">
-                Where cabinet meets countertop meets backsplash — this is the
+                Where cabinet meets countertop meets backsplash. This is the
                 junction you&apos;re trying to picture from a 4-inch sample.
                 Some builders offer visualization tools that let you preview
                 selections in your actual rooms before your appointment. Ask

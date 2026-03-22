@@ -10,7 +10,9 @@ const KEY_LOCATION = `${HOST}/${KEY}.txt`;
 const URLS = [
   `${HOST}/`,
   `${HOST}/try`,
+  `${HOST}/learn`,
   `${HOST}/learn/new-construction-upgrades`,
+  `${HOST}/learn/design-center/pulte`,
   `${HOST}/research`,
   `${HOST}/research/hidden-revenue-line`,
   `${HOST}/research/visualization-lift`,

@@ -17,7 +17,7 @@ interface SiteNavProps {
 
 const DEFAULT_LINKS: NavLink[] = [
   { label: "Try It", href: "/try" },
-  { label: "Upgrade Guide", href: "/learn/new-construction-upgrades" },
+  { label: "Upgrade Guide", href: "/learn" },
   { label: "Research", href: "/research" },
 ];
 

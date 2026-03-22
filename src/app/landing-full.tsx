@@ -13,7 +13,7 @@ import {
 
 const HOMEPAGE_NAV_LINKS = [
   { label: "How It Works", href: "#how" },
-  { label: "Upgrade Guide", href: "/learn/new-construction-upgrades" },
+  { label: "Upgrade Guide", href: "/learn" },
   { label: "Research", href: "/research" },
 ];
 

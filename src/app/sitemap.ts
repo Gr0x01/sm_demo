@@ -45,7 +45,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
+      url: "https://withfin.ch/learn",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: "https://withfin.ch/learn/new-construction-upgrades",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: "https://withfin.ch/learn/design-center/pulte",
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
