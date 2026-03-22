@@ -6,6 +6,14 @@ import Image from "next/image";
 import { useTrack } from "@/hooks/useTrack";
 import { CALENDLY_URL } from "@/lib/urls";
 
+declare global {
+  interface Window {
+    Calendly?: {
+      initPopupWidget: (opts: { url: string }) => void;
+    };
+  }
+}
+
 const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
 });
@@ -341,6 +349,64 @@ export function FaqItem({ q, a }: { q: string; a: string }) {
   );
 }
 
+/* ─── Calendly Popup Button ─── */
+let calendlyLoadPromise: Promise<void> | null = null;
+
+function loadCalendly(): Promise<void> {
+  if (calendlyLoadPromise) return calendlyLoadPromise;
+
+  calendlyLoadPromise = new Promise<void>((resolve) => {
+    if (window.Calendly) { resolve(); return; }
+
+    const link = document.createElement("link");
+    link.href = "https://assets.calendly.com/assets/external/widget.css";
+    link.rel = "stylesheet";
+    document.head.appendChild(link);
+
+    const script = document.createElement("script");
+    script.src = "https://assets.calendly.com/assets/external/widget.js";
+    script.async = true;
+    script.onload = () => resolve();
+    document.head.appendChild(script);
+  });
+
+  return calendlyLoadPromise;
+}
+
+export function CalendlyPopupButton({
+  className,
+  children,
+  location = "get_started",
+}: {
+  className?: string;
+  children: React.ReactNode;
+  location?: string;
+}) {
+  const track = useTrack();
+
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        track("cta_clicked", {
+          cta: "Book a Walkthrough",
+          location,
+          destination: "calendly",
+        });
+        await loadCalendly();
+        if (window.Calendly) {
+          window.Calendly.initPopupWidget({ url: CALENDLY_URL });
+        } else {
+          window.open(CALENDLY_URL, "_blank", "noopener,noreferrer");
+        }
+      }}
+      className={className}
+    >
+      {children}
+    </button>
+  );
+}
+
 /* ─── Pilot Contact Form ─── */
 export function PilotForm({ onSubmitted }: { onSubmitted?: () => void }) {
   const track = useTrack();
@@ -357,7 +423,6 @@ export function PilotForm({ onSubmitted }: { onSubmitted?: () => void }) {
       name: (fd.get("name") as string).trim(),
       company: (fd.get("company") as string).trim(),
       email: (fd.get("email") as string).trim(),
-      phone: (fd.get("phone") as string)?.trim() || undefined,
     };
 
     try {
@@ -380,74 +445,50 @@ export function PilotForm({ onSubmitted }: { onSubmitted?: () => void }) {
 
   if (status === "success") {
     return (
-      <div className="text-center py-6">
-        <p className="text-lg font-semibold text-slate-900 mb-2">We&apos;ll be in touch within 24 hours.</p>
-        <div className="flex flex-col items-center gap-3 mt-4">
-          <TrackedLink
-            href={CALENDLY_URL}
-            event="cta_clicked"
-            properties={{ cta: "Book a Walkthrough", location: "pilot_form_success", destination: "calendly" }}
-            className="inline-block px-6 py-3 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-          >
-            Book a Walkthrough Now
-          </TrackedLink>
-          <Link
-            href="/try"
-            className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700 transition-colors"
-          >
-            or Try It Live while you wait
-          </Link>
-        </div>
+      <div className="text-center py-4">
+        <p className="text-sm font-semibold text-slate-900 mb-1">Got it. We&apos;ll be in touch within 24 hours.</p>
+        <Link
+          href="/try"
+          className="text-sm text-slate-500 underline underline-offset-2 hover:text-slate-700 transition-colors"
+        >
+          Try It Live while you wait
+        </Link>
       </div>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="grid sm:grid-cols-3 gap-3">
         <input
           name="name"
           type="text"
           required
           placeholder="Your name"
-          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition-colors"
+          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition-colors"
         />
         <input
           name="company"
           type="text"
           required
           placeholder="Company"
-          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition-colors"
+          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition-colors"
         />
-      </div>
-      <div className="grid sm:grid-cols-2 gap-4">
         <input
           name="email"
           type="email"
           required
           placeholder="Email"
-          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition-colors"
-        />
-        <input
-          name="phone"
-          type="tel"
-          placeholder="Phone (optional)"
-          className="w-full px-4 py-3 bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition-colors"
+          className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-slate-900 transition-colors"
         />
       </div>
-      <div className="flex flex-col-reverse sm:flex-row sm:justify-end items-center gap-4">
-        <Link
-          href="/try"
-          className="w-full sm:w-auto text-center px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
-        >
-          Try It Live
-        </Link>
+      <div className="flex justify-end">
         <button
           type="submit"
           disabled={status === "submitting"}
-          className="w-full sm:w-auto text-center px-8 py-3.5 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-6 py-2.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {status === "submitting" ? "Sending..." : "Get Started"}
+          {status === "submitting" ? "Sending..." : "Send"}
         </button>
       </div>
       {status === "error" && (

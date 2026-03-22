@@ -1,6 +1,4 @@
-import { PilotForm, TrackedLink } from "@/app/landing-client";
-
-import { CALENDLY_URL } from "@/lib/urls";
+import { CalendlyPopupButton, PilotForm } from "@/app/landing-client";
 
 export function GetStartedSection({
   headline,
@@ -18,25 +16,41 @@ export function GetStartedSection({
         <h2 className="text-4xl md:text-6xl leading-[0.98] tracking-[-0.02em] text-slate-900 mb-6 text-balance">
           {headline ?? (
             <>
-              Send us your option sheets.
+              Fifteen minutes on
               <br />
-              We handle everything&nbsp;else.
+              a real&nbsp;floorplan.
             </>
           )}
         </h2>
-        <p className="text-lg md:text-xl text-slate-600 mb-12 max-w-2xl mx-auto">
-          {subtitle ?? (<>Pick your best-selling community. We build the experience using your finishes, your pricing, your model home photos. Buyers use it during real appointments. We measure upgrade revenue&nbsp;together.</>)}
+        <p className="text-lg md:text-xl text-slate-600 mb-8 max-w-2xl mx-auto">
+          {subtitle ?? (
+            <>
+              We&apos;ll walk through the full buyer experience together:
+              selections, visualization, price tracking. You&apos;ll know if it
+              fits before the call&nbsp;ends.
+            </>
+          )}
+        </p>
+
+        {/* Primary CTA */}
+        <CalendlyPopupButton className="inline-block px-10 py-4 bg-slate-900 text-white text-sm font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors cursor-pointer">
+          Book a 15-Minute Walkthrough
+        </CalendlyPopupButton>
+
+        <p className="text-sm text-slate-500 mt-4">
+          No upfront cost. No commitment. Just your floor&nbsp;plans.
         </p>
       </div>
 
-      <div className="max-w-3xl mx-auto border border-slate-200 bg-white p-6 md:p-8">
-        <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-8">
+      {/* Value props */}
+      <div className="max-w-3xl mx-auto mt-16">
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8 mb-10">
           <div>
             <p className="text-sm font-semibold text-slate-900 mb-1">
               Live in days, not months
             </p>
             <p className="text-sm text-slate-600">
-              Send us your option sheets and model home photos. We build it. You don&apos;t touch a&nbsp;thing.
+              We handle setup using your option sheets and model home photos. You don&apos;t touch a&nbsp;thing.
             </p>
           </div>
           <div>
@@ -52,38 +66,19 @@ export function GetStartedSection({
               Start with one community
             </p>
             <p className="text-sm text-slate-600">
-              We set it up, your buyers use it, we measure upgrade revenue together. Expand when the numbers make&nbsp;sense.
+              Your buyers use it, we measure upgrade revenue together. Expand when the numbers make&nbsp;sense.
             </p>
           </div>
         </div>
 
-        <PilotForm />
-      </div>
-
-      {/* Calendly fast-track */}
-      <div className="max-w-3xl mx-auto text-center mt-8">
-        <div className="flex items-center gap-4 mb-5">
-          <div className="flex-1 border-t border-slate-200" />
-          <p className="text-xs uppercase tracking-[0.16em] text-slate-400">or</p>
-          <div className="flex-1 border-t border-slate-200" />
+        {/* Secondary: lightweight form */}
+        <div className="border-t border-slate-200 pt-6">
+          <p className="text-sm text-slate-500 mb-4 text-center">
+            Not ready to book? Leave your info and we&apos;ll reach&nbsp;out.
+          </p>
+          <PilotForm />
         </div>
-        <p className="text-sm text-slate-600 mb-4">
-          Rather talk it through? 15 minutes. Your floor plans.
-        </p>
-        <TrackedLink
-          href={CALENDLY_URL}
-          event="cta_clicked"
-          properties={{ cta: "Book a Walkthrough", location: "get_started", destination: "calendly" }}
-          className="inline-block px-8 py-3.5 border border-slate-300 text-slate-700 text-sm font-semibold uppercase tracking-wider hover:border-slate-900 hover:text-slate-900 transition-colors"
-        >
-          Book a Walkthrough
-        </TrackedLink>
       </div>
-
-      <p className="text-sm text-slate-500 text-center mt-6 max-w-3xl mx-auto">
-        No upfront cost. After you&apos;ve seen the results, we scope
-        pricing to your community count. We&apos;ll walk through it&nbsp;together.
-      </p>
     </section>
   );
 }

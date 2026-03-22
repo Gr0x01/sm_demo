@@ -264,7 +264,18 @@ SEO research (DataForSEO keyword data, Tavily competitive analysis) → strategy
 - [x] **Nav/footer links updated** — SiteNav defaults, SiteFooter, homepage, prospect pages all point to `/research` index. In-content links to specific articles left as-is.
 - **Key insight**: Builder B2B keywords are tiny volume (<70/mo). Buyer-side content ("new construction upgrades" 170/mo, "[builder] upgrade price list" cluster ~400-500/mo) is the demand engine. Flywheel: buyer finds content → tries demo → asks builder → builder calls us.
 - [x] **IndexNow** — key file + submission script (`scripts/indexnow.ts`) for instant Bing/Yandex indexing of all 9 marketing URLs. Run after deploys: `npx tsx scripts/indexnow.ts`
+- [x] **Upgrade guide layout fix** — bathroom photo+text block broken out of `max-w-3xl` to use full `max-w-6xl` section width. Image gets 60% (`grid-cols-[3fr_2fr]`), `aspect-[4/3]` on mobile, fills height on desktop. Text card vertically centered.
 - **Next**: Verify withfin.ch in Google Search Console, builder-specific design center pages (`/learn/design-center/[builder-slug]`), FAQ section with FAQPage JSON-LD on anchor page, add visuals (demo screenshot/before-after)
+
+### 22. Homepage CTA Restructure
+Flipped the "Get Started" section from form-primary to Calendly-primary. The old "Send us your option sheets" headline asked for too much commitment from builders who haven't talked to anyone yet.
+- [x] **Headline/subtitle rewrite** — "Fifteen minutes on a real floorplan." + subtitle describing the walkthrough experience. Honest about what the call is (we show our demo, not their data).
+- [x] **Calendly popup as primary CTA** — `CalendlyPopupButton` component loads Calendly widget JS/CSS on click (not on mount), triggers `initPopupWidget`. Fallback opens new tab if script fails to load.
+- [x] **Form demoted to secondary** — simplified to 3 fields (name/company/email), positioned below value props with "Not ready to book?" framing.
+- [x] **Value props reframed** — same 3 props but copy adjusted ("We handle setup using your option sheets" instead of "Send us your option sheets")
+- [x] **Killed "or" divider** — single clear hierarchy instead of two competing CTAs
+- [x] **"No upfront cost" line** moved near primary CTA
+- [x] Applies to all pages using `GetStartedSection` (homepage, research pages). Research pages keep custom headline/subtitle props.
 
 ## What's Done
 
