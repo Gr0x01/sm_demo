@@ -53,6 +53,22 @@ const designCenterGuides = [
     tag: "Arbor Homes",
     date: "March 2026",
   },
+  {
+    href: "/learn/design-center/ryan",
+    title: "The Ryan Homes Design Center",
+    description:
+      "What to expect at a Ryan Homes regional design center. Interior packages, 12 selection categories, the Envision portal, and how to prepare.",
+    tag: "Ryan Homes",
+    date: "March 2026",
+  },
+  {
+    href: "/learn/design-center/richmond-american",
+    title: "The Richmond American Home Gallery",
+    description:
+      "What to expect at the Richmond American Home Gallery. 13 selection categories, color studios, named brand partners, and how to prepare.",
+    tag: "Richmond American",
+    date: "March 2026",
+  },
 ];
 
 export default function LearnIndexPage() {

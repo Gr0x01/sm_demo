@@ -9,6 +9,8 @@ const LEARN_LINKS = [
   { label: "Upgrade Guide", href: "/learn" },
   { label: "Pulte Design Center", href: "/learn/design-center/pulte" },
   { label: "Arbor Design Center", href: "/learn/design-center/arbor" },
+  { label: "Ryan Design Center", href: "/learn/design-center/ryan" },
+  { label: "Richmond American", href: "/learn/design-center/richmond-american" },
 ];
 
 const RESEARCH_LINKS = [

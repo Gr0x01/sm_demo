@@ -14,6 +14,8 @@ const URLS = [
   `${HOST}/learn/new-construction-upgrades`,
   `${HOST}/learn/design-center/pulte`,
   `${HOST}/learn/design-center/arbor`,
+  `${HOST}/learn/design-center/ryan`,
+  `${HOST}/learn/design-center/richmond-american`,
   `${HOST}/research`,
   `${HOST}/research/hidden-revenue-line`,
   `${HOST}/research/visualization-lift`,

@@ -186,6 +186,8 @@ Finch works standalone — no integration required. The priced selection sheet c
 - [The Complete Guide to New Home Upgrades](https://withfin.ch/learn/new-construction-upgrades) — Buyer-facing guide: upgrade categories, design center preparation, which upgrades add the most value
 - [The Pulte Design Center: What to Expect](https://withfin.ch/learn/design-center/pulte) — Pulte Home Expressions Studio appointment guide: selection categories, preparation tips, what to bring
 - [The Arbor Homes Design Center: What to Expect](https://withfin.ch/learn/design-center/arbor) — Arbor Homes Design Center appointment guide: 9 categories, Saturday browsing hours, contract-holders-only policy, what's included in base
+- [The Ryan Homes Design Center: What to Expect](https://withfin.ch/learn/design-center/ryan) — Ryan Homes design center appointment guide: interior packages (bundled palettes), 12 categories, Envision portal, Timberlake cabinets, Guardian wiring, structural deadlines, what's included in base
+- [The Richmond American Home Gallery: What to Expect](https://withfin.ch/learn/design-center/richmond-american) — Richmond American Home Gallery appointment guide: 13 categories, 4 color studios with pre-coordinated palettes, named brand partners (GE, Delta, Sherwin-Williams, Mohawk, Kwikset, Daltile/Emser), open to public (Mon-Fri 9-6, Sat 9-5), full-size kitchen vignettes, complimentary design consultant
 - [The Hidden Revenue Line](https://withfin.ch/research/hidden-revenue-line) — Original SEC filing analysis: upgrade revenue among 14 public home builders
 - [Sandbox Demo](https://withfin.ch/demo) — Live environment with sample floor plan and full catalog
 

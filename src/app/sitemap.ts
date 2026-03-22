@@ -69,6 +69,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: "https://withfin.ch/learn/design-center/ryan",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
+      url: "https://withfin.ch/learn/design-center/richmond-american",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: "https://withfin.ch/demo",
       lastModified: new Date(),
       changeFrequency: "monthly",
