@@ -282,6 +282,15 @@ Flipped the "Get Started" section from form-primary to Calendly-primary. The old
 - [x] **"No upfront cost" line** moved near primary CTA
 - [x] Applies to all pages using `GetStartedSection` (homepage, research pages). Research pages keep custom headline/subtitle props.
 
+### 23. Super Footer
+Replaced thin single-row strip footer with a full columnar super footer used across all marketing pages.
+- [x] **Columnar layout** — brand column (wider, 2fr) with tagline ("Your buyers upgrade what they can see."), Book a Call popup (Calendly), LinkedIn icon. Three link columns: Product (Try It, Get Started), Learn (Upgrade Guide, Pulte/Arbor Design Center), Research (Upgrade Revenue, Visualization Lift).
+- [x] **Book a Call** — uses `CalendlyPopupButton` via `FooterCalendlyButton` client island component. PostHog tracks with `location: "footer"`.
+- [x] **Bottom bar** — copyright + `hello@withfin.ch` mailto
+- [x] **`--color-dark: #1c2028`** — CSS variable in `:root` for dark sections. Used by footer + closing CTA sections on upgrade guide, Pulte, and Arbor pages (replaced `bg-slate-800`).
+- [x] **LinkedIn** — `https://www.linkedin.com/company/112412489/`
+- [x] Mobile: brand block stacks above 3-col link grid, bottom bar centers
+
 ## What's Done
 
 ### Multi-Tenant Foundation (Complete)
