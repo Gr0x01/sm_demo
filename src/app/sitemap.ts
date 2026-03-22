@@ -33,6 +33,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
+      url: "https://withfin.ch/vs/chameleon-power",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
       url: "https://withfin.ch/research",
       lastModified: new Date(),
       changeFrequency: "monthly",

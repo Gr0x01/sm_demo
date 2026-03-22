@@ -107,6 +107,23 @@ PDF option sheets are the most common tool builders use today — a printed list
 | Time at design appointment | 4-8 hours typical | Reduced — buyer has already explored options |
 | Update pricing | Reprint the PDF | Update in admin dashboard, live instantly |
 
+## Detailed comparison: Finch vs Chameleon Power (BuilderVision / Hyphen HomeSight)
+
+Chameleon Power (now owned by Hyphen Solutions) uses deterministic texture swapping on pre-staged room scenes. Buyers click a swatch and the software overlays that texture onto a fixed photograph. Hyphen Solutions serves 21 of the top 26 home builders through its construction management suite (BuildPro, BRIX, SupplyPro, CRM). Chameleon Power's visualization technology powers the Hyphen HomeSight virtual design center product.
+
+| Dimension | Chameleon Power | Finch |
+|-----------|----------------|-------|
+| Technology | Texture swap on pre-staged scenes | Photorealistic generation from real model home photos |
+| Setup per floorplan | Scene photography + manual hotspot mapping | Send photos + option sheet |
+| Time to live | Weeks (scene prep + product mapping) | Under a week |
+| What the buyer sees | Texture overlay on a template scene | Their actual room with selections applied |
+| Lighting & shadows | Static (from original photo) | Generated with material context |
+| New option added | Map new texture to every scene | Add to option list, live immediately |
+| Ecosystem | Best with Hyphen suite (BuildPro, BRIX, CRM) | Works with any CRM, any ERP, or none |
+| Pricing | Setup fee + monthly license (undisclosed) | $500/mo per plan |
+| AR/3D | AR app + 3D engine included | Not offered (photo-based) |
+| Built for | Enterprise builders on the Hyphen ecosystem | Any production builder, any tech stack |
+
 ## Original research: home builder upgrade revenue from SEC filings
 
 Finch analyzed SEC filings (10-K annual reports, 10-Q quarterly reports, earnings call transcripts) of 14 publicly traded U.S. home builders to quantify how much builders earn from options and upgrades.
@@ -184,6 +201,7 @@ Finch works standalone — no integration required. The priced selection sheet c
 - [Finch vs Zonda Envision](https://withfin.ch/vs/envision) — Detailed feature and approach comparison
 - [Finch vs PDF Option Sheets](https://withfin.ch/vs/pdf-option-sheets) — Visual selection vs printed option sheets
 - [Finch vs ECI Insearch](https://withfin.ch/vs/eci-insearch) — Comparison for builders evaluating ECI Insearch: ecosystem independence, no 3D modeling, $500/mo vs enterprise suite pricing
+- [Finch vs Chameleon Power](https://withfin.ch/vs/chameleon-power) — Comparison for builders evaluating Chameleon Power/BuilderVision/Hyphen HomeSight: photorealistic generation vs swatch-based texture swap, no scene prep, $500/mo vs undisclosed enterprise pricing
 - [Buyer's Guides](https://withfin.ch/learn) — Index of upgrade guides and builder-specific design center guides
 - [The Complete Guide to New Home Upgrades](https://withfin.ch/learn/new-construction-upgrades) — Buyer-facing guide: upgrade categories, design center preparation, which upgrades add the most value
 - [The Pulte Design Center: What to Expect](https://withfin.ch/learn/design-center/pulte) — Pulte Home Expressions Studio appointment guide: selection categories, preparation tips, what to bring

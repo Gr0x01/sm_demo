@@ -56,3 +56,12 @@ export function EciInsearchPageTracker() {
   }, [track]);
   return null;
 }
+
+export function ChameleonPowerPageTracker() {
+  const track = useTrack();
+  useScrollDepth("chameleon-power");
+  useEffect(() => {
+    track("vs_page_viewed", { page: "chameleon-power" });
+  }, [track]);
+  return null;
+}

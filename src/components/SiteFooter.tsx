@@ -21,6 +21,7 @@ const RESEARCH_LINKS = [
 const COMPARE_LINKS = [
   { label: "Finch vs Envision", href: "/vs/envision" },
   { label: "Finch vs ECI Insearch", href: "/vs/eci-insearch" },
+  { label: "Finch vs Chameleon Power", href: "/vs/chameleon-power" },
   { label: "Finch vs PDF Sheets", href: "/vs/pdf-option-sheets" },
 ];
 

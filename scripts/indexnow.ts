@@ -21,6 +21,8 @@ const URLS = [
   `${HOST}/research/visualization-lift`,
   `${HOST}/vs/envision`,
   `${HOST}/vs/pdf-option-sheets`,
+  `${HOST}/vs/eci-insearch`,
+  `${HOST}/vs/chameleon-power`,
   `${HOST}/demo`,
 ];
 
