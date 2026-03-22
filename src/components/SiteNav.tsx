@@ -15,12 +15,19 @@ interface SiteNavProps {
   cta?: { label: string; href: string } | null;
 }
 
+const DEFAULT_LINKS: NavLink[] = [
+  { label: "Try It", href: "/try" },
+  { label: "Upgrade Guide", href: "/learn/new-construction-upgrades" },
+  { label: "Research", href: "/research" },
+];
+
 const DEFAULT_CTA = {
-  label: "Try It",
-  href: "/try",
+  label: "Get Started",
+  href: "/#get-started",
 };
 
-export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
+export function SiteNav({ links, cta = DEFAULT_CTA }: SiteNavProps) {
+  const navLinks = links ?? DEFAULT_LINKS;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -30,7 +37,7 @@ export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
           Finch
         </Link>
         <div className="hidden md:flex items-center gap-8">
-          {links.map((link) => (
+          {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
@@ -48,7 +55,7 @@ export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
             </a>
           )}
         </div>
-        {(links.length > 0) && (
+        {(navLinks.length > 0) && (
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
             className="md:hidden flex flex-col justify-center gap-1.5 w-8 h-8"
@@ -59,11 +66,11 @@ export function SiteNav({ links = [], cta = DEFAULT_CTA }: SiteNavProps) {
           </button>
         )}
       </div>
-      {links.length > 0 && (
+      {navLinks.length > 0 && (
         <div className={`md:hidden grid transition-[grid-template-rows] duration-200 ease-out ${mobileOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}>
           <div className="overflow-hidden">
             <div className="border-t border-slate-100 bg-white px-6 py-4 flex flex-col gap-4">
-              {links.map((link) => (
+              {navLinks.map((link) => (
                 <a
                   key={link.href}
                   href={link.href}

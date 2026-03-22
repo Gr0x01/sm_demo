@@ -252,8 +252,17 @@ SEO research (DataForSEO keyword data, Tavily competitive analysis) → strategy
 - [x] Research page dedicated OG image (was using generic fallback)
 - [ ] Verify withfin.ch in Google Search Console
 - [x] **Phase 4: LLM Search Optimization** — tested AI search (zero visibility), rewrote `llms.txt` with Finch3D disambiguation + competitive landscape, created `llms-full.txt` with full comparison data/research/FAQs, enhanced JSON-LD across all pages (`alternateName`, `knowsAbout`, `applicationSubCategory`, `dateModified`), added JSON-LD to /vs/pdf-option-sheets, explicit AI bot rules in robots.txt (GPTBot/ClaudeBot/PerplexityBot/etc.), visible "Updated" timestamps on /vs/ pages
+- [x] **Phase 2a: Anchor page** (`/learn/new-construction-upgrades`) — "The Complete Guide to New Construction Upgrades." Buyer-facing SEO page targeting ~370/mo searches. 8 sections: hero, stat bar, upgrade categories, structural vs cosmetic, SEC data, design center appointment tips, demo CTA, final CTA. Article JSON-LD, OG image, PostHog tracking. Brand guardian + growth hacker reviewed. Contextual Finch mention in design center tips. Buyer-pull CTA hierarchy (Try It Live primary, Get Started secondary).
+- [x] **SiteNav defaults** — shared nav links (Try It, Upgrade Guide, Research, Get Started CTA) defined in SiteNav component. All marketing pages use defaults. Homepage overrides with anchor links. Removed per-page NAV_LINKS duplication.
+- [x] **SiteFooter** — added "Upgrade Guide" link
+- [x] `robots.ts` — added `/learn/` to MARKETING_ALLOW
+- [x] `llms.txt` + `llms-full.txt` — added page listing
+- **"Ask your builder" form**: Cut. A form submission isn't warm outreach. PostHog already tracks demo starts from content pages.
+- [x] **Phase 2c: Visualization lift research page** (`/research/visualization-lift`) — "The Visualization Effect." Companion to SEC research. Data compiled from independent studies (3D Cloud/Provoke Insights, NAR staging), named builder case studies (ECI/Signature, Roomored/Shea, Higharc/Buffington), and vendor claims (Anewgo, Aareas, Zonda, Chameleon, CPS). Honest framing with source quality labeled. Animated bar charts (two-tone: named builder vs vendor claim). Article JSON-LD, OG image, PostHog tracking.
+- [x] **`/research` index page** — lightweight hub listing all research articles. Cards with title, description, date, tag. Scales for future case studies.
+- [x] **Nav/footer links updated** — SiteNav defaults, SiteFooter, homepage, prospect pages all point to `/research` index. In-content links to specific articles left as-is.
 - **Key insight**: Builder B2B keywords are tiny volume (<70/mo). Buyer-side content ("new construction upgrades" 170/mo, "[builder] upgrade price list" cluster ~400-500/mo) is the demand engine. Flywheel: buyer finds content → tries demo → asks builder → builder calls us.
-- **Next**: Anchor content page (`/learn/new-construction-upgrades`), builder-specific upgrade guides, "Ask your builder" form
+- **Next**: Builder-specific design center pages (`/learn/design-center/[builder-slug]`), FAQ section with FAQPage JSON-LD on anchor page, add visuals (demo screenshot/before-after)
 
 ## What's Done
 

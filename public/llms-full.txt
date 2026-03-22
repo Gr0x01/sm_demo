@@ -182,6 +182,7 @@ Finch works standalone — no integration required. The priced selection sheet c
 - [Try It Live](https://withfin.ch/try) — Interactive demo, working in under a minute, no signup
 - [Finch vs Zonda Envision](https://withfin.ch/vs/envision) — Detailed feature and approach comparison
 - [Finch vs PDF Option Sheets](https://withfin.ch/vs/pdf-option-sheets) — Visual selection vs printed option sheets
+- [The Complete Guide to New Home Upgrades](https://withfin.ch/learn/new-construction-upgrades) — Buyer-facing guide: upgrade categories, design center preparation, which upgrades add the most value
 - [The Hidden Revenue Line](https://withfin.ch/research/hidden-revenue-line) — Original SEC filing analysis: upgrade revenue among 14 public home builders
 - [Sandbox Demo](https://withfin.ch/demo) — Live environment with sample floor plan and full catalog
 

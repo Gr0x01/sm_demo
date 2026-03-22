@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 // Add new builder slugs here as tenants are onboarded.
 const BLOCKED_TENANT_SLUGS = ["stonemartin"];
 
-const MARKETING_ALLOW = ["/", "/try", "/vs/", "/demo/", "/research/"];
+const MARKETING_ALLOW = ["/", "/try", "/vs/", "/demo/", "/research/", "/learn/"];
 const MARKETING_DISALLOW = [
   "/admin/",
   "/api/",

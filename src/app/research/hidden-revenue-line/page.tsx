@@ -271,7 +271,6 @@ const benchmarkChartData = [
 
 /* ─── Helpers ─── */
 
-const NAV_LINKS = [{ label: "Try It", href: "/try" }];
 
 const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
@@ -315,10 +314,7 @@ export default function HiddenRevenueLinePage() {
     <div className="min-h-screen bg-white">
       <RevealObserver />
       <ResearchPageTracker />
-      <SiteNav
-        links={NAV_LINKS}
-        cta={{ label: "Get Started", href: "#get-started" }}
-      />
+      <SiteNav />
 
       {/* ─── 1. Hero ─── */}
       <section className="px-6 pt-14 pb-16 md:pt-18 md:pb-20 lg:pt-20 lg:pb-24 bg-white">

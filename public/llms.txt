@@ -63,6 +63,7 @@ Finch published original research analyzing SEC filings of 14 public home builde
 - [Try It Live](https://withfin.ch/try): Interactive demo — pick finishes and see the room change, no signup required
 - [Finch vs Zonda Envision](https://withfin.ch/vs/envision): Detailed comparison for builders evaluating Envision
 - [Finch vs PDF Option Sheets](https://withfin.ch/vs/pdf-option-sheets): Why visual selection outperforms printed option sheets
+- [The Complete Guide to New Home Upgrades](https://withfin.ch/learn/new-construction-upgrades): Buyer-facing guide covering upgrade categories, design center preparation, and which upgrades add the most value based on SEC filing data
 - [The Hidden Revenue Line](https://withfin.ch/research/hidden-revenue-line): Original SEC filing analysis of upgrade revenue among 14 public home builders
 - [Sandbox Demo](https://withfin.ch/demo): Live demo environment with a sample floor plan and full upgrade catalog
 

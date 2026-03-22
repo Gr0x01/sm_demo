@@ -34,7 +34,6 @@ export const metadata: Metadata = {
   },
 };
 
-const NAV_LINKS = [{ label: "Try It", href: "/try" }];
 
 const revealStyle = (delay: number): CSSProperties => ({
   ["--reveal-delay" as string]: `${delay}ms`,
@@ -142,7 +141,7 @@ export default function VsEnvisionPage() {
   return (
     <div className="min-h-screen bg-white">
       <RevealObserver />
-      <SiteNav links={NAV_LINKS} cta={{ label: "Get Started", href: "/#get-started" }} />
+      <SiteNav />
 
       {/* --- Hero --- */}
       <section className="px-6 pt-14 pb-16 md:pt-18 md:pb-20 lg:pt-20 lg:pb-24 bg-white">

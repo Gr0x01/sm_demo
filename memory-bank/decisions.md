@@ -493,3 +493,14 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 3. **Route handler tests** (2 files): `/api/generate/photo` and `/api/generate/photo/check` with mocked Supabase + Inngest. Tests validation, ownership chain, cache hit/miss, 429 double-click guard, retry flow, Inngest dispatch.
 **What's NOT tested** (by design): `buildEditPrompt` (async + sharp, prompt text changes frequently), Inngest background functions (real OpenAI calls), React components (visual, admin-only), DB query functions (need test DB). No E2E tests — manual QA is sufficient at this stage.
 **Trade-off**: Fixture-based tests can't catch DB query bugs or prompt drift. But they cover the logic most likely to regress (scoping + hashing), run in <1s, and require zero external dependencies. Add DB integration tests when onboarding the first paying builder.
+
+
+## D83: Centralized SiteNav defaults — shared marketing navigation
+**Context**: Every marketing page (homepage, /vs/*, /research/*, /learn/*) defined its own NAV_LINKS array passed to SiteNav. The nav was inconsistent across pages — some had "Try It" only, some had "Try It + Research", the homepage had anchor links + "Research". Adding the new `/learn/new-construction-upgrades` page meant updating 6 files. The nav should be the same everywhere except where a page has a genuine reason to differ (homepage anchor links, /try empty nav).
+**Decision**: SiteNav now has DEFAULT_LINKS (Try It, Upgrade Guide, Research) and DEFAULT_CTA (Get Started → /#get-started) baked in. Pages that want the standard nav just use `<SiteNav />` with no props. Homepage overrides with `links={HOMEPAGE_NAV_LINKS}` for anchor links. `/try` passes `links={[]}` because it's the demo itself. Removed per-page NAV_LINKS from /vs/envision, /vs/pdf-option-sheets, /research/hidden-revenue-line, /research/visualization-lift, and /learn/new-construction-upgrades.
+**Trade-off**: Adding a nav link now requires changing one file (SiteNav.tsx) instead of six. Pages that need custom nav still can — the props still work.
+
+## D84: "Ask your builder" form cut — demo starts are the flywheel signal
+**Context**: SEO strategy originally included an "Ask Your Builder" form on buyer content pages (builder name, community, email). The idea was to capture builder names as warm leads for outreach.
+**Decision**: Cut it. A buyer typing their builder's name into a form is survey data, not a warm lead. The demo itself is the conversion event — PostHog already tracks demo starts from content pages. That's the signal for builder outreach ("47 of your buyers tried our visualizer last month").
+**Trade-off**: Lose explicit builder name capture. Gain simpler pages and a more honest funnel — if the demo isn't compelling enough to make buyers talk to their builder, a form won't fix that.

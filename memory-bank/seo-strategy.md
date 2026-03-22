@@ -23,21 +23,22 @@ But that's fine — neither do the competitors:
 | `/try` | "try finch demo" | Good metadata |
 | `/vs/envision` | "finch vs zonda envision" / "envision alternative" | Solid comparison page |
 | `/vs/pdf-option-sheets` | "replace PDF option sheets" | Solid comparison page |
+| `/research` | research hub | Index page linking to all research articles |
 | `/research/hidden-revenue-line` | "home builder upgrade revenue" | Original research, strong content |
+| `/research/visualization-lift` | "upgrade visualization impact" | Sales asset, not SEO traffic play |
+| `/learn/new-construction-upgrades` | "new construction upgrades" (170/mo) | Buyer-facing anchor page |
 | `/demo` | "finch demo" | Sandbox demo |
 
 ### Technical SEO in place
 - Metadata (title, desc, OG, Twitter, canonical) on all marketing pages
-- robots.txt blocks admin/API/tenant routes
-- Sitemap with priorities
-- `llms.txt` for AI discovery
-- Dynamic OG images on /vs/ pages
+- robots.txt blocks admin/API/tenant routes, allows AI bots on marketing pages
+- Sitemap with priorities (all marketing + research pages)
+- `llms.txt` + `llms-full.txt` for AI discovery
+- Dynamic OG images on /vs/, /research/, homepage, /learn/ pages
 - Proper H1 hierarchy
-
-### Technical SEO missing
-- No JSON-LD structured data (Organization, FAQPage, Article)
-- No favicon/manifest
-- Homepage, /try, /research use generic OG image
+- JSON-LD: Organization (root layout), Article (research pages), SoftwareApplication (homepage), FAQPage (homepage, /vs/envision), WebPage (/vs/pdf-option-sheets)
+- Favicon + apple-touch-icon + web manifest
+- Visible "Updated" timestamps on /vs/ pages for AI freshness signals
 
 ---
 
@@ -68,14 +69,41 @@ But that's fine — neither do the competitors:
 | envision by anewgo | 0 | — | — |
 | zonda envision | 0 | — | — |
 
-#### Buyer-side informational (people buying new homes)
+#### Buyer-side: "new construction upgrades" cluster
 | Keyword | Vol/mo | CPC | Competition | Notes |
 |---------|--------|-----|-------------|-------|
 | new construction home upgrades | 170 | — | LOW | Big opportunity |
 | upgrades on new home construction | 170 | — | LOW | Same intent |
-| new home upgrade options | 10 | — | — | — |
+| upgrades when building a new home | 170 | — | LOW | Same intent |
+| new construction upgrades that add value | 20 | — | LOW | |
+| new construction upgrades to avoid | 20 | — | LOW | |
+| average cost of new construction upgrades | 10 | — | — | |
+| best new construction upgrades | 10 | — | — | |
+| new home upgrade options | 10 | — | — | |
+| **Cluster total** | **~580+** |
 
-#### The "[builder name] upgrade price list" cluster
+#### Buyer-side: "[builder name] design center" cluster (BIGGEST — found in round 2)
+| Keyword | Vol/mo |
+|---------|--------|
+| homes design center | 720 |
+| pulte homes design center | 590 |
+| arbor homes design center | 170 |
+| richmond american home design center | 70 |
+| ryan homes design center | 50 |
+| pulte design center price list | 40 |
+| home builder design center | 30 |
+| lennar home design center | 30 |
+| new home design center | 20 |
+| pulte home design studio | 20 |
+| new construction design center | 10 |
+| design center appointment for new home | 10 |
+| new home design center tips | 10 |
+| new home design center checklist | 10 |
+| **Cluster total** | **~1,780+** |
+
+**This is the biggest finding.** Nearly 1,800 monthly searches from buyers preparing for or researching their design center appointment. "Pulte homes design center" alone is 590/mo. Currently served by builder's own pages (if they have them) and generic blog posts. Nobody owns the cross-builder "what to expect at the design center" content.
+
+#### Buyer-side: "[builder name] upgrade price list" cluster
 | Keyword | Vol/mo |
 |---------|--------|
 | taylor morrison design center upgrades cost | 50 |
@@ -96,7 +124,8 @@ But that's fine — neither do the competitors:
 | bloomfield homes upgrade options | 20 |
 | **Cluster total** | **~400-500** |
 
-**This is the most interesting finding.** Hundreds of buyers every month searching for specific builders' upgrade pricing. Currently served by Reddit threads and random blog posts. Nobody owns this.
+#### Combined buyer-side opportunity: ~2,700+ monthly searches
+All LOW competition. All served by generic blog posts, Reddit, or builder's own sparse pages. Nobody owns the cross-builder educational content.
 
 ### SERP analysis: who ranks today
 
@@ -242,56 +271,78 @@ That email has data, specificity, and a trivial ROI case. Way stronger than "hi,
 
 ### Phase 2: Buyer-Side Content (the demand engine)
 
-**This is the primary SEO investment.** Not a "nice to have later" — this is the content that feeds the buyer-pull flywheel.
+**This is the primary SEO investment.** Combined buyer-side opportunity: ~2,700+ monthly searches, all LOW competition. This feeds the buyer-pull flywheel.
 
-#### 2a: The Anchor Page
+**Build order**: Anchor page first (hub), then builder-specific pages (templated), then research page (sales asset, lowest urgency).
 
-`/learn/new-construction-upgrades` — **"The Complete Guide to New Home Upgrades"**
+~~**"Ask Your Builder" form**~~ — Cut. A buyer typing their builder's name into a form isn't warm outreach. The demo itself is the conversion event. If buyers try the demo and love it, that's the data point. PostHog already tracks demo starts from content pages — that's the signal we need for builder outreach.
 
-Target keywords: "new construction home upgrades" (170/mo), "new home upgrade options" (10/mo), "new construction upgrades worth it", "what upgrades to get in new construction home"
+#### 2a: The Anchor Page ✅ (2026-03-22)
 
-Content structure:
-- What upgrade categories exist (cabinets, counters, flooring, paint, fixtures, appliances, etc.)
-- What to expect at the design center appointment
-- Which upgrades have the best ROI (use SEC data from our research)
-- How to think about structural vs. cosmetic upgrades
-- **Embedded interactive demo**: "See what granite vs quartz looks like in a real kitchen"
-- **CTA**: "Your builder could have this for your floorplan. Ask them about Finch — or tell us which builder you're working with."
-- Link to the SEC research report for credibility
+`/learn/new-construction-upgrades` — **"The Complete Guide to New Construction Upgrades"**
 
-This one page could rank for dozens of long-tail queries. It's genuinely useful content that happens to demonstrate the product.
+Target keywords: "new construction home upgrades" (170/mo), "upgrades when building a new home" (170/mo), "new construction upgrades that add value" (20/mo), "best new construction upgrades" (10/mo)
 
-#### 2b: Builder-Specific Upgrade Guides
+This is the cross-builder hub that all `/learn/design-center/` pages link back to.
 
-`/learn/upgrades/[builder-slug]` — "What to Expect at the [Builder] Design Center"
+- [x] 8 sections: hero, stat bar, upgrade categories (8), structural vs cosmetic, SEC data + research link, design center appointment tips (6), demo CTA, final buyer-pull CTA
+- [x] Article JSON-LD, OG image, canonical URL, meta/OG/Twitter tags
+- [x] PostHog `learn_page_viewed` tracking, TrackedLink on all CTAs
+- [x] Contextual Finch mention in design center tip #6 ("try it right now")
+- [x] Buyer-pull CTA hierarchy: "Try It Live" primary, "Get Started" secondary
+- [x] SiteNav defaults centralized (Try It, Upgrade Guide, Research, Get Started CTA) — all marketing pages share same nav
+- [x] SiteFooter "Upgrade Guide" link added
+- [x] robots.ts `/learn/` allowed, sitemap priority 0.8, llms.txt + llms-full.txt updated
+- [x] Brand guardian + growth hacker review: decorative colon fixed, AI slop cleaned, keyword added to H2, builder placeholder removed (add back when first builder page ships)
+- **Still TODO**: FAQ section with FAQPage JSON-LD (featured snippets), add visuals (demo screenshot or before/after), backlinks from /research and /vs/ pages, scroll depth tracking
 
-Target: The "[builder name] upgrade price list" cluster (~400-500/mo total)
+#### 2b: Builder-Specific Design Center Pages (HIGHEST VOLUME — 1,780+/mo)
 
-| Page | Target keyword | Vol |
-|------|---------------|-----|
-| `/learn/upgrades/toll-brothers` | toll brothers upgrade price list | 40 |
-| `/learn/upgrades/pulte` | pulte upgrades price list | 40 |
-| `/learn/upgrades/kb-home` | kb home upgrade price list | 40 |
-| `/learn/upgrades/taylor-morrison` | taylor morrison design center upgrades cost | 50 |
-| `/learn/upgrades/lennar` | lennar home upgrades | 20 |
-| `/learn/upgrades/ryan-homes` | ryan homes options price list | 20 |
-| `/learn/upgrades/beazer` | beazer homes upgrade price list | 20 |
-| `/learn/upgrades/highland-homes` | highland homes upgrade prices | 30 |
+`/learn/design-center/[builder-slug]` — "The [Builder] Design Center: What to Expect"
+
+This is the biggest keyword cluster we found. Buyers preparing for their design center appointment are actively searching for what to expect. "Pulte homes design center" alone is 590/mo.
+
+| Page | Primary keyword | Vol | Secondary keywords |
+|------|----------------|-----|--------------------|
+| `/learn/design-center/pulte` | pulte homes design center | 590 | pulte design center price list (40), pulte home design studio (20) |
+| `/learn/design-center/arbor-homes` | arbor homes design center | 170 | arbor homes upgrade costs (30) |
+| `/learn/design-center/richmond-american` | richmond american home design center | 70 | richmond american upgrade price list (10) |
+| `/learn/design-center/ryan-homes` | ryan homes design center | 50 | ryan homes upgrade price list (20) |
+| `/learn/design-center/taylor-morrison` | taylor morrison design center upgrades cost | 50 | |
+| `/learn/design-center/kb-home` | (from price list cluster) | — | kb home upgrade price list (40) |
+| `/learn/design-center/toll-brothers` | (from price list cluster) | — | toll brothers upgrade price list (40), toll brothers upgrade costs (20) |
+| `/learn/design-center/lennar` | lennar home design center | 30 | lennar home upgrades (20) |
 
 Content per page:
-- General info about that builder's design center process (publicly available)
-- Typical upgrade categories they offer
-- What SEC filings reveal about their upgrade revenue (for public builders)
-- "See what these upgrades actually look like" → embedded Finch demo
+- What the design center experience is like at that builder
+- Typical upgrade categories they offer (cabinets, counters, flooring, etc.)
+- What SEC filings reveal about their upgrade revenue (for public builders — Toll, Pulte, Lennar, KB, etc.)
+- How to prepare for your appointment (checklist, budget tips)
+- "See what these upgrades actually look like" → **embedded Finch demo**
 - **CTA**: "Ask [Builder] about Finch" + "Which community are you building in?" form
 - **NOT**: actual pricing (that's their IP and changes constantly)
 
-**Critical framing**: These pages are helpful to buyers, not hostile to builders. We're not undercutting or criticizing. We're saying "here's what to expect, and here's a tool that helps you visualize your choices." If the builder calls us, great. If they don't, the buyer still got useful content.
+**Critical framing**: Helpful to buyers, not hostile to builders. "Here's what to expect, and here's a tool that helps you visualize your choices." If the builder calls us, great. If they don't, the buyer got useful content.
 
-**Bonus data**: The form captures which builders and communities have active buyers. That's a prospecting goldmine. "We know buyers in [Community X] are actively looking for upgrade visualization" is a surgical cold email.
+**Bonus data**: The form captures which builders and communities have active buyers. That's a prospecting goldmine. "We know 47 buyers at [Builder Name] tried our visualizer last month" is a surgical cold email.
 
-**Start with**: Toll Brothers, Pulte, KB Home (highest volume + public SEC data). Add more based on traction.
+**Start with**: Pulte (590/mo — 3x anything else), Arbor Homes (170/mo), then Richmond American, Ryan Homes, Taylor Morrison. Public builders with SEC data get richer content.
 
+#### 2c: Research — "The Visualization Effect" ✅ (2026-03-22)
+
+`/research/visualization-lift` — **"The Visualization Effect"** — SHIPPED.
+
+NOT an SEO traffic play (nobody searches this). Value is as:
+- Sales asset for cold emails and LinkedIn
+- Credibility piece that builder-specific pages and the anchor page link to
+- LinkedIn article (companion to the SEC research piece)
+- Honest framing of vendor case study data by credibility tier
+
+Page structure: hero, stat bar (67% / 1-in-3 / 20-70%), the question, independent evidence (3D Cloud + NAR), named builder evidence table, vendor claims table, animated two-tone bar charts (named builder vs vendor claim), what's missing, our own data ($5,200→$7,290 n=1), the math (ROI table), sources by tier, GetStartedSection.
+
+Also shipped: `/research` index page — hub listing all research articles as cards. All nav/footer "Research" links now point to `/research` instead of directly to hidden-revenue-line.
+
+**Next**: LinkedIn article, update `llms.txt`/`llms-full.txt` with visualization research data.
 
 ### Phase 3: B2B Comparison Pages (ongoing, low effort)
 
@@ -299,8 +350,9 @@ Target: "builder design center" / "design center software" / "upgrade visualizat
 
 **Goal**: When a builder actively searches for design center software, Finch shows up.
 
-- [ ] `/vs/chameleon-power` — Chameleon Power/BuilderVision is the closest visual competitor (swatch-based point-and-click vs. our AI photo generation). They rank in SERPs.
-- [ ] `/vs/design-center-software` — Category overview comparing ECI Insearch, Hyphen HomeSight, Constellation, and Finch's approach. Target "home builder design center software" (10/mo) and "builder design center" (70/mo).
+- [ ] `/vs/eci-insearch` — ECI Insearch is the most established design center visualization competitor. Pre-rendered 3D vs our AI photos. 8-12 week setup vs days. Named case study (Signature Homes +20% sales) we can reference honestly.
+- [ ] `/vs/chameleon-power` — Chameleon Power/BuilderVision (now Hyphen). Swatch-based point-and-click vs AI photo generation. They rank in SERPs.
+- [ ] `/vs/design-center-software` — Category overview comparing all players (ECI, Hyphen/Chameleon, Aareas, Roomored, Constellation, Higharc) and Finch's approach. Target "home builder design center software" (10/mo) and "builder design center" (70/mo).
 - [ ] Optimize existing `/vs/envision` for "anewgo alternative" / "envision alternative" queries
 
 **Why Phase 3 not Phase 2**: These are low-volume, high-intent pages. Worth having, but they won't drive the flywheel. Build them as outreach collateral — link to them in cold emails when a builder mentions they're evaluating Envision or Chameleon.
@@ -341,28 +393,28 @@ Previous version significantly underestimated competitors. See `VISION.md` for f
 
 **Content gap still holds**: None of these competitors create buyer-facing content. None publish original research. None have interactive demos embedded in SEO content. The content strategy is unaffected by the competitive correction.
 
-### Research content asset: "The Visualization Effect"
-New research page planned: `/research/visualization-lift`. See `memory-bank/research/visualization-lift-research.md` for full data compilation.
+### Research content asset: "The Visualization Effect" ✅
+`/research/visualization-lift` is live. See `memory-bank/research/visualization-lift-research.md` for source data.
 - 3 tiers of evidence: independent studies, named builder case studies, vendor claims
 - Honest framing: no independent study exists, but 10+ companies over 20+ years all point the same direction
 - Companion to `/research/hidden-revenue-line` (size of revenue line → impact of visualization)
-- LinkedIn article to follow, same pattern as first research piece
+- `/research` index page serves as hub for both pieces (and future case studies)
+- LinkedIn article still TODO
 
 ---
 
 ## Metrics to Track
 
 ### Flywheel metrics (the ones that matter)
-- **"Ask your builder" form submissions** — builder names + communities captured
 - **Demo starts from content pages** (PostHog funnel: `/learn/*` → `/try` → session created)
-- **Unique builders mentioned** in form submissions (prospecting pipeline)
+- **Content page → demo conversion rate** (PostHog: `learn_page_viewed` → `cta_clicked` with location `learn-upgrades-demo`)
 - **Cold emails sent with buyer data** → response rate vs. generic cold emails
 
 ### SEO health (check monthly)
 - **Organic impressions** (Google Search Console)
 - **Ranking positions** for target keywords (DataForSEO rank tracker)
-- **Organic traffic to content pages** (PostHog)
-- **Pilot form submissions from organic** (PostHog attribution)
+- **Organic traffic to content pages** (PostHog: `learn_page_viewed`)
+- **Get Started form submissions from organic** (PostHog attribution)
 
 ---
 
@@ -381,11 +433,13 @@ Every cycle, do all of:
    - `/vs/envision` hero: "Updated [Month Year]"
    - `/vs/pdf-option-sheets` hero: "Updated [Month Year]"
    - `/research/hidden-revenue-line` hero already shows "March 2026" — update if content changes
+   - `/learn/new-construction-upgrades` hero shows "March 2026" — update if content changes
 3. **Bump `dateModified` in JSON-LD**:
    - `src/app/landing-full.tsx` — SoftwareApplication schema
    - `src/app/vs/envision/page.tsx` — FAQPage schema
    - `src/app/vs/pdf-option-sheets/page.tsx` — WebPage schema
    - `src/app/research/hidden-revenue-line/page.tsx` — Article schema
+   - `src/app/learn/new-construction-upgrades/page.tsx` — Article schema
 4. **Review `public/llms.txt` and `public/llms-full.txt`** for accuracy against current site state
 5. **Check robots.txt AI bot list** — new AI crawlers appear regularly (add any new major ones)
 
@@ -406,8 +460,9 @@ Check Perplexity, ChatGPT, and Google AI Mode specifically. Track whether the SE
 
 1. **Google Search Console**: Is withfin.ch verified in GSC? Step 0 for everything.
 2. **Builder name sensitivity**: Will builders get annoyed seeing their name on Finch content? The framing matters — "What to Expect at the Toll Brothers Design Center" is helpful, not adversarial. But worth thinking about before publishing. Could soft-launch with public builders (SEC data gives us cover) and skip private builders initially.
-3. **Form design**: Should "Ask your builder" be a simple inline form or a modal? Inline is lower friction. Modal can capture more data. Test both.
-4. **Content velocity**: How many builder pages before the flywheel has enough data to power outreach? Probably 5-8 (the top-volume builders) is enough to start seeing form submissions.
-5. **Backlink strategy**: The SEC research report is linkable content. Pitch to HousingWire, Builder Innovator, NAHB publications?
-6. **DataForSEO rank tracking**: Set up automated monitoring for target keywords? Cheap, useful for measuring progress after content goes live.
-7. **Conference timing**: IBS (International Builders' Show) and PCBC — could we time content drops to coincide with these events?
+3. **Content velocity**: How many builder pages before the flywheel has enough data to power outreach? Probably 5-8 (the top-volume builders) is enough to start seeing demo traffic.
+4. **Backlink strategy**: The SEC research report is linkable content. Pitch to HousingWire, Builder Innovator, NAHB publications?
+5. **DataForSEO rank tracking**: Set up automated monitoring for target keywords? Cheap, useful for measuring progress after content goes live.
+6. **Conference timing**: IBS (International Builders' Show) and PCBC — could we time content drops to coincide with these events?
+7. **Anchor page visuals**: The learn page has zero images. For a product about visualization, this is a gap. Add demo screenshot, before/after, or embedded mini-demo.
+8. **Anchor page FAQ section**: Adding 3-5 buyer FAQs with FAQPage JSON-LD would capture featured snippets. High-impact, low-effort addition.
