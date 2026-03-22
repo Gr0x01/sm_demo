@@ -542,6 +542,67 @@ Don't paraphrase — use their exact words. If a builder says "My buyers always 
 
 ---
 
+## AI Slop Filter — Self-Check Before Returning ANY Copy
+
+Run this filter on every piece of copy before returning it. If you catch violations, fix them silently — don't announce that you ran the filter.
+
+### Sentence-Level Slop
+
+**Staccato fragments for false weight.** Don't split related thoughts into dramatic short sentences.
+- Slop: "We found none. This does not mean the numbers are wrong. It means they cannot be verified."
+- Clean: "We found none, which doesn't mean the numbers are wrong — it means they can't be verified."
+
+**Consecutive "This" openers.** Don't start back-to-back sentences with "This" referring to the prior sentence. Join them or restructure.
+
+**Parallel structure as rhetoric.** Three identically structured sentences in a row is a TED talk, not copy. Vary your structures.
+
+**Em dashes as style.** Em dashes are a crutch. If a comma, period, or conjunction works, use that. One em dash per paragraph max. Zero is better.
+
+**Decorative colons.** Colons belong before lists and direct explanations. Not as dramatic pause punctuation.
+
+### Word-Level Slop
+
+**Dead giveaway words — cut on sight:**
+- "landscape" (as metaphor), "navigate", "leverage", "holistic", "robust", "seamless"
+- "at the end of the day", "it's worth noting", "needless to say", "the reality is"
+- "delve", "crucial", "pivotal", "foster", "moreover", "furthermore", "notably"
+- "comprehensive", "cutting-edge", "innovative", "streamline", "synergy"
+- "deep dive", "unpack", "double down", "lean into", "move the needle"
+- "This isn't just X — it's Y" (the false elevation formula)
+- "Here's the thing:" / "Here's why that matters:" (throat-clearing)
+
+**Filler intensifiers — almost always deletable:**
+- "truly", "really", "incredibly", "absolutely", "fundamentally", "ultimately"
+- "game-changing", "transformative", "revolutionary" (and all hype synonyms)
+
+**Weasel hedges that weaken claims:**
+- "helps to", "allows you to", "enables", "empowers" — just say what it does
+- "might", "could potentially", "tends to" — either it does or it doesn't
+
+### Structure-Level Slop
+
+**The insight announcement.** Don't tell the reader something is interesting or important. Just state it.
+- Slop: "Here's a fascinating insight from the data..."
+- Clean: "Toll Brothers' SEC filings show..."
+
+**The false dichotomy pivot.** "It's not about X. It's about Y." This is a copywriter move. State Y directly.
+
+**Section headers as hype.** Headers should describe content, not sell it. "Why Builders Leave Money on the Table" not "The Hidden Revenue Goldmine Nobody's Talking About."
+
+**The recap closer.** Don't end sections by restating what you just said. Move forward or stop.
+
+**Cliches masquerading as insight.** If you've read it in 50 LinkedIn posts, don't write it. "The absence of proof is not proof of absence" — cut it.
+
+### The Final Test
+
+Read every sentence aloud. Ask:
+1. Would a normal person say this in conversation? If not, rewrite.
+2. Could you swap "Finch" for any other company and the sentence still works? If yes, it's generic — make it specific.
+3. Does any sentence sound like it's building to a reveal? Kill the buildup, just say the thing.
+4. If you removed this sentence, would anything be lost? If no, remove it.
+
+---
+
 ## Copy Sins to Avoid
 
 ### Universal Sins

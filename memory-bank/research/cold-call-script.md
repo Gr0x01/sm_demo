@@ -25,6 +25,49 @@ Use these to plant a seed, not to lecture. Drop the number casually and let them
 
 ---
 
+## Getting Through a Company Line
+
+Most of your numbers are main lines. The person who picks up isn't your buyer — they're the person between you and your buyer. Keep it short, keep it warm, and ask for the role, not a name.
+
+### What to say
+
+> "Hey, this is Rashaad with Finch. I'm trying to reach whoever handles your design center or your selections process. Could you point me in the right direction?"
+
+If they ask what it's about:
+
+> "I work with home builders on their upgrade selections. Just wanted to have a quick conversation with the right person on your team."
+
+That's it. Don't explain the product. Don't say "vendor" or "software" or "platform." You're a person trying to reach the right person.
+
+### If they push back or ask you to be more specific
+
+> "Sure. It'd probably be someone on the sales leadership side, like a VP of Sales or whoever oversees design center operations. I'm honestly not sure who that is on your team."
+
+Dropping down to a title gives them something concrete to work with. Most builder offices are small enough that they know exactly who to transfer you to.
+
+### If they want to take a message
+
+> "That'd be great. It's Rashaad, R-A-S-H-A-A-D, with Finch. My number is [your number]. I was looking at [community name or something specific] and had a question about how you handle selections. He can reach me anytime."
+
+Mention the specific detail from your research. It signals that you're not blasting a call list. Messages that sound researched actually get returned.
+
+### If the person who answers might BE the right person
+
+At smaller builders (under 300-400 homes/year), the person answering the phone might sit next to the decision-maker or might be the decision-maker. If they sound like they know the business and not just routing calls, treat them like the Online Sales Person script. Ask about their role, listen, and let the conversation go where it goes.
+
+> "Actually, before you transfer me, can I ask — are you involved in the selections side at all, or is that a totally different part of the team?"
+
+If they say yes, you're already talking to the right person. Switch to the main script.
+
+### What NOT to do
+
+- **Don't over-explain.** The gatekeeper doesn't need to understand Finch. They need to know who to send you to.
+- **Don't say "I'm a vendor" or "I'm selling."** Say you're "working with builders" or "had a question about their selections process."
+- **Don't get impatient.** The person routing your call talks to the decision-maker every day. Be someone they'd want to pass along.
+- **Don't leave a voicemail on the main line.** If you can't get through, hang up and try again at a different time. Voicemails to a general inbox don't get returned. Save your voicemail for when you have a direct number or a name.
+
+---
+
 ## The Framework
 
 Every cold call has three parts:

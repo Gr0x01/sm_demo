@@ -49,19 +49,49 @@ An interactive web-based upgrade picker with:
 
 ## Competitive Landscape
 
-| Competitor | Approach | AI? | Builder-Specific? | Weakness |
-|------------|----------|-----|-------------------|----------|
-| **Zonda Envision** | Pre-rendered 3D scenes, 225+ brands | No | Yes | Expensive, inflexible, no AI |
-| **Constellation Design Studio** | ERP + option management | No | Yes | Workflow tool, no visualization |
-| **Spacely AI / HomeDesigns AI** | AI room visualization | Yes | No | Consumer-focused, no builder workflow |
-| **Finch (us)** | AI visualization + builder upgrade workflow | Yes | Yes | **Only player in this space** |
+**Updated 2026-03-22.** Previous version significantly underestimated competitor visualization capabilities. Every major design center platform has some form of visualization. None use generative AI.
 
-### Our Differentiator
-We're the only product that combines:
-1. **Generative AI visualization** (not pre-rendered 3D)
-2. **Builder-specific upgrade workflow** (real pricing, real options, real floor plans)
-3. **Social proof / upsell intelligence** built into the selection flow
-4. **Affordable for mid-size builders** ($5-10K setup vs. $50K+ for enterprise solutions)
+### Direct Competitors (Builder-Specific Visualization)
+
+| Competitor | Viz Type | Parent/Scale | Named Customers | Weakness vs Finch |
+|---|---|---|---|---|
+| **Zonda Envision** | Pre-rendered 3D scenes, 225+ brands, 4,300+ communities | Zonda (major data co) | Not disclosed | Expensive, inflexible, 3D scenes look synthetic |
+| **ECI Insearch** | Pre-rendered 3D + 360 tours + configurator | ECI Software (acquired 2021). Suite: MarkSystems ERP, Lasso CRM, LotVue | Signature Homes, JTB, Bill Beazley, Hayden, Rausch Coleman | 8-12 week setup, 3D modeling per floorplan, enterprise pricing |
+| **Roomored / ILG** | Photoreal 3D walkthroughs with material swapping | Interior Logic Group (~$1.79B rev, Blackstone-backed) | Shea Homes (largest private builder), Beazer | Tied to ILG installation business, builders without ILG may not get access |
+| **Aareas Interactive** | Full 3D configurator, interior + exterior, time-of-day lighting | Independent, founded 1991 | NAHB Silver Award 2020 | Enterprise-only, expensive, actively positioning against AI approaches |
+| **Chameleon Power** | Web visualizers, AR, photo upload + texture swap | Hyphen Solutions (21 of top 26 builders). BuildPro behind 1-in-3 US homes | Wayne Homes, CertainTeed, GAF | Visualization quality dated, supply-chain company first |
+| **Higharc** | Real-time 3D configurator from parametric models, AI sketch-to-3D | Independent, founded 2018 by Autodesk vets | Buffington, Epcon, Signature, Tim O'Brien | Full lifecycle platform (not focused on upgrade revenue), enterprise pricing |
+| **Constellation / NEEZO** | 3D room scenes via NEEZO Studios partnership (since 2019) | Constellation Software (TSX public) | Largest builder software provider in NA | ERP company, visualization is a bolt-on. Minimal public traction since 2019 |
+| **BuildOn / VEO** | 3D visualization in design center workflow | Independent, founded 2000, Houston | Toll Brothers, Monticello, Integrity | Smaller company, niche focus on interior finish companies |
+| **Studio Chateau** | Photo-based room visualizer (texture swap on model home photos) | Chateau Interiors (40+ years) | Precision Design Source, 44K+ lots | Visualization is secondary to option management |
+| **CPS Imaginarium** | Interactive palette/room mixing | Independent, founded 1985 | Not disclosed | Small, basic visualization quality |
+| **Anewgo** | Interactive exterior renderings + color tool | Independent | CT Valley Homes, Heckaman Homes | Primarily exterior-focused, limited interior |
+
+### Adjacent Players
+| Player | What | Relevance |
+|---|---|---|
+| Spacely AI / HomeDesigns AI / HomeGPT | Consumer AI room redesign | Similar tech, no builder workflow. B2C. |
+| Houzz Pro | 3D viz for design-build/remodel | Different market (renovation, not new construction) |
+| Renoworks | AI exterior viz for contractors | Different market |
+
+### Our Actual Differentiator
+We are NOT "the only player in this space." The space has 10+ competitors with 20+ years of history.
+
+What makes Finch different:
+1. **Generative AI from real photos** — every competitor uses pre-rendered 3D scenes or deterministic texture mapping. We generate novel photorealistic images from actual model home photos. No 3D modeling required.
+2. **Setup speed** — competitors take 8-12 weeks of 3D scene creation per community. We go live in days.
+3. **Infinite combinations** — 3D approaches require pre-rendering or texture mapping for each option. We generate any combination on demand.
+4. **Price point** — $500/mo per plan vs enterprise contracts (likely $50K-$200K+/year for Aareas, Roomored, Higharc, full ECI suite).
+5. **Independence** — Roomored is tied to ILG's installation business, Chameleon Power to Hyphen's supply chain. We're standalone.
+6. **Photo realism** — our output looks like the actual home because it starts from a real photo, not a synthetic 3D environment.
+
+### What We're Actually Competing Against
+Most builders above 200 homes/year already have SOMETHING. Our best prospects:
+- Builders under 200 homes/year who can't afford enterprise solutions
+- Builders unhappy with rigidity/cost of 3D rendering approaches
+- Builders whose current tool is option management only (no visualization)
+- Builders using non-ILG installers who don't get Roomored bundled
+- Builders who tried Envision/ECI and found setup too slow or expensive
 
 ## Business Model
 

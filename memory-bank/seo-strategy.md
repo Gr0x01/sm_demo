@@ -351,10 +351,10 @@ Target: "builder design center" / "design center software" / "upgrade visualizat
 
 **Goal**: When a builder actively searches for design center software, Finch shows up.
 
-- [ ] `/vs/eci-insearch` — ECI Insearch is the most established design center visualization competitor. Pre-rendered 3D vs our AI photos. 8-12 week setup vs days. Named case study (Signature Homes +20% sales) we can reference honestly.
+- [x] `/vs/eci-insearch` — ECI Insearch is the most established design center visualization competitor. Pre-rendered 3D vs our AI photos. 8-12 week setup vs days. Named case study (Signature Homes +20% sales) we can reference honestly. Angle: ecosystem independence (MarkSystems/Lasso/LotVue lock-in). Gemini-generated 3D mockup for visual comparison.
 - [ ] `/vs/chameleon-power` — Chameleon Power/BuilderVision (now Hyphen). Swatch-based point-and-click vs AI photo generation. They rank in SERPs.
 - [ ] `/vs/design-center-software` — Category overview comparing all players (ECI, Hyphen/Chameleon, Aareas, Roomored, Constellation, Higharc) and Finch's approach. Target "home builder design center software" (10/mo) and "builder design center" (70/mo).
-- [ ] Optimize existing `/vs/envision` for "anewgo alternative" / "envision alternative" queries
+- [x] Optimize existing `/vs/envision` for "anewgo alternative" / "envision alternative" queries
 
 **Why Phase 3 not Phase 2**: These are low-volume, high-intent pages. Worth having, but they won't drive the flywheel. Build them as outreach collateral — link to them in cold emails when a builder mentions they're evaluating Envision or Chameleon.
 

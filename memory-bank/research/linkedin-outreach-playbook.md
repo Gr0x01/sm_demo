@@ -59,17 +59,19 @@ Before writing each message, find ONE specific thing:
 That one detail is the difference between "this person looked at my company" and "this is a LinkedIn pitch."
 
 ## Who to Target (priority order)
-1. **Design Studio/Center Manager** — lives the daily pain
-2. **Online Sales Manager/Executive** — closing remotely, feels the gap
-3. **VP/Director of Sales & Marketing** — owns the number, can champion internally
-4. **VP of Design** — owns the selection experience
-5. **President/CEO** — decision-maker, but only if the company is small enough that they're hands-on
+1. **VP/Director of Sales & Marketing** — owns the upgrade revenue number, can champion and buy
+2. **VP of Design / Design Studio Director** — owns the selection experience at a senior level
+3. **President/CEO** — decision-maker, but only if the company is small enough that they're hands-on
+4. **Region/Division President** — owns P&L for their market, cares about revenue per home
 
 ## Who to Skip
 - Purchasing Managers (supply side, not buyer side)
 - VP of Operations / Construction (build side, not sales side)
 - CFO/Controller (finance brain, not experience brain)
-- Community Sales Managers (too junior to champion a new tool)
+- Community Sales Managers / New Home Sales Counselors (too junior, no authority to buy)
+- Online Sales Consultants / Coordinators (feel the gap but can't act on it)
+- Marketing Content Strategists / Brand Storytellers (describe the problem accurately but don't own the number)
+- Design Studio Managers (unless at a very small builder where they have real influence — at larger builders they don't have budget authority)
 - Anyone with < 50 LinkedIn connections or zero activity
 
 ## Deprioritize
