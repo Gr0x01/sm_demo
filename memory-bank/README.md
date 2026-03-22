@@ -52,6 +52,7 @@ npm run build        # production build
 npm test             # run test suite (129 tests, <1s)
 npm run test:watch   # watch mode
 npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a new builder org
+npx tsx scripts/indexnow.ts            # submit marketing URLs to IndexNow (Bing/Yandex)
 ```
 
 ## Environment Variables
@@ -83,3 +84,4 @@ INNGEST_SIGNING_KEY=         # Inngest (auto-injected on Vercel)
 | `decisions.md` | Understanding "why" behind choices |
 | `seo-strategy.md` | SEO keyword research, content strategy, competitive landscape |
 | `research/` | Builder prospect lists for sales outreach |
+| `research/visualization-lift-research.md` | Data compilation for "Does visualization work?" research page |

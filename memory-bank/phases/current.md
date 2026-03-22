@@ -262,7 +262,8 @@ SEO research (DataForSEO keyword data, Tavily competitive analysis) → strategy
 - [x] **`/research` index page** — lightweight hub listing all research articles. Cards with title, description, date, tag. Scales for future case studies.
 - [x] **Nav/footer links updated** — SiteNav defaults, SiteFooter, homepage, prospect pages all point to `/research` index. In-content links to specific articles left as-is.
 - **Key insight**: Builder B2B keywords are tiny volume (<70/mo). Buyer-side content ("new construction upgrades" 170/mo, "[builder] upgrade price list" cluster ~400-500/mo) is the demand engine. Flywheel: buyer finds content → tries demo → asks builder → builder calls us.
-- **Next**: Builder-specific design center pages (`/learn/design-center/[builder-slug]`), FAQ section with FAQPage JSON-LD on anchor page, add visuals (demo screenshot/before-after)
+- [x] **IndexNow** — key file + submission script (`scripts/indexnow.ts`) for instant Bing/Yandex indexing of all 9 marketing URLs. Run after deploys: `npx tsx scripts/indexnow.ts`
+- **Next**: Verify withfin.ch in Google Search Console, builder-specific design center pages (`/learn/design-center/[builder-slug]`), FAQ section with FAQPage JSON-LD on anchor page, add visuals (demo screenshot/before-after)
 
 ## What's Done
 

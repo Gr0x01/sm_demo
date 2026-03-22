@@ -39,6 +39,7 @@ But that's fine — neither do the competitors:
 - JSON-LD: Organization (root layout), Article (research pages), SoftwareApplication (homepage), FAQPage (homepage, /vs/envision), WebPage (/vs/pdf-option-sheets)
 - Favicon + apple-touch-icon + web manifest
 - Visible "Updated" timestamps on /vs/ pages for AI freshness signals
+- **IndexNow**: Key file + submission script (`scripts/indexnow.ts`). Pings Bing/Yandex/etc. instantly on deploy. Run `npx tsx scripts/indexnow.ts` after publishing new pages or significant content changes. Add new URLs to the `URLS` array in the script. Google does NOT participate — use GSC for Google indexing.
 
 ---
 
