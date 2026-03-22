@@ -47,3 +47,12 @@ export function PdfOptionSheetsPageTracker() {
   }, [track]);
   return null;
 }
+
+export function EciInsearchPageTracker() {
+  const track = useTrack();
+  useScrollDepth("eci-insearch");
+  useEffect(() => {
+    track("vs_page_viewed", { page: "eci-insearch" });
+  }, [track]);
+  return null;
+}

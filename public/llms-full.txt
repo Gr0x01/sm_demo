@@ -45,10 +45,11 @@ Finch operates in the "design center software" and "upgrade visualization" categ
 - Best for: Builders wanting basic visual selection without photorealistic room images
 
 **ECI Insearch**
-- Online design center and option management platform
-- Focus on workflow (scheduling, pricing, option configuration) rather than visualization
-- Part of ECI Solutions (construction software)
-- Best for: Builders prioritizing option management workflow over visual buyer experience
+- Pre-rendered 3D visualization, 360 virtual tours, and online design center
+- Part of ECI Software Solutions suite (MarkSystems ERP, Lasso CRM, LotVue)
+- 8-12 week setup with 3D modeling per floorplan, enterprise pricing
+- Named case study: Signature Homes (+20% sales, -75% change orders)
+- Best for: Builders already on the ECI/MarkSystems ecosystem who want integrated visualization
 
 **Hyphen HomeSight**
 - Builder platform connecting websites, design centers, and back-office
@@ -182,6 +183,7 @@ Finch works standalone — no integration required. The priced selection sheet c
 - [Try It Live](https://withfin.ch/try) — Interactive demo, working in under a minute, no signup
 - [Finch vs Zonda Envision](https://withfin.ch/vs/envision) — Detailed feature and approach comparison
 - [Finch vs PDF Option Sheets](https://withfin.ch/vs/pdf-option-sheets) — Visual selection vs printed option sheets
+- [Finch vs ECI Insearch](https://withfin.ch/vs/eci-insearch) — Comparison for builders evaluating ECI Insearch: ecosystem independence, no 3D modeling, $500/mo vs enterprise suite pricing
 - [Buyer's Guides](https://withfin.ch/learn) — Index of upgrade guides and builder-specific design center guides
 - [The Complete Guide to New Home Upgrades](https://withfin.ch/learn/new-construction-upgrades) — Buyer-facing guide: upgrade categories, design center preparation, which upgrades add the most value
 - [The Pulte Design Center: What to Expect](https://withfin.ch/learn/design-center/pulte) — Pulte Home Expressions Studio appointment guide: selection categories, preparation tips, what to bring
