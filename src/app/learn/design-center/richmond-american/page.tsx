@@ -299,7 +299,7 @@ const prepTips = [
   },
   {
     title: "Browse the Home Gallery before your appointment",
-    body: "The Home Gallery is open to the public: Monday through Friday, 9 AM to 6 PM, and Saturdays, 9 AM to 5 PM. You don\u2019t need to be under contract to walk through. Going in early lets you see the samples, start narrowing your taste, and arrive at your formal appointment with a head start.",
+    body: "The Home Gallery is open to the public. You don\u2019t need to be under contract to walk through. Most locations are open weekdays and Saturdays, but check your local gallery for current hours. Going in early lets you see the samples, start narrowing your taste, and arrive at your formal appointment with a head start.",
   },
   {
     title: "Know your structural options",
@@ -311,7 +311,7 @@ const prepTips = [
   },
   {
     title: "Use the color studios",
-    body: "The Home Gallery has four color studios with professionally coordinated palettes. Each studio groups finishes that work together, so if you start with a countertop you like, the studio shows you cabinets, flooring, and paint that complement it. Don\u2019t fight the coordination. That\u2019s the whole point of the studios, and it\u2019s one of Richmond American\u2019s strongest features.",
+    body: "The Home Gallery has color studios with professionally coordinated palettes. Each studio groups finishes that work together, so if you start with a countertop you like, the studio shows you cabinets, flooring, and paint that complement it. Don\u2019t fight the coordination. That\u2019s the whole point of the studios, and it\u2019s one of Richmond American\u2019s strongest features.",
   },
   {
     title: "Ask about regional options",
@@ -394,9 +394,8 @@ export default function RichmondAmericanDesignCenterPage() {
               Not a warehouse full of samples. Richmond American&apos;s Home
               Gallery locations are boutique-style showrooms with curated
               displays and full-sized kitchen vignettes built around popular
-              floor plans. The Las Vegas gallery alone is over 4,000 square
-              feet with three complete kitchen setups so you can see
-              finishes at actual scale.
+              floor plans. Some galleries have multiple complete kitchen
+              setups so you can see finishes at actual scale.
             </p>
             <p>
               <strong className="font-semibold text-slate-900">Your consultant already knows your plan.</strong>{" "}
@@ -416,7 +415,7 @@ export default function RichmondAmericanDesignCenterPage() {
             </p>
             <p>
               <strong className="font-semibold text-slate-900">The color studios do the coordinating.</strong>{" "}
-              The Home Gallery has four color studios, each with a
+              The Home Gallery has color studios, each with a
               professionally coordinated palette of finishes. Cabinets,
               countertops, flooring, paint, and hardware are pre-matched
               within each studio. If you like one element in a studio, the
@@ -810,7 +809,7 @@ export default function RichmondAmericanDesignCenterPage() {
                 name: "Is the Richmond American Home Gallery open to the public?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Yes. You can visit the Home Gallery to browse samples and see the color studios even before you're under contract. Hours are Monday through Friday 9 AM to 6 PM and Saturday 9 AM to 5 PM. Your formal design consultation is scheduled after you sign your purchase agreement.",
+                  text: "Yes. You can visit the Home Gallery to browse samples and see the color studios even before you're under contract. Most locations are open weekdays and Saturdays — check your local gallery for current hours. Your formal design consultation is scheduled after you sign your purchase agreement.",
                 },
               },
               {
@@ -826,7 +825,7 @@ export default function RichmondAmericanDesignCenterPage() {
                 name: "What are the color studios at the Richmond American Home Gallery?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "The Home Gallery has four color studios, each with a professionally coordinated palette of finishes. Cabinets, countertops, flooring, paint, and hardware are pre-matched within each studio so your selections complement each other. It's designed to take the guesswork out of coordinating finishes across categories.",
+                  text: "The Home Gallery has color studios, each with a professionally coordinated palette of finishes. Cabinets, countertops, flooring, paint, and hardware are pre-matched within each studio so your selections complement each other. It's designed to take the guesswork out of coordinating finishes across categories.",
                 },
               },
             ],
