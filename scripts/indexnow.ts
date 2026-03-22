@@ -13,6 +13,7 @@ const URLS = [
   `${HOST}/learn`,
   `${HOST}/learn/new-construction-upgrades`,
   `${HOST}/learn/design-center/pulte`,
+  `${HOST}/learn/design-center/arbor`,
   `${HOST}/research`,
   `${HOST}/research/hidden-revenue-line`,
   `${HOST}/research/visualization-lift`,

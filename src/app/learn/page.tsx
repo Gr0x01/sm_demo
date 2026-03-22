@@ -45,6 +45,14 @@ const designCenterGuides = [
     tag: "Pulte Homes",
     date: "March 2026",
   },
+  {
+    href: "/learn/design-center/arbor",
+    title: "The Arbor Homes Design Center",
+    description:
+      "What to expect at Arbor\u2019s Indianapolis Design Center. 9 selection categories, Saturday browsing hours, and how to prepare.",
+    tag: "Arbor Homes",
+    date: "March 2026",
+  },
 ];
 
 export default function LearnIndexPage() {

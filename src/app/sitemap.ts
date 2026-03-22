@@ -63,6 +63,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      url: "https://withfin.ch/learn/design-center/arbor",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+    {
       url: "https://withfin.ch/demo",
       lastModified: new Date(),
       changeFrequency: "monthly",

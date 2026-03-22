@@ -4,31 +4,31 @@ import Image from "next/image";
 import { SiteNav } from "@/components/SiteNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { RevealObserver, TrackedLink } from "@/app/landing-client";
-import { PultePageTracker } from "./pulte-client";
+import { ArborPageTracker } from "./arbor-client";
 
 export const metadata: Metadata = {
   title: {
     absolute:
-      "Pulte Homes Design Center: What to Expect at Your Appointment",
+      "Arbor Homes Design Center: What to Expect at Your Appointment",
   },
   description:
-    "Going to the Pulte Home Expressions Studio? Here's what the appointment is like, what categories you'll choose from, how to prepare, and what to bring.",
+    "Going to the Arbor Homes Design Center? Here's what the appointment is like, what categories you'll choose from, how to prepare, and what to bring.",
   alternates: {
-    canonical: "https://withfin.ch/learn/design-center/pulte",
+    canonical: "https://withfin.ch/learn/design-center/arbor",
   },
   openGraph: {
-    title: "Pulte Homes Design Center: What to Expect at Your Appointment",
+    title: "Arbor Homes Design Center: What to Expect at Your Appointment",
     description:
-      "Going to the Pulte Home Expressions Studio? Here's what the appointment is like, what categories you'll choose from, how to prepare, and what to bring.",
-    url: "https://withfin.ch/learn/design-center/pulte",
+      "Going to the Arbor Homes Design Center? Here's what the appointment is like, what categories you'll choose from, how to prepare, and what to bring.",
+    url: "https://withfin.ch/learn/design-center/arbor",
     siteName: "Finch",
     type: "article",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pulte Homes Design Center: What to Expect",
+    title: "Arbor Homes Design Center: What to Expect",
     description:
-      "What happens at the Pulte Homes design center appointment, what categories you'll pick from, and how to prepare.",
+      "What happens at the Arbor Homes design center appointment, what categories you'll pick from, and how to prepare.",
   },
 };
 
@@ -104,20 +104,6 @@ function PaintIcon() {
     </svg>
   );
 }
-function BacksplashIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" />
-      <line x1="3" y1="9" x2="21" y2="9" />
-      <line x1="3" y1="15" x2="21" y2="15" />
-      <line x1="9" y1="3" x2="9" y2="9" />
-      <line x1="15" y1="3" x2="15" y2="9" />
-      <line x1="12" y1="9" x2="12" y2="15" />
-      <line x1="6" y1="15" x2="6" y2="21" />
-      <line x1="15" y1="15" x2="15" y2="21" />
-    </svg>
-  );
-}
 function HardwareIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
@@ -153,17 +139,6 @@ function LightingIcon() {
     </svg>
   );
 }
-function SinkIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 12h16" />
-      <path d="M4 12v4a4 4 0 004 4h8a4 4 0 004-4v-4" />
-      <path d="M12 4v4" />
-      <path d="M10 4h4" />
-      <path d="M12 12v2" />
-    </svg>
-  );
-}
 function DoorIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
@@ -173,47 +148,13 @@ function DoorIcon() {
     </svg>
   );
 }
-function StaircaseIcon() {
+function ExteriorIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 20h4v-4h4v-4h4v-4h4" />
-      <path d="M4 20V4" />
-    </svg>
-  );
-}
-function ElectricalIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z" />
-    </svg>
-  );
-}
-function MirrorIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="3" width="14" height="18" />
-      <rect x="7" y="5" width="10" height="14" />
-      <line x1="12" y1="19" x2="12" y2="21" />
-    </svg>
-  );
-}
-function FireplaceIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="4" width="20" height="16" />
-      <rect x="2" y="2" width="20" height="2" />
-      <path d="M8 20v-6a4 4 0 018 0v6" />
-      <path d="M12 20v-3c0-1 .5-1.5 1-2s-1-2-1-3" />
-    </svg>
-  );
-}
-function BathroomIcon() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 12h16v2a4 4 0 01-4 4H8a4 4 0 01-4-4v-2z" />
-      <path d="M4 12V6a2 2 0 012-2h1" />
-      <path d="M18 18v2" />
-      <path d="M6 18v2" />
+      <path d="M3 21V10l9-7 9 7v11" />
+      <path d="M3 21h18" />
+      <rect x="9" y="13" width="6" height="8" />
+      <line x1="12" y1="13" x2="12" y2="21" />
     </svg>
   );
 }
@@ -225,132 +166,96 @@ const selectionCategories = [
     name: "Cabinetry",
     icon: <CabinetsIcon />,
     description:
-      "Kitchen and bathroom cabinets in a range of door styles, paint colors, and stain finishes. Pulte typically offers soft-close hinges and interior accessories like pull-out trays and lazy Susans as upgrades. Cabinets set the tone for the whole kitchen, so this is worth taking your time on.",
+      "Kitchen and bathroom cabinets starting with Merillat oak as the included option. Upgrades open up different door styles, painted finishes, and stain colors. On an Arbor home, cabinets are one of the biggest visual upgrades you can make because the jump from the standard oak to a painted or stained style changes the entire feel of the kitchen.",
   },
   {
     name: "Countertops",
     icon: <CountertopsIcon />,
     description:
-      "Granite, quartz, and other surface materials for kitchen and bathroom counters. You'll pick a material, a color or pattern, and an edge profile. Countertops and cabinets need to work together, so you'll usually choose these side by side at the studio.",
-  },
-  {
-    name: "Kitchen Backsplash",
-    icon: <BacksplashIcon />,
-    description:
-      "Tile, stone, and mosaic options for the area between your countertops and upper cabinets. Adding a backsplash during construction is cleaner and cheaper than retrofitting one after your cabinets and countertops are already installed.",
+      "Laminate countertops are included in the base price, with upgrades to granite and quartz available. You\u2019ll pick a material, a color or pattern, and an edge profile. The difference between laminate and stone is one of the most noticeable upgrades in the house, so this is worth spending time on.",
   },
   {
     name: "Flooring",
     icon: <FlooringIcon />,
     description:
-      "Tile, hardwood, luxury vinyl plank, and carpet. You'll make separate selections for different areas of the house. Flooring is one of the more expensive categories and one of the most disruptive to change after you move in.",
+      "Shaw carpet and Armstrong vinyl are the included options, with upgrades to hardwood, luxury vinyl plank, and tile available for different areas of the house. Flooring is one of the more expensive categories and one of the most disruptive to change after you move in, so get it right now if you can.",
   },
   {
     name: "Interior Paint",
     icon: <PaintIcon />,
     description:
-      "Pulte usually offers a neutral base package that's included, plus two-tone color options as an upgrade. Paint is one of the easiest things to change later, so don't stress too much here. But getting it right from the start saves you a weekend with a roller.",
-  },
-  {
-    name: "Sinks",
-    icon: <SinkIcon />,
-    description:
-      "Undermount styles in different finishes, depths, and shapes for kitchen and bathrooms. This one is easy to overlook, but you'll use your kitchen sink more than almost any other surface in the house.",
+      "A standard neutral color is included. Two-tone color options, where you choose different colors for walls and trim or for different rooms, are available as an upgrade. Paint is one of the easiest things to change later, so don\u2019t stress too much here.",
   },
   {
     name: "Plumbing Fixtures",
     icon: <HardwareIcon />,
     description:
-      "Faucets, showerheads, towel bars, and coordinating hardware in finishes like brushed nickel, matte black, or polished chrome. Pulte also offers a tankless water heater upgrade in some markets.",
+      "Moen fixtures are included, with upgrades available in different finishes like brushed nickel, matte black, or oil-rubbed bronze. This covers faucets, showerheads, and coordinating bathroom hardware. Matching your fixture finish across kitchens and bathrooms gives the house a more pulled-together look.",
   },
   {
-    name: "Bathroom Tile & Surrounds",
-    icon: <BathroomIcon />,
-    description:
-      "Tile combinations for shower surrounds, bathroom floors, and tub decks. These selections work together with your cabinet and countertop choices to set the look for each bathroom.",
-  },
-  {
-    name: "Light Fixtures",
+    name: "Lighting",
     icon: <LightingIcon />,
     description:
-      "Fixture packages in different styles and finishes, recessed can lights, pendants, and ceiling fans. You'll also choose from options for under-cabinet lighting in the kitchen. Electrical work is structural, so adding can lights or fan boxes later means opening up the ceiling.",
-  },
-  {
-    name: "Door Hardware",
-    icon: <DoorIcon />,
-    description:
-      "Handles and locksets for interior and exterior doors in transitional and contemporary styles. A small upgrade that changes the feel of every room you walk into.",
-  },
-  {
-    name: "Doors & Woodwork",
-    icon: <StaircaseIcon />,
-    description:
-      "Interior door styles, exterior door upgrades, staircase details (newel posts, balusters, stain colors), and trim work like baseboards and crown molding.",
-  },
-  {
-    name: "Framed Mirrors",
-    icon: <MirrorIcon />,
-    description:
-      "Framed mirror upgrades for select bathrooms, replacing the standard unframed builder mirror. A small change that makes a bathroom look more finished.",
-  },
-  {
-    name: "Fireplace",
-    icon: <FireplaceIcon />,
-    description:
-      "Fireplace surrounds, mantles, and design styles. In many Pulte communities, the fireplace selection is made at contract rather than at the design studio. Check with your sales counselor.",
-  },
-  {
-    name: "Electrical",
-    icon: <ElectricalIcon />,
-    description:
-      "Additional outlets, specialty outlets, and exterior lighting. Some communities also have a separate low-voltage appointment for entertainment wiring, security systems, and cameras.",
+      "A designer lighting package is included. Upgrades add options like recessed can lights, pendant fixtures, under-cabinet lighting, and ceiling fans. Electrical work is structural, so adding can lights or fan boxes later means opening up the ceiling.",
   },
   {
     name: "Appliances",
     icon: <AppliancesIcon />,
     description:
-      "Range, refrigerator, dishwasher, and microwave options. What's included in the base price varies by community, so ask your sales counselor before your appointment.",
+      "GE appliances are included in the base package. Upgrade packages are available with different brands, finishes, and feature sets. What\u2019s included varies by community, so ask your sales counselor before your appointment so you know your starting point.",
+  },
+  {
+    name: "Exterior Finishes",
+    icon: <ExteriorIcon />,
+    description:
+      "Vinyl siding with a choice of colors is the standard. Upgrades to HardiePlank fiber cement siding are available and add a different look and feel to the exterior. You\u2019ll also choose exterior trim colors and any accent details.",
+  },
+  {
+    name: "Doors & Trim",
+    icon: <DoorIcon />,
+    description:
+      "Six-panel interior doors are included, with upgrades to different panel styles and finishes. This category also covers trim profiles like baseboards and casing. A small change that quietly affects every room in the house.",
   },
 ];
 
 const prepTips = [
   {
-    title: "Walk the models first",
-    body: "Visit the model homes in your community before your studio appointment. Take note of finishes you like and don't like. The models are designed to show upgraded options, so they're a good reference point for what's available.",
+    title: "Browse on a Saturday first",
+    body: "Arbor\u2019s Design Center is open Saturdays from 9 AM to 1 PM for walk-in browsing, no appointment needed. Take advantage of this. Seeing the samples in person before your formal weekday appointment gives you a head start and means fewer surprises when the clock is running.",
   },
   {
     title: "Set a budget range for upgrades",
-    body: "Not a vague \"we'll see how it goes\" but an actual number. A common starting point is around 10% of your base price, but this varies a lot depending on the community and what's already included. Having a ceiling in mind makes it easier to make tradeoffs during the appointment.",
+    body: "Not a vague \u201Cwe\u2019ll see how it goes\u201D but an actual number. With Arbor\u2019s price range, upgrades can add up fast because the base finishes are designed to hit that affordable price point. Knowing your ceiling before you walk in makes it easier to decide where to spend and where to hold back.",
   },
   {
-    title: "Know what's hard to change later",
-    body: "Electrical work, plumbing rough-ins, flooring, and cabinets are all expensive or disruptive to change after you move in. Paint, hardware, and light fixtures are easy to swap anytime. Prioritize the structural and hard-to-redo categories first.",
+    title: "Know what\u2019s hard to change later",
+    body: "Electrical work, plumbing rough-ins, flooring, and cabinets are all expensive or disruptive to change after you move in. Paint, hardware, and light fixtures are easy to swap anytime. If your budget is tight, prioritize the things you can\u2019t easily redo.",
   },
   {
     title: "Bring inspiration photos",
-    body: "Screenshots from Pinterest, Houzz, or Instagram give your design consultant a starting point for your taste. You don't need a mood board. A few photos of kitchens or bathrooms you like is plenty.",
+    body: "Screenshots from Pinterest, Houzz, or Instagram give your design consultant a starting point for your taste. You don\u2019t need a mood board. A few photos of kitchens or bathrooms you like is plenty.",
   },
   {
-    title: "Leave the kids at home",
-    body: "Pulte's Home Expressions Studios have heavy samples on shelves and large display boards. Most studios ask that only the buyers attend. It's not a great environment for kids, and you'll want to focus.",
+    title: "It\u2019s contract holders only",
+    body: "Arbor\u2019s policy is firm on this: only the people on the contract are allowed at the Design Center appointment. No kids, no parents, no friends. If you need another opinion, talk through your options with them before you go and share photos after. The HomeBuildingJourney.com portal also makes it easy to review everything you picked.",
   },
   {
     title: "Take photos of everything you pick",
-    body: "Front and back of samples, the label with the name and level, the manufacturer info. You'll look at dozens of options across 15+ categories, and they blur together fast. Photos are your insurance.",
+    body: "Front and back of samples, the label with the name and level, the manufacturer info. You\u2019ll look at dozens of options across all categories, and they blur together fast. Photos are your insurance.",
   },
   {
     title: "Selections are final",
-    body: "After your final design studio appointment, your selections are locked in. Some changes may be possible early in construction, but don't count on it. Take your time during the appointment and make sure you're comfortable with every choice.",
+    body: "After your Design Center appointment, your selections are locked in. Some changes may be possible early in construction, but don\u2019t count on it. Take your time during the appointment and make sure you\u2019re comfortable with every choice before you sign off.",
   },
 ];
 
 /* ─── Page ─── */
 
-export default function PulteDesignCenterPage() {
+export default function ArborDesignCenterPage() {
   return (
     <div className="min-h-screen bg-white">
       <RevealObserver />
-      <PultePageTracker />
+      <ArborPageTracker />
       <SiteNav />
 
       {/* ─── 1. Hero ─── */}
@@ -368,7 +273,7 @@ export default function PulteDesignCenterPage() {
             style={revealStyle(100)}
             className="text-[2.8rem] md:text-[3.6rem] lg:text-[4.4rem] leading-[0.95] text-slate-900 tracking-[-0.02em] mb-8"
           >
-            The Pulte Homes Design Center:
+            The Arbor Homes Design Center:
             <br />
             What to&nbsp;Expect
           </h1>
@@ -378,10 +283,10 @@ export default function PulteDesignCenterPage() {
             className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-6"
           >
             You signed the contract. Now comes the fun part: choosing every
-            finish at the Pulte Homes design center. Pulte calls it the
-            Home Expressions Studio, and you&apos;ll spend a few hours there
-            making decisions you&apos;ll live with for years.
-            Here&apos;s what to&nbsp;expect.
+            finish at the Arbor Homes Design Center. It&apos;s a 3,200 square
+            foot showroom in Indianapolis where you&apos;ll pick cabinets,
+            countertops, flooring, and everything else that makes the house
+            feel like yours. Here&apos;s what to&nbsp;expect.
           </p>
           <p
             data-reveal
@@ -411,37 +316,39 @@ export default function PulteDesignCenterPage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              <strong className="font-semibold text-slate-900">One studio, three brands.</strong>{" "}
-              PulteGroup operates design studios across the country for Pulte
-              Homes, Del Webb, and Centex buyers. Some markets call it the
-              Home Expressions Studio. Others just call it the design
-              center. Either way, it&apos;s the same idea: a showroom full of
-              actual samples where you choose every finish for your new home.
+              <strong className="font-semibold text-slate-900">One showroom, two brands.</strong>{" "}
+              Arbor Homes runs a single Design Center in Indianapolis that
+              serves both Arbor and its sister brand, Silverthorne Homes.
+              It&apos;s a showroom with physical samples of every finish
+              available for your floor plan. If you want to get a feel for the
+              space before your appointment, Saturdays from 9 AM to 1 PM are
+              open for browsing without a scheduled time.
             </p>
             <p>
-              <strong className="font-semibold text-slate-900">Plan for 2 to 4 hours.</strong>{" "}
-              Your appointment is typically scheduled a few weeks after you sign
-              your purchase agreement.
-              Don&apos;t schedule anything right after. Feeling rushed in the
-              last hour leads to decisions you&apos;ll second-guess later.
+              <strong className="font-semibold text-slate-900">Plan for 2 to 3 hours.</strong>{" "}
+              Your formal appointment is on a weekday, typically scheduled a few
+              weeks after you sign your purchase agreement.
+              Don&apos;t schedule anything right after. The last thing
+              you want is to feel rushed when you&apos;re picking the countertop
+              you&apos;ll look at every morning.
             </p>
             <p>
-              <strong className="font-semibold text-slate-900">You&apos;ll have a design consultant.</strong>{" "}
-              They walk you through
-              every category, show you physical samples, and help you see how
-              your selections work together. They do this every day and they
-              know the product line well. Ask them questions, especially about
-              which upgrades they see buyers regret skipping.
+              <strong className="font-semibold text-slate-900">Contract holders only.</strong>{" "}
+              Arbor has a strict policy that only
+              the people on the contract are allowed at the appointment. No children, no
+              family members, no friends. It&apos;s a focused environment with
+              heavy samples and display boards, and they want you making
+              decisions without distractions.
             </p>
             <p>
               <strong className="font-semibold text-slate-900">Everything starts at &quot;included.&quot;</strong>{" "}
-              Each category has a
-              base option that&apos;s already in the price of your home.
-              Upgrades are priced as the difference, so a $3,500 countertop
-              upgrade means the one you picked costs $3,500 more than what
-              was already included. You&apos;ll see a running total that grows
-              as you make selections, and it adds up faster than most people
-              expect.
+              You&apos;ll work with a design consultant who walks you through
+              every category and shows you physical samples.
+              Each category has a base finish already
+              in the price of your home. Upgrades are priced as the difference
+              above that base option, and you&apos;ll see the total grow as you
+              go through each category. After your appointment, you can review
+              everything you picked on the HomeBuildingJourney.com portal.
             </p>
           </div>
         </div>
@@ -461,9 +368,9 @@ export default function PulteDesignCenterPage() {
           style={revealStyle(60)}
           className="text-lg md:text-xl text-slate-600 text-center max-w-3xl mx-auto mb-10"
         >
-          Pulte organizes selections into about 15 categories. The exact list
-          varies by community, but here&apos;s what most buyers walk through
-          at the studio.
+          Arbor organizes selections into about 9 main categories. The exact
+          options vary by community and floor plan, but here&apos;s what most
+          buyers walk through at the Design Center.
         </p>
 
         {/* Room photo */}
@@ -474,7 +381,7 @@ export default function PulteDesignCenterPage() {
         >
           <Image
             src="/learn/kitchen-greatroom.webp"
-            alt="Open-concept kitchen and living room showing cabinetry, countertops, flooring, backsplash, and lighting selections"
+            alt="Open-concept kitchen and living room showing cabinetry, countertops, flooring, and lighting selections"
             fill
             className="object-cover"
             sizes="(max-width: 1152px) 100vw, 1152px"
@@ -486,8 +393,8 @@ export default function PulteDesignCenterPage() {
               Kitchen and living area
             </p>
             <p className="text-white/70 text-xs md:text-sm max-w-lg">
-              Cabinetry, countertops, backsplash, flooring, hardware, lighting,
-              and appliances all come together in one room.
+              Cabinetry, countertops, flooring, lighting, and appliances all
+              come together in one room.
             </p>
           </div>
         </div>
@@ -562,38 +469,41 @@ export default function PulteDesignCenterPage() {
             className="text-lg md:text-xl text-slate-600 leading-relaxed space-y-5"
           >
             <p>
-              Not all upgrades are created equal. Some are expensive to
-              change after you move in. Others you can swap in a weekend.
-              Knowing the difference will save you money.
+              Not all upgrades are created equal, and on an Arbor home this
+              matters more than most. Because the base package is designed to
+              hit an affordable price point, the gap between what&apos;s
+              included and what&apos;s upgraded is more noticeable than it might
+              be at a higher-priced builder. Laminate to quartz countertops, oak
+              cabinets to a painted style, vinyl to luxury vinyl plank. Each of
+              those jumps makes a real visual difference.
             </p>
             <p>
               <strong className="font-semibold text-slate-900">Do it now:</strong>{" "}
-              Electrical work (can lights, fan boxes, extra outlets), plumbing
-              rough-ins, flooring, cabinets, and countertops. These are either
-              structural (behind walls) or disruptive to replace once
-              you&apos;re living there. If you&apos;re going to upgrade
-              anything, start with these.
+              Flooring, cabinets, countertops, and any electrical work like can
+              lights or extra outlets. These are either structural (behind
+              walls) or disruptive to replace once you&apos;re living there. If
+              you&apos;re going to upgrade anything, start with these.
             </p>
             <p>
               <strong className="font-semibold text-slate-900">Can wait:</strong>{" "}
-              Paint, bathroom mirrors, door hardware, and basic light
-              fixtures. These are all relatively easy and inexpensive to change
-              later. If you need to trim your upgrade budget, these are the
-              categories to pull back on.
+              Paint, door hardware, and basic light fixtures. These are all
+              relatively easy and inexpensive to change later. If you need to
+              trim your upgrade budget, these are the categories to pull back
+              on.
             </p>
             <p>
               The kitchen drives most of the upgrade spend for a reason:
-              cabinets, countertops, backsplash, and appliances all live in one
-              room, and they all need to work together. Most buyers allocate
-              about half their upgrade budget to the kitchen and split the
-              rest between bathrooms and everything else. For a deeper look
-              at each category and what&apos;s worth the money, see our{" "}
+              cabinets, countertops, and appliances all live in one room, and
+              they all need to work together. Most buyers put about half their
+              upgrade budget toward the kitchen and split the rest between
+              bathrooms and everything else. For a deeper look at each category
+              and what&apos;s worth the money, see our{" "}
               <TrackedLink
                 href="/learn/new-construction-upgrades"
                 event="cta_clicked"
                 properties={{
                   cta: "complete upgrade guide",
-                  location: "design-center-pulte-crosslink",
+                  location: "design-center-arbor-crosslink",
                 }}
                 className="text-slate-900 font-medium border-b border-slate-300 hover:border-slate-900 transition-colors pb-px"
               >
@@ -626,7 +536,7 @@ export default function PulteDesignCenterPage() {
             <p className="text-base text-slate-600 leading-relaxed">
               Where cabinet meets countertop meets backsplash. This is
               the combination you&apos;re trying to picture from three
-              separate 4-inch samples on a shelf. Getting these right together
+              separate samples on a shelf. Getting these right together
               is more important than getting any one of them right
               individually. That&apos;s the kind of thing that&apos;s easier to
               judge when you can{" "}
@@ -635,7 +545,7 @@ export default function PulteDesignCenterPage() {
                 event="cta_clicked"
                 properties={{
                   cta: "see it in a full room",
-                  location: "design-center-pulte-inline",
+                  location: "design-center-arbor-inline",
                 }}
                 className="text-slate-900 font-medium border-b border-slate-300 hover:border-slate-900 transition-colors pb-px"
               >
@@ -672,16 +582,16 @@ export default function PulteDesignCenterPage() {
               Could Look&nbsp;Like
             </h2>
             <p className="text-base md:text-lg text-white/70 leading-relaxed mb-4">
-              The hardest part of the design center is picturing how
+              The hardest part of the Design Center is picturing how
               everything looks together. You&apos;re choosing from small
               samples and trying to imagine them in a full room.
             </p>
             <p className="text-base md:text-lg text-white/70 leading-relaxed mb-8">
               Try picking finishes and seeing them in a real kitchen before
               your appointment. The selections below aren&apos;t from
-              Pulte&apos;s catalog, but the categories are the same ones
-              you&apos;ll see at the studio. It&apos;s a good way to practice
-              before the real thing.
+              Arbor&apos;s catalog, but the categories are the same ones
+              you&apos;ll work through at the Design Center. It&apos;s a good
+              way to practice before the real thing.
             </p>
             <div>
               <TrackedLink
@@ -689,7 +599,7 @@ export default function PulteDesignCenterPage() {
                 event="cta_clicked"
                 properties={{
                   cta: "Try It Yourself",
-                  location: "design-center-pulte-closing",
+                  location: "design-center-arbor-closing",
                 }}
                 className="inline-block px-8 py-3.5 bg-white text-slate-900 text-sm font-semibold uppercase tracking-wider hover:bg-slate-100 transition-colors"
               >
@@ -703,7 +613,7 @@ export default function PulteDesignCenterPage() {
                 event="cta_clicked"
                 properties={{
                   cta: "See how Finch works",
-                  location: "design-center-pulte-closing-builder",
+                  location: "design-center-arbor-closing-builder",
                 }}
                 className="text-white/60 border-b border-white/30 hover:border-white/60 transition-colors pb-px"
               >
@@ -722,7 +632,7 @@ export default function PulteDesignCenterPage() {
             style={revealStyle(60)}
             className="text-lg md:text-xl text-slate-600 leading-relaxed"
           >
-            The design center is the best part of building a new home. You
+            The Design Center is the best part of building a new home. You
             get to choose everything, and when it&apos;s done right,
             you walk into a house that feels like yours from day one.
             The trick is going in prepared, knowing where to invest, and
@@ -738,7 +648,7 @@ export default function PulteDesignCenterPage() {
               event="cta_clicked"
               properties={{
                 cta: "Browse all guides",
-                location: "design-center-pulte-footer",
+                location: "design-center-arbor-footer",
               }}
               className="inline-block text-sm font-semibold text-slate-900 border-b border-slate-300 hover:border-slate-900 transition-colors pb-0.5"
             >
@@ -758,9 +668,9 @@ export default function PulteDesignCenterPage() {
             "@context": "https://schema.org",
             "@type": "Article",
             headline:
-              "Pulte Homes Design Center: What to Expect at Your Appointment",
+              "Arbor Homes Design Center: What to Expect at Your Appointment",
             description:
-              "Going to the Pulte Home Expressions Studio? Here's what the appointment is like, what categories you'll choose from, how to prepare, and what to bring.",
+              "Going to the Arbor Homes Design Center? Here's what the appointment is like, what categories you'll choose from, how to prepare, and what to bring.",
             datePublished: "2026-03-22",
             dateModified: "2026-03-22",
             author: {
@@ -775,7 +685,7 @@ export default function PulteDesignCenterPage() {
             },
             mainEntityOfPage: {
               "@type": "WebPage",
-              "@id": "https://withfin.ch/learn/design-center/pulte",
+              "@id": "https://withfin.ch/learn/design-center/arbor",
             },
           }),
         }}
@@ -789,42 +699,42 @@ export default function PulteDesignCenterPage() {
             mainEntity: [
               {
                 "@type": "Question",
-                name: "How long is the Pulte design center appointment?",
+                name: "How long is the Arbor Homes design center appointment?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Plan for 2 to 4 hours, depending on your floor plan and how many options your community offers. Don't schedule anything right after. Feeling rushed in the last hour leads to decisions you'll second-guess later.",
+                  text: "Plan for 2 to 3 hours, depending on your floor plan and how many options your community offers. Appointments are scheduled on weekdays. Don't schedule anything right after so you have time to make decisions without feeling rushed.",
                 },
               },
               {
                 "@type": "Question",
-                name: "What categories do you choose at the Pulte design center?",
+                name: "Can I bring family or friends to the Arbor Homes design center?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Pulte organizes selections into about 15 categories: cabinetry, countertops, kitchen backsplash, flooring, interior paint, sinks, plumbing fixtures, bathroom tile and surrounds, light fixtures, door hardware, doors and woodwork, framed mirrors, fireplace, electrical, and appliances. The exact list varies by community.",
+                  text: "No. Arbor has a strict policy that only contract holders are allowed at the Design Center appointment. No children, family members, or friends. You can share your selections afterward through the HomeBuildingJourney.com portal.",
                 },
               },
               {
                 "@type": "Question",
-                name: "What should I bring to my Pulte design appointment?",
+                name: "What is included in the base price at Arbor Homes?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Bring inspiration photos (screenshots from Pinterest, Houzz, or Instagram), a budget range for upgrades, and your phone to photograph every sample you pick. Visit the model homes in your community beforehand to see upgraded finishes in person.",
+                  text: "Standard included features are Merillat oak cabinets, laminate countertops, Shaw carpet, Armstrong vinyl flooring, GE appliances, and Moen plumbing fixtures. Everything above these base options is priced as an upgrade, and you'll see the cost difference during your appointment.",
                 },
               },
               {
                 "@type": "Question",
-                name: "What upgrades are hardest to change after move-in?",
+                name: "Can I visit the Arbor Homes design center before my appointment?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "Electrical work (can lights, fan boxes, extra outlets), plumbing rough-ins, flooring, cabinets, and countertops are all expensive or disruptive to change after you move in. Paint, bathroom mirrors, door hardware, and basic light fixtures are relatively easy and inexpensive to change later.",
+                  text: "Yes. The Design Center in Indianapolis is open Saturdays from 9 AM to 1 PM for browsing without an appointment. It's a good way to see the samples and start thinking about your selections before your formal weekday appointment.",
                 },
               },
               {
                 "@type": "Question",
-                name: "What is the Pulte Home Expressions Studio?",
+                name: "What categories do you choose at the Arbor Homes design center?",
                 acceptedAnswer: {
                   "@type": "Answer",
-                  text: "The Home Expressions Studio is Pulte's name for their design center, a showroom where you choose every finish for your new home. PulteGroup operates studios for Pulte Homes, Del Webb, and Centex buyers. You'll work with a design consultant who walks you through each category and shows you physical samples.",
+                  text: "Arbor organizes selections into about 9 main categories: cabinetry, countertops, flooring, interior paint, plumbing fixtures, lighting, appliances, exterior finishes, and doors and trim. The exact options vary by community and floor plan.",
                 },
               },
             ],

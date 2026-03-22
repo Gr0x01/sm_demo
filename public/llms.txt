@@ -66,6 +66,7 @@ Finch published original research analyzing SEC filings of 14 public home builde
 - [Buyer's Guides](https://withfin.ch/learn): Index of upgrade guides and builder-specific design center guides
 - [The Complete Guide to New Home Upgrades](https://withfin.ch/learn/new-construction-upgrades): Buyer-facing guide covering upgrade categories, design center preparation, and which upgrades add the most value based on SEC filing data
 - [The Pulte Design Center: What to Expect](https://withfin.ch/learn/design-center/pulte): What happens at the Pulte Home Expressions Studio appointment, selection categories, and how to prepare
+- [The Arbor Homes Design Center: What to Expect](https://withfin.ch/learn/design-center/arbor): What happens at the Arbor Homes Design Center appointment, 9 selection categories, Saturday browsing hours, and how to prepare
 - [The Hidden Revenue Line](https://withfin.ch/research/hidden-revenue-line): Original SEC filing analysis of upgrade revenue among 14 public home builders
 - [Sandbox Demo](https://withfin.ch/demo): Live demo environment with a sample floor plan and full upgrade catalog
 
