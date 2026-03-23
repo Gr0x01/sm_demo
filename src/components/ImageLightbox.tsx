@@ -1,22 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface ImageLightboxProps {
   src?: string;
-  originalSrc?: string;
   color?: string;
   alt: string;
   onClose: () => void;
   onRetry?: () => void;
 }
 
-export function ImageLightbox({ src, originalSrc, color, alt, onClose, onRetry }: ImageLightboxProps) {
+export function ImageLightbox({ src, color, alt, onClose, onRetry }: ImageLightboxProps) {
   const [visible, setVisible] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(false);
-  const hasToggled = useRef(false);
-  const canCompare = !!src && !!originalSrc && src !== originalSrc;
 
   // Animate in on mount
   useEffect(() => {
@@ -70,13 +66,10 @@ export function ImageLightbox({ src, originalSrc, color, alt, onClose, onRetry }
         </button>
 
         {/* Image */}
-        <div
-          className={`relative w-full overflow-hidden shadow-2xl bg-gray-100 border-2 border-white/20 ${canCompare ? "cursor-pointer" : ""}`}
-          onClick={canCompare ? () => { hasToggled.current = true; setShowOriginal(!showOriginal); } : undefined}
-        >
+        <div className="relative w-full overflow-hidden shadow-2xl bg-gray-100 border-2 border-white/20">
           {src ? (
             <img
-              src={showOriginal && originalSrc ? originalSrc : src}
+              src={src}
               alt={alt}
               className="w-full h-auto max-h-[80vh] object-contain"
             />
@@ -84,40 +77,14 @@ export function ImageLightbox({ src, originalSrc, color, alt, onClose, onRetry }
             <div className="w-full aspect-square max-h-[60vh]" style={{ backgroundColor: color }} />
           ) : null}
 
-          {/* Before/After label */}
-          {canCompare && (
-            <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 text-white text-xs font-semibold">
-              {showOriginal ? "Before" : "After"}
-            </div>
-          )}
-
-          {/* Compare hint — hidden after first toggle */}
-          {canCompare && !showOriginal && !hasToggled.current && (
-            <div className="absolute bottom-14 left-0 right-0 text-center pointer-events-none">
-              <span className="px-2 py-1 bg-black/50 text-white/80 text-[10px] font-medium">
-                Click to compare original
-              </span>
-            </div>
-          )}
-
-          {(onRetry || canCompare) && (
+          {onRetry && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-4 pt-8 pb-3 flex justify-end gap-2">
-              {canCompare && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); hasToggled.current = true; setShowOriginal(!showOriginal); }}
-                  className="px-3 py-1.5 bg-white/90 text-slate-800 text-xs font-semibold uppercase tracking-wider hover:bg-white transition-colors cursor-pointer backdrop-blur-sm"
-                >
-                  {showOriginal ? "After" : "Before"}
-                </button>
-              )}
-              {onRetry && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onRetry(); onClose(); }}
-                  className="px-3 py-1.5 bg-white/90 text-slate-800 text-xs font-semibold uppercase tracking-wider hover:bg-white transition-colors cursor-pointer backdrop-blur-sm"
-                >
-                  Retry
-                </button>
-              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); onRetry(); onClose(); }}
+                className="px-3 py-1.5 bg-white/90 text-slate-800 text-xs font-semibold uppercase tracking-wider hover:bg-white transition-colors cursor-pointer backdrop-blur-sm"
+              >
+                Retry
+              </button>
             </div>
           )}
         </div>

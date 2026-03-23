@@ -38,7 +38,6 @@ export function StepPhotoGrid({
   selections,
 }: StepPhotoGridProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-  const [lightboxOriginalSrc, setLightboxOriginalSrc] = useState<string | null>(null);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null);
   const photos = step.photos ?? [];
@@ -86,7 +85,7 @@ export function StepPhotoGrid({
             error={errors[activePhoto.id] ?? null}
             onGenerate={() => onGeneratePhoto(activePhoto.id, activePhoto.id, step)}
             onRetry={() => onRetry(activePhoto.id, activePhoto.id, step)}
-            onZoom={(src, originalSrc) => { setLightboxSrc(src); setLightboxOriginalSrc(originalSrc ?? null); setLightboxPhotoId(activePhoto.id); }}
+            onZoom={(src) => { setLightboxSrc(src); setLightboxPhotoId(activePhoto.id); }}
           />
         )}
 
@@ -140,9 +139,8 @@ export function StepPhotoGrid({
       {lightboxSrc && (
         <ImageLightbox
           src={lightboxSrc}
-          originalSrc={lightboxOriginalSrc ?? undefined}
           alt="Generated preview"
-          onClose={() => { setLightboxSrc(null); setLightboxOriginalSrc(null); setLightboxPhotoId(null); }}
+          onClose={() => { setLightboxSrc(null); setLightboxPhotoId(null); }}
           onRetry={lightboxPhotoId && generatedImageUrls[lightboxPhotoId] ? () => onRetry(lightboxPhotoId, lightboxPhotoId, step) : undefined}
         />
       )}
@@ -158,7 +156,7 @@ interface PhotoCardProps {
   error: string | null;
   onGenerate: () => void;
   onRetry: () => void;
-  onZoom: (src: string, originalSrc?: string) => void;
+  onZoom: (src: string) => void;
 }
 
 function PhotoViewerCard({
@@ -176,11 +174,9 @@ function PhotoViewerCard({
     generatedUrl ? [{ src: generatedUrl, key: 0 }] : []
   );
   const layerKey = useRef(1);
-  const [showOriginal, setShowOriginal] = useState(false);
 
   useEffect(() => {
     if (!generatedUrl) { setLayers([]); return; }
-    setShowOriginal(false);
     setLayers((prev) => {
       const top = prev[prev.length - 1];
       if (top?.src === generatedUrl) return prev;
@@ -202,7 +198,7 @@ function PhotoViewerCard({
         src={photo.imageUrl}
         alt={photo.label}
         className="absolute inset-0 w-full h-full object-cover cursor-pointer"
-        onClick={() => onZoom(hasGenerated ? generatedUrl : photo.imageUrl, hasGenerated ? photo.imageUrl : undefined)}
+        onClick={() => onZoom(hasGenerated ? generatedUrl : photo.imageUrl)}
       />
       {/* Generated image layers — old stays visible while new crossfades in */}
       {layers.map((layer, i) => {
@@ -214,9 +210,9 @@ function PhotoViewerCard({
             src={layer.src}
             alt={photo.label}
             className={`absolute inset-0 w-full h-full object-cover cursor-pointer ${
-              showOriginal ? "invisible" : isTop ? "animate-photo-crossfade" : ""
+              isTop ? "animate-photo-crossfade" : ""
             }`}
-            onClick={() => onZoom(generatedUrl!, photo.imageUrl)}
+            onClick={() => onZoom(generatedUrl!)}
             onAnimationEnd={isCrossfading ? () => handleLayerEnd(layer.key) : undefined}
           />
         );
@@ -237,26 +233,13 @@ function PhotoViewerCard({
         </div>
       )}
 
-      <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
-        {/* Before/After toggle */}
-        {hasGenerated && !isGenerating && (
-          <button
-            onClick={(e) => { e.stopPropagation(); setShowOriginal(!showOriginal); }}
-            aria-label="Toggle before and after comparison"
-            aria-pressed={showOriginal}
-            className="px-1.5 h-6 bg-black/60 text-white text-[10px] font-semibold flex items-center justify-center hover:bg-black/75 transition-colors cursor-pointer"
-          >
-            {showOriginal ? "After" : "Before"}
-          </button>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onZoom(hasGenerated ? generatedUrl! : photo.imageUrl, hasGenerated ? photo.imageUrl : undefined); }}
-          className="w-6 h-6 bg-black/60 text-white flex items-center justify-center hover:bg-black/75 transition-colors cursor-pointer"
-          title="View full size"
-        >
-          <Expand className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onZoom(hasGenerated ? generatedUrl! : photo.imageUrl); }}
+        className="absolute top-2 right-2 z-10 w-6 h-6 bg-black/60 text-white flex items-center justify-center hover:bg-black/75 transition-colors cursor-pointer"
+        title="View full size"
+      >
+        <Expand className="w-3.5 h-3.5" />
+      </button>
 
       {/* Photo label */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent px-2 pt-4 pb-2">

@@ -54,10 +54,18 @@ export const generatePhoto = inngest.createFunction(
         throw new Error(`Failed to load base photo: ${downloadErr?.message}`);
       }
 
-      const imageBuffer = Buffer.from(await imageData.arrayBuffer());
+      const rawImageBuffer = Buffer.from(await imageData.arrayBuffer());
       const heroExt = aiConfig.photo.imagePath.split(".").pop()?.toLowerCase() || "webp";
-      const heroMime = heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`;
-      const heroFilename = aiConfig.photo.imagePath.split("/").pop() || "room.webp";
+
+      // OpenAI images.edit only accepts PNG, JPEG, WebP, GIF — convert anything else
+      const needsConversion = !["png", "jpg", "jpeg", "webp", "gif"].includes(heroExt);
+      const imageBuffer = needsConversion
+        ? await sharp(rawImageBuffer).png().toBuffer()
+        : rawImageBuffer;
+      const heroMime = needsConversion ? "image/png" : (heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`);
+      const heroFilename = needsConversion
+        ? (aiConfig.photo.imagePath.split("/").pop()?.replace(/\.[^.]+$/, ".png") || "room.png")
+        : (aiConfig.photo.imagePath.split("/").pop() || "room.webp");
 
       // Swatch resolver
       const resolveSwatchBuffer: SwatchBufferResolver = async (swatchUrl: string) => {
