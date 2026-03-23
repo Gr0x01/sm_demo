@@ -2,6 +2,7 @@ import { FooterCalendlyButton } from "./FooterCalendlyButton";
 
 const PRODUCT_LINKS = [
   { label: "Try It", href: "/try" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Get Started", href: "/#get-started" },
 ];
 
