@@ -37,8 +37,8 @@ export function UpgradeInsights({
         </p>
       )}
 
-      <p className="mt-3 text-[10px] text-gray-300 leading-tight">
-        Sources: public SEC filings (Toll Brothers, PulteGroup)
+      <p className="mt-3 text-[10px] text-gray-400 leading-tight">
+        Sources: ECI case study (Signature Homes), public SEC filings
       </p>
     </div>
   );

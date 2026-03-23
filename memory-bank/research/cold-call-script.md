@@ -6,28 +6,38 @@ Based on the framework from *Cold Calling Sucks (And That's Why It Works)* by Ar
 
 Spend 90 seconds on the builder's website. Find one specific thing: a community name, a floor plan, their design center page (or the absence of one). That detail is your **context** for the opener. Without it, you're just another vendor call.
 
-Also know which bucket they fall in. Are they entry-level/production, move-up, or semi-custom? That changes which problem you lead with.
+### Visualization Lift Data (Know These Cold)
 
-## Upgrade Revenue Benchmarks (Know These Cold)
+These are what you lead with. Every builder doing any kind of upgrade visualization reports the same thing: buyers spend more when they can see what they're getting. This isn't about luxury builders or high-end design studios. It's about the process.
 
-Use these to plant a seed, not to lecture. Drop the number casually and let them react. If they're below the range, they'll know it. You don't need to tell them.
+| Source | What they found |
+|--------|----------------|
+| ECI / Signature Homes (case study) | +10-15% profit increase, +20% sales increase |
+| ILG network data (multiple builders) | 30% higher option sales when buyers use online design tools |
+| Anewgo (VP Sales quote) | 40% increase in option sales |
+| 3D Cloud / Provoke Insights (independent study) | 1 in 3 visualization users exceeded their budget vs 1 in 6 without |
+
+**The key point:** These are different companies, different technologies, different decades, and they all report the same direction. When buyers can see their selections before they commit, they spend more.
+
+**Full analysis:** withfin.ch/research/visualization-lift
+
+### SEC Benchmarks (Secondary — Use When the Conversation Goes Deeper)
+
+If they want to know how big the upgrade revenue line actually is, these are the numbers. But don't lead with Toll Brothers — most regional builders will dismiss it as a luxury comparison.
 
 | Segment | Upgrade Revenue as % of ASP |
 |---------|----------------------------|
 | Entry-Level / Production | 8-15% |
 | Move-Up | 12-20% |
 | Luxury / Semi-Custom | 20-25%+ |
-| Weighted average (design center only) | 10-15% |
 
-**The money line:** For a move-up builder at $400K ASP, the difference between 12% and 20% is $32,000 per home. On 200 homes, that's $6.4M in annual revenue.
-
-**Where this comes from:** SEC filings. Toll Brothers captures 20-23% of ASP in upgrades ($203K/home). PulteGroup is around 19% ($104K/home). They're the only two public builders that disclose it. You wrote up the full analysis at withfin.ch/research/hidden-revenue-line.
+**Where this comes from:** SEC filings. Full analysis at withfin.ch/research/hidden-revenue-line.
 
 ---
 
 ## Getting Through a Company Line
 
-Most of your numbers are main lines. The person who picks up isn't your buyer — they're the person between you and your buyer. Keep it short, keep it warm, and ask for the role, not a name.
+Most of your numbers are main lines. The person who picks up isn't your buyer. Keep it short, keep it warm, and ask for the role, not a name.
 
 ### What to say
 
@@ -37,7 +47,7 @@ If they ask what it's about:
 
 > "I work with home builders on their upgrade selections. Just wanted to have a quick conversation with the right person on your team."
 
-That's it. Don't explain the product. Don't say "vendor" or "software" or "platform." You're a person trying to reach the right person.
+That's it. Don't explain the product. Don't say "vendor" or mention anything technical. You're a person trying to reach the right person.
 
 ### If they push back or ask you to be more specific
 
@@ -55,7 +65,7 @@ Mention the specific detail from your research. It signals that you're not blast
 
 At smaller builders (under 300-400 homes/year), the person answering the phone might sit next to the decision-maker or might be the decision-maker. If they sound like they know the business and not just routing calls, treat them like the Online Sales Person script. Ask about their role, listen, and let the conversation go where it goes.
 
-> "Actually, before you transfer me, can I ask — are you involved in the selections side at all, or is that a totally different part of the team?"
+> "Actually, before you transfer me, can I ask. Are you involved in the selections side at all, or is that a totally different part of the team?"
 
 If they say yes, you're already talking to the right person. Switch to the main script.
 
@@ -72,50 +82,56 @@ If they say yes, you're already talking to the right person. Switch to the main 
 
 Every cold call has three parts:
 
-1. **Opener** (first 10 seconds): Context + permission. Earn the next 60 seconds.
-2. **Problem Proposition** (next 30-45 seconds): A triggering problem, not a feature pitch. Pain first, solution second.
+1. **Opener** (first 10 seconds): Provocation. State what you already know about their world and let them react.
+2. **Problem Proposition** (next 30-45 seconds): The visualization lift. Every builder doing this sees 20-40% more in option sales. Grounded in industry data across multiple companies.
 3. **Interest-Based CTA**: Check interest before asking for the meeting. Small yes first, bigger yes second.
 
 ### Tone
 
-Slow down. Talk like you're leaning back in your chair. You're a person calling another person, not a rep running a script. If you sound rushed or eager, they'll pattern-match you to every other vendor call they got today. Laugh when you get pushback. It signals that you're comfortable, not desperate.
+Slow down. Talk like you're leaning back in your chair. You know their business, you know the numbers, and you're having a conversation between two people who understand how homes get sold. If you sound rushed or eager, they'll pattern-match you to every other vendor call they got today. Laugh when you get pushback. It signals that you're comfortable, not desperate.
 
 ---
 
 ## The Script: Decision-Maker
 
-### Opener (Context + Permission)
+### Opener (Provocation)
 
-Pick whichever context line fits what you found in your research.
+State what you already know about their world and give them room to react.
 
-> Hey [Name], this is Rashaad with Finch. I was just looking at [specific context: "your Riverside community" / "the Kensington plan on your site" / "your design center options"], and I'll be honest, this is a cold call. But it's a researched one. Can I get 30 seconds to tell you why I called, and you can tell me if it's worth talking about?
+> Hey [Name], this is Rashaad with Finch. I'll be honest, this is a cold call. But I've spent some time on [specific context: "your Riverside community" / "the Kensington plan" / "your design center page"]. Can I get 30 seconds to tell you why I called?
 
 [Pause. Let them respond.]
 
 - **If they say "sure" or "go ahead"**: Move to the Problem Proposition.
-- **If they say "no" or sound irritated**: "Ha, fair enough. I'm not as popular as I thought. Well, the quick reason is..." and roll into the Problem Proposition anyway. You have nothing to lose.
+- **If they say "no" or sound irritated**: "Fair enough. The quick version is..." and roll into the Problem Proposition anyway. You have nothing to lose.
 
-### Problem Proposition (Pain First, Solution Second)
+### Problem Proposition (The Visualization Lift)
 
-**The triggering problem** (pick the version that fits their size):
+Don't ask "how do you handle selections?" You already know. State it and let them confirm or correct.
 
-> So I talk to a lot of builders, and the same thing keeps coming up. Buyers sit down in the design center with a binder or a PDF, they're picking countertops and cabinets and flooring off a sheet, and they have no idea what any of it actually looks like together in the room. So they play it safe. They stick with the base package or they upgrade one thing instead of three, because they can't picture how it all comes together.
+> So I work with builders on upgrade visualization and revenue. Most builders I talk to are running selections off a PDF or a sample board, and the result is the same every time. Buyers pick the base option because they can't picture the upgrade in the room.
 
-[Pause. Give them a second to recognize the problem. If they're nodding or saying "yeah," you're in.]
+[Pause briefly. Let them nod or react.]
 
-**The one-sentence solution:**
+> Here's the thing that got me digging into this. Every builder that's added any kind of upgrade visualization reports the same result. ECI published a case study with Signature Homes showing a 10-15% profit increase. ILG's data across their network shows 30% higher option sales when buyers use online design tools. Different companies, different technologies, same direction every time. When buyers can see what they're getting, they spend more.
 
-> I built a tool where buyers go through your real options and pricing, and they see those exact selections rendered in the actual room photos of the floor plan. So instead of imagining it, they see it. And they buy more because they can picture what they're getting.
+[Pause. Let that sink in. Don't oversell it. The consistency across multiple sources is the point.]
+
+> So I built something that does this with pictures. Buyers go through your real options and pricing, and they see their selections in the actual rooms of the floor plan. Not 3D renderings, not mood boards. Pictures of their kitchen with the countertops and cabinets they just picked.
 
 ### Interest-Based CTA (Small Yes First)
 
-Don't jump straight to booking. Validate interest, then convert to a meeting.
+> Does that match what you're seeing with your buyers, or is your upgrade revenue already where you want it?
 
-> I know you probably get ten of these calls a week. I'm not trying to pitch you anything right now. Does that sound like a problem you actually deal with, or am I off base?
+[Let them respond. If they confirm the problem exists or seem curious, then ask for the meeting:]
 
-[Let them respond. If they confirm the problem exists, then ask for the meeting:]
+> Would it be worth 15 minutes for me to show you what the pictures actually look like? I can pull it up with real options. This week or next work?
 
-> Would it be worth 15 minutes for me to show you what it actually looks like? I can pull it up with real options. This week or next work?
+### If the conversation is warm, drop the personal story
+
+> I'll be honest with you. I actually just built a house with one of the builders I set this up for. And I ended up spending about 40% more on upgrades than I planned to because I kept seeing how good things looked in the rooms. I accidentally made myself overspend on my own house.
+
+[Laugh. Let them laugh. This proves the product works on real buyers, shows you've been through the process yourself, and makes you human.]
 
 ---
 
@@ -146,16 +162,18 @@ Three steps every time: **Agree** with the objection, **ask a multiple-choice qu
 
 [Listen. If they hint at dissatisfaction, that's your opening.]
 
-**Sell the test drive:**
-> The thing that's different about what I built is that buyers see their actual selections rendered in the room. Not preset packages, not 3D models. It's a different experience. Even if you don't switch, it might be worth 15 minutes to see the comparison so you know what's out there. No pressure either way.
+**Don't explain the difference. Show it.**
+> You know what, I actually pulled a photo from your [community name] model and swapped in a few different finishes. I can send it over if you want to see what your buyers would see. No pitch, just the picture. What's the best email?
+
+[Shift from evaluation to experience. A picture of their own model home does more work than any comparison you could explain on the phone.]
 
 ### "What does it cost?"
 
-> It's a flat monthly per floor plan, no setup fees. But honestly, the cost conversation makes a lot more sense once you see it. The whole idea is that it pays for itself in what buyers spend on upgrades. Can I show you first and then we can talk numbers?
+> It's a flat monthly per floor plan, no setup fees. But honestly, the cost conversation makes a lot more sense once you see the pictures. The whole idea is that it pays for itself in what buyers spend on upgrades. Can I show you first and then we can talk numbers?
 
 ### "Send me something"
 
-[Usually a brush-off. Treat it as real but redirect toward email follow-up.]
+[Usually a brush-off. Treat it as real but redirect toward something concrete.]
 
 > Sure. I'll send you a link to a live demo you can click through yourself. What's the best email?
 
@@ -181,41 +199,23 @@ Three steps every time: **Agree** with the objection, **ask a multiple-choice qu
 
 ---
 
-## If They're Engaged: Drop the Benchmark
-
-[Don't lead with this. Use it when they're curious and the conversation is flowing. It works best as a "by the way," not a pitch point.]
-
-> One thing I've been digging into. I pulled SEC filings on the public builders to see how much of their revenue actually comes from upgrades. Toll Brothers captures about 20% of their ASP in design studio upgrades. PulteGroup is around 19%. For a move-up builder doing $400K homes, the difference between capturing 12% and 20% is $32,000 a home.
-
-[Pause. Let them do the math on their own volume. Don't tell them where they fall.]
-
-> Most builders don't benchmark this number at all. I actually wrote up the full analysis if you're curious, I can send it over.
-
-[If the conversation is warm, follow with the personal story:]
-
-> I'll be honest with you. I'm actually building a house right now with one of the builders I set this up for. And I ended up spending about 40% more on upgrades than I planned to because I kept seeing how good things looked in the tool I built. I accidentally made myself overspend on my own house.
-
-[Laugh. Let them laugh. This proves the product works on real buyers, shows you're not some outside vendor who's never been through the process, and makes you human.]
-
----
-
 ## The Script: Online Sales Person / Non-Decision-Maker
 
 [This is the person who fields inquiries, gets buyers excited, and hands them off to a realtor or area sales manager. They know the buyer journey. They care about conversion. Don't treat them like a gatekeeper.]
 
 ### Opener
 
-> Hey [Name], this is Rashaad with Finch. I was looking at [Company]'s communities and had a quick question. Are you the person who walks buyers through their options, or is that handled more at the design center level?
+> Hey [Name], this is Rashaad with Finch. I work with builders on upgrade revenue, specifically around helping buyers see what their selections look like in the actual rooms. I was looking at [Company]'s communities and was curious. Are you the person who walks buyers through their options, or is that handled more at the design center level?
 
 [Let them answer. They'll usually explain their role. Listen. This tells you how selections works at their company.]
 
 ### Problem Proposition
 
-> That's actually really helpful. So here's why I'm calling. The thing I keep hearing from builders is that buyers are picking upgrades off a price sheet and they have no idea what it all looks like together. So they play it safe, stick with the base options, and the builder leaves money on the table.
+> That's actually really helpful. So here's what I keep running into. Most builders are doing selections off a PDF or a sample board, and the buyers default to base because they can't picture the upgrade. Every builder that's added upgrade visualization reports the same thing, somewhere between 20 and 40% more in option sales. The data is pretty consistent across different companies.
 
-> I built something that lets buyers see their upgrade picks in the actual room photos before they commit. So instead of guessing, they see their kitchen with the cabinets and counters they chose. And they spend more on upgrades because they can picture it.
+> I built something that lets buyers see their upgrade picks in pictures of the actual rooms before they commit. So instead of guessing, they see their kitchen with the countertops and cabinets they just chose. And they spend more because they can picture it.
 
-> I think you'd actually get it faster than most people because you're the one generating that excitement early on. Would it be worth 15 minutes for me to show you what it looks like?
+> I think you'd actually get it faster than most people because you're the one generating that excitement early on. Would it be worth 15 minutes for me to show you what the pictures look like?
 
 ### If they say "That sounds cool but I'm not the decision-maker"
 
@@ -235,13 +235,13 @@ Three steps every time: **Agree** with the objection, **ask a multiple-choice qu
 
 **Goal: Drive an email reply, not a callback.** Keep it under 20 seconds. Speak slowly.
 
-> Hey [Name], this is Rashaad with Finch. I've been working with home builders on their selections process, specifically around helping buyers see what their upgrade picks actually look like in the room before they commit. I shot you a quick email with a link to a live demo. Take a look when you get a chance. Thanks [Name].
+> Hey [Name], this is Rashaad with Finch. I work with home builders on upgrade revenue, specifically around helping buyers see what their selections look like in the actual rooms before they commit. I shot you a quick email with a link to a live demo. Take a look when you get a chance. Thanks [Name].
 
 [Send the email before or immediately after leaving the voicemail. Subject: "Quick demo - Finch." The voicemail's job is to make them open the email.]
 
 **Second voicemail (if you call again in a few days):**
 
-> Hey [Name], Rashaad with Finch again. I left you a note a few days ago. I'm working with a builder in Alabama right now on this and seeing some strong results on upgrade revenue. Sent you another email with a bit more detail. Let me know if it's worth a quick look. Thanks.
+> Hey [Name], Rashaad with Finch again. I left you a note a few days ago. I've been working with a builder in Alabama on this and seeing some strong results on upgrade revenue. Sent you another email with a bit more detail. Let me know if it's worth a quick look. Thanks.
 
 [Two voicemails max. After that, switch to email-only or other channels.]
 
@@ -257,7 +257,7 @@ If you had a real conversation (even 60 seconds), send a follow-up email the sam
 
 Good to connect today. Here's the live demo I mentioned: withfin.ch
 
-This is running with a builder in Alabama right now. Buyers pick their options and see the selections rendered in the actual room. Happy to set up 15 minutes to walk through it with your floor plans whenever works.
+This is running with a builder in Alabama right now. Buyers pick their options and see pictures of their selections in the actual rooms. Happy to set up 15 minutes to walk through it with your floor plans whenever works.
 
 Rashaad
 Finch
@@ -290,11 +290,13 @@ The day before any booked meeting, send a short confirmation email:
 
 These are not in the script. These are for you before you start dialing.
 
-**The goal of the first 10 seconds is to earn the next 60.** Everything in the opener is about getting permission to keep talking. If you survive the first minute, you're having a real conversation.
+**The goal of the first 10 seconds is to earn the next 60.** Everything in the opener is about getting them to lean in by stating something they recognize about their own business.
 
-**Lead with the problem, not the product.** Spend 80% of your talk time on the pain they already feel (buyers guessing from PDFs, leaving upgrade money on the table). Spend 20% on what you built. If the problem lands, the solution almost sells itself.
+**You already know their world.** You've read the SEC filings, you've built a house through this process, and you've set this up for a real builder and watched it work. Talk like someone who understands how homes get sold, because you do.
 
-**You're not selling. You're showing.** Your only job on this call is to get 15 minutes. Not close a deal, not explain the technology, not justify the price. Just get the meeting. The demo does the rest.
+**Lead with the pattern, not the problem.** The problem (buyers can't visualize upgrades) is something they've heard before and learned to live with. The pattern (every builder doing visualization sees 20-40% more in option sales) is something they haven't heard articulated that way.
+
+**You're not selling, you're showing.** Your only job on this call is to get 15 minutes so you can show them the pictures. Everything else happens in the demo.
 
 **Objections are reactions to the interruption, not the product.** Most people who say "not interested" are saying "I'm busy and you caught me off guard." That's why the Mr. Miyagi method works. Agree with them, ask a question, and half the time the conversation opens back up.
 
@@ -302,4 +304,4 @@ These are not in the script. These are for you before you start dialing.
 
 **They're not annoyed, they're busy.** Builders get vendor calls. They're used to it. Be respectful of their time and they'll respect yours. The ones who are rude were never going to buy anyway.
 
-**After 10 calls, you'll stop reading this script.** The specific detail you found about their company is doing 80% of the work. The rest is just being yourself.
+**After 10 calls, you'll stop reading this script.** The specific detail you found about their company and the visualization data are doing 80% of the work. The rest is just being yourself.

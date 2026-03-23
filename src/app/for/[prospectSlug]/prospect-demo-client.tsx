@@ -146,12 +146,13 @@ export function ProspectDemoClient({
               {floorplanName}
             </p>
             <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
-              What your buyers could&nbsp;see
+              I put this together in about ten&nbsp;minutes
             </h1>
             <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
-              I grabbed a photo from your model and set up a quick version of the
-              tool I&rsquo;ve been building. Pick some upgrades below and hit
-              Visualize to see them in the room.
+              This is a photo from one of your models with real upgrade
+              selections wired up. A full floorplan takes a day. All your
+              plans could be live in a couple weeks. No 3D modeling, no
+              six-figure setup. $500 a month per plan.
             </p>
           </div>
           {coverImageUrl && (
@@ -238,8 +239,8 @@ export function ProspectDemoClient({
           <div className="max-w-3xl mx-auto text-center">
             <div className="border-t border-slate-100 pt-12">
               <p className="text-base md:text-lg text-slate-600 mb-6">
-                If this is interesting, I&rsquo;d love to walk you through how it
-                works on your end. 15 minutes.
+                15 minutes and I can show you what this looks like across
+                your communities.
               </p>
               <a
                 href={safeCalendlyUrl}
@@ -253,10 +254,10 @@ export function ProspectDemoClient({
               <p className="mt-4 text-xs text-slate-400">
                 Or reach out directly at{" "}
                 <a
-                  href="mailto:hello@withfin.ch"
+                  href="mailto:rashaad@withfin.ch"
                   className="text-slate-500 hover:text-slate-700 transition-colors"
                 >
-                  hello@withfin.ch
+                  rashaad@withfin.ch
                 </a>
               </p>
             </div>

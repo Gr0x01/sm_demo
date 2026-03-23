@@ -17,7 +17,7 @@ The draft connection message is the most important output. Everything else is co
 | **Location/Markets** | Where they build (cities/states) |
 | **Est. Volume** | Homes per year (estimate from research) |
 | **Priority Tier** | 1, 2, 3, or 4 (see tier list below) |
-| **Angle** | Which angle you used (Question / Observation / Tinkerer / Shared Context) |
+| **Angle** | Which angle you used (Provocation / Observation / Practitioner / Gift) |
 | **Specific Detail** | The ONE researched detail that makes the message real |
 | **Draft Connection Message** | The actual connection request note to send |
 | **Design Selection Process** | How they handle upgrades today (PDF, in-person design center, online tool, unknown) |
@@ -67,10 +67,10 @@ Contact names are from Feb 2026 research. Verify on LinkedIn. If someone left or
 
 Go to the builder's LinkedIn company page, click People. Look for (in order):
 
-1. **Design Studio/Center Manager** — lives the daily pain
-2. **Online Sales Manager** — closing remotely, feels the gap
-3. **VP/Director of Sales & Marketing** — owns the number
-4. **VP of Design** — owns the selection experience
+1. **Design Center/Studio Manager** — feels the pain every day, champions internally. This is an insertion point. Even if they can't buy, they can push the VP to look at it.
+2. **VP/Director of Sales & Marketing** — owns the number, can buy
+3. **VP of Design / Design Studio Director** — owns the selection experience at a senior level
+4. **Online Sales Manager** — closing remotely, feels the gap
 5. **President/CEO** — only if small builder where they're hands-on
 
 **Skip:** Purchasing, Operations, Construction, Finance/CFO, Community Sales Manager (too junior), HR.
@@ -107,22 +107,24 @@ This is the most important part. Read this section carefully.
 
 ### Voice Rules
 
-Rashaad writes like a normal person. Not a copywriter. Not a LinkedIn influencer. Not a founder positioning himself. These messages should sound like someone genuinely curious about how builders handle their upgrade process.
+Rashaad writes like a normal person. Not a copywriter. Not a LinkedIn influencer. Not a founder positioning himself. These messages should sound like someone who knows the numbers and is stating what he's found, inviting a reaction. Still casual, still human. But a practitioner who works with builders, not an explorer asking basic questions.
 
 **DO:**
 - Write like a person talking
-- Ask one simple, open question
+- Lead with something concrete (a number, a finding, a specific observation)
 - Use casual punctuation (it's fine to start with "Hey")
-- Be honest about being new to the space. That's disarming, not weak.
-- Let the question stand on its own
+- State what you've found and invite a reaction
+- Let the statement or question stand on its own
 
 **DON'T:**
 - Use em dashes as punctuation
 - Use decorative colons
 - Write sentence fragments dressed up as style
 - Say "AI" or mention any technology
+- Say "tool," "platform," "software," or "solution"
 - Say "Would love to get your take" (or any phrase you're tempted to reuse)
-- Position Rashaad as an established founder ("I build tools for builders")
+- Use hedging language ("I've been building something" becomes "I work with builders on...")
+- Position Rashaad as an explorer ("curious how you handle..." as the whole message)
 - Use persuasion structure (credibility setup, contrast framing, strategic nudges, loaded either/or questions)
 - Use filler clauses justifying why you're asking
 - Add a second ask after the question ("Would love to connect" + "Happy to show you" = too much)
@@ -137,40 +139,48 @@ Keep it under 300 characters. This is a hard platform limit. Every draft must fi
 
 Pick the angle based on the contact's role and what you found in research.
 
-**1. The Question**
-Just ask about their process. No pitch, no context, no setup. Best for design center managers and online sales roles.
+**1. The Provocation**
+Lead with the visualization lift pattern: every builder doing visualization reports a 20-40% bump in option sales. State it and invite a reaction. Best for VPs and division presidents.
 
 Example tone (don't copy verbatim, write fresh each time):
-> "Hey [Name], curious how y'all handle the design selection process at [Company]. Do buyers get to see anything before the in-person appointment?"
+> "Hey [Name], every builder I've found that's added upgrade visualization reports 20-40% more in option sales. ECI, Roomored, Anewgo, different companies, same result. Curious if [Company] has looked at this."
+
+Why it works: Opens with an industry-wide pattern that's hard to dismiss as "that's just luxury builders." Invites a reaction without lecturing.
 
 **2. The Observation**
-Reference something specific you found. Best when you have a strong detail from research.
+Reference something specific you found, then make a statement or connect it to something, not just a question. Best when you have a strong detail from research.
 
 Example tone:
-> "Hey [Name], I was looking at [Community] and the finishes in those models are really nice. Curious how buyers pick their own selections for new builds."
+> "Hey [Name], saw [Community] just opened and those finishes in the models look sharp. I work with builders on the gap between what the model looks like and what buyers actually pick when they're choosing off a sheet."
 
-**3. The Tinkerer**
-Rashaad introduces himself as someone building something. Only for CEOs/Presidents at small builders. Keep it humble and short.
+Why it works: The specific detail proves you looked, and the second sentence positions Rashaad as someone who works in this space rather than someone asking to learn about it.
 
-Example tone:
-> "Hey [Name], I've been working on something that helps buyers see what their upgrade picks look like in room photos before they commit. Your homes in [location] caught my eye. Would be cool to hear how y'all handle that now."
-
-**4. The Shared Context**
-Reference a market trend, HBA event, article, or something from a builder publication. Best for VPs.
+**3. The Practitioner**
+Rashaad introduces what he does, directly and without hedging. Only for CEOs/Presidents at small builders or design center managers. Short and grounded.
 
 Example tone:
-> "Hey [Name], saw [specific thing]. Got me thinking about how builders handle the gap between what buyers pick on paper and what it actually looks like. Curious how that works at [Company]."
+> "Hey [Name], I work with builders on upgrade visualization. Buyers see their selections in the actual room photos before they commit, so they spend more and feel better about it. Your homes in [location] caught my eye."
+
+Why it works: States what he does without the "I've been tinkering with something" energy. Confident but not pushy.
+
+**Important: LinkedIn does NOT allow links in connection requests.** All links (demo pages, research, Loom) go in the first DM after they accept. The connection request angles above are all link-free for this reason. Links in the follow-up DM are handled by Rashaad, not drafted here.
 
 ### Matching Angles to Contacts
 
-- Design Center Manager → Question or Observation
-- VP Sales & Marketing → Observation or Shared Context
-- CEO/President (small builder) → Tinkerer
+- VP Sales & Marketing → Provocation
+- Division President → Provocation
+- Design Center Manager → Observation or Practitioner
+- CEO/President (small builder) → Practitioner
 - New VP (< 1 year) → Observation (reference something about the company they joined)
 
 Don't use the same angle for back-to-back prospects. Mix it up.
 
 ### What a Good Draft Looks Like vs. a Bad One
+
+**Bad (old question-first approach, too passive):**
+> "Hey Mary, McKinley's been growing fast. Curious how the design selection process works for y'all now that you're in multiple markets. Is it all in-person or do buyers get a preview beforehand?"
+
+Why it's bad now: It's a fine question but gives them no reason to care in 10 seconds. It sounds like market research, not someone who has something to say.
 
 **Bad (template, has persuasion moves):**
 > "Hi Mary, with your background in design studio management and McKinley's rapid expansion across five states, I'd love to get your perspective on how the buyer selection experience scales. Would love to connect."
@@ -180,17 +190,22 @@ Why it's bad: "with your background" is a filler qualifier. "I'd love to get you
 **Bad (too much product):**
 > "Hi Mary, I've built a visualization tool that helps home buyers see their upgrade selections in real room photos. Would love to show you how it works for McKinley."
 
-Why it's bad: This is a pitch, not a connection request. No question. Just product.
+Why it's bad: This is a pitch, not a connection request. Mentions a "tool." No question. Just product.
 
-**Good:**
-> "Hey Mary, McKinley's been growing fast. Curious how the design selection process works for y'all now that you're in multiple markets. Is it all in-person or do buyers get a preview beforehand?"
+**Good (Provocation):**
+> "Hey Mary, every builder I've found doing upgrade visualization reports 20-40% more in option sales. ECI, Roomored, different companies, same result. With McKinley scaling across five states, curious if that's on your radar."
 
-Why it's good: Specific (multiple markets is a real thing about McKinley). Genuine question. No product. No moves. Sounds like a person.
+Why it's good: Industry-wide data that's specific to their situation (multi-state scaling) and invites a reaction without being a pitch.
 
-**Good:**
-> "Hey Scott, congrats on the GBAHB presidency. I've been working on something related to the upgrade selection process and I'm curious how Centennial handles it. Worth a conversation if you're open to it."
+**Good (Provocation with specific detail):**
+> "Hey Scott, congrats on the GBAHB presidency. Every builder I've found doing upgrade visualization reports 20-40% more in option sales. Curious if that's something Centennial has looked at."
 
-Why it's good: References a real, specific thing (GBAHB presidency). Short. Humble. One ask.
+Why it's good: References a real, specific thing (GBAHB presidency) and leads with data. No link needed because the follow-up DM delivers the research after he accepts.
+
+**Good (Practitioner to a Design Center Manager):**
+> "Hey [Name], I work with builders on upgrade visualization for the design center. Buyers see their picks in the actual rooms before they commit. Saw [Company] just opened [Community] and thought it might be relevant."
+
+Why it's good: Direct about what he does, no hedging, and grounded in a specific community.
 
 ---
 
