@@ -59,6 +59,8 @@ export default async function ProspectDemoPage({
       loomUrl={floorplan.loom_url ?? null}
       calendlyUrl={floorplan.calendly_url ?? null}
       prospectInsights={floorplan.prospect_insights ?? null}
+      heroHeadline={floorplan.hero_headline ?? null}
+      heroBody={floorplan.hero_body ?? null}
     />
   );
 }

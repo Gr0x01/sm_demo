@@ -84,7 +84,7 @@ Supabase
 **Prospect demo pages** (`/for/[prospectSlug]`):
 - Personalized sales pages for outreach. Each prospect is a floorplan in the Demo org with `is_prospect_demo = true`.
 - URL: `withfin.ch/for/stylecraft` — the `/for/` prefix avoids collision with org slugs.
-- DB columns on `floorplans`: `loom_url`, `calendly_url`, `is_prospect_demo`.
+- DB columns on `floorplans`: `loom_url`, `calendly_url`, `is_prospect_demo`, `hero_headline`, `hero_body`.
 - Prospect floorplans filtered from Demo org landing page (`getFloorplansForOrg` uses `.neq("is_prospect_demo", true)`).
 - Page layout: SiteNav, hero (cover image + personal greeting), optional Loom embed, single-step UpgradePicker (`hideWizardControls`), Calendly CTA, SiteFooter.
 - `hideWizardControls` prop on UpgradePicker: hides Finish/Save/Next Step/Clear buttons, suppresses gallery virtual step, removes mobile PriceTracker navigation.

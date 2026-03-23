@@ -25,6 +25,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 **Active LinkedIn prospects:**
 - [ ] **Doug French** (Stylecraft Homes, CEO) — 1st connection, no reply to Thursday message. Demo page live at `withfin.ch/for/stylecraft`. Send before/after kitchen screenshot + link as follow-up DM.
 - [ ] **Steve Snoddy** (Davidson Homes, Director of Sales & Marketing, Arizona) — Demo page live at `withfin.ch/for/davidson` (Hidden Hills kitchen, waterfall island). Uses NoviHome (buyer CRM app) but no visualization. DM drafted, ready to send.
+- [ ] **Janna Pettegrew** (ICI Homes, Design Center Manager, NCIDQ) — 1st connection accepted 2026-03-24. Demo page in progress at `withfin.ch/for/ici` (Serena kitchen at Mosaic, Daytona Beach). ICI's website says "Do your best homework BEFORE your appointment" — Finch is the homework. No reply to initial DM yet.
 
 **Playbooks (updated 2026-03-23):**
 - Cold email campaign architecture (`project/cold-email-campaign.md`) — 2-email sequence, multi-channel, no links before reply
@@ -34,6 +35,13 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - Trade publication pitches (`trade-publication-pitches.md`) — Pro Builder pitch sent 2026-03-16, others pending
 - Research distribution targets (`research-distribution-targets.md`)
 - Prospect lists: AL/GA, West Coast, National Tier 1-3
+
+**Previous prospect demo page updates (2026-03-24):**
+- ICI Homes prospect demo page built: `withfin.ch/for/ici` (Serena kitchen at Mosaic, Daytona Beach, exterior cover)
+- `hero_headline` + `hero_body` DB columns added to floorplans — per-prospect custom hero copy, falls back to generic
+- ICI hero: "You tell buyers to do their homework. This is the homework." (references ICI's own website language)
+- Insights sidebar reframed for Design Center Manager audience (appointment time, buyer behavior) vs CEO revenue math
+- Island cabinet color separated from perimeter cabinets (`kitchen-island-cabinet-color` subcategory)
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)
@@ -51,6 +59,14 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 
 **Remaining:**
 - [ ] Toll Brothers design center page
+
+### 3. Software Listings
+
+**Capterra (2026-03-24):** Submitted for review. Category: Home Builder. $500/mo per floor plan, free trial listed. Screenshots from SM demo (builder landing, floorplan intro, upgrade picker, selections summary). Pending Capterra team approval.
+
+**Remaining:**
+- [ ] G2 free listing — site is broken/unusable as of 2026-03-24, revisit later
+- [ ] Software Advice listing
 
 **Key insight:** Builder B2B keywords are tiny volume (<70/mo). Buyer-side content ("new construction upgrades" 170/mo, "[builder] upgrade price list" cluster ~400-500/mo) is the demand engine. Flywheel: buyer finds content → tries demo → asks builder → builder calls us.
 

@@ -39,6 +39,8 @@ interface ProspectDemoClientProps {
   loomUrl: string | null;
   calendlyUrl: string | null;
   prospectInsights: { insights: ProspectInsight[]; closingLine?: string } | null;
+  heroHeadline: string | null;
+  heroBody: string | null;
 }
 
 export function ProspectDemoClient({
@@ -52,6 +54,8 @@ export function ProspectDemoClient({
   loomUrl,
   calendlyUrl,
   prospectInsights,
+  heroHeadline,
+  heroBody,
 }: ProspectDemoClientProps) {
   const posthog = usePostHog();
   const viewedRef = useRef(false);
@@ -146,13 +150,10 @@ export function ProspectDemoClient({
               {floorplanName}
             </p>
             <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
-              I put this together in about ten&nbsp;minutes
+              {heroHeadline ?? "I put this together in about ten\u00a0minutes"}
             </h1>
             <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
-              This is a photo from one of your models with real upgrade
-              selections wired up. A full floorplan takes a day. All your
-              plans could be live in a couple weeks. No 3D modeling, no
-              six-figure setup. $500 a month per plan.
+              {heroBody ?? "This is a photo from one of your models with real upgrade selections wired up. A full floorplan takes a day. All your plans could be live in a couple weeks. No 3D modeling, no six-figure setup. $500 a month per plan."}
             </p>
           </div>
           {coverImageUrl && (
