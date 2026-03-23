@@ -35,17 +35,7 @@ const nextConfig: NextConfig = {
           destination: "/:orgSlug/:path*",
         },
       ],
-      afterFiles: [
-        // PostHog reverse proxy — avoids ad blockers, keeps data flowing
-        {
-          source: "/ingest/static/:path*",
-          destination: "https://us-assets.i.posthog.com/static/:path*",
-        },
-        {
-          source: "/ingest/:path*",
-          destination: "https://us.i.posthog.com/:path*",
-        },
-      ],
+      afterFiles: [],
     };
   },
   async redirects() {

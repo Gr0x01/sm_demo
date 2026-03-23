@@ -60,6 +60,9 @@ Keep docs lean. Intent over implementation.
 3. Clean as you go — remove dead code
 4. No abandoned code
 
+### Notion API Pagination — CRITICAL
+Notion search returns max 25 results per call. NEVER draw conclusions from a single search. Paginate or qualify all findings as partial.
+
 ### LLM Model Usage — CRITICAL
 **NEVER change LLM model names or configurations without explicit authorization.**
 
@@ -79,6 +82,7 @@ Keep docs lean. Intent over implementation.
 - **brand-guardian**: Visual identity, voice, and design consistency — all other agents defer to brand guardian
 - **copywriter**: Builder-facing copy — headlines, landing page, email, CTAs
 - **growth-hacker**: Customer acquisition, builder outreach, demo optimization
+- **lead-researcher**: Lead search, enrichment, qualification, builder research, and cold email drafting
 - **legal-compliance-checker**: Privacy, ToS, AI disclosure, regulatory compliance
 
 ### Delegation Triggers
@@ -91,6 +95,7 @@ Keep docs lean. Intent over implementation.
 7. **growth-hacker**: Use for outreach strategy and acquisition experiments
 8. **legal-compliance-checker**: Use for privacy policies, ToS, compliance review
 9. **photo-architecture-specialist**: Use for photo scope setup, spatial hint workflows, and hardcoded-to-data-driven image architecture migrations
+10. **lead-researcher**: Use for qualifying Apollo exports, researching builders, cross-referencing Notion pipeline, and drafting cold emails
 
 ## SKILLS
 

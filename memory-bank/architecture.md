@@ -435,7 +435,7 @@ public/
 
 **PostHog** — product analytics + LLM observability.
 
-**Client-side**: `posthog-js` initialized in `PostHogProvider.tsx`. Reverse proxy at `/ingest` (avoids ad blockers). Manual `$pageview` capture, `$pageleave` enabled. `useTrack()` hook for client components (auto-attaches orgSlug, floorplanSlug, sessionId). Buyer sessions identified via `posthog.identify()`.
+**Client-side**: `posthog-js` initialized in `PostHogProvider.tsx`. Reverse proxy at `/ingest` via edge API route (`src/app/ingest/[[...path]]/route.ts`) — streams request bodies to PostHog, avoids ad blockers. Previous approach (Next.js `afterFiles` rewrites) silently dropped large POST bodies on Vercel, breaking session recordings. Manual `$pageview` capture, `$pageleave` enabled. `useTrack()` hook for client components (auto-attaches orgSlug, floorplanSlug, sessionId). Buyer sessions identified via `posthog.identify()`.
 
 **Server-side**: `posthog-node` singleton in `src/lib/posthog-server.ts`. `flushAt: 1, flushInterval: 0` for serverless (immediate flush).
 
