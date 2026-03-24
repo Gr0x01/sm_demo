@@ -214,6 +214,10 @@ export function UpgradePicker({
         };
         return { ...state, selections: newSelections, errors: {} };
       }
+      case "DESELECT_OPTION": {
+        const { [action.subCategoryId]: _, ...rest } = state.selections;
+        return { ...state, selections: rest, errors: {} };
+      }
       case "SET_QUANTITY": {
         const newQuantities = { ...state.quantities, [action.subCategoryId]: action.quantity };
         const newSelections = {
@@ -667,6 +671,13 @@ export function UpgradePicker({
 
   const handleSelect = useCallback(
     (subCategoryId: string, optionId: string) => {
+      // Demo pages: toggle off if already selected
+      if (hideWizardControls && state.selections[subCategoryId] === optionId) {
+        dispatch({ type: "DESELECT_OPTION", subCategoryId });
+        track("option_deselected", { subCategoryId, optionId });
+        return;
+      }
+
       dispatch({ type: "SELECT_OPTION", subCategoryId, optionId });
       track("option_selected", { subCategoryId, optionId });
 
@@ -696,7 +707,7 @@ export function UpgradePicker({
         label: partner.label,
       });
     },
-    [state.selections, syncPairs, subCategoryMap, track]
+    [hideWizardControls, state.selections, syncPairs, subCategoryMap, track]
   );
 
   const handleSetQuantity = useCallback(

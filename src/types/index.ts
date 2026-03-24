@@ -159,6 +159,7 @@ export interface AdminStep {
 
 export type SelectionAction =
   | { type: "SELECT_OPTION"; subCategoryId: string; optionId: string }
+  | { type: "DESELECT_OPTION"; subCategoryId: string }
   | { type: "SET_QUANTITY"; subCategoryId: string; quantity: number; addOptionId: string; noUpgradeOptionId: string }
   | { type: "LOAD_SELECTIONS"; selections: Record<string, string>; quantities: Record<string, number> }
   | { type: "CLEAR_SELECTIONS" }

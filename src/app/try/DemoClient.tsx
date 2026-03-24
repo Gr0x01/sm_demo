@@ -133,14 +133,24 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
   }, [track]);
 
   const handleSelectionChange = useCallback((subCategoryId: string, optionId: string) => {
+    const isDeselect = selectionsRef.current[subCategoryId] === optionId;
     setSelections((prev) => {
+      if (isDeselect) {
+        const { [subCategoryId]: _, ...rest } = prev;
+        sessionStorage.setItem(SS_SELECTIONS, JSON.stringify(rest));
+        return rest;
+      }
       const next = { ...prev, [subCategoryId]: optionId };
       sessionStorage.setItem(SS_SELECTIONS, JSON.stringify(next));
       return next;
     });
-    const current = selectionsRef.current;
-    const isNew = !(subCategoryId in current);
-    track("demo_selection_changed", { subCategoryId, selectedCount: Object.keys(current).length + (isNew ? 1 : 0) });
+    if (isDeselect) {
+      track("demo_selection_deselected", { subCategoryId });
+    } else {
+      const current = selectionsRef.current;
+      const isNew = !(subCategoryId in current);
+      track("demo_selection_changed", { subCategoryId, selectedCount: Object.keys(current).length + (isNew ? 1 : 0) });
+    }
     // If we were viewing a result, go back to picking
     if (generatedImageUrl) {
       sessionStorage.removeItem(SS_GENERATED);
