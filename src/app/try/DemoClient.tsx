@@ -35,7 +35,7 @@ function getCookie(name: string): string | null {
 
 function setCookie(name: string, value: string, days = 30) {
   const expires = new Date(Date.now() + days * 86400000).toUTCString();
-  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/try; SameSite=Lax`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
 }
 
 // sessionStorage keys

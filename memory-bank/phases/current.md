@@ -53,6 +53,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 **Prospect demo page updates (2026-03-25):**
 - Generation loading state improved: photo card overlay now shows "Visualizations take up to 60 seconds", then rotates to "Each result is saved so the next person sees it instantly" after 6s. Triggered by McKinley mobile visit where prospect left before generation finished.
 - All prospect demo kitchens are single-pass (no `step_photo_generation_policies` set). ~30-40s per generation. Intentional — second pass would double wait time and prospects may bounce.
+- `/try` page fixes: session cookie path changed from `/try` to `/` (was blocking `/api/try/generate` requests — broken since Mar 13), DemoViewer image switched from `object-contain` to `object-cover` on desktop (was letterboxing generated images).
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)

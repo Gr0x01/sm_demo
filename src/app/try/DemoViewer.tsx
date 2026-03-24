@@ -120,7 +120,7 @@ export function DemoViewer({
         <img
           src={displayUrl}
           alt={phase === "result" ? "AI-generated kitchen visualization" : "Uploaded kitchen photo"}
-          className="w-full h-full object-cover lg:object-contain"
+          className="w-full h-full object-cover"
         />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
