@@ -61,6 +61,7 @@ export function ProspectDemoClient({
   const viewedRef = useRef(false);
   const initRef = useRef(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [hasSelections, setHasSelections] = useState(false);
 
   // Track page view once
   useEffect(() => {
@@ -210,6 +211,7 @@ export function ProspectDemoClient({
           onSessionResumed={() => {}}
           onNavigateHome={() => {}}
           hideWizardControls
+          onHasSelectionsChange={setHasSelections}
           sidebarFooter={
             <>
               <UpgradeInsights
@@ -274,6 +276,7 @@ export function ProspectDemoClient({
         previewLabel={steps[0]?.photos?.[0]?.label ?? "Kitchen"}
         primaryAction={{
           label: "Visualize",
+          disabled: !hasSelections,
           onClick: () => {
             // Scroll to the photo card's Visualize button
             const btn = document.querySelector("[data-visualize-btn]") as HTMLElement | null;

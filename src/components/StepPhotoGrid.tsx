@@ -103,6 +103,8 @@ export function StepPhotoGrid({
   const activePhoto =
     sortedPhotos.find((p) => p.id === activePhotoId) ?? sortedPhotos[0];
 
+  const hasSelections = Object.keys(selections).length > 0;
+
   if (!sortedPhotos.length) return null;
 
   return (
@@ -119,6 +121,7 @@ export function StepPhotoGrid({
             onGenerate={() => onGeneratePhoto(activePhoto.id, activePhoto.id, step)}
             onRetry={() => onRetry(activePhoto.id, activePhoto.id, step)}
             onZoom={(src) => { setLightboxSrc(src); setLightboxPhotoId(activePhoto.id); }}
+            hasSelections={hasSelections}
           />
         )}
 
@@ -190,6 +193,7 @@ interface PhotoCardProps {
   onGenerate: () => void;
   onRetry: () => void;
   onZoom: (src: string) => void;
+  hasSelections?: boolean;
 }
 
 function PhotoViewerCard({
@@ -201,6 +205,7 @@ function PhotoViewerCard({
   onGenerate,
   onRetry,
   onZoom,
+  hasSelections = true,
 }: PhotoCardProps) {
   // Layer-based crossfade: keeps old generated image visible while new fades in
   const [layers, setLayers] = useState<{ src: string; key: number }[]>(
@@ -280,7 +285,12 @@ function PhotoViewerCard({
             {!isGenerating && (
               <button
                 onClick={(e) => { e.stopPropagation(); if (hasGenerated && !isStale) { onRetry(); } else { onGenerate(); } }}
-                className="px-2 py-1 bg-[var(--color-navy)] text-white text-[10px] font-semibold hover:bg-[var(--color-navy-hover)] transition-colors cursor-pointer"
+                disabled={!hasSelections && !hasGenerated}
+                className={`px-2 py-1 bg-[var(--color-navy)] text-white text-[10px] font-semibold transition-colors ${
+                  !hasSelections && !hasGenerated
+                    ? "opacity-40 cursor-default"
+                    : "hover:bg-[var(--color-navy-hover)] cursor-pointer"
+                }`}
                 data-visualize-btn
               >
                 {hasGenerated && isStale ? "Update" : hasGenerated ? "Retry" : "Visualize"}

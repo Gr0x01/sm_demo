@@ -46,6 +46,8 @@ interface UpgradePickerProps {
   hideWizardControls?: boolean;
   /** Optional footer content rendered below the price tracker in the sidebar */
   sidebarFooter?: React.ReactNode;
+  /** Called when selection count changes (for parent to track empty vs. non-empty state) */
+  onHasSelectionsChange?: (hasSelections: boolean) => void;
 }
 
 function getDefaultSelectionsFromCategories(categories: Category[]): Record<string, string> {
@@ -117,6 +119,7 @@ export function UpgradePicker({
   syncPairs,
   hideWizardControls = false,
   sidebarFooter,
+  onHasSelectionsChange,
 }: UpgradePickerProps) {
   const track = useTrack({ orgSlug, floorplanSlug, sessionId });
 
@@ -272,7 +275,7 @@ export function UpgradePicker({
   }
 
   const [state, dispatch] = useReducer(reducer, null, (): SelectionState => ({
-    selections: defaultSelections,
+    selections: hideWizardControls ? {} : defaultSelections,
     quantities: {},
     generatedImageUrls: {},
     generatingPhotoKeys: new Set<string>(),
@@ -281,6 +284,12 @@ export function UpgradePicker({
     generatedImageIds: {},
     errors: {},
   }));
+
+  // Notify parent when selections go from empty → non-empty or vice versa
+  const selectionCount = Object.keys(state.selections).length;
+  useEffect(() => {
+    onHasSelectionsChange?.(selectionCount > 0);
+  }, [selectionCount > 0, onHasSelectionsChange]);
 
   const allStepsRef = useRef(steps);
 
