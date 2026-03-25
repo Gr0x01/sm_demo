@@ -24,7 +24,7 @@ export function VariationGallery({
     <section className="bg-slate-50 py-10 md:py-14">
       <div className="max-w-5xl mx-auto px-6">
         <p className="text-xs uppercase tracking-[0.16em] text-slate-400 mb-5 text-center">
-          Sample visualizations
+          Same kitchen, different selections
         </p>
         <div className="flex gap-3 md:gap-4 overflow-x-auto snap-x snap-mandatory no-scrollbar pb-1 md:grid md:grid-cols-3 md:overflow-visible">
           {presets.map((preset, i) => {
@@ -42,9 +42,17 @@ export function VariationGallery({
                 <div className="relative aspect-[3/2] overflow-hidden bg-slate-100">
                   <img
                     src={preset.imageUrl}
-                    alt={`Generated kitchen visualization ${i + 1}`}
+                    alt={`${preset.label} kitchen visualization`}
                     className="absolute inset-0 w-full h-full object-cover"
                   />
+                </div>
+                <div className="px-3 py-2.5 bg-white text-left">
+                  <p className="text-xs font-semibold text-slate-700">{preset.label}</p>
+                  <p className="text-xs text-slate-400">
+                    {preset.price === 0
+                      ? "Included"
+                      : `+$${preset.price.toLocaleString()} in upgrades`}
+                  </p>
                 </div>
               </button>
             );

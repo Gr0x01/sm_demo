@@ -12,7 +12,7 @@ interface SiteNavProps {
   /** Navigation links — section anchors on homepage, page links on other pages */
   links?: NavLink[];
   /** CTA button config — pass null to hide */
-  cta?: { label: string; href: string } | null;
+  cta?: { label: string; href: string; external?: boolean } | null;
 }
 
 const DEFAULT_LINKS: NavLink[] = [
@@ -49,6 +49,7 @@ export function SiteNav({ links, cta = DEFAULT_CTA }: SiteNavProps) {
           {cta && (
             <a
               href={cta.href}
+              {...(cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               className="px-4 py-2 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
             >
               {cta.label}
@@ -83,6 +84,7 @@ export function SiteNav({ links, cta = DEFAULT_CTA }: SiteNavProps) {
               {cta && (
                 <a
                   href={cta.href}
+                  {...(cta.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                   className="text-center px-4 py-2.5 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider"
                 >
                   {cta.label}

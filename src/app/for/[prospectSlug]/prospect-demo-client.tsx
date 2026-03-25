@@ -145,10 +145,8 @@ export function ProspectDemoClient({
   return (
     <div className="min-h-screen bg-white">
       <SiteNav
-        links={[
-          { label: "Research", href: "/research" },
-        ]}
-        cta={null}
+        links={[]}
+        cta={safeCalendlyUrl ? { label: "Book 15 Minutes", href: safeCalendlyUrl, external: true } : null}
       />
 
       {/* Hero */}
@@ -159,10 +157,10 @@ export function ProspectDemoClient({
               {floorplanName}
             </p>
             <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
-              {heroHeadline ?? "I put this together in about ten\u00a0minutes"}
+              {heroHeadline ?? "What if your clients could see this before the design\u00a0center?"}
             </h1>
             <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
-              {heroBody ?? "This is a photo from one of your models with real upgrade selections wired up. A full floorplan takes a day. All your plans could be live in a couple weeks. No 3D modeling, no six-figure setup. $500 a month per plan."}
+              {heroBody ?? "This is a photo from one of your models with real upgrade selections wired up. A full floorplan takes a day. All your plans could be live in a couple weeks. No 3D modeling, no six-figure setup."}
             </p>
           </div>
           {coverImageUrl && (
@@ -250,19 +248,6 @@ export function ProspectDemoClient({
                 prospectInsights={prospectInsights?.insights}
                 closingLine={prospectInsights?.closingLine}
               />
-              {safeCalendlyUrl && (
-                <div className="border-t border-gray-200 pt-3 mt-3">
-                  <a
-                    href={safeCalendlyUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => trackEvent("prospect_calendly_clicked", { location: "sidebar" })}
-                    className="block w-full text-center px-4 py-2.5 bg-slate-900 text-white text-xs font-semibold uppercase tracking-wider hover:bg-slate-800 transition-colors"
-                  >
-                    Book 15 Minutes
-                  </a>
-                </div>
-              )}
             </>
           }
         />
