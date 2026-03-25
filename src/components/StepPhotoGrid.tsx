@@ -286,10 +286,12 @@ function PhotoViewerCard({
               <button
                 onClick={(e) => { e.stopPropagation(); if (hasGenerated && !isStale) { onRetry(); } else { onGenerate(); } }}
                 disabled={!hasSelections && !hasGenerated}
-                className={`px-2 py-1 bg-[var(--color-navy)] text-white text-[10px] font-semibold transition-colors ${
+                className={`px-2 py-1 text-[10px] font-semibold transition-colors ${
                   !hasSelections && !hasGenerated
-                    ? "opacity-40 cursor-default"
-                    : "hover:bg-[var(--color-navy-hover)] cursor-pointer"
+                    ? "bg-amber-400 text-gray-900 opacity-40 cursor-default"
+                    : hasGenerated
+                      ? "bg-[var(--color-navy)] text-white hover:bg-[var(--color-navy-hover)] cursor-pointer"
+                      : "bg-amber-400 text-gray-900 hover:bg-amber-300 cursor-pointer"
                 }`}
                 data-visualize-btn
               >
