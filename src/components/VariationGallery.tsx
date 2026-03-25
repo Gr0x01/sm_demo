@@ -46,14 +46,6 @@ export function VariationGallery({
                     className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
-                <div className="px-3 py-2.5 bg-white text-left">
-                  <p className="text-xs font-semibold text-slate-700">{preset.label}</p>
-                  <p className="text-xs text-slate-400">
-                    {preset.price === 0
-                      ? "Included"
-                      : `+$${preset.price.toLocaleString()} in upgrades`}
-                  </p>
-                </div>
               </button>
             );
           })}
