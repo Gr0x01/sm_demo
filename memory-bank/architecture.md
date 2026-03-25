@@ -84,15 +84,24 @@ Supabase
 **Prospect demo pages** (`/for/[prospectSlug]`):
 - Personalized sales pages for outreach. Each prospect is a floorplan in the Demo org with `is_prospect_demo = true`.
 - URL: `withfin.ch/for/stylecraft` — the `/for/` prefix avoids collision with org slugs.
-- DB columns on `floorplans`: `loom_url`, `calendly_url`, `is_prospect_demo`, `hero_headline`, `hero_body`.
+- DB columns on `floorplans`: `loom_url`, `calendly_url`, `is_prospect_demo`, `hero_headline`, `hero_body`, `preset_variations`.
 - Prospect floorplans filtered from Demo org landing page (`getFloorplansForOrg` uses `.neq("is_prospect_demo", true)`).
-- Page layout: SiteNav, hero (cover image + personal greeting), optional Loom embed, single-step UpgradePicker (`hideWizardControls`), Calendly CTA, SiteFooter.
-- `hideWizardControls` prop on UpgradePicker: hides Finish/Save/Next Step/Clear buttons, suppresses gallery virtual step, removes mobile PriceTracker navigation.
+- Page layout: SiteNav, hero (cover image + personal greeting), optional Loom embed, **VariationGallery** (pre-generated images in `bg-slate-50` band), single-step UpgradePicker (`hideWizardControls`), Calendly CTA, SiteFooter.
+- `preset_variations` JSONB on floorplans: `[{ label, selections (slug-based), imagePath }]`. Server-side resolves imagePath → public URL and computes price. Tapping a card remounts picker with those selections via React key.
+- `hideWizardControls` prop on UpgradePicker: hides Finish/Save/Next Step/Clear buttons, hides internal header (prospect pages use SiteNav), suppresses gallery virtual step, removes mobile PriceTracker navigation.
 - `MobileStickyFooter` component: reusable sticky bottom bar with expandable preview drawer + two-column action buttons. Used by both `/try` and `/for/` pages.
 - Session: auto-creates anonymous buyer session on mount (cookie: `finch_prospect_{slug}`). Required for generation.
 - URL validation: `loom_url` must start with `https://www.loom.com/`, `calendly_url` must start with `https://calendly.com/`.
 - Setup: grab prospect's room photo from their website, upload to Demo org, create single-step floorplan with kitchen subcategories (slugs, not UUIDs), set spatial hints, photo baseline (natural language description), and per-subcategory spatial hints on the step.
-- PostHog events: `prospect_page_viewed`, `prospect_loom_loaded`, `prospect_calendly_clicked`.
+- PostHog events: `prospect_page_viewed` (with `has_presets`), `prospect_variation_selected`, `prospect_loom_loaded`, `prospect_calendly_clicked`.
+
+**Live prospect demo pages:**
+| Slug | Name | Prospect | Created |
+|------|------|----------|---------|
+| `stylecraft` | Stylecraft Homes — The 1651 | Doug French (CEO) | 2026-03-18 |
+| `davidson` | Davidson Homes — Hidden Hills | Steve Snoddy (Dir. Sales & Marketing) | 2026-03-23 |
+| `mckinley` | McKinley Homes — Towns at Enclave | — | 2026-03-23 |
+| `ici` | ICI Homes — Serena at Mosaic | Janna Pettegrew (Design Center Manager) | 2026-03-24 |
 
 **Important gotchas for prospect demo setup:**
 - `step_photos.subcategory_ids` must be **slugs** (e.g. `kitchen-cabinet-color`), not UUIDs. The entire selection system keys on slugs.

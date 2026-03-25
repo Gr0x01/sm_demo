@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getOrgBySlug, getFloorplan, getCategoriesForFloorplan, getStepsWithConfig } from "@/lib/db-queries";
+import { getServiceClient } from "@/lib/supabase";
+import { calculateTotal } from "@/lib/pricing";
 import { ProspectDemoClient } from "./prospect-demo-client";
+import type { ResolvedPreset } from "@/components/VariationGallery";
 
 const DEMO_ORG_SLUG = "demo";
 
@@ -47,6 +50,29 @@ export default async function ProspectDemoPage({
     ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/rooms/${floorplan.cover_image_path}`
     : null;
 
+  // Resolve preset variations (if configured)
+  let presets: ResolvedPreset[] = [];
+  const rawPresets = floorplan.preset_variations as
+    | { label: string; selections: Record<string, string>; imagePath: string }[]
+    | null;
+
+  if (rawPresets?.length) {
+    const supabase = getServiceClient();
+    presets = rawPresets
+      .map((p) => {
+        const { data: { publicUrl } } = supabase.storage
+          .from("generated-images")
+          .getPublicUrl(p.imagePath);
+        return {
+          label: p.label,
+          selections: p.selections,
+          imageUrl: publicUrl,
+          price: calculateTotal(p.selections, {}, categories),
+        };
+      })
+      .filter((p) => p.imageUrl);
+  }
+
   return (
     <ProspectDemoClient
       orgId={org.id}
@@ -61,6 +87,7 @@ export default async function ProspectDemoPage({
       prospectInsights={floorplan.prospect_insights ?? null}
       heroHeadline={floorplan.hero_headline ?? null}
       heroBody={floorplan.hero_body ?? null}
+      presets={presets}
     />
   );
 }

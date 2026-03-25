@@ -54,6 +54,13 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - Generation loading state improved: photo card overlay now shows "Visualizations take up to 60 seconds", then rotates to "Each result is saved so the next person sees it instantly" after 6s. Triggered by McKinley mobile visit where prospect left before generation finished.
 - All prospect demo kitchens are single-pass (no `step_photo_generation_policies` set). ~30-40s per generation. Intentional — second pass would double wait time and prospects may bounce.
 - `/try` page fixes: session cookie path changed from `/try` to `/` (was blocking `/api/try/generate` requests — broken since Mar 13), DemoViewer image switched from `object-contain` to `object-cover` on desktop (was letterboxing generated images).
+- **Pre-generated variation gallery** added to all /for/ pages. 3 pre-generated kitchen images (Standard $0 → Mid-Range ~$1,700 → Premium ~$3,325) displayed in a full-width `bg-slate-50` section between the hero and the picker. Tapping a variation loads its selections into the picker via key-based remount; sidebar photo updates via existing cache check. No generation wait — the "aha moment" is instant on page load.
+  - DB: `preset_variations` JSONB column on `floorplans` — `[{ label, selections, imagePath }]` with slug-based selection keys
+  - New component: `src/components/VariationGallery.tsx`
+  - Server-side resolution in `/for/` page.tsx: imagePath → Supabase public URL, price via `calculateTotal`
+  - UpgradePicker: header hidden when `hideWizardControls=true` (prospect pages use SiteNav), sidebar `mt-5` alignment fix
+  - PostHog: `prospect_variation_selected` event on card tap, `has_presets` flag on page view
+  - All 4 prospects populated: McKinley, Stylecraft, Davidson, ICI — 3 presets each, 12 total images
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)

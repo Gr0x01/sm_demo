@@ -8,6 +8,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { MobileStickyFooter } from "@/components/MobileStickyFooter";
 import { UpgradeInsights } from "@/components/UpgradeInsights";
 import type { ProspectInsight } from "@/components/UpgradeInsights";
+import { VariationGallery } from "@/components/VariationGallery";
+import type { ResolvedPreset } from "@/components/VariationGallery";
 import type { Category } from "@/types";
 import type { StepConfig } from "@/lib/step-config";
 
@@ -41,6 +43,7 @@ interface ProspectDemoClientProps {
   prospectInsights: { insights: ProspectInsight[]; closingLine?: string } | null;
   heroHeadline: string | null;
   heroBody: string | null;
+  presets: ResolvedPreset[];
 }
 
 export function ProspectDemoClient({
@@ -56,12 +59,16 @@ export function ProspectDemoClient({
   prospectInsights,
   heroHeadline,
   heroBody,
+  presets,
 }: ProspectDemoClientProps) {
   const posthog = usePostHog();
   const viewedRef = useRef(false);
   const initRef = useRef(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hasSelections, setHasSelections] = useState(false);
+  const [pickerKey, setPickerKey] = useState(0);
+  const [activePresetIndex, setActivePresetIndex] = useState<number | null>(null);
+  const [activeSelections, setActiveSelections] = useState<Record<string, string> | null>(null);
 
   // Track page view once
   useEffect(() => {
@@ -70,6 +77,7 @@ export function ProspectDemoClient({
     posthog.capture("prospect_page_viewed", {
       prospect: floorplanSlug,
       floorplanName,
+      has_presets: presets.length > 0,
     });
   }, [posthog, floorplanSlug, floorplanName]);
 
@@ -189,13 +197,37 @@ export function ProspectDemoClient({
         </section>
       )}
 
+      {/* Pre-generated variation gallery */}
+      {presets.length > 0 && (
+        <VariationGallery
+          presets={presets}
+          activeIndex={activePresetIndex}
+          onSelect={(preset, index) => {
+            setActivePresetIndex(index);
+            setActiveSelections(preset.selections);
+            setPickerKey((k) => k + 1);
+            trackEvent("prospect_variation_selected", {
+              variation_label: preset.label,
+              variation_price: preset.price,
+            });
+            // Scroll to picker
+            const picker = document.querySelector("[data-upgrade-picker]");
+            if (picker) {
+              picker.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+          }}
+        />
+      )}
+
       {/* Upgrade picker — single step, no wizard chrome */}
-      <section className="pb-4 md:pb-12">
+      <section data-upgrade-picker>
         <UpgradePicker
+          key={pickerKey}
           orgId={orgId}
           orgSlug="demo"
           floorplanId={floorplanId}
           floorplanSlug={floorplanSlug}
+          initialSelections={activeSelections}
           sessionId={sessionId ?? undefined}
           orgName="Finch"
           logoUrl={null}

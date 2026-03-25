@@ -83,6 +83,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 - **copywriter**: Builder-facing copy — headlines, landing page, email, CTAs
 - **growth-hacker**: Customer acquisition, builder outreach, demo optimization
 - **lead-researcher**: Lead search, enrichment, qualification, builder research, and cold email drafting
+- **cold-email-writer**: Fully custom founder-led cold emails for builder outreach. No templates. Every email unique.
 - **legal-compliance-checker**: Privacy, ToS, AI disclosure, regulatory compliance
 
 ### Delegation Triggers
@@ -96,6 +97,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 8. **legal-compliance-checker**: Use for privacy policies, ToS, compliance review
 9. **photo-architecture-specialist**: Use for photo scope setup, spatial hint workflows, and hardcoded-to-data-driven image architecture migrations
 10. **lead-researcher**: Use for qualifying Apollo exports, researching builders, cross-referencing Notion pipeline, and drafting cold emails
+11. **cold-email-writer**: Use for writing fully custom cold outreach emails. Takes research notes, produces ready-to-send emails in Rashaad's voice. Use AFTER lead-researcher has done the research.
 
 ## SKILLS
 

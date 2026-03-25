@@ -418,7 +418,7 @@ export function UpgradePicker({
     }
     throw new Error("Still processing \u2014 try refreshing");
   }, [track]);
-  const [headerHeight, setHeaderHeight] = useState(120);
+  const [headerHeight, setHeaderHeight] = useState(hideWizardControls ? 56 : 120);
   const [syncPrompt, setSyncPrompt] = useState<{
     sourceSubId: string;
     targetSubId: string;
@@ -428,6 +428,7 @@ export function UpgradePicker({
   } | null>(null);
 
   useEffect(() => {
+    if (hideWizardControls) return; // header is hidden; use SiteNav height (56px)
     const el = headerRef.current;
     if (!el) return;
     const ro = new ResizeObserver(() => {
@@ -436,7 +437,7 @@ export function UpgradePicker({
     ro.observe(el);
     setHeaderHeight(el.offsetHeight);
     return () => ro.disconnect();
-  }, []);
+  }, [hideWizardControls]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--header-height", `${headerHeight}px`);
@@ -880,10 +881,10 @@ export function UpgradePicker({
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
+      {/* Header — hidden in single-step prospect demos (they have SiteNav) */}
       <header
         ref={headerRef}
-        className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200"
+        className={`sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-gray-200${hideWizardControls ? " hidden" : ""}`}
       >
         <div className="max-w-7xl mx-auto px-3 sm:px-4 min-h-[72px] sm:min-h-[64px] flex items-center gap-2 sm:gap-4">
           {/* Logo — left, links back to landing */}
@@ -943,7 +944,7 @@ export function UpgradePicker({
         <div className="flex gap-8">
           {/* Left Sidebar — desktop only */}
           {activeStep.id !== "__gallery" && (
-            <div className="hidden lg:block">
+            <div className="hidden lg:block mt-5">
               <SidebarPanel
                 step={activeStep}
                 total={total}
