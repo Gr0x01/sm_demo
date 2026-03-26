@@ -157,10 +157,10 @@ export function ProspectDemoClient({
               {floorplanName}
             </p>
             <h1 className="text-3xl md:text-4xl lg:text-5xl leading-[1.1] tracking-[-0.02em] text-slate-900 mb-3">
-              {heroHeadline ?? "We built your design center\u00a0overnight"}
+              {heroHeadline ?? "Their selections, visualized."}
             </h1>
             <p className="text-base md:text-lg text-slate-500 leading-relaxed max-w-lg">
-              {heroBody ?? "This is a photo from one of your models with real upgrade selections wired up. A full floorplan takes a day. All your plans could be live in a couple weeks. No 3D modeling, no six-figure setup."}
+              {heroBody ?? "A real photo from one of your models with upgrade selections wired up. Buyers pick finishes and see them in the room."}
             </p>
           </div>
           {coverImageUrl && (
