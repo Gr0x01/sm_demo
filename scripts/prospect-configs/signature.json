@@ -1,0 +1,66 @@
+{
+  "slug": "signature",
+  "name": "Signature Homes — Sydney 1C",
+  "heroHeadline": "Your Design Studio, everywhere.",
+  "heroBody": "This is your Sydney 1C kitchen at Primrose at Everlee with real upgrade selections wired up. Buyers pick finishes and see them in the room.",
+  "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/signature/kitchen.jpg",
+  "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/signature/exterior.jpg",
+  "photoBaseline": "Open-concept kitchen in the Sydney 1C model home at Primrose at Everlee. Medium-toned natural stained shaker-style cabinets on all perimeter walls reaching to the ceiling, with crown molding at the top. A large rectangular island in the center with dark espresso-stained shaker cabinets, distinctly darker than the perimeter cabinets. Gray quartz countertops with subtle veining on both the perimeter counters and the island. A light gray thin horizontal stack tile backsplash on the back wall behind the gas cooktop. A custom wood range hood matching the perimeter cabinet stain centered on the back wall above the cooktop. Stainless steel appliances on the left wall: a French door refrigerator with bottom freezer drawer, and a stacked double wall oven with built-in microwave above. A gray paneled pantry door visible behind the island on the back wall. Five black windsor-style bar stools along the near side and right end of the island. Three black cone pendant lights with brass/gold interiors hanging above the island. Recessed can lights in the flat white ceiling. Light natural oak-look LVP plank flooring throughout. White walls with white crown molding. Under-cabinet LED strip lighting casting a warm glow along the base of the perimeter cabinets. Decorative items on the island countertop including a gold candelabra and small accessories. The dining area is partially visible at the far right edge with a large rectangular chandelier.",
+  "spatialHint": "Camera positioned in the open living area looking into the kitchen. Left wall: tall stacked natural stained shaker cabinets flanking a stainless French door refrigerator, with stacked double wall ovens and microwave to the right of the fridge. Back wall (center): gas cooktop with custom wood range hood above, matching perimeter cabinet stain. Light gray subway tile backsplash behind the cooktop. Upper and lower perimeter cabinets flanking the hood. A gray pantry door visible just left of center behind the island. Right side of back wall: more perimeter cabinets continuing to the right edge. Center foreground: large rectangular island with dark espresso-stained cabinets, gray quartz countertop, five black windsor bar stools arranged along the near side and wrapping around the right end. Three black cone pendant lights hang above the island. Light oak LVP flooring covers the entire floor. Dining area partially visible at far right edge of frame.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
+    { "title": "Island Cabinets", "subcategory_ids": ["kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "insights": [
+    { "label": "Homes delivered/yr", "value": "~500" },
+    { "label": "Avg. upgrades per home", "value": "~$15K" },
+    { "label": "Even a 10% lift", "value": "+$1,500 per home" }
+  ],
+  "closingLine": "At 500 closings a year, that is $750K in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-color-match",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-admiral-blue",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-taupe",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-fog"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-fog",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-whiskers"
+      }
+    }
+  ]
+}

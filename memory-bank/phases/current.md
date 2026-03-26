@@ -80,6 +80,17 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **InMail target list**: 15 verified-active LinkedIn targets at `memory-bank/outreach/inmail-targets.md`. ScrapingDog used to verify LinkedIn activity before spending credits.
 - **Kolter Homes** demo built: `withfin.ch/for/kolter` (Bahia with Bonus kitchen at Cresswind Lakewood Ranch, exterior photo). 5 subcategories (no island cabinet — waterfall quartz island, barely any cabinet face visible). Hero: "What if buyers walked into the Design Studio already informed?" — uses their "Design Studio" language, positions Finch as prep tool not replacement. Revenue-math insights sidebar ($1.5M/yr at 1,500 closings). 3 presets: Standard / Mid-Range / Premium. Targets: Marc Friedman (SVP Sales), John Manrique (SVP Marketing). Config at `scripts/prospect-configs/kolter.json`.
 
+**Prospect demo infrastructure (2026-03-27):**
+- **Headlines standardized**: All 9 demos rewritten to short, one-line headlines that extend the design center, never replace it. Positioning rule: never say "before the appointment," "already knowing," "instead of." Default fallback: "Their selections, visualized."
+- **Playbook created**: `memory-bank/outreach/prospect-demos.md` — link directory, positioning rules, sidebar template, creation steps, gotchas
+- **prospect-demo-builder agent**: `.claude/agents/prospect-demo-builder.md` — end-to-end demo creation (research, config, seed). Registered in CLAUDE.md.
+- **Signature Homes demo built**: `withfin.ch/for/signature` (Sydney 1C kitchen at Primrose at Everlee, Birmingham AL). Tested the agent workflow. Target: Daryl Spears (President). ECI case study builder — do NOT reference their own +20% stat on their demo page.
+- **Spatial hints backfilled**: All 9 prospect demos had empty `spatial_hints` on steps. Now populated with per-subcategory targeting (backsplash, cabinets, countertop, flooring, paint, island where applicable). Seed script auto-generates these from subcategory list.
+- **Backsplash generation rules**: Added to Demo org backsplash subcategory — tells AI to match tile pattern/size from swatch, not just color.
+- **`dimensions` column added to `options` table** (DDL done, not wired up). Will provide scale context alongside swatch images for tiles, planks, etc. This is a product-level feature, not just a demo fix. Implementation plan needed — touches types, queries, prompt builder, admin UI, hash signature.
+- **Seed script improved**: Auto-generates spatial hints, loads `.env.local` via dotenv.
+- **Cache issue discovered**: `unstable_cache` on `getCategoriesWithOptions` means DB changes to generation rules/descriptors aren't picked up until `.next` is nuked (dev) or cache tags are busted (prod).
+
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)
 - Removed stat card row (redundant with sidebar)

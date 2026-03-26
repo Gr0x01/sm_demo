@@ -16,6 +16,8 @@
  * Config file format: see scripts/prospect-configs/README.md
  */
 
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
 import { createClient } from "@supabase/supabase-js";
 import fs from "fs";
 import path from "path";
@@ -41,6 +43,7 @@ interface ProspectConfig {
   spatialHint: string;
   subcategoryIds: string[]; // e.g. ["kitchen-cabinet-color", "counter-top", ...]
   sections: Array<{ title: string; subcategory_ids: string[] }>;
+  spatialHints?: Record<string, string>; // per-subcategory overrides (auto-generated if omitted)
   remapAccentAsWallPaint?: boolean;
   // Insights sidebar
   insights: Array<{ label: string; value: string }>;
@@ -178,6 +181,25 @@ async function main() {
 
     // --- 3. Create step ---
     console.log("\n📝 Creating step...");
+    // Build spatial hints from subcategory list
+    const hasIsland = config.subcategoryIds.includes("kitchen-island-cabinet-color");
+    const spatialHints: Record<string, string> = {
+      "kitchen-cabinet-color": hasIsland
+        ? "perimeter cabinet doors and drawer fronts on walls only, not the island"
+        : "all cabinet doors and drawer fronts",
+      "counter-top": "all countertop surfaces on perimeter and island",
+      "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
+      "main-area-flooring-color": "all visible floor area throughout the kitchen",
+      "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
+    };
+    if (hasIsland) {
+      spatialHints["kitchen-island-cabinet-color"] = "island cabinet doors and drawer fronts only";
+    }
+    // Allow config to override any hint
+    if (config.spatialHints) {
+      Object.assign(spatialHints, config.spatialHints);
+    }
+
     const { data: s, error: sErr } = await supabase
       .from("steps")
       .upsert({
@@ -188,6 +210,7 @@ async function main() {
         number: 1,
         sort_order: 0,
         sections: config.sections,
+        spatial_hints: spatialHints,
       }, { onConflict: "floorplan_id,slug" })
       .select("id")
       .single();
