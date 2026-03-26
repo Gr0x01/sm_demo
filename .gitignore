@@ -36,9 +36,13 @@ next-env.d.ts
 # tmp
 tmp/
 tmp/*
+temp/
+temp/*
 
 # Test outputs (large PNGs)
 scripts/flux-test-outputs/
+.flux-test-output/
 scripts/omnigen2-test-outputs/
 scripts/nano-banana-test-outputs/
 scripts/quality-fidelity-test-outputs/
+scripts/texture-swap-poc/output/

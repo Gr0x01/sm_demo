@@ -355,13 +355,13 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 - Fewer regrets and change orders — they saw it before they committed
 
 **For the builder's team:**
-- Buyers show up to design center with selections already made — designer confirms, not hand-holds
-- 3-hour design appointments become 1-hour confirmations
-- At 50 homes/yr, that's ~100 hours/yr of designer time saved
+- Out-of-town buyers and busy families can explore options without needing extra design center visits
+- Buyers who need more than 2 hours for a $20K decision get that time — on their couch, on their schedule
+- The tool works 24/7 — buyers engage evenings and weekends when they're actually making decisions together
 - Fewer change orders = fewer delays in construction schedule
-- The tool works 24/7 — buyers engage evenings and weekends when they're actually making decisions
+- Buyers arrive at the design center more confident, more excited, and ready to spend more
 
-**The pitch isn't just "you'll sell more upgrades."** It's: your buyers will be happier with what they chose, your team spends less time hand-holding, and they spend more. The before-and-after is a buyer flipping through a PDF in a design center vs. sitting on their couch with their spouse seeing their actual kitchen with the options they're choosing.
+**The pitch isn't just "you'll sell more upgrades."** It's: your buyers will be happier with what they chose, they'll have fewer regrets, and they'll spend more. Finch extends the design center experience — it gives buyers more time with their options so the appointment itself is better, not shorter. The before-and-after is a buyer flipping through a PDF alone vs. sitting on their couch with their spouse seeing their actual kitchen with the options they're choosing.
 
 ### Handling Objections
 - **"Only some of my buyers would use this"** — ROI tables above assume 50% adoption. At 60+ homes/year you're at 3x+ return even at that conservative number.
