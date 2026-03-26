@@ -1,0 +1,66 @@
+{
+  "slug": "neal",
+  "name": "Neal Signature Homes — Vicenzo",
+  "heroHeadline": "What if clients arrived at the Design Gallery prepared?",
+  "heroBody": "Your Vicenzo kitchen at Aria with real upgrade selections wired up. Clients pick finishes and see them in the room.",
+  "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/Neal/Neal_Vincenzo-interior.webp",
+  "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/Neal/Neal_Vincenzo-exterior.webp",
+  "photoBaseline": "Kitchen in the Vicenzo model at Aria viewed from one end of the island looking along its length toward the perimeter wall. All white shaker-style cabinets with gold/brass bar pulls on both perimeter walls and the island. White marble-look quartz countertops with gray veining on all surfaces including the island. White vertical kit kat/finger tile backsplash running the full width of the perimeter wall between the countertop and upper cabinets — narrow rectangular tiles stacked vertically with subtle texture. Gas cooktop on the island surface with a stainless steel rectangular range hood suspended above. Stainless steel built-in wall oven and microwave stack to the right of the range hood area. Stainless steel French door refrigerator further right. Tall white pantry cabinets flanking the fridge. Gold/brass gooseneck faucet on the island countertop on the right side. Warm natural wood-look LVP plank flooring throughout. White/cream painted walls. Flat ceiling with recessed can lights. Doorway visible on the right side leading to other rooms.",
+  "spatialHint": "Camera at one end of the island looking along its length toward the perimeter wall. Left foreground: island side with white shaker cabinets, gold hardware, gas cooktop on the island surface. Center/back wall: stainless rectangular range hood above, white shaker upper and lower perimeter cabinets. BACKSPLASH: white vertical kit kat/finger tiles running the full width of the perimeter wall between the countertop and upper cabinets — narrow rectangular tiles oriented vertically. Right of center: stainless wall oven + microwave stack, then stainless French door refrigerator, tall white pantry cabinets. Right side of island: gold gooseneck faucet, marble-look quartz countertop. Warm wood-look LVP flooring across entire floor. White/cream walls. Flat ceiling with recessed lights. Doorway on right leading to other rooms.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
+    { "title": "Island Cabinets", "subcategory_ids": ["kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "insights": [
+    { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },
+    { "label": "Typical margin on upgrades over cost", "value": "50–100%" },
+    { "label": "Even a 10% lift on $15K avg. upgrades", "value": "+$1,500 per home" }
+  ],
+  "closingLine": "At 1,300 closings a year, that is $1.95M in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-color-match",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-admiral-blue",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-taupe",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-fog"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-fog",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-whiskers"
+      }
+    }
+  ]
+}
