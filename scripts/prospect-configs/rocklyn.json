@@ -1,0 +1,61 @@
+{
+  "slug": "rocklyn",
+  "name": "Rocklyn Homes — Crofton at Riverside",
+  "heroHeadline": "What if buyers previewed their selections before the appointment?",
+  "heroBody": "This is your Crofton kitchen at Riverside with real upgrade selections wired up. Buyers pick finishes and see them in the room. Took about ten minutes.",
+  "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/tmp/rocklyn/riverside-kitchen.jpg",
+  "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/tmp/rocklyn/exterior-townhome.jpg",
+  "photoBaseline": "Townhome kitchen in the Crofton model at Riverside (Conyers, GA) viewed from the living area looking toward the perimeter wall. White shaker-style cabinets on all perimeter walls — upper and lower. Stainless steel range centered on the back wall with a stainless over-the-range microwave above. Light granite or quartz countertops on all perimeter surfaces and the island. White painted walls throughout. Island with white quartz or granite countertop and three upholstered gray bar stools facing the living area. Stainless steel sink and chrome gooseneck faucet on the island. Recessed can lighting in the ceiling — no pendants. Light oak-tone LVP flooring throughout. White pantry door to the left of the perimeter cabinets. Small section of granite countertop visible at far left near the pantry door. Dark navy upholstered accent chairs partially visible in the foreground. Gray round dining table and white modern chairs visible to the right. Warm natural light from windows on the right side.",
+  "spatialHint": "Camera in the living area looking toward the kitchen perimeter wall. Back wall (center): stainless range with OTR microwave above, white shaker uppers and lowers flanking. Left wall: pantry door, small counter section with white shaker cabinets. Right side: transitions to dining area. Foreground: island countertop with chrome gooseneck faucet and sink, three gray upholstered bar stools on the living room side. Light granite/quartz on all counter surfaces. Light oak-tone LVP flooring. White walls, recessed ceiling lights, no pendants. Navy accent chairs in near foreground.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "insights": [
+    { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },
+    { "label": "Typical margin on upgrades over cost", "value": "50–100%" },
+    { "label": "Even a 10% lift on $10K avg. upgrades", "value": "+$1,000 per home" }
+  ],
+  "closingLine": "At 300+ closings a year, that is $300K in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-fog",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-taupe",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-fog"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-onyx",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-whiskers"
+      }
+    }
+  ]
+}

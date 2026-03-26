@@ -36,13 +36,13 @@ Each target needs a `/for/[slug]` page. Existing pages: stylecraft, davidson, mc
 | Target | Suggested slug | Kitchen source needed |
 |--------|---------------|----------------------|
 | Dee Crescini | `/for/westbay` | **DONE** — Key Largo II kitchen, 3 presets |
-| Marc Friedman | `/for/kolter` | Kolter Homes / Cresswind kitchen |
+| Marc Friedman | `/for/kolter` | **DONE** — Bahia with Bonus kitchen, 3 presets |
 | Daryl Spears | `/for/signature` | Signature Homes kitchen |
 | Carlos Puente | `/for/neal` | Neal Signature Homes kitchen |
-| TR Adams | `/for/rocklyn` | Rocklyn Homes kitchen |
+| TR Adams | `/for/rocklyn` | **DONE** — Crofton at Riverside kitchen, 3 presets |
 | Joe Kerley | `/for/kerley` | Kerley Family Homes kitchen |
 | Daniel Holland | `/for/holland` | Holland Homes kitchen |
-| John Manrique | (use `/for/kolter`) | Same as Marc — same company |
+| John Manrique | (use `/for/kolter`) | **DONE** — same as Marc |
 | Immanuel Whitaker | `/for/hughston` | Hughston Homes kitchen |
 | Bryan DeGabrielle | `/for/eastwood` | Eastwood Homes kitchen |
 | Cole Jolly | `/for/alexanderscott` | Alexander Scott Homes kitchen |
