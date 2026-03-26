@@ -1,0 +1,67 @@
+{
+  "slug": "westbay",
+  "name": "Homes By WestBay — Key Largo II",
+  "heroHeadline": "Your buyers browse the wishlist. This shows them what it looks like.",
+  "heroBody": "This is your Key Largo II kitchen with real upgrade selections wired up. Buyers pick finishes and see them in the room. Took about ten minutes.",
+  "kitchenPhoto": "/tmp/westbay-kitchen-2.jpg",
+  "exteriorPhoto": "/tmp/westbay-exterior-1.jpg",
+  "photoBaseline": "Open-concept kitchen in the Key Largo II model home viewed from the great room. Light gray/sage painted recessed-panel cabinets on all perimeter walls and the large rectangular island. White quartz countertops with subtle gold/gray veining on all surfaces including the island. White subway tile backsplash along the back wall behind the countertops. Stainless steel appliances: large chimney-style range hood centered on the back wall with gas cooktop below, built-in wall oven and microwave stack on the right wall, stainless dishwasher near the sink. Large rectangular island with four blue upholstered bar stools on the near side facing the viewer. Single-bowl sink with arched faucet on the right side of the perimeter counter near a window. Light natural wood-look LVP plank flooring throughout. White/cream walls. High flat ceiling with recessed can lights throughout. One decorative dark wood ceiling beam crossing the space. Small pendant or chandelier visible at the right edge of frame. A doorway/pantry opening visible on the far left wall.",
+  "spatialHint": "Camera positioned in the open great room looking into the kitchen. Back wall (center of frame): large stainless chimney range hood centered, gas cooktop below, light gray/sage recessed-panel upper cabinets flanking the hood, lower cabinets with white quartz counters and white subway tile backsplash. Left side: doorway/pantry opening, more perimeter cabinets. Right side: built-in stainless wall oven + microwave stack, then sink area near window with arched faucet. Center foreground: large rectangular island with same gray/sage painted cabinets, white quartz top with veining, four blue upholstered bar stools on the near side. LVP wood-look flooring across entire floor. High ceiling with recessed lights and one decorative dark wood beam crossing the space.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
+    { "title": "Island Cabinets", "subcategory_ids": ["kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "insights": [
+    { "label": "Design Studio appointments", "value": "Most of a full day per buyer" },
+    { "label": "Homes delivered/yr", "value": "~1,200" },
+    { "label": "Avg selections per home", "value": "Dozens across 8+ categories" },
+    { "label": "Design Studio incentive", "value": "Up to $50K towards selections" }
+  ],
+  "closingLine": "What if buyers walked into the Design Studio already knowing what they want?",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-color-match",
+        "counter-top": "ct-granite-steel-grey",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-admiral-blue",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-taupe",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-fog"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-onyx",
+        "kitchen-island-cabinet-color": "island-color-white",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-hurricane-haze"
+      }
+    }
+  ]
+}

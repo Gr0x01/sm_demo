@@ -55,7 +55,7 @@ An interactive web-based upgrade picker with:
 
 | Competitor | Viz Type | Parent/Scale | Named Customers | Weakness vs Finch |
 |---|---|---|---|---|
-| **Zonda Envision** | Pre-rendered 3D scenes, 225+ brands, 4,300+ communities | Zonda (major data co) | Not disclosed | Expensive, inflexible, 3D scenes look synthetic |
+| **Zonda Envision** | Pre-rendered 3D scenes, 225+ brands, 4,300+ communities | Zonda (major data co) | Fulton Homes (confirmed), not broadly disclosed | Expensive, inflexible — but the product is polished (see firsthand notes below) |
 | **ECI Insearch** | Pre-rendered 3D + 360 tours + configurator | ECI Software (acquired 2021). Suite: MarkSystems ERP, Lasso CRM, LotVue | Signature Homes, JTB, Bill Beazley, Hayden, Rausch Coleman | 8-12 week setup, 3D modeling per floorplan, enterprise pricing |
 | **Roomored / ILG** | Photoreal 3D walkthroughs with material swapping | Interior Logic Group (~$1.79B rev, Blackstone-backed) | Shea Homes (largest private builder), Beazer | Tied to ILG installation business, builders without ILG may not get access |
 | **Aareas Interactive** | Full 3D configurator, interior + exterior, time-of-day lighting | Independent, founded 1991 | NAHB Silver Award 2020 | Enterprise-only, expensive, actively positioning against AI approaches |
@@ -74,6 +74,18 @@ An interactive web-based upgrade picker with:
 | Houzz Pro | 3D viz for design-build/remodel | Different market (renovation, not new construction) |
 | Renoworks | AI exterior viz for contractors | Different market |
 
+### Envision Options — Firsthand Review (2026-03-26)
+
+Accessed Fulton Homes' live Envision deployment at `edc3.envisionoptions.com/RoomVisualizers?orgId=506&planId=8366055&userType=presales`. This is the first time we've seen Envision in action.
+
+**What it does well:** 3D-rendered kitchen scene for the specific floorplan (2481 Live Oak). Real-time material swaps across cabinets, stacked cabinets, countertop, flooring, backsplash. Multiple cabinet series (Savannah15 in Maple Pecan, Maple Sienna, Paint Grade HD variants). Wishlist, zoom, compare, print. Clean UI. It's a serious product.
+
+**What it costs Fulton:** They have a 13,000 sq ft design center, 2,900+ options, and an average of $86K/house in upgrades (16% of base volume, per Dennis Webb on the Builder Marketing Podcast). At $650K ASP and 363 closings/yr, they can justify this investment. Most builders can't.
+
+**The gap vs Finch:** Envision scenes are 3D-modeled environments, not photos of the actual model home. A buyer visiting the Prairie model in person sees one kitchen; Envision shows them a different (rendered) kitchen online. Finch starts from the real photo. But honestly, Envision's 3D quality is good enough that most buyers wouldn't care about that distinction.
+
+**Positioning takeaway:** Finch is not competing with Envision. Finch is for the builders who have nothing — the ones Dennis Webb describes as "archaic" in his podcast. The market is: PDF price sheet → Finch → Envision/Roomored. We're the accessible middle step at $500/mo.
+
 ### Our Actual Differentiator
 We are NOT "the only player in this space." The space has 10+ competitors with 20+ years of history.
 
@@ -86,12 +98,20 @@ What makes Finch different:
 6. **Photo realism** — our output looks like the actual home because it starts from a real photo, not a synthetic 3D environment.
 
 ### What We're Actually Competing Against
-Most builders above 200 homes/year already have SOMETHING. Our best prospects:
-- Builders under 200 homes/year who can't afford enterprise solutions
-- Builders unhappy with rigidity/cost of 3D rendering approaches
-- Builders whose current tool is option management only (no visualization)
-- Builders using non-ILG installers who don't get Roomored bundled
-- Builders who tried Envision/ECI and found setup too slow or expensive
+The real competition is **nothing**. Most regional builders (50-500 homes/yr) use PDF price sheets and physical sample boards. They can't afford Envision's 3D modeling per floorplan or Roomored's enterprise pricing. The market ladder:
+
+1. **PDF price sheets / sample boards** (most builders today)
+2. **Finch** — $500/mo, real photos, days to set up, no 3D modeling
+3. **Envision / Roomored / ECI** — enterprise pricing, custom 3D per floorplan, 8-12 week setup
+
+Our best prospects are builders at step 1 who want to move to step 2. Don't waste time on builders already at step 3 — they feel solved and we'd be selling a downgrade in their eyes.
+
+Specific prospect signals:
+- No visualization on their website (no room visualizer, no 3D tours)
+- Physical design center with samples only
+- Under 500 homes/year (can't justify enterprise viz contracts)
+- Active upgrade culture (design center exists, options matter to their business)
+- Not on Envision, Roomored, ECI, Aareas, or Chameleon Power
 
 ## Business Model
 

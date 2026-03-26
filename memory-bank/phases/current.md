@@ -21,16 +21,24 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Hook**: Founder-led sales. Rashaad's personal story (PDF + 4hr appointment → built visualizer → spent 40% more) IS the pitch. Personalized line provides relevancy + "what?" moment per the framework.
 - **Subject lines**: Per-lead custom, lowercase ("feedback on [company]'s design center" / "suggestion for [company]'s selections process")
 - **Batch 1 (5 leads, ready to upload 2026-03-25)**: Hughston, Rockhaven, McKinley, Traton, Lowder (Suzanne Mathison Smith, VP Sales — replaced Suzanna Edwards). All emails verified. CSV at `memory-bank/outreach/campaigns/week1-batch1.csv`. Personalized lines at `approved-personalized-lines.md`.
-- **Remaining**: Piedmont, Rocklyn, Holland, Stylecraft, Davidson + 31 Batch 2 leads (personalized lines pending)
 - **DNS**: SPF + DKIM both passing on heyfin.ch
 - **Pipeline**: Notion "Contacts" database. "Email Verified" checkbox added — check before spending verification credits. "This Week" view uses hardcoded date filter (relative dates broken).
-- **Next**: Upload batch 1 CSV to Instantly. Finish personalized lines for remaining leads. Monitor for replies/bounces. Ramp to 10/day week 2. Add anton@heyfin.ch when warmup history is sufficient.
+
+**Campaign 2 — LIVE (activated 2026-03-26):**
+- **Approach**: Fully custom emails per lead (no template/spintax). Different thesis per lead. Research-backed.
+- **Key change from C1**: No stacked blocks (personalization → pitch → story → CTA). Each email is one continuous thought. Email 2 is a feedback ask or pullback, not a re-pitch.
+- **Batch 1 (6 leads, uploaded 2026-03-26)**: Shelby Jagor (Piedmont), Tr Adams (Rocklyn), Lindsay Klaassen (Vantage), Kellie Little (Fieldstone), Jon Ence (Ence Homes), Jason Nageli (Holmes Homes). CSV at `memory-bank/outreach/campaigns/campaign2-batch1.csv`. Full drafts at `campaign2-rewrites-draft.md`.
+- **Skipped (no good email)**: Steve Snoddy (Davidson — only Mattamy email), Dan Winter (Classic — holding co email), Brian Bahr (Challenger — capital co email), Naaman Helmes (New Tradition — no email found)
+- **Remaining from C1**: Holland, Stylecraft (Doug already sent one-off)
+- **Next**: Find work emails for skipped leads. Monitor C1 and C2 for replies/bounces. Ramp daily volume.
 
 **Active LinkedIn prospects:**
 - [ ] **Doug French** (Stylecraft Homes, CEO) — 1st connection, no reply to Thursday message. Demo page live at `withfin.ch/for/stylecraft`. Send before/after kitchen screenshot + link as follow-up DM.
 - [ ] **Steve Snoddy** (Davidson Homes, Director of Sales & Marketing, Arizona) — Demo page live at `withfin.ch/for/davidson` (Hidden Hills kitchen, waterfall island). Uses NoviHome (buyer CRM app) but no visualization. DM drafted, ready to send.
 - [ ] **Janna Pettegrew** (ICI Homes, Design Center Manager, NCIDQ) — 1st connection accepted 2026-03-24. Demo page live at `withfin.ch/for/ici` (Serena kitchen at Mosaic, Daytona Beach). ICI's website says "Do your best homework BEFORE your appointment" — Finch is the homework. No reply to initial DM yet.
 - [ ] **Mary Mead** (McKinley Homes, VP Sales & Marketing) — **Engaged 2026-03-25**: someone at McKinley visited demo page on desktop + mobile, hit Visualize but left before it finished (~30s gen time). Generation completed successfully. Sent LinkedIn DM with attached generated kitchen image + note about load time. First real engagement from a prospect demo page. Demo at `withfin.ch/for/mckinley`. Previous: two LinkedIn DMs sent 2026-03-10 ignored.
+- [ ] **Matt Sims** (Viera Builders, Area Sales Manager, Melbourne FL) — 1st connection accepted 2026-03-25. Demo page live at `withfin.ch/for/viera` (Granada II kitchen, Reeling Park courtyard homes, exterior cover). Viera already has "Express Yourself" virtual kitchen/bath configurators (static template, not real rooms). Matt posts about consumer behavior and lifestyle selling. DM drafted, not yet sent. Hook: quartz-to-Cambria upgrade decision, where it happens in the buyer journey.
+- [ ] **Dee Crescini** (Homes By WestBay, VP of Design + Division Manager South) — InMail sent 2026-03-26 with attached Key Largo II kitchen image. Asked about visualizations in their Design Studio Wishlist portal. Demo page live at `withfin.ch/for/westbay`. WestBay is Tampa Bay's largest private builder (~1,200 homes/yr, $564M). No visualization tech — wishlist is selections/pricing only.
 
 **Playbooks (updated 2026-03-23):**
 - Cold email campaign architecture (`project/cold-email-campaign.md`) — 2-email sequence, multi-channel, no links before reply
@@ -61,6 +69,14 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
   - UpgradePicker: header hidden when `hideWizardControls=true` (prospect pages use SiteNav), sidebar `mt-5` alignment fix
   - PostHog: `prospect_variation_selected` event on card tap, `has_presets` flag on page view
   - All 4 prospects populated: McKinley, Stylecraft, Davidson, ICI — 3 presets each, 12 total images
+
+- **Viera Builders prospect demo page built (2026-03-25):** `withfin.ch/for/viera` (Granada II kitchen from Reeling Park Castillo collection, exterior rendering cover). U-shaped perimeter kitchen (no island) — 5 subcategories: cabinet color, countertop, backsplash, flooring, wall paint. Hero: "What if buyers saw their actual kitchen instead of a template?" — references their existing Express Yourself configurator. Insights tailored to ~350 closings/yr. 3 presets generated: Standard $0 / Mid-Range $1,500 / Premium $3,125. Research brief at `memory-bank/research/prospect-viera-builders.md`.
+
+**Prospect demo page updates (2026-03-26):**
+- **Homes By WestBay** demo built: `withfin.ch/for/westbay` (Key Largo II kitchen, Creek Ridge Preserve exterior). 6 subcategories including island cabinet two-tone. Hero: "Your buyers browse the wishlist. This shows them what it looks like." — references their existing digital wishlist portal. Insights: Design Studio day-long appointments, ~1,200 homes/yr, $50K selection incentives. 3 presets: Standard $0 / Mid-Range $1,700 / Premium $3,325. Target: Dee Crescini (VP Design + Division Manager). Research brief at `memory-bank/research/prospect-westbay.md`.
+- **Reusable prospect demo script**: `scripts/seed-prospect-demo.ts` — single command to upload photos, create DB records, trigger generation, poll for completion, wire up presets. Config files at `scripts/prospect-configs/`. See `scripts/prospect-configs/README.md` for usage + gotchas.
+- **$500/mo pricing removed** from all prospect demo hero copy (WestBay, Viera, McKinley, ICI).
+- **InMail target list**: 15 verified-active LinkedIn targets at `memory-bank/outreach/inmail-targets.md`. ScrapingDog used to verify LinkedIn activity before spending credits.
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)

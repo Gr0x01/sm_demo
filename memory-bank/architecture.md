@@ -102,6 +102,7 @@ Supabase
 | `davidson` | Davidson Homes — Hidden Hills | Steve Snoddy (Dir. Sales & Marketing) | 2026-03-23 |
 | `mckinley` | McKinley Homes — Towns at Enclave | — | 2026-03-23 |
 | `ici` | ICI Homes — Serena at Mosaic | Janna Pettegrew (Design Center Manager) | 2026-03-24 |
+| `viera` | Viera Builders — Granada II | Matt Sims (Area Sales Manager) | 2026-03-25 |
 
 **Important gotchas for prospect demo setup:**
 - `step_photos.subcategory_ids` must be **slugs** (e.g. `kitchen-cabinet-color`), not UUIDs. The entire selection system keys on slugs.
