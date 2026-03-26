@@ -86,6 +86,9 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 - **cold-email-writer**: Fully custom founder-led cold emails for builder outreach. No templates. Every email unique.
 - **legal-compliance-checker**: Privacy, ToS, AI disclosure, regulatory compliance
 
+**Demo Operations:**
+- **prospect-demo-builder**: End-to-end prospect demo creation. Takes builder name + kitchen photo, researches the builder, writes config, seeds DB, updates playbook. Can run multiple in parallel.
+
 ### Delegation Triggers
 1. **ui-designer**: Use for new UI components and layout decisions
 2. **frontend-developer**: Use for complex React components or performance
@@ -98,6 +101,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 9. **photo-architecture-specialist**: Use for photo scope setup, spatial hint workflows, and hardcoded-to-data-driven image architecture migrations
 10. **lead-researcher**: Use for qualifying Apollo exports, researching builders, cross-referencing Notion pipeline, and drafting cold emails
 11. **cold-email-writer**: Use for writing fully custom cold outreach emails. Takes research notes, produces ready-to-send emails in Rashaad's voice. Use AFTER lead-researcher has done the research.
+12. **prospect-demo-builder**: Use to spin up a new `/for/` prospect demo page. Give it a builder name + kitchen/exterior photo paths. Can run multiple in parallel for different builders.
 
 ## SKILLS
 
