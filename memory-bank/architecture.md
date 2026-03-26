@@ -35,7 +35,10 @@ Server (Next.js API routes + Inngest background functions)
   ├── POST /api/try/generate (demo page) — orchestrator only
   │     ├── Validates demo selections, computes hash, uploads user photo
   │     ├── Cache HIT → return 200 with URL
-  │     └── Cache MISS → claim __pending__ slot → dispatch Inngest event → return 202
+  │     └── Cache MISS → claim __pending__ slot → upload photo → dispatch Inngest event → return 202
+  ├── POST /api/try/check — demo cache check (complete/pending/not_found/error)
+  ├── POST /api/try/validate-photo — Gemini scene analysis (kitchen detection, surface visibility)
+  ├── GET  /api/health/try — health check: demo org + storage buckets. Vercel Cron hits /cron variant hourly, emails hello@withfin.ch on failure.
   ├── POST /api/pilot-interest — persist lead to pilot_leads + notify hello@withfin.ch (upsert on email+source)
   ├── POST /api/inngest — Inngest serve endpoint (GET/POST/PUT)
   └── Inngest background functions (src/inngest/functions/):

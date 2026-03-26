@@ -49,7 +49,7 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 ```bash
 npm run dev -p 3003  # local dev (port 3003)
 npm run build        # production build
-npm test             # run test suite (129 tests, <1s)
+npm test             # run test suite (176 tests, <1s)
 npm run test:watch   # watch mode
 npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a new builder org
 npx tsx scripts/indexnow.ts            # submit marketing URLs to IndexNow (Bing/Yandex)

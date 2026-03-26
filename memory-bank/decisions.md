@@ -488,10 +488,11 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 ## D82: Vitest for unit + integration tests — pure functions and generation pipeline
 **Context**: Zero test infrastructure existed. The generation pipeline has 15+ iterations of complex logic (scoping, flooring resolution, accent remap, hash derivation, policy resolution, selection reconciliation) that drives cache correctness and AI output quality. Bugs here are silent and costly. Need tests that catch regressions without heavy infrastructure overhead for a solo dev.
 **Decision**: Vitest with 3-layer test strategy:
-1. **Unit tests** (6 files): Pure functions only — photo-scope, selection-reconcile, flooring-selection, generate helpers, photo-generation-policy, pricing. No mocks needed.
+1. **Unit tests** (8 files): Pure functions — photo-scope, selection-reconcile, flooring-selection, generate helpers, photo-generation-policy, pricing, demo-generate (hash determinism + ordering stability), demo-scene (surface visibility filtering).
 2. **Pipeline integration tests** (1 file + fixtures): `deriveGenerationContext` with realistic fixture data modeling SM Kinkade kitchen/bedroom/living room patterns. Tests scoping, flooring, accent remap, policy, negative-guard rules, hash consistency, cross-route hash parity.
-3. **Route handler tests** (2 files): `/api/generate/photo` and `/api/generate/photo/check` with mocked Supabase + Inngest. Tests validation, ownership chain, cache hit/miss, 429 double-click guard, retry flow, Inngest dispatch.
-**What's NOT tested** (by design): `buildEditPrompt` (async + sharp, prompt text changes frequently), Inngest background functions (real OpenAI calls), React components (visual, admin-only), DB query functions (need test DB). No E2E tests — manual QA is sufficient at this stage.
+3. **Route handler tests** (4 files): `/api/generate/photo` + `/api/generate/photo/check` (SM pipeline), `/api/try/generate` + `/api/try/check` (demo pipeline) with mocked Supabase + Inngest. Tests validation, ownership chain, cache hit/miss, 429 double-click guard, retry flow, Inngest dispatch, generation cap, upload error handling.
+4. **Health check tests** (1 file): `/api/health/try` — demo org existence, storage bucket accessibility.
+**What's NOT tested** (by design): `buildEditPrompt` (async + sharp, prompt text changes frequently), Inngest background functions (real OpenAI calls), React components (visual, admin-only), DB query functions (need test DB), `/api/try/validate-photo` (thin Gemini wrapper). No E2E tests — manual QA is sufficient at this stage.
 **Trade-off**: Fixture-based tests can't catch DB query bugs or prompt drift. But they cover the logic most likely to regress (scoping + hashing), run in <1s, and require zero external dependencies. Add DB integration tests when onboarding the first paying builder.
 
 
@@ -514,3 +515,31 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 **Context**: Reviewed Fulton Homes' live Envision Options deployment firsthand (`edc3.envisionoptions.com/RoomVisualizers?orgId=506&planId=8366055&userType=presales`). The product is polished — 3D-rendered per-floorplan kitchen scenes with real-time material swaps (cabinets, countertops, flooring, backsplash). Fulton does $86K/house in average upgrades (16% of base volume) and has a 13,000 sq ft design center. They can justify Envision's cost. Most builders can't.
 **Decision**: Finch's market position is the accessible middle step: PDF price sheet → Finch → Envision/Roomored/ECI. We target builders at step 1 (nothing) who want to move to step 2. Don't pursue builders already on established visualization platforms — they feel solved and we'd be perceived as a downgrade. Fulton Homes specifically marked as Passed.
 **Trade-off**: Narrows our addressable market to builders without visualization, but sharpens the pitch and avoids unwinnable deals against entrenched enterprise tools. The "nothing" segment is still huge — most regional builders (50-500 homes/yr) have no visualization at all.
+
+## D87: FLUX.2 Flex Edit tested — not viable for Finch
+**Context (2026-03-26)**: Tested FLUX.2 Flex Edit (via fal.ai) as a potential faster/cheaper alternative to gpt-image-1.5 for room visualization. Used Demo org kitchen photo with 6 swatch reference images.
+**Results**:
+- Speed: 42.4s (FLUX.2) vs 44.6s (OpenAI) — effectively identical, not the 4-10s that benchmarks suggested
+- Cost: $0.377/generation (FLUX.2) vs $0.20/generation (OpenAI) — nearly 2x more expensive
+- Quality: FLUX.2 badly missed cabinet color (rendered dark charcoal instead of light silver gray #C8CDCD). Backsplash also went solid gray instead of matching swatch. OpenAI nailed both.
+- Root cause: FLUX.2 Flex Edit takes a flat `image_urls` array with no way to bind specific swatches to specific surfaces. The model has to guess which swatch goes where. OpenAI's `images.edit` with ordered swatch references is purpose-built for this.
+**Decision**: Stay on gpt-image-1.5. FLUX.2 is same speed, 2x cost, worse quality. The multi-reference swatch-to-surface mapping is a fundamental limitation of the FLUX.2 API, not a prompt engineering problem.
+**Artifacts**: Test script at `scripts/test-flux2.ts`, results in `.flux-test-output/`.
+
+## D88: 2.5D texture swap PoC — exploring real-time visualization
+**Context (2026-03-26)**: AI generation costs $0.20/image and takes 30-45s. At scale, speculative/predictive generation is too expensive. Explored whether a real-time texture swap approach could provide instant, zero-cost visualization for browsing — with AI generation reserved for a "final render."
+**Decision**: Pursue a proof-of-concept for 2.5D/3D texture swapping pipeline:
+- **One-time setup per photo** (admin side, any amount of time): Depth Anything V3 for depth map → Grounded SAM 2 for surface segmentation → plane fitting for simple meshes → camera estimation → admin review of masks
+- **Runtime per swap** (buyer side): Three.js texture swap on pre-built meshes. Under 100ms, $0 cost.
+- **Hybrid model**: Real-time texture swap for browsing/exploring options. AI generation (gpt-image-1.5) for photorealistic "final render" when buyer settles on selections. One $0.20 generation instead of 3-4 during exploration.
+- **Appliance swaps** (fridge vs no fridge, standing vs slide-in range): Handled as base image variants, not texture changes. Same meshes, different background photo layer.
+**Trade-off**: Significant implementation effort (4-6 weeks for full pipeline). Texture swaps won't match AI-generated photorealism (no recessed panel shadows, no cross-surface reflections). But instant + free + interactive may beat slow + expensive + static for the browsing phase. Quality is the key risk — the PoC needs to answer whether "good enough" is actually good enough.
+**Status**: PoC planned, not yet started. Pending visual quality validation.
+
+## D89: Health check endpoint + Vercel Cron monitoring for /try
+**Context (2026-03-26)**: The /try page was broken for days (cookie path bug blocked all API calls) with no alerting. Unit tests can't catch this class of bug — they mock `cookies()` and never exercise actual HTTP cookie handling.
+**Decision**: Two-layer health check:
+1. `GET /api/health/try` — public endpoint. Verifies demo org exists in DB, `DEMO_ORG_ID` UUID matches, `demo-uploads` and `demo-generated` storage buckets are accessible. Returns `{ healthy, checks }` with 200 or 503.
+2. `GET /api/health/try/cron` — Vercel Cron-triggered (hourly). Runs same checks, sends alert email to `hello@withfin.ch` via Resend if unhealthy. Protected by `CRON_SECRET` header.
+**Also fixed**: Generate route now checks storage `upload()` result and cleans up pending slot on failure (previously silently continued to Inngest). Demo test suite expanded from 0 to 47 tests covering both demo routes + pure functions.
+**Trade-off**: Health check only validates infrastructure (DB, storage), not the full generation flow (would require spending $0.20 per check). Cookie-path bugs still require E2E testing to catch. But infrastructure failures are the most common silent outage mode, and this catches them within an hour.

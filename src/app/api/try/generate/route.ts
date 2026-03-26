@@ -133,12 +133,23 @@ export async function POST(request: Request) {
 
     // Upload user photo to demo-uploads (Inngest function will download it)
     const photoBuffer = Buffer.from(photoBase64, "base64");
-    await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from("demo-uploads")
       .upload(`${photoHash}.jpg`, photoBuffer, {
         contentType: "image/jpeg",
         upsert: true,
       });
+
+    if (uploadError) {
+      console.error("[demo/generate] Photo upload failed:", uploadError);
+      // Release the claimed slot so it can be retried
+      await supabase
+        .from("generated_images")
+        .delete()
+        .eq("selections_hash", combinedHash)
+        .eq("image_path", "__pending__");
+      return NextResponse.json({ error: "Service temporarily unavailable" }, { status: 503 });
+    }
 
     // --- Dispatch to Inngest ---
     try {
