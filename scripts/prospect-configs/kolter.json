@@ -1,0 +1,62 @@
+{
+  "slug": "kolter",
+  "name": "Kolter Homes — Bahia with Bonus",
+  "heroHeadline": "You built three working kitchens so buyers could see it. This does the same thing online.",
+  "heroBody": "This is your Bahia kitchen at Cresswind Lakewood Ranch with real upgrade selections wired up. Buyers pick finishes and see them in the room. Took about ten minutes.",
+  "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/tmp/kolter/Kolter_Bahia-kitchen.jpg",
+  "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/tmp/kolter/Kolter_Bahia-exterior.jpg",
+  "photoBaseline": "Kitchen in the Bahia with Bonus model at Cresswind Lakewood Ranch viewed from the island seating area looking at the perimeter. Warm medium-brown flat-panel wood cabinets on all perimeter walls — upper and lower. Stainless steel built-in wall oven and microwave stack on the left wall. Gas cooktop centered on the back wall with a stainless steel chimney-style range hood above. Horizontal linear mosaic glass tile backsplash in gray and brown tones running along the back wall between the countertop and upper cabinets. White quartz countertops on all perimeter surfaces. Stainless steel refrigerator to the right of the cooktop area. White pantry door to the right of the fridge. Black gooseneck faucet visible on the island countertop in the foreground. White quartz island countertop with place settings. Three glass teardrop pendant lights above the island. Navy blue bar stools partially visible at bottom edge. Light cream large-format tile flooring. Beige/tan painted walls. White crown molding. Textured ceiling with a painted tray ceiling accent on the right side.",
+  "spatialHint": "Camera at the island seating area looking toward the perimeter wall. Left wall: stainless built-in wall oven + microwave stack, warm brown flat-panel cabinets above and below. Back wall (center): gas cooktop with stainless chimney range hood above, horizontal linear mosaic backsplash in gray/brown tones between countertop and upper cabinets, brown flat-panel uppers and lowers flanking. Right of cooktop: stainless refrigerator, then white pantry door. Foreground: white quartz island countertop with black gooseneck faucet, place settings, three glass teardrop pendants above. Light cream large-format tile floor throughout. Beige/tan walls with white crown molding. Tray ceiling accent on right side.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "insights": [
+    { "label": "Design Studio visits", "value": "5,000 sq ft, three working kitchens" },
+    { "label": "Homes delivered/yr", "value": "~1,500" },
+    { "label": "Revenue (2024)", "value": "$1.275B" },
+    { "label": "Communities", "value": "23+ across 9 markets" }
+  ],
+  "closingLine": "What if every community had a Design Studio — not just Newnan and Palm Beach?",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-taupe",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-fog"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-fog",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-whiskers"
+      }
+    }
+  ]
+}
