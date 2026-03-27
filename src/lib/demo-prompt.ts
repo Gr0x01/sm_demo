@@ -133,11 +133,10 @@ export async function buildDemoPrompt(
     const { option } = found;
     const surfaceName = SURFACE_NAMES[subId] || subId;
     const hint = spatialHints[subId];
-    const descriptor = option.promptDescriptor?.trim();
-    const descriptorSuffix = descriptor ? ` (${descriptor})` : "";
+    const dimSuffix = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
     const label = hint
-      ? `${surfaceName}: ${option.name}${descriptorSuffix} → apply to ${hint}`
-      : `${surfaceName}: ${option.name}${descriptorSuffix}`;
+      ? `${surfaceName} → apply to ${hint}${dimSuffix}`
+      : `${surfaceName}${dimSuffix}`;
 
     if (option.swatchUrl) {
       const ext = path.extname(option.swatchUrl).slice(1).toLowerCase();
