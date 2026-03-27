@@ -563,3 +563,18 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 2. `GET /api/health/try/cron` — Vercel Cron-triggered (hourly). Runs same checks, sends alert email to `hello@withfin.ch` via Resend if unhealthy. Protected by `CRON_SECRET` header.
 **Also fixed**: Generate route now checks storage `upload()` result and cleans up pending slot on failure (previously silently continued to Inngest). Demo test suite expanded from 0 to 47 tests covering both demo routes + pure functions.
 **Trade-off**: Health check only validates infrastructure (DB, storage), not the full generation flow (would require spending $0.20 per check). Cookie-path bugs still require E2E testing to catch. But infrastructure failures are the most common silent outage mode, and this catches them within an hour.
+
+## D90: Prompt restructure — APPLY/PRESERVE sections
+**Context (2026-03-27)**: SM backsplash tiles weren't generating correctly. Root cause: "CRITICAL FIXED-GEOMETRY RULES" section told the AI to preserve geometry, directly contradicting backsplash rules that needed tile pattern changes. Edit objective ("Change ONLY color/texture") also blocked pattern changes. 20+ "don't" rules drowned out action instructions.
+**Decision**: Restructured prompt into APPLY (swatch authority, targeting, dimensions, appliance rules) → PRESERVE (camera, geometry, structural details) → SURFACE & PLACEMENT RULES (DB-driven). Edit objective changed to "Apply every listed selection, not a diff from the current state." Flooring rules conditional on flooring being in selections.
+**Trade-off**: More structured prompt is slightly longer but dramatically clearer for the AI. Common tile patterns (subway, herringbone, square) now generate well in isolation.
+
+## D91: Backsplash isolation pass — two-pass for pattern tiles
+**Context (2026-03-27)**: SM kitchen sends 19 items + 12 swatches in one API call. Backsplash pattern accuracy (especially color) degrades when competing with 18 other edits. Tested isolation (backsplash-only pass with 1 swatch) and it produced dramatically better results for herringbone.
+**Decision**: Backsplash gets a dedicated isolation pass for pattern tiles. Common tiles that work in the full pass don't need it. Implementation pending — next step is testing Nano Banana for pass 1 then gpt-image-1.5 for pass 2.
+**Trade-off**: Doubles generation time + cost for backsplash. But a bad backsplash ruins the whole image. Speed penalty is acceptable if quality is right.
+
+## D92: Elongated hexagon picket tiles — model limitation, research ongoing
+**Context (2026-03-27)**: Exhaustively tested picket tile generation across gpt-image-1.5, FLUX Pro v1, Ideogram v3, Reve, with prompt-only, masked inpainting, texture compositing, explicit geometry, scale context, and reference photos. No model can reliably produce elongated hexagon pickets at correct scale on a backsplash. Shape vs scale tradeoff: AI gets one right but not both.
+**Decision**: Not solved yet. Most promising lead: AI CAN generate correct picket tiles as a flat texture (no room context). Two-pass approach (generate flat texture → composite onto room → blend) or Nano Banana pass 1 → gpt-image-1.5 pass 2 are the next experiments.
+**Impact**: SM has 6 picket options at $375 each. Other builders will have similar niche patterns. Must solve this for Finch to handle the full range of backsplash options builders sell.

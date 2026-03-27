@@ -64,13 +64,26 @@ Baker Blvd Picket Gloss Taupe — 2x4 inch elongated hexagon tiles on 11x12 inch
 5. **No model tested can produce clean elongated hexagon tiles** at realistic backsplash scale
 6. **This is not just a prompt problem** — it's a fundamental model limitation for niche geometric patterns
 
+## Most Promising Lead: Flat Tile Texture Generation
+- gpt-image-1.5 CAN generate correct elongated hexagon picket tiles as a flat, head-on texture (swatch + reference as input, no room context)
+- The `tile-patch/01_tile_texture.png` result nailed the shape, proportions, color, and grout lines
+- The problem is only when asking the AI to render the pattern ON a backsplash in a room photo
+- **Next experiment**: Two-pass system:
+  1. Pass 1 (Nano Banana or gpt-image-1.5): Generate flat tile texture
+  2. Composite texture onto backsplash mask with perspective warp (code, not AI)
+  3. Pass 2 (gpt-image-1.5): Full room generation with pre-edited backsplash as input photo — AI handles lighting/blending/perspective naturally
+- Also test: Nano Banana for the full backsplash-in-room pass (might handle geometry differently than gpt-image-1.5)
+
+## Also Promising: Scale + Geometry + Reference Combined
+- Test 11 combined sheet scale context ("11x12 sheet, 3 across, 6 rows"), geometry description, and reference photo
+- Got the scale right for the first time but lost hexagonal shape (reverted to subway)
+- Close — if we can get the AI to hold both signals simultaneously, this could work without a two-pass system
+
 ## Not Yet Tried
-- Tile count in prompt instead of inch dimensions
+- Nano Banana (pass 1) → gpt-image-1.5 (pass 2)
 - ControlNet/IP-Adapter approaches (structural conditioning)
 - LoRA fine-tuning on picket tile patterns
-- Two-pass: FLUX for backsplash texture → gpt-image-1.5 for full room with pre-edited backsplash as input
-- Upscaling a small correct tile patch and tiling it programmatically with perspective transform
-- Using the reference photo AS the base image and transferring just the room context onto it
+- Tile count in prompt instead of inch dimensions
 
 ## Impact
-SM has 6 picket options (Baker Blvd Picket Gloss: 3 colors × 2 orientations). These are $375 upgrade options. If we can't visualize them, buyers can't see what they're paying for. Other builders will have similar niche tile patterns. This needs a solution.
+SM has 6 picket options (Baker Blvd Picket Gloss: 3 colors × 2 orientations). These are $375 upgrade options. If we can't visualize them, buyers can't see what they're paying for. Other builders will have similar niche tile patterns. This needs a solution — Finch must handle the full range of backsplash options builders sell.

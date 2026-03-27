@@ -130,7 +130,7 @@ Supabase
 3. Cache hit → returns 200 with URL + `cacheHit: true`
 4. Cache miss → claim `__pending__` slot (DB dedup, 5 min stale TTL) → dispatch `photo/generate.requested` to Inngest → return **202** with `selectionsHash`
 5. **Inngest function** (`generate-photo`): 3 steps, each gets its own 120s Vercel invocation:
-   - `generate` — load hero photo + swatches from Supabase Storage, build prompt via `buildEditPrompt`, call OpenAI `images.edit` (gpt-image-1.5, quality: high, 1536x1024, input_fidelity: high)
+   - `generate` — load hero photo + swatches from Supabase Storage, build prompt via `buildEditPrompt` (APPLY/PRESERVE/SURFACE & PLACEMENT RULES structure), call OpenAI `images.edit` (gpt-image-1.5, quality: medium, 1536x1024, input_fidelity: high)
    - `refine` — conditional policy second pass (e.g., slide-in range correction), only when policy requires it
    - `persist` — upload to Storage, upsert cache row replacing `__pending__`, PostHog event
    - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.

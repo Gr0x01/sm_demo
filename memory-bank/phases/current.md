@@ -95,6 +95,22 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Demo/buyer flow separation**: Rotating loading messages ("Visualizations take up to 60 seconds") extracted from shared `StepPhotoGrid` into `DemoGeneratingOverlay` component. Buyer pages now show clean "Visualizing..." spinner. `renderOverlay` prop threads through `UpgradePicker` → `SidebarPanel` → `StepPhotoGrid`. Only `/for/` pages pass the demo overlay.
 - **/try unified onto real prompt pipeline**: `demo-prompt.ts` deleted (230 lines). `generate-demo.ts` Inngest function now calls `buildEditPrompt` from `generate.ts` instead of the old hardcoded `buildDemoPrompt`. /try now gets swatch-authority rules, color anchors, dimensions handling, and negative-guard rules automatically. Gemini scene metadata (kitchen type, camera angle, visible surfaces) folded into scene description string. Demo Inngest function kept separate (handles user-uploaded photos, no DB lookups needed). `DEMO_GENERATION_CACHE_VERSION` bumped to v8.
 
+**Backsplash generation overhaul (2026-03-27):**
+- **Prompt restructured**: Replaced "CRITICAL FIXED-GEOMETRY RULES" (contradicted tile pattern changes) with APPLY/PRESERVE/SURFACE & PLACEMENT RULES sections. Edit objective changed from "Change ONLY color/texture" (blocked pattern changes) to "Apply every listed selection, not a diff from the current state." Flooring rules now conditional (only when flooring is selected). Appliance rules inline.
+- **SM backsplash data cleanup**:
+  - Generation rules added to SM backsplash subcategory (match pattern + color from swatch)
+  - Dimensions added to all 25 SM backsplash options (tile sizes, layout descriptions)
+  - 6 options removed (wrong/missing swatch files: Mythology Santorini, Herringbone Sage, 4 Gateway Pickets)
+  - 3 Naive options swapped from text-overlay .png to clean .jpg swatches
+  - HQ picket swatch + installed reference photo uploaded to storage
+  - `GENERATION_CACHE_VERSION` bumped v27→v28
+- **Key finding — isolation works**: Single backsplash-only pass (1 swatch) produces dramatically better pattern + color than the full 19-item pass. Proven for herringbone, subway, square tiles. This is the path for a two-pass backsplash system.
+- **Key finding — picket tiles unsolved**: Elongated hexagon picket tiles fail across ALL models and approaches tested. Shape vs scale tradeoff: AI gets shape right at wrong scale, or scale right with wrong shape. Never both.
+- **Approaches tested for picket** (all failed): prompt-only variations (7 tests), masked inpainting (Gemini mask + OpenAI), texture composite (tiled swatch + AI refinement), FLUX Pro v1 Fill (fal.ai), Ideogram v3/edit, Reve/edit, tile patch generation (flat texture worked but composite didn't).
+- **Flat tile texture generation works**: gpt-image-1.5 CAN generate correct picket hexagons as a flat texture (no room context). The tile-patch approach (generate flat → composite → blend) is the most promising direction.
+- **Next**: Two-pass system — Nano Banana (pass 1) then gpt-image-1.5 (pass 2). Also test combining tile scale context + geometry description + reference photo in the standard pipeline.
+- **Full research**: `memory-bank/backsplash-pattern-research.md`, test scripts in `scripts/test-backsplash-*.ts`
+
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)
 - Removed stat card row (redundant with sidebar)
