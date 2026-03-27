@@ -8,6 +8,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { MobileStickyFooter } from "@/components/MobileStickyFooter";
 import { UpgradeInsights } from "@/components/UpgradeInsights";
 import type { ProspectInsight } from "@/components/UpgradeInsights";
+import { DemoGeneratingOverlay } from "@/components/DemoGeneratingOverlay";
 import { VariationGallery } from "@/components/VariationGallery";
 import type { ResolvedPreset } from "@/components/VariationGallery";
 import type { Category } from "@/types";
@@ -242,6 +243,7 @@ export function ProspectDemoClient({
           onNavigateHome={() => {}}
           hideWizardControls
           onHasSelectionsChange={setHasSelections}
+          renderOverlay={() => <DemoGeneratingOverlay />}
           sidebarFooter={
             <>
               <UpgradeInsights

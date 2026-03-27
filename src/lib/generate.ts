@@ -197,18 +197,13 @@ export async function buildEditPrompt(
   }
   const invariantBlock =
     invariantRules.size > 0
-      ? `\nCRITICAL RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
+      ? `\n\nSURFACE & PLACEMENT RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
       : "";
 
-  const editObjective = hasApplianceSelection
-    ? "Edit this room photo to match the selected finishes and appliance models."
-    : "Edit this room photo. Change ONLY the color/texture of these surfaces — nothing else:";
-  const applianceRuleBlock = hasApplianceSelection
-    ? `\n- Appliance selections (dishwasher/refrigerator/range) may require model-shape changes. Replace ONLY the selected appliance in-place.
-- If an appliance has a swatch, use that swatch as the ONLY appearance authority for finish/color/material.
-- Only if an appliance has no swatch image available, follow the text descriptor for appearance.
-- Keep each appliance in the same location, opening, perspective, and approximate footprint.`
-    : "";
+  // Detect flooring selections to conditionally include flooring boundary rules
+  const hasFlooringSelection = [...selectedSubIds].some(subId =>
+    subCategoryById.get(subId)?.name?.toLowerCase().includes("floor")
+  );
 
   const sceneContextLines: string[] = [];
   if (sceneDescription?.trim()) {
@@ -223,31 +218,36 @@ export async function buildEditPrompt(
       ? `Swatch mapping: after the base room photo, attached swatches are ordered #1..#${swatches.length}.`
       : "No swatch attachments were provided; use text instructions only.";
 
-  const prompt = `${sceneBlock}${editObjective}
+  const flooringRules = hasFlooringSelection
+    ? `\n- Different rooms can have different flooring. Do NOT bleed one flooring material across doorway boundaries into a room with a different selected material.
+- Keep bathroom tile in bathroom zones only. If a bathroom is visible through a doorway, keep its floor tile unchanged unless a bathroom tile selection is explicitly included.`
+    : "";
+
+  const applianceRules = hasApplianceSelection
+    ? `\n- Appliance selections may require model-shape changes. Replace ONLY the selected appliance in-place — same location, same footprint.
+- Appliance swatches are authoritative for finish/color/material. Only follow text descriptors when no swatch is available.`
+    : "";
+
+  const prompt = `${sceneBlock}Edit this room photo. Apply every listed selection to its specified surface — treat each as an explicit instruction to repaint or resurface, not as a diff from the current state:
 
 ${listLines.join("\n")}
 
-RULES:
+APPLY:
 - ${swatchMappingLine}
 - For each item marked "(use swatch #N)", match that swatch's color, pattern, and texture EXACTLY on the specified surface.
-- For swatch-backed edits (including appliances), the swatch image is the ONLY appearance authority. Treat option names/descriptors as non-authoritative for color/finish/material.
-- If a line includes "swatch-derived color anchor #RRGGBB", use it as a numeric target from that swatch image and avoid hue drift (no unintended green/blue cast).
-- For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
-- The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
-- If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.
-- Different rooms can have different flooring. Keep bathroom tile in bathroom zones only.
-- Bedrooms and nearby spaces may be carpet or hard-surface depending on the selected flooring options; follow those selected options exactly for each visible room.
-- Do NOT bleed one flooring material across doorway boundaries into a room that should keep a different selected material.
-- If a bathroom is visible through a doorway, keep bathroom floor tile unchanged unless a bathroom tile selection is explicitly included for that photo.
-- Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
-- In doorway or multi-room views, keep edits inside the explicitly targeted visible zone and do NOT propagate flooring/fixtures into adjacent rooms.
-- Never add televisions, media walls, built-ins, or extra cabinetry unless that exact item is explicitly selected in the list above.
-- Never convert bathroom fixture types (tub, vanity, shower, toilet) unless the selected options explicitly target that fixture and it is clearly visible.
-- Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.
-- Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
-- If an edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.
+- The swatch image is the ONLY appearance authority for color, finish, and material. Do not override it with option names or text descriptors.
+- If a line includes "swatch-derived color anchor #RRGGBB", use it as a numeric target and avoid hue drift.
+- If a line includes "dimensions:", use them as scale/format context alongside the swatch (e.g. tile size, plank width, mosaic pattern).
+- For items marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
+- The "→ apply to" text tells you WHERE to apply each change. Treat each target as a separate mask; do NOT bleed one finish into another.${applianceRules}
+
+PRESERVE:
 - Keep the exact camera angle, perspective, lighting, and room layout.
-- Photorealistic result with accurate shadows and reflections.${applianceRuleBlock}${invariantBlock}`;
+- Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances.
+- Keep exact counts of cabinets, drawer fronts, fixtures, and hardware. Preserve cabinet door panel style (shaker, beadboard, etc.), countertop edges, and trim profiles.
+- If a surface is not clearly visible, leave it unchanged — do not invent geometry to satisfy the request.
+- If an edit is difficult, under-edit the finish rather than changing layout or object position.${flooringRules}
+- Photorealistic result with accurate shadows and reflections.${invariantBlock}`;
 
   return { prompt, swatches };
 }

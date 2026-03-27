@@ -1,12 +1,57 @@
 import OpenAI, { toFile } from "openai";
+import { readFile } from "fs/promises";
+import path from "path";
+import sharp from "sharp";
 import { inngest } from "@/inngest/client";
-import { buildDemoPrompt } from "@/lib/demo-prompt";
+import { buildEditPrompt } from "@/lib/generate";
+import type { SwatchBufferResolver } from "@/lib/generate";
+import { DEMO_SUBCATEGORIES } from "@/lib/demo-options";
 import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
 import { getServiceClient } from "@/lib/supabase";
 import { captureAiEvent, captureAiError, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
+import type { Option, SubCategory } from "@/types";
 
 const openai = new OpenAI();
+
+/** Fallback spatial hints when Gemini doesn't provide them */
+const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
+  backsplash: "tile backsplash between upper cabinets and countertop on the walls",
+  "counter-top": "all visible countertop surfaces",
+  "kitchen-cabinet-color": "all visible perimeter/wall cabinet faces (NOT the island)",
+  "island-cabinet-color": "island base cabinet faces only (NOT the perimeter/wall cabinets)",
+};
+
+/** Build option lookup from hardcoded demo subcategories */
+function buildDemoOptionLookup(): Map<string, { option: Option; subCategory: SubCategory }> {
+  const map = new Map<string, { option: Option; subCategory: SubCategory }>();
+  for (const sub of DEMO_SUBCATEGORIES) {
+    for (const opt of sub.options) {
+      map.set(`${sub.id}:${opt.id}`, { option: opt, subCategory: sub });
+    }
+  }
+  return map;
+}
+
+/** Swatch resolver that reads from local public/ directory (works on Vercel — public/ is bundled) */
+const resolveLocalSwatch: SwatchBufferResolver = async (swatchUrl: string) => {
+  const swatchPath = path.join(process.cwd(), "public", swatchUrl);
+  const ext = path.extname(swatchUrl).slice(1).toLowerCase();
+
+  try {
+    const rawBuffer = await readFile(swatchPath);
+
+    if (ext === "svg" || ext === "svgz") {
+      const pngBuffer = await sharp(rawBuffer).png().toBuffer();
+      return { buffer: pngBuffer, mediaType: "image/png" };
+    }
+
+    const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
+    return { buffer: rawBuffer, mediaType };
+  } catch {
+    return null;
+  }
+};
 
 export const generateDemo = inngest.createFunction(
   {
@@ -33,17 +78,76 @@ export const generateDemo = inngest.createFunction(
 
       const photoBuffer = Buffer.from(await photoData.arrayBuffer());
 
-      // Build prompt + load swatches (reads from local public/ dir)
-      const { prompt, swatches } = await buildDemoPrompt(
+      // Build option lookup from hardcoded demo options
+      const optionLookup = buildDemoOptionLookup();
+
+      // Merge Gemini spatial hints with defaults
+      const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
+      if (sceneAnalysis?.spatialHints) {
+        for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
+          if (hint && hint.trim()) spatialHints[key] = hint;
+        }
+      }
+
+      // Separate perimeter from island when island detected
+      if (sceneAnalysis?.hasIsland) {
+        if (spatialHints["kitchen-cabinet-color"] === DEFAULT_SPATIAL_HINTS["kitchen-cabinet-color"]) {
+          spatialHints["kitchen-cabinet-color"] = "perimeter/wall cabinet faces only (NOT the island base cabinets)";
+        }
+        if (spatialHints["island-cabinet-color"] === DEFAULT_SPATIAL_HINTS["island-cabinet-color"]) {
+          spatialHints["island-cabinet-color"] = "island base cabinet faces only (NOT the perimeter/wall cabinets)";
+        }
+      }
+
+      // All demo subcategory IDs are in scope (not just selected ones).
+      // This allows negative-guard rules to fire for unselected subcategories.
+      const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
+
+      // Scene description: combine Gemini's free-text description with structured metadata.
+      // buildEditPrompt only accepts sceneDescription (text) and photoSpatialHint,
+      // so we fold kitchenType/cameraAngle/visibleSurfaces into the description string.
+      const sceneLines: string[] = [];
+      if (sceneAnalysis?.sceneDescription?.trim()) {
+        sceneLines.push(sceneAnalysis.sceneDescription.trim());
+      }
+      if (sceneAnalysis?.kitchenType) {
+        sceneLines.push(`Kitchen type: ${sceneAnalysis.kitchenType}`);
+      }
+      if (sceneAnalysis?.cameraAngle) {
+        sceneLines.push(`Camera angle: ${sceneAnalysis.cameraAngle}`);
+      }
+      if (sceneAnalysis?.visibleSurfaces) {
+        const visible: string[] = [];
+        if (sceneAnalysis.visibleSurfaces.backsplash !== false) visible.push("backsplash");
+        if (sceneAnalysis.visibleSurfaces.countertop !== false) visible.push("countertop");
+        if (sceneAnalysis.visibleSurfaces.cabinets !== false) visible.push("cabinets");
+        if (sceneAnalysis.visibleSurfaces.island) visible.push("island");
+        if (visible.length > 0) sceneLines.push(`Visible surfaces: ${visible.join(", ")}`);
+      }
+      const sceneDescription = sceneLines.length > 0 ? sceneLines.join(". ") : null;
+
+      // Build prompt using the real pipeline's prompt builder
+      const { prompt, swatches } = await buildEditPrompt(
         effectiveSelections,
-        sceneAnalysis ?? undefined,
+        optionLookup,
+        spatialHints,
+        scopedSubcategoryIds,
+        sceneDescription,
+        null, // photoSpatialHint — not applicable for user-uploaded photos
+        resolveLocalSwatch,
       );
+
+      // Filter unsupported swatch formats
+      const supportedSwatches = swatches.filter((s) => {
+        const supported = ["image/jpeg", "image/png", "image/webp"];
+        return supported.includes(s.mediaType);
+      });
 
       // Assemble images: user photo + swatches
       const inputImages = [
         await toFile(photoBuffer, "kitchen.jpg", { type: "image/jpeg" }),
         ...await Promise.all(
-          swatches.map((s) => {
+          supportedSwatches.map((s) => {
             const ext = s.mediaType.split("/")[1] || "png";
             const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
             return toFile(s.buffer, filename, { type: s.mediaType });
@@ -51,7 +155,7 @@ export const generateDemo = inngest.createFunction(
         ),
       ];
 
-      console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${swatches.length} swatches) to ${IMAGE_MODEL}`);
+      console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${supportedSwatches.length} swatches) to ${IMAGE_MODEL}`);
 
       const genStart = performance.now();
       try {

@@ -59,6 +59,8 @@ interface SidebarPanelProps {
   selections?: Record<string, string>;
   /** Optional footer content rendered below the price tracker (e.g. upgrade insights) */
   sidebarFooter?: ReactNode;
+  /** Custom generating overlay for demo pages */
+  renderOverlay?: () => ReactNode;
 }
 
 export function SidebarPanel({
@@ -80,6 +82,7 @@ export function SidebarPanel({
   selections,
   hideWizardControls = false,
   sidebarFooter,
+  renderOverlay,
 }: SidebarPanelProps) {
   const [activeSectionTitle, setActiveSectionTitle] = useState<string>(
     step.sections[0]?.title ?? ""
@@ -181,6 +184,7 @@ export function SidebarPanel({
             generatedWithSelections={generatedWithSelections}
             getPhotoVisualSelections={getPhotoVisualSelections}
             selections={selections}
+            renderOverlay={renderOverlay}
           />
         </>
       ) : showImage ? (

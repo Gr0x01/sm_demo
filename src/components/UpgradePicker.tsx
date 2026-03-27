@@ -48,6 +48,8 @@ interface UpgradePickerProps {
   sidebarFooter?: React.ReactNode;
   /** Called when selection count changes (for parent to track empty vs. non-empty state) */
   onHasSelectionsChange?: (hasSelections: boolean) => void;
+  /** Custom generating overlay for demo pages */
+  renderOverlay?: () => React.ReactNode;
 }
 
 function getDefaultSelectionsFromCategories(categories: Category[]): Record<string, string> {
@@ -120,6 +122,7 @@ export function UpgradePicker({
   hideWizardControls = false,
   sidebarFooter,
   onHasSelectionsChange,
+  renderOverlay,
 }: UpgradePickerProps) {
   const track = useTrack({ orgSlug, floorplanSlug, sessionId });
 
@@ -964,6 +967,7 @@ export function UpgradePicker({
                 selections={state.selections}
                 hideWizardControls={hideWizardControls}
                 sidebarFooter={sidebarFooter}
+                renderOverlay={renderOverlay}
               />
             </div>
           )}

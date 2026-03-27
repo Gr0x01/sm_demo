@@ -16,37 +16,14 @@ interface StepPhotoGridProps {
   generatedWithSelections: Record<string, string>;
   getPhotoVisualSelections: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
   selections: Record<string, string>;
+  renderOverlay?: () => React.ReactNode;
 }
 
-const GENERATING_MESSAGES = [
-  "Visualizations take up to 60 seconds",
-  "Each result is saved so the next person sees it instantly",
-];
-
-function GeneratingOverlay() {
-  const [msgIndex, setMsgIndex] = useState(0);
-  const [fading, setFading] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setFading(true);
-      setTimeout(() => {
-        setMsgIndex(1);
-        setFading(false);
-      }, 300);
-    }, 6000);
-    return () => clearTimeout(timer);
-  }, []);
-
+function DefaultGeneratingOverlay() {
   return (
     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
       <LogoLoader className="w-12 h-auto text-[var(--color-navy)] mb-3" />
-      <p
-        className="text-xs font-medium text-[var(--color-navy)] text-center px-4 transition-opacity duration-300"
-        style={{ opacity: fading ? 0 : 1 }}
-      >
-        {GENERATING_MESSAGES[msgIndex]}
-      </p>
+      <p className="text-xs font-medium text-[var(--color-navy)]">Visualizing...</p>
     </div>
   );
 }
@@ -69,6 +46,7 @@ export function StepPhotoGrid({
   generatedWithSelections,
   getPhotoVisualSelections,
   selections,
+  renderOverlay,
 }: StepPhotoGridProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
@@ -122,6 +100,7 @@ export function StepPhotoGrid({
             onRetry={() => onRetry(activePhoto.id, activePhoto.id, step)}
             onZoom={(src) => { setLightboxSrc(src); setLightboxPhotoId(activePhoto.id); }}
             hasSelections={hasSelections}
+            renderOverlay={renderOverlay}
           />
         )}
 
@@ -194,6 +173,7 @@ interface PhotoCardProps {
   onRetry: () => void;
   onZoom: (src: string) => void;
   hasSelections?: boolean;
+  renderOverlay?: () => React.ReactNode;
 }
 
 function PhotoViewerCard({
@@ -206,6 +186,7 @@ function PhotoViewerCard({
   onRetry,
   onZoom,
   hasSelections = true,
+  renderOverlay,
 }: PhotoCardProps) {
   // Layer-based crossfade: keeps old generated image visible while new fades in
   const [layers, setLayers] = useState<{ src: string; key: number }[]>(
@@ -258,7 +239,7 @@ function PhotoViewerCard({
 
       {/* Generating overlay */}
       {isGenerating && (
-        <GeneratingOverlay />
+        renderOverlay ? renderOverlay() : <DefaultGeneratingOverlay />
       )}
 
       {/* Stale badge */}
