@@ -238,6 +238,7 @@ State shape:
 1. `subcategory.generation_rules` — fires when subcategory is selected (e.g., "apply Common Wall Paint to all drywall zones"). Supports conditional cross-subcategory logic in natural language (e.g., "If Accent Color is also selected, apply only to non-accent zones").
 2. `subcategory.generation_rules_when_not_selected` — negative guards scoped to photo (e.g., "wainscoting OFF = don't add paneling"). Fires for any photo where the subcategory is in scope but not selected.
 3. `option.generation_rules` — option-specific rules (e.g., "stainless steel appliances — match existing finish").
+   - `option.dimensions` — physical measurements only (e.g., "4x16", "1-inch hexagon mosaic"). Appended to swatch-backed prompt labels as `; dimensions: X`. Swatch remains sole appearance authority; dimensions provide scale context that swatch photos can't convey. No color/material words — only measurements and shape geometry.
 4. `step_photo_generation_policies` — per-photo overrides (internal-only, not admin-editable). Prompt invariants + optional second-pass refinement.
 
 All rule fields are admin-editable via the OptionTree AI Rules UI. Conditional cross-subcategory interaction (e.g., wall paint vs accent color) is expressed as natural language in rule text — the AI model evaluates by reading the edit list, no code branches needed.

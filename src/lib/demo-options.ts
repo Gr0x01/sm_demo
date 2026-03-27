@@ -16,8 +16,8 @@ export const DEMO_SUBCATEGORIES: SubCategory[] = [
       { id: "bs-white-gloss-subway", name: "Blanc Subway", price: 0, swatchUrl: "/swatches/backsplash/demo-white-subway.jpg", swatchColor: "#F5F5F5", promptDescriptor: "glossy subway tile — match swatch exactly", dimensions: "4x16" },
       { id: "bs-charcoal-subway", name: "Graphite Subway", price: 150, swatchUrl: "/swatches/backsplash/BACKSPLASH---BAKER-BLVD-4X16---CARBON---3RD-STAGGER-LAY.jpg", swatchColor: "#3D3D3D", promptDescriptor: "dark subway tile — match swatch exactly", dimensions: "4x16" },
       { id: "bs-taupe-subway", name: "Sandstone Subway", price: 350, swatchUrl: "/swatches/backsplash/BACKSPLASH---BAKER-BLVD-4X16---TAUPE---3RD-STAGGER-LAY.jpg", swatchColor: "#C4B8A8", promptDescriptor: "warm-toned subway tile — match swatch exactly", dimensions: "4x16" },
-      { id: "bs-dark-herringbone", name: "Ember Herringbone", price: 425, swatchUrl: "/swatches/backsplash/demo-dark-herringbone.jpg", swatchColor: "#2A2A30", promptDescriptor: "herringbone mosaic tile — match swatch exactly", dimensions: "1x3 herringbone pieces" },
-      { id: "bs-carbon-hex", name: "Slate Hex", price: 375, swatchUrl: "/swatches/backsplash/demo-carbon-hex.jpg", swatchColor: "#3D3D3D", promptDescriptor: "hexagon mosaic tile — match swatch exactly", dimensions: "2-inch hexagons" },
+      { id: "bs-dark-herringbone", name: "Ember Herringbone", price: 425, swatchUrl: "/swatches/backsplash/demo-dark-herringbone.jpg", swatchColor: "#2A2A30", promptDescriptor: "herringbone mosaic tile — match swatch exactly", dimensions: "0.5x2 inch herringbone mosaic pieces" },
+      { id: "bs-carbon-hex", name: "Slate Hex", price: 375, swatchUrl: "/swatches/backsplash/demo-carbon-hex.jpg", swatchColor: "#3D3D3D", promptDescriptor: "hexagon mosaic tile — match swatch exactly", dimensions: "1-inch hexagon mosaic" },
     ],
   },
   {
