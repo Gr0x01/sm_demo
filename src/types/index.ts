@@ -5,6 +5,7 @@ export interface Option {
   swatchUrl?: string;
   swatchColor?: string;
   promptDescriptor?: string;
+  dimensions?: string;
   nudge?: string;
   generationRules?: string[];
   isDefault?: boolean;
@@ -67,6 +68,7 @@ export interface AdminOption {
   sort_order: number;
   floorplan_ids: string[];
   generation_rules: string[] | null;
+  dimensions: string | null;
 }
 
 export interface AdminSubcategory {

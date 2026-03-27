@@ -143,7 +143,7 @@ export function buildOptionLookup(): OptionLookupMap {
   map.set("countertops:ct-granite-luna", { option: counterOpt, subCategory: counterSub });
 
   const backsplashSub = makeSub("backsplash", "Backsplash");
-  const backsplashOpt = makeOpt("bs-subway-white", "White Subway Tile", { swatchUrl: "https://storage/swatch-sub.jpg", price: 0 });
+  const backsplashOpt = makeOpt("bs-subway-white", "White Subway Tile", { swatchUrl: "https://storage/swatch-sub.jpg", price: 0, dimensions: "4x16" });
   map.set("backsplash:bs-subway-white", { option: backsplashOpt, subCategory: backsplashSub });
 
   const rangeSub = makeSub("range", "Range", {

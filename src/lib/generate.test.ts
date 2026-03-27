@@ -89,6 +89,40 @@ describe("buildPromptContextSignature", () => {
     expect(sig).toContain("Keep existing range unchanged");
   });
 
+  it("includes option dimensions in signature", () => {
+    const sig = buildPromptContextSignature(
+      { sceneDescription: null, photo: { photoBaseline: null, spatialHint: null } },
+      { backsplash: "bs-subway-white" },
+      optionLookup,
+      ["backsplash"],
+    );
+    expect(sig).toContain("d:bs-subway-white:4x16");
+  });
+
+  it("dimensions change busts the signature", () => {
+    const lookup1 = buildOptionLookup();
+    const lookup2 = buildOptionLookup();
+    const entry = lookup2.get("backsplash:bs-subway-white")!;
+    lookup2.set("backsplash:bs-subway-white", {
+      ...entry,
+      option: { ...entry.option, dimensions: "2x8" },
+    });
+
+    const sig1 = buildPromptContextSignature(
+      { sceneDescription: null, photo: { photoBaseline: null, spatialHint: null } },
+      { backsplash: "bs-subway-white" },
+      lookup1,
+      ["backsplash"],
+    );
+    const sig2 = buildPromptContextSignature(
+      { sceneDescription: null, photo: { photoBaseline: null, spatialHint: null } },
+      { backsplash: "bs-subway-white" },
+      lookup2,
+      ["backsplash"],
+    );
+    expect(sig1).not.toBe(sig2);
+  });
+
   it("produces same signature regardless of spatialHints insertion order", () => {
     const hints1 = { a: "1", b: "2", c: "3" };
     const hints2 = { c: "3", a: "1", b: "2" };

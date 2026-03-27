@@ -1272,6 +1272,7 @@ function OptionEditorModal({
     swatchUrl: option.swatch_url,
     description: option.description ?? "",
     promptDescriptor: option.prompt_descriptor ?? "",
+    dimensions: option.dimensions ?? "",
     isDefault: option.is_default,
     generationRulesText: rulesToText(option.generation_rules),
   });
@@ -1288,6 +1289,7 @@ function OptionEditorModal({
       swatchUrl: option.swatch_url,
       description: option.description ?? "",
       promptDescriptor: option.prompt_descriptor ?? "",
+      dimensions: option.dimensions ?? "",
       isDefault: option.is_default,
       generationRulesText: rulesToText(option.generation_rules),
     });
@@ -1300,6 +1302,7 @@ function OptionEditorModal({
     option.swatch_url,
     option.description,
     option.prompt_descriptor,
+    option.dimensions,
     option.is_default,
     option.generation_rules,
   ]);
@@ -1322,6 +1325,8 @@ function OptionEditorModal({
     if (normalizedNudge !== (option.nudge ?? null)) updates.nudge = normalizedNudge;
     if (normalizedDescription !== (option.description ?? null)) updates.description = normalizedDescription;
     if (normalizedPromptDescriptor !== (option.prompt_descriptor ?? null)) updates.prompt_descriptor = normalizedPromptDescriptor;
+    const normalizedDimensions = draft.dimensions.trim() || null;
+    if (normalizedDimensions !== (option.dimensions ?? null)) updates.dimensions = normalizedDimensions;
     if (normalizedSwatchUrl !== (option.swatch_url ?? null)) updates.swatch_url = normalizedSwatchUrl;
     if (draft.isDefault !== option.is_default) updates.is_default = draft.isDefault;
     const normalizedGenRules = parseRulesText(draft.generationRulesText);
@@ -1528,6 +1533,7 @@ function OptionDetailPanel({
     swatchUrl: string | null;
     description: string;
     promptDescriptor: string;
+    dimensions: string;
     isDefault: boolean;
     generationRulesText: string;
   };
@@ -1539,6 +1545,7 @@ function OptionDetailPanel({
     swatchUrl: string | null;
     description: string;
     promptDescriptor: string;
+    dimensions: string;
     isDefault: boolean;
     generationRulesText: string;
   }>>;
@@ -1643,6 +1650,19 @@ function OptionDetailPanel({
             {generating ? "Generating..." : "Generate"}
           </button>
         </div>
+      </div>
+
+      <div className="space-y-1">
+        <span className="block text-[11px] uppercase tracking-[0.14em] text-slate-500">Dimensions</span>
+        <p className="text-xs leading-5 text-slate-500">
+          Physical measurements only (e.g. &quot;4x16&quot;, &quot;7-inch wide plank&quot;). No color or material words. Supplements the swatch image for scale.
+        </p>
+        <input
+          value={draft.dimensions}
+          onChange={(e) => setDraft((prev) => ({ ...prev, dimensions: e.target.value }))}
+          placeholder="e.g. 4x16, 7-inch wide plank..."
+          className="w-full bg-white border border-slate-300 text-slate-900 text-sm px-2.5 py-2 focus:outline-none focus:border-slate-500"
+        />
       </div>
 
       <div className="border border-slate-200 bg-slate-50 p-4 space-y-3">

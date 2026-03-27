@@ -87,7 +87,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
       id, slug, name, sort_order,
       subcategories (
         id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-        options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default )
+        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default )
       )
     `)
     .eq("org_id", orgId)
@@ -105,7 +105,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
       generation_rules_when_not_selected: string[] | null; is_appliance: boolean;
       options: {
         id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
-        swatch_url: string | null; swatch_color: string | null; nudge: string | null;
+        dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
         sort_order: number; generation_rules: string[] | null; is_default: boolean;
       }[];
     }[])
@@ -129,6 +129,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
             name: opt.name,
             price: opt.price,
             promptDescriptor: opt.prompt_descriptor ?? undefined,
+            dimensions: opt.dimensions ?? undefined,
             swatchUrl: opt.swatch_url ?? undefined,
             swatchColor: opt.swatch_color ?? undefined,
             nudge: opt.nudge ?? undefined,
@@ -159,7 +160,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
         id, slug, name, sort_order,
         subcategories (
           id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-          options ( id, slug, name, price, prompt_descriptor, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default )
+          options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default )
         )
       `)
       .eq("org_id", orgId)
@@ -196,7 +197,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
     generation_rules_when_not_selected: string[] | null; is_appliance: boolean;
     options: {
       id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
-      swatch_url: string | null; swatch_color: string | null; nudge: string | null;
+      dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
       sort_order: number; floorplan_ids: string[]; generation_rules: string[] | null; is_default: boolean;
     }[];
   };
@@ -232,6 +233,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
               name: opt.name,
               price: priceOverrides.get(opt.id) ?? opt.price,
               promptDescriptor: opt.prompt_descriptor ?? undefined,
+              dimensions: opt.dimensions ?? undefined,
               swatchUrl: opt.swatch_url ?? undefined,
               swatchColor: opt.swatch_color ?? undefined,
               nudge: opt.nudge ?? undefined,

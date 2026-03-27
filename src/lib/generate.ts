@@ -115,7 +115,9 @@ export async function buildEditPrompt(
       ? `${subCategory.name}: ${option.name}${descriptorSuffix} → apply to ${hint}`
       : `${subCategory.name}: ${option.name}${descriptorSuffix}`;
     // Swatch-backed edits are swatch-authoritative for appearance, including appliances.
-    const swatchBackedLabel = targetLabel;
+    // Dimensions supplement the swatch with scale info (swatch photos can't convey size).
+    const dimSuffix = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
+    const swatchBackedLabel = `${targetLabel}${dimSuffix}`;
 
     // Build fallback label when no swatch image is available.
     // Appliances: keep name + descriptor (AI needs model identification).
@@ -284,6 +286,9 @@ export function buildPromptContextSignature(
       }
       if (found.option.generationRules?.length) {
         ruleParts.push(`o:${optId}:${found.option.generationRules.join(";")}`);
+      }
+      if (found.option.dimensions?.trim()) {
+        ruleParts.push(`d:${optId}:${found.option.dimensions.trim()}`);
       }
     }
     // Negative-guard rules: include generationRulesWhenNotSelected for in-scope but unselected subcategories
