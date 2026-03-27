@@ -197,7 +197,7 @@ export async function buildEditPrompt(
   }
   const invariantBlock =
     invariantRules.size > 0
-      ? `\nCRITICAL FIXED-GEOMETRY RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
+      ? `\nCRITICAL RULES:\n${Array.from(invariantRules).map((r) => `- ${r}`).join("\n")}`
       : "";
 
   const editObjective = hasApplianceSelection
