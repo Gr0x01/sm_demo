@@ -534,7 +534,27 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 - **Hybrid model**: Real-time texture swap for browsing/exploring options. AI generation (gpt-image-1.5) for photorealistic "final render" when buyer settles on selections. One $0.20 generation instead of 3-4 during exploration.
 - **Appliance swaps** (fridge vs no fridge, standing vs slide-in range): Handled as base image variants, not texture changes. Same meshes, different background photo layer.
 **Trade-off**: Significant implementation effort (4-6 weeks for full pipeline). Texture swaps won't match AI-generated photorealism (no recessed panel shadows, no cross-surface reflections). But instant + free + interactive may beat slow + expensive + static for the browsing phase. Quality is the key risk — the PoC needs to answer whether "good enough" is actually good enough.
-**Status**: PoC planned, not yet started. Pending visual quality validation.
+**Status**: PoC built and extensively tested (2026-03-26 through 2026-03-27). Multiple segmentation approaches tried, all failed to produce buyer-facing quality:
+
+**Segmentation approaches tested:**
+1. **fal.ai SAM2** (box/point prompts): Masks bleed between surfaces. Cabinets include backsplash, countertop misses island, walls grab ceiling. Consumer GPU segmentation = "haiku quality."
+2. **Grounded SAM on Replicate** (`schananas/grounded_sam`): Model is broken — tensor error on every prompt. 2023 model, not maintained.
+3. **Gemini all-in-one color map** (`gemini-3-pro-image-preview`): Asked model to color-code all surfaces in one pass. Produced the best segmentation map by far — clean boundaries, correct surface identification. But still misses details (outlet on island, plants on counter, backsplash above range hood).
+4. **Gemini per-surface individual masks** (`gemini-3-pro-image-preview`, 6 separate passes): Each pass focused on one surface. Per-surface masks were NOT meaningfully better than the all-in-one map. Same boundary quality issues.
+5. **Gemini Flash** (`gemini-2.5-flash-image`): Refused to produce graphic masks — just desaturated the photo. `gemini-3.1-flash-image-preview` did produce a color map comparable to Pro.
+
+**Compositing approaches tested:**
+1. **Flat color through mask** (Canvas demo): Surprisingly good for a PoC. Instant color swap with luminance-preserved blending. Not photorealistic but interactive and fun.
+2. **Masked inpainting** (alpha mask → OpenAI `images.edit`): Model hallucinated extra geometry (added cabinet panels that don't exist). Lighting mismatch between masked and unmasked areas.
+3. **Full generation + mask extraction** (generate full room per surface change, extract pixels through mask, composite): Each individual generation looked good. But compositing multiple generations showed visible seams — different AI generations have different lighting interpretation, and the mask edges expose the boundary between them. Feathered edges helped but didn't solve it. Final composite "looks like shit" (direct quote).
+
+**What worked:** Gemini Pro producing color-coded segmentation maps. The flat-color Canvas demo as a browsing tool. Individual per-surface AI generations in isolation.
+**What didn't work:** Compositing multiple AI generations together. No masking approach (SAM2, Gemini single, Gemini multi) produced clean enough boundaries for photorealistic compositing.
+**Root cause:** The seam problem isn't just mask quality — it's that each AI generation interprets the scene lighting differently. When you cut pixels from two different AI outputs and stitch them, the lighting discontinuity at the boundary is visible regardless of mask precision.
+
+**Shelved.** The single-pass gpt-image-1.5 approach (all swatches in one generation) remains the best quality option. Pre-generated preset variations remain the best speed strategy. Revisit layered generation if/when AI models support deterministic lighting or native per-surface masking.
+
+**Artifacts:** `scripts/texture-swap-poc/` — all scripts, masks, generations, composites.
 
 ## D89: Health check endpoint + Vercel Cron monitoring for /try
 **Context (2026-03-26)**: The /try page was broken for days (cookie path bug blocked all API calls) with no alerting. Unit tests can't catch this class of bug — they mock `cookies()` and never exercise actual HTTP cookie handling.

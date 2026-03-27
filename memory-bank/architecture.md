@@ -47,6 +47,8 @@ Server (Next.js API routes + Inngest background functions)
         │     Each step gets its own 120s Vercel function invocation.
         │     Config: retries: 2, concurrency: { limit: 5 }
         └── generate-demo — 2 steps: generate → persist
+              Uses buildEditPrompt (same prompt pipeline as generate-photo)
+              Reads swatches from local public/ dir, photos from demo-uploads bucket
               Config: retries: 2, concurrency: { limit: 3 }
 
 Supabase

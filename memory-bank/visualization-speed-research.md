@@ -86,7 +86,7 @@ Start generating when selections look complete, before buyer clicks "Visualize."
 
 **What exists**: Every piece is available (open-source or cheap API). Nobody has assembled them into this pipeline for room material visualization. Wizart.ai is closest but does server-side rendering at $0.148/request, not client-side real-time.
 
-**Status**: PoC planned. Need to validate visual quality before committing to full build.
+**Status**: Extensively tested (2026-03-27). See D88 for full results. TL;DR: segmentation and compositing both failed to reach buyer-facing quality. The core blocker isn't mask precision — it's that compositing pixels from separate AI generations creates visible lighting discontinuities at every seam. Shelved.
 
 ## Competitive Landscape (AI Adoption in Viz)
 
@@ -119,4 +119,6 @@ Gaussian splatting produces great virtual tours but you **cannot edit materials*
 | Streaming previews | Not started | Better perceived speed | Low |
 | Pre-generate combos | Already doing (preset variations) | Instant "aha" | Low |
 | Predictive generation | Deferred (too expensive) | — | — |
-| 2.5D texture swap PoC | Planned (D88) | Instant browsing + $0 cost | High (4-6 weeks) |
+| 2.5D texture swap PoC | Tested, shelved (D88) | Compositing kills quality | Done |
+| Per-surface layered gen | Tested, failed (D88) | Lighting seams between layers | Done |
+| Gemini segmentation maps | Works (nano banana) | Good masks, not enough for compositing | Done |
