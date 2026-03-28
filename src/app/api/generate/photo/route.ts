@@ -153,6 +153,7 @@ export async function POST(request: Request) {
         imageUrl: publicUrl,
         cacheHit: true,
         generatedImageId: String(cached.id),
+        selectionsHash,
       });
     }
 

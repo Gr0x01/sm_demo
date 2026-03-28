@@ -129,6 +129,10 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **SM paint SVG swatches cleaned**: 16 SVGs in Supabase storage had white label bars at the bottom diluting the swatch anchor hex. Stripped to clean solid-color rectangles.
 - **R&D test script**: `scripts/test-scoped-surface-edit.ts` — validates scoped editing across surface types. 1.5 is the default model (no hallucinations), Flash for backsplash only.
 - **Architecture doc**: `memory-bank/project/partial-cache-architecture.md`
+- **Key fix — Inngest step output size limit**: Steps were returning full b64 images (~3-4MB) through Inngest memoization, exceeding the step output size limit. Refactored all generation steps to upload intermediate images to Supabase Storage within each step and pass only paths/metadata between steps. Affects `generate`, `refine`, `flash-post-pass`, `scoped-edit` steps. Helper functions `uploadIntermediate()` / `downloadIntermediate()` added to the Inngest function.
+- **Key fix — `@google/genai` was devDependency**: Flash post-pass import failed on Vercel (devDeps not installed in production). Moved to production dependencies.
+- **API fix — `selectionsHash` in cache hit response**: `/api/generate/photo` now returns `selectionsHash` on cache hits too, so scripts can track all dispatched hashes.
+- **All prospect demo presets regenerated (2026-03-28)**: All 10 demos × 3 presets = 30 images regenerated with the new pipeline (dimensions, backsplash rules, flash post-pass for herringbone). Config files created for all 10 demos in `scripts/prospect-configs/`.
 - **Cache version**: v34
 
 **Previous prospect demo page updates (2026-03-23):**

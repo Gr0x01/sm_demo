@@ -1,0 +1,73 @@
+{
+  "slug": "davidson",
+  "name": "Davidson Homes — Hidden Hills",
+  "heroHeadline": "Their finishes, in their actual kitchen.",
+  "heroBody": "This is your Hidden Hills kitchen with real upgrade selections wired up. Buyers pick finishes and see them in the room.",
+  "kitchenPhoto": "/tmp/davidson-kitchen.jpg",
+  "exteriorPhoto": "/tmp/davidson-exterior.jpg",
+  "photoBaseline": "Open-concept kitchen in a new-construction model home. Greige shaker-style cabinets on three walls (back wall with hood, left wall flanking pantry, right wall with French-door refrigerator) and on the large center island. White quartz countertops with subtle veining on perimeter and island, waterfall edge on island's near side. White subway tile backsplash on perimeter walls. Stainless steel appliances: range hood centered on back wall, double wall ovens to left of pantry, French-door refrigerator on right wall. Gold/brass hardware (bar pulls on all cabinets, gold faucet on island sink). Three brass dome pendant lights above island. Walk-in pantry with glass-paned French doors visible center-back, wine rack and open shelving inside. Light oak-toned LVP flooring throughout. White/off-white walls and vaulted ceiling with recessed lighting. Four upholstered barstools at island (staging). Staging items on countertops: cutting boards, framed art, glass jars, fruit bowl, canisters near fridge.",
+  "spatialHint": "Large center island dominates the middle of the frame. CRITICAL: The island countertop is a WATERFALL design — one continuous slab of stone that flows seamlessly from the countertop surface over the edges and down the left and near-facing sides to the floor. There is NO seam, NO break, NO separate panel. The veining pattern and material continue uninterrupted from the top surface over the edge and down the sides. When changing countertop material, treat the top and sides as ONE continuous surface with consistent pattern flow. Back wall: range hood flanked by upper and lower greige shaker cabinets, white subway backsplash. Left of center: walk-in pantry with glass French doors, double wall ovens to its left. Right wall: French-door stainless refrigerator flanked by greige cabinets. Three brass dome pendants hang in a row above the island. Gold bar-pull hardware on all cabinet doors and drawers. Island has undermount sink with gold faucet. Four upholstered barstools line the near side of the island. Light oak LVP flooring visible around island and under barstools. Vaulted white ceiling with recessed can lights.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "spatialHints": {
+    "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
+    "counter-top": "all countertop surfaces on perimeter and island",
+    "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
+    "kitchen-cabinet-color": "perimeter cabinet doors and drawer fronts on walls only, not the island",
+    "main-area-flooring-color": "all visible floor area throughout the kitchen",
+    "kitchen-island-cabinet-color": "island cabinet doors and drawer fronts only"
+  },
+  "insights": [
+    { "label": "Builders using visualization see this in option sales", "value": "+20–40%" },
+    { "label": "Typical margin on upgrades over cost", "value": "50–100%" },
+    { "label": "Davidson target closings by 2026", "value": "3,000 homes" }
+  ],
+  "closingLine": "At 3,000 closings, even a 10% lift on upgrades is seven figures.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-color-match",
+        "counter-top": "ct-granite-steel-grey",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-carbon",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-admiral-blue",
+        "kitchen-island-cabinet-color": "island-color-white",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-cold-foam"
+      }
+    }
+  ]
+}

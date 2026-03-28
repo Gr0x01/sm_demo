@@ -1,0 +1,73 @@
+{
+  "slug": "mckinley",
+  "name": "McKinley Homes — Towns at Enclave",
+  "heroHeadline": "More time with their options.",
+  "heroBody": "This is your Mulberry Summit kitchen with real upgrade selections wired up. Buyers pick finishes and see them in the room.",
+  "kitchenPhoto": "/tmp/mckinley-kitchen.jpg",
+  "exteriorPhoto": "/tmp/mckinley-exterior.jpg",
+  "photoBaseline": "Galley-view kitchen in a new-construction townhome model, shot from the island end looking down the run of perimeter cabinets. White shaker-style upper and lower cabinets along the right wall with crown molding at the ceiling line. Gold/brass bar-pull hardware on all perimeter cabinet doors and drawers. White quartz countertops on the perimeter, clean and minimal veining. White subway tile backsplash between upper and lower perimeter cabinets. Stainless steel appliances along the right wall: French-door refrigerator at the far end, then a white 5-panel pantry door, then a stainless gas range with black grates, stainless over-range microwave above it, and stainless dishwasher. Center island with dark charcoal/navy shaker cabinets, gold/brass bar-pull hardware, white quartz countertop. White farmhouse apron-front sink in island with gold gooseneck faucet. Light oak-toned LVP flooring throughout. One clear glass teardrop pendant light visible hanging over the island on the left side. Recessed can lights in the flat white/light gray ceiling. Staging items on perimeter counter: wooden cutting boards, glass canisters with dry goods, a pink bag. Far end of the kitchen opens to a stairwell area with dark railing visible on the left.",
+  "spatialHint": "Camera is positioned at the near end of the island, looking down the length of the kitchen toward the far wall. The island runs left-to-right in the lower portion of the frame. Island has dark charcoal cabinets with gold hardware, white quartz top, white farmhouse apron sink with gold faucet on the near-facing side. Right wall (dominant): full run of white shaker upper and lower cabinets from near-right to far-right. Backsplash is white subway tile on this wall. Appliances along right wall from far to near: French-door stainless fridge (far end), white pantry door, stainless gas range with black grates, stainless microwave above range, then more white cabinets continuing toward camera. Left side of frame: clear glass pendant light, then opens to stairwell with dark railing visible in background. LVP flooring visible between island and perimeter cabinets. Ceiling is flat with recessed lights.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "spatialHints": {
+    "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
+    "counter-top": "all countertop surfaces on perimeter and island",
+    "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
+    "kitchen-cabinet-color": "perimeter cabinet doors and drawer fronts on walls only, not the island",
+    "main-area-flooring-color": "all visible floor area throughout the kitchen",
+    "kitchen-island-cabinet-color": "island cabinet doors and drawer fronts only"
+  },
+  "insights": [
+    { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },
+    { "label": "Typical margin on upgrades over cost", "value": "50–100%" },
+    { "label": "Even a 10% lift on $15K avg. upgrades", "value": "+$1,500 per home" }
+  ],
+  "closingLine": "At 436 closings a year, that is $650K in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-color-match",
+        "counter-top": "ct-granite-steel-grey",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-carbon",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-admiral-blue",
+        "kitchen-island-cabinet-color": "island-color-white",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-cold-foam"
+      }
+    }
+  ]
+}

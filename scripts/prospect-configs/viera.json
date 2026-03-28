@@ -1,0 +1,68 @@
+{
+  "slug": "viera",
+  "name": "Viera Builders — Granada II",
+  "heroHeadline": "More than a template.",
+  "heroBody": "This is your Granada II kitchen with real upgrade selections wired up. Buyers pick finishes and see them in the room.",
+  "kitchenPhoto": "/tmp/viera-kitchen.jpg",
+  "exteriorPhoto": "/tmp/viera-exterior.jpg",
+  "photoBaseline": "U-shaped kitchen in the Granada II model home viewed from an open doorway on the left side. White shaker-style upper and lower cabinets along the back wall and wrapping the right side, with crown-like trim at the ceiling line. Gold/brass knob hardware on all cabinet doors and drawers. White quartz countertops with subtle veining on all perimeter counters. No visible backsplash tile — the wall behind the counters is smooth white, matching the cabinets. Center back wall: stainless steel chimney-style range hood, gas cooktop with black grates directly below, gold/brass pot filler faucet mounted on the wall to the left of the hood. Far left wall: black-front column-style built-in refrigerator/freezer. Right wall: stainless steel built-in wall oven and microwave stacked, then more white cabinets continuing to the sink area with a gold/brass gooseneck faucet. Stainless steel dishwasher visible to the right of the sink. Light natural oak-toned LVP flooring throughout. Flat white ceiling with recessed can lights. One clear glass pendant light hanging on the right side of the frame. Small green plant on counter near the sink area.",
+  "spatialHint": "Camera positioned at a doorway on the far left, looking into the U-shaped kitchen. Back wall (center of frame): stainless chimney hood centered, gas cooktop below, gold pot filler to its left. White shaker upper cabinets flanking the hood on both sides, lower cabinets with white quartz counters below. Left wall (partially visible): black column fridge/freezer at far left edge. Right side of frame: white shaker cabinets continue — stainless wall oven + microwave stack, then sink area with gold faucet, stainless dishwasher. Clear glass pendant visible on right. No island visible — this is a U-shaped perimeter kitchen. LVP flooring visible across the floor. White ceiling with recessed can lights.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "spatialHints": {
+    "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
+    "counter-top": "all countertop surfaces on perimeter and island",
+    "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
+    "kitchen-cabinet-color": "all perimeter cabinet doors and drawer fronts",
+    "main-area-flooring-color": "all visible floor area throughout the kitchen"
+  },
+  "insights": [
+    { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },
+    { "label": "Typical margin on upgrades over cost", "value": "50–100%" },
+    { "label": "Even a 10% lift on $8K avg. kitchen upgrades", "value": "+$800 per home" }
+  ],
+  "closingLine": "At 350 closings a year, that is $280K in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-cinnamon-walnut",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-carbon",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-fog"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-admiral-blue",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-cold-foam"
+      }
+    }
+  ]
+}

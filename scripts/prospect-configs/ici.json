@@ -1,0 +1,73 @@
+{
+  "slug": "ici",
+  "name": "ICI Homes — Serena at Mosaic",
+  "heroHeadline": "The homework.",
+  "heroBody": "This is your Serena kitchen at Mosaic with real upgrade selections wired up. Buyers pick finishes and see them in the room.",
+  "kitchenPhoto": "/tmp/ici-kitchen.jpg",
+  "exteriorPhoto": "/tmp/ici-exterior.jpg",
+  "photoBaseline": "Open-concept kitchen in the ICI Homes Serena model. White shaker-style cabinets on perimeter walls — tall pantry-height cabinets on right side, standard upper and lower cabinets on back wall with stainless steel French-door refrigerator on left and built-in microwave and wall oven on right. Wood-tone stained island base with white quartz marble-look countertops with subtle veining on both perimeter and island. Mosaic/herringbone pattern tile backsplash between upper cabinets and countertops on back wall, lit by under-cabinet lighting. Large format beige/cream tile flooring throughout. Dark oil-rubbed bronze bar-pull hardware on all cabinet doors and drawers. Black gooseneck faucet on island sink. Two geometric cage pendant lights with wood accents hanging over island. Greige/taupe walls visible above cabinets and on vaulted ceiling area. Recessed can lights in ceiling. Four upholstered barstools at island near side (staging). Staging items on island: place settings with desserts. View through to hallway and front entry with chandelier visible on left side of frame. Decorative vases and art on top of tall cabinets.",
+  "spatialHint": "PERIMETER CABINETS (kitchen-cabinet-color): White shaker cabinets on the back wall and right wall. Back wall has standard upper/lower cabinets flanking the refrigerator and range hood area. Right wall has tall floor-to-ceiling pantry-height cabinets. These are all the SAME color, separate from the island. ISLAND BASE (kitchen-island-cabinet-color): The center island base is a DIFFERENT color from perimeter cabinets. Currently a wood-tone stain. Only the island base panels and doors change with this selection, not the perimeter cabinets. COUNTERTOPS (counter-top): White quartz marble-look with subtle veining, continuous on both perimeter counters and island top. Same material everywhere. BACKSPLASH (backsplash): Mosaic/herringbone tile on the back wall between upper cabinets and perimeter countertops, illuminated by under-cabinet LED strips. FLOORING (main-area-flooring-color): Large format beige tile visible around island base and under barstools in the lower portion of frame. PAINT (common-wall-paint): Greige/taupe visible on walls above the tall cabinets and in the vaulted ceiling area above the island. PRESERVE: Stainless appliances (French-door fridge left of back wall, built-in microwave and wall oven on right wall). Dark oil-rubbed bronze bar-pull hardware on all cabinets. Black gooseneck faucet. Two geometric cage pendant lights over island.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "spatialHints": {
+    "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
+    "counter-top": "all countertop surfaces on perimeter and island",
+    "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
+    "kitchen-cabinet-color": "perimeter cabinet doors and drawer fronts on walls only, not the island",
+    "main-area-flooring-color": "all visible floor area throughout the kitchen",
+    "kitchen-island-cabinet-color": "island cabinet doors and drawer fronts only"
+  },
+  "insights": [
+    { "label": "Upgrade attachment when buyers see selections in the room", "value": "+20–40%" },
+    { "label": "Appointment time spent explaining what things look like", "value": "~50%" },
+    { "label": "Buyers who default to standard when they can't picture it", "value": "Most" }
+  ],
+  "closingLine": "Confident buyers pick faster and spend more.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-color-match",
+        "counter-top": "ct-granite-steel-grey",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-carbon",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-admiral-blue",
+        "kitchen-island-cabinet-color": "island-color-white",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-cold-foam"
+      }
+    }
+  ]
+}

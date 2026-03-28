@@ -1,0 +1,73 @@
+{
+  "slug": "stylecraft",
+  "name": "Stylecraft Homes — The 1651",
+  "heroHeadline": "Selections they can actually see.",
+  "heroBody": "This is your 1651 kitchen with real upgrade selections wired up. Buyers pick finishes and see them in the room.",
+  "kitchenPhoto": "/tmp/stylecraft-kitchen.jpg",
+  "exteriorPhoto": "/tmp/stylecraft-exterior.jpg",
+  "photoBaseline": "Open-concept kitchen in a new-construction home. L-shaped dark espresso shaker cabinets along back wall wrapping left. Speckled grey-white granite countertops on perimeter and peninsula island. Peninsula island with white painted base on left side with undermount sink. Black electric range between cabinets on back wall, stainless microwave above. No refrigerator visible in this photo — the fridge space is out of frame or not yet installed. Simple light-colored textured backsplash behind perimeter counters. Large fixed-pane window on right wall looking out to backyard fence. Two geometric pendant lights above peninsula. Grey-toned weathered LVP flooring throughout open living area. Warm beige walls.",
+  "spatialHint": "L-shaped kitchen in back-left corner. Dark espresso shaker cabinets along the back wall and wrapping to the left. Granite countertops with speckled grey-white pattern on perimeter and peninsula. Small peninsula island with white painted base on left side. Black electric range between cabinets on back wall, stainless microwave above. Large fixed-pane window on right wall looking out to backyard fence, second window on far right edge. Two geometric pendant lights hang above the peninsula. Grey-toned LVP flooring throughout the open living area. Warm beige walls. Simple light-colored textured backsplash behind counters.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "spatialHints": {
+    "backsplash": "the vertical strip between the upper cabinets and the countertop on the back wall, extending from left corner to right side of the range area",
+    "counter-top": "all countertop surfaces on perimeter counters and peninsula island top",
+    "common-wall-paint": "all visible wall surfaces above the cabinets and on the right wall around the window",
+    "kitchen-cabinet-color": "perimeter cabinet doors and drawer fronts on walls only, not the island",
+    "main-area-flooring-color": "all visible floor area throughout the open kitchen and living space",
+    "kitchen-island-cabinet-color": "island cabinet doors and drawer fronts only"
+  },
+  "insights": [
+    { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },
+    { "label": "Typical margin on upgrades over cost", "value": "50–100%" },
+    { "label": "Even a 10% lift on $10K avg. upgrades", "value": "+$1,000 per home" }
+  ],
+  "closingLine": "At 200 homes a year, that's $200K in revenue you're already set up to capture.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-color-match",
+        "counter-top": "ct-granite-steel-grey",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-carbon",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-admiral-blue",
+        "kitchen-island-cabinet-color": "island-color-white",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-cold-foam"
+      }
+    }
+  ]
+}
