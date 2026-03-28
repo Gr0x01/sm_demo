@@ -578,3 +578,19 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 **Context (2026-03-27)**: Exhaustively tested picket tile generation across gpt-image-1.5, FLUX Pro v1, Ideogram v3, Reve, with prompt-only, masked inpainting, texture compositing, explicit geometry, scale context, and reference photos. No model can reliably produce elongated hexagon pickets at correct scale on a backsplash. Shape vs scale tradeoff: AI gets one right but not both.
 **Decision**: Not solved yet. Most promising lead: AI CAN generate correct picket tiles as a flat texture (no room context). Two-pass approach (generate flat texture → composite onto room → blend) or Nano Banana pass 1 → gpt-image-1.5 pass 2 are the next experiments.
 **Impact**: SM has 6 picket options at $375 each. Other builders will have similar niche patterns. Must solve this for Finch to handle the full range of backsplash options builders sell.
+
+## D93: Partial cache — diff-based scoped editing
+**Context (2026-03-28)**: Buyers lock in most selections then flip one surface at a time. Every flip triggers the full 60-80s pipeline. R&D validated that scoped single-surface edits via 1.5 work at ~32s. Flash hallucinated objects (fridge in empty alcove); 1.5 did not.
+**Decision**: Diff-based partial cache. Store `leave_one_out_hashes TEXT[]` and `scoped_edit_depth INTEGER` on `generated_images`. GIN-indexed overlap query finds cached images differing by one subcategory. 1.5 scoped edit changes only that surface. Depth capped at 3 to bound quality degradation. No intermediate caching table — single approach, full pipeline as fallback.
+**Key finding**: `_promptContext` must be excluded from leave-one-out hashes because it contains per-selection generation rules that change when any selection changes, defeating the diff matching.
+**Trade-off**: Scoped edits have slight shadow flattening (depth 2+) and 1.5 can drift on backsplash patterns during non-backsplash edits. Optional final-screen regeneration can produce depth-0 quality when needed.
+
+## D94: Photo scoping — only visible subcategories
+**Context (2026-03-28)**: SM kitchen-close photo had 19 subcategories scoped (full step) including dishwasher, trash can, light rail, glass cabinet door — none visible in the photo. AI hallucinated a dishwasher on the island and under-applied cabinet swatches due to swatch mapping confusion with 12+ swatches.
+**Decision**: `step_photos.subcategory_ids` must only include subcategories whose surfaces are actually visible in the photo. Trimmed kitchen-close from 19 to 13. All future photo setups must audit visibility.
+**Trade-off**: Requires manual per-photo audit of what's visible. But the alternative (sending invisible items) reliably degrades generation quality.
+
+## D95: Prompt structure — single RULES block
+**Context (2026-03-28)**: D90 split the prompt into APPLY/PRESERVE/SURFACE & PLACEMENT RULES. Testing showed cabinet colors (driftwood) not being applied correctly with the split structure. Reverted to v26's single `RULES:` block with "Edit this room photo to match the selected finishes." Same content, single section.
+**Decision**: Keep single RULES block. The split structure may have diluted swatch mapping attention. Backsplash-specific generation_rules are still included via the DB-driven rules system.
+**Trade-off**: Less structured prompt, but proven to work for swatch accuracy.

@@ -116,6 +116,21 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **SM options flagged**: 6 picket + 5 herringbone = 11 options with `needs_isolation = true`. Subway/square/beveled stay single-pass.
 - **Full research**: `memory-bank/backsplash-pattern-research.md`, test scripts in `scripts/test-backsplash-*.ts`, `scripts/test-two-pass-backsplash.ts`, `scripts/test-post-pass-ordering.ts`
 
+**Partial cache system (2026-03-28):**
+- **Architecture**: Diff-based scoped editing. When a buyer changes one surface, find a cached image that differs by one subcategory and run a scoped 1.5 edit (~32s vs 60-80s full pipeline). Leave-one-out hashes stored on `generated_images` for fast GIN-indexed lookup. Depth cap at 3 prevents quality degradation from chaining.
+- **DB**: `scoped_edit_depth INTEGER` + `leave_one_out_hashes TEXT[]` columns + indexes on `generated_images`. No new tables.
+- **Code**: `computeLeaveOneOutHashes()`, `identifyChangedSubcategory()`, `buildScopedEditPrompt()` in `generate.ts`. Inngest function branches: `check-diff-cache` → `scoped-edit` → `persist-scoped` (fast path) or falls through to full pipeline.
+- **Key fix — `_promptContext` excluded from leave-one-out hashes**: `_promptContext` contains per-selection generation rules. Including it defeated diff matching because changing any selection changed all hashes. Excluded so only selection values + stable metadata (_stepPhotoId, _model, _cacheVersion, _promptPolicy) are hashed.
+- **Key fix — photo scoping critical**: SM kitchen-close had 19 subcategories scoped (full step) including 6 not visible (dishwasher, trash can, light rail, etc.). Caused dishwasher hallucination and swatch mapping confusion. Trimmed to 13 visible subcategories. **All photos must scope only to visible surfaces.**
+- **Key fix — flash post-pass `optionLookup.get` key format**: Was `optionLookup.get(optId)`, should be `optionLookup.get(\`${subId}:${optId}\`)`. Caused post-pass to find nothing and send empty prompt.
+- **Key fix — empty post-pass guard**: If flash post-pass builds 0 swatch lines, return null immediately instead of sending empty prompt to model.
+- **Known issue — backsplash drift on scoped edits**: 1.5 scoped edits re-process the whole image, degrading backsplash patterns. Same problem as the main pass. Scoped edit path needs Flash backsplash post-pass after the 1.5 edit (not yet implemented).
+- **Prompt reverted to v26 structure**: APPLY/PRESERVE/SURFACE & PLACEMENT split reverted to single `RULES:` block. Edit instruction back to "match the selected finishes."
+- **SM paint SVG swatches cleaned**: 16 SVGs in Supabase storage had white label bars at the bottom diluting the swatch anchor hex. Stripped to clean solid-color rectangles.
+- **R&D test script**: `scripts/test-scoped-surface-edit.ts` — validates scoped editing across surface types. 1.5 is the default model (no hallucinations), Flash for backsplash only.
+- **Architecture doc**: `memory-bank/project/partial-cache-architecture.md`
+- **Cache version**: v34
+
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)
 - Removed stat card row (redundant with sidebar)

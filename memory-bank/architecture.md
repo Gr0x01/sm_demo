@@ -42,8 +42,13 @@ Server (Next.js API routes + Inngest background functions)
   ├── POST /api/pilot-interest — persist lead to pilot_leads + notify hello@withfin.ch (upsert on email+source)
   ├── POST /api/inngest — Inngest serve endpoint (GET/POST/PUT)
   └── Inngest background functions (src/inngest/functions/):
-        ├── generate-photo — 3 steps: generate → refine (policy 2nd pass, conditional) → persist
-        │     OpenAI gpt-image-1.5 via images.edit endpoint. Hero photo + swatches as input images.
+        ├── generate-photo — partial cache fast path OR full pipeline:
+        │     Fast path: check-diff-cache → scoped-edit → persist-scoped (~32s)
+        │       Leave-one-out hash overlap query (GIN-indexed) finds cached image
+        │       differing by 1 subcategory. 1.5 scoped edit changes only that surface.
+        │       Depth capped at 3 to bound quality degradation.
+        │     Full pipeline: generate → refine → flash-post-pass → persist (~60-80s)
+        │       OpenAI gpt-image-1.5 via images.edit endpoint. Hero photo + swatches.
         │     Each step gets its own 120s Vercel function invocation.
         │     Config: retries: 2, concurrency: { limit: 5 }
         └── generate-demo — 2 steps: generate → persist
@@ -56,7 +61,8 @@ Supabase
   │           subcategories (+ generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance),
   │           options (+ generation_rules), steps, step_sections, step_ai_config
   ├── Table: step_photos (multiple photos per step, hero flag, quality check, spatial hints)
-  ├── Table: generated_images (cache — step_id, model, step_photo_id, buyer_session_id, selections_fingerprint)
+  ├── Table: generated_images (cache — step_id, model, step_photo_id, buyer_session_id, selections_fingerprint,
+  │           scoped_edit_depth INTEGER, leave_one_out_hashes TEXT[] — partial cache support)
   ├── Table: step_photo_generation_policies (internal-only per-photo prompt/second-pass policy JSON)
   ├── Table: option_floorplan_pricing (per-floorplan price overrides, composite PK: option_id + floorplan_id)
   ├── Table: pilot_leads (name, company, email, phone, source — UNIQUE on email+source, service-role only)

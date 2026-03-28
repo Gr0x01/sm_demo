@@ -17,7 +17,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v33";
+export const GENERATION_CACHE_VERSION = "v34";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -594,16 +594,27 @@ export function deriveGenerationContext(
 
 /**
  * Compute leave-one-out hashes for single-surface diff matching.
- * For each subcategory in scopedSelections, computes a hash of all hashInputs
- * EXCEPT that subcategory. Two selection sets that share a leave-one-out hash
- * differ by exactly one subcategory.
+ * For each subcategory in scopedSelections, computes a hash of all selections
+ * EXCEPT that subcategory, plus stable context keys (_stepPhotoId, _model, _cacheVersion).
+ *
+ * Excludes _promptContext because it contains per-selection generation rules —
+ * changing any selection changes _promptContext, which would defeat the purpose
+ * of leave-one-out matching. The identifyChangedSubcategory check after the
+ * query is the true correctness gate.
  */
 export function computeLeaveOneOutHashes(
   hashInputs: Record<string, string>,
   scopedSelections: Record<string, string>,
 ): string[] {
+  // Only include stable metadata keys — _promptContext changes per-selection
+  const stableBase: Record<string, string> = {};
+  for (const [k, v] of Object.entries(hashInputs)) {
+    if (k === "_promptContext") continue;
+    stableBase[k] = v;
+  }
+
   return Object.keys(scopedSelections).sort().map(subId => {
-    const without = { ...hashInputs };
+    const without = { ...stableBase };
     delete without[subId];
     return hashSelections(without);
   });
