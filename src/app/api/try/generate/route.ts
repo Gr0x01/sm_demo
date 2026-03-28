@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS } from "@/lib/demo-options";
-import { hashDemoSelections, DEMO_ORG_ID } from "@/lib/demo-generate";
+import { hashDemoSelections, computeDemoLeaveOneOutHashes, DEMO_ORG_ID } from "@/lib/demo-generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
 import { inngest } from "@/inngest/client";
@@ -152,6 +152,8 @@ export async function POST(request: Request) {
     }
 
     // --- Dispatch to Inngest ---
+    const leaveOneOutHashes = computeDemoLeaveOneOutHashes(photoHash, effectiveSelections);
+
     try {
       await inngest.send({
         name: "demo/generate.requested",
@@ -161,6 +163,7 @@ export async function POST(request: Request) {
           sessionId,
           effectiveSelections,
           sceneAnalysis: sceneAnalysis ?? null,
+          leaveOneOutHashes,
         },
       });
     } catch (sendError) {

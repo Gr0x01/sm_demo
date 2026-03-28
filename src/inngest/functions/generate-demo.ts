@@ -3,10 +3,11 @@ import { readFile } from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
-import { buildEditPrompt } from "@/lib/generate";
+import { buildEditPrompt, buildScopedEditPrompt, identifyChangedSubcategory } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { DEMO_SUBCATEGORIES } from "@/lib/demo-options";
 import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
+import { findDemoDiffMatch } from "@/lib/db-queries";
 import { getServiceClient } from "@/lib/supabase";
 import { captureAiEvent, captureAiError, estimateOpenAICost } from "@/lib/posthog-server";
 import { IMAGE_MODEL } from "@/lib/models";
@@ -174,9 +175,21 @@ export const generateDemo = inngest.createFunction(
         }
 
         const durationMs = Math.round(performance.now() - genStart);
+
+        // Convert PNG → JPEG and upload within this step — don't return b64 through Inngest
+        const outputPath = `demo-${combinedHash}.jpg`;
+        const jpegBuffer = await sharp(Buffer.from(imageData.b64_json, "base64"))
+          .jpeg({ quality: 90 })
+          .toBuffer();
+
+        const { error: uploadError } = await supabase.storage
+          .from("demo-generated")
+          .upload(outputPath, jpegBuffer, { contentType: "image/jpeg", upsert: true });
+        if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+
         console.log(`[demo/generate] Generation complete in ${durationMs}ms`);
 
-        return { b64: imageData.b64_json, prompt, durationMs };
+        return { outputPath, prompt, durationMs };
       } catch (err) {
         const durationMs = Math.round(performance.now() - genStart);
         await captureAiError("anonymous", {
@@ -190,22 +203,9 @@ export const generateDemo = inngest.createFunction(
       }
     });
 
-    // --- Step 2: Upload + persist ---
+    // --- Step 2: Persist to DB (image already in storage from step 1) ---
     await step.run("persist", async () => {
       const supabase = getServiceClient();
-      const outputBuffer = Buffer.from(result.b64, "base64");
-      const outputPath = `demo-${combinedHash}.png`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("demo-generated")
-        .upload(outputPath, outputBuffer, {
-          contentType: "image/png",
-          upsert: true,
-        });
-
-      if (uploadError) {
-        throw new Error(`Storage upload failed: ${uploadError.message}`);
-      }
 
       // Cache the result (upsert replaces __pending__ placeholder)
       const { error: upsertError } = await supabase.from("generated_images").upsert({
@@ -217,7 +217,7 @@ export const generateDemo = inngest.createFunction(
           photo_hash: photoHash,
           ...effectiveSelections,
         },
-        image_path: outputPath,
+        image_path: result.outputPath,
         prompt: result.prompt,
         step_id: null,
         model: IMAGE_MODEL,
@@ -239,7 +239,7 @@ export const generateDemo = inngest.createFunction(
         second_pass: false,
       });
 
-      console.log(`[demo/generate] Cached: ${combinedHash} → ${outputPath}`);
+      console.log(`[demo/generate] Cached: ${combinedHash} → ${result.outputPath}`);
     });
   },
 );

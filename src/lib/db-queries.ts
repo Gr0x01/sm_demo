@@ -550,3 +550,37 @@ export async function findSingleSurfaceDiffMatch(
     selectionsJson: data.selections_json as Record<string, unknown>,
   };
 }
+
+/**
+ * Demo variant of findSingleSurfaceDiffMatch.
+ * Filters by photo_hash inside selections_json (demo rows don't have step_photo_id).
+ * Images live in the demo-generated bucket, not generated-images.
+ */
+export async function findDemoDiffMatch(
+  photoHash: string,
+  leaveOneOutHashes: string[],
+  maxDepth: number,
+): Promise<{ imagePath: string; depth: number; selectionsJson: Record<string, unknown> } | null> {
+  if (leaveOneOutHashes.length === 0) return null;
+
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("generated_images")
+    .select("image_path, scoped_edit_depth, selections_json")
+    .eq("selections_json->>photo_hash", photoHash)
+    .eq("selections_json->>_source", "demo")
+    .lt("scoped_edit_depth", maxDepth)
+    .neq("image_path", "__pending__")
+    .overlaps("leave_one_out_hashes", leaveOneOutHashes)
+    .order("scoped_edit_depth", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    imagePath: data.image_path as string,
+    depth: (data.scoped_edit_depth as number | null) ?? 0,
+    selectionsJson: data.selections_json as Record<string, unknown>,
+  };
+}

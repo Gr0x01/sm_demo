@@ -28,6 +28,7 @@ export interface DemoGenerateRequestedData {
   sessionId: string;
   effectiveSelections: Record<string, string>;
   sceneAnalysis: DemoSceneAnalysis | null;
+  leaveOneOutHashes: string[];
 }
 
 export interface PilotLeadReceivedData {
