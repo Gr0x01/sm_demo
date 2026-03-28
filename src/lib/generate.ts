@@ -17,7 +17,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v30";
+export const GENERATION_CACHE_VERSION = "v33";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -228,26 +228,26 @@ export async function buildEditPrompt(
 - Appliance swatches are authoritative for finish/color/material. Only follow text descriptors when no swatch is available.`
     : "";
 
-  const prompt = `${sceneBlock}Edit this room photo. Apply every listed selection to its specified surface — treat each as an explicit instruction to repaint or resurface, not as a diff from the current state:
+  const prompt = `${sceneBlock}Edit this room photo to match the selected finishes and appliance models.
 
 ${listLines.join("\n")}
 
-APPLY:
+RULES:
 - ${swatchMappingLine}
 - For each item marked "(use swatch #N)", match that swatch's color, pattern, and texture EXACTLY on the specified surface.
-- The swatch image is the ONLY appearance authority for color, finish, and material. Do not override it with option names or text descriptors.
-- If a line includes "swatch-derived color anchor #RRGGBB", use it as a numeric target and avoid hue drift.
+- For swatch-backed edits (including appliances), the swatch image is the ONLY appearance authority. Treat option names/descriptors as non-authoritative for color/finish/material.
+- If a line includes "swatch-derived color anchor #RRGGBB", use it as a numeric target from that swatch image and avoid hue drift (no unintended green/blue cast).
 - If a line includes "dimensions:", use them as scale/format context alongside the swatch (e.g. tile size, plank width, mosaic pattern).
-- For items marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
-- The "→ apply to" text tells you WHERE to apply each change. Treat each target as a separate mask; do NOT bleed one finish into another.${applianceRules}
-
-PRESERVE:
+- For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
+- The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
+- If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.${flooringRules}
+- Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
+- In doorway or multi-room views, keep edits inside the explicitly targeted visible zone and do NOT propagate flooring/fixtures into adjacent rooms.
+- Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.
+- Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
+- If an edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.
 - Keep the exact camera angle, perspective, lighting, and room layout.
-- Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances.
-- Keep exact counts of cabinets, drawer fronts, fixtures, and hardware. Preserve cabinet door panel style (shaker, beadboard, etc.), countertop edges, and trim profiles.
-- If a surface is not clearly visible, leave it unchanged — do not invent geometry to satisfy the request.
-- If an edit is difficult, under-edit the finish rather than changing layout or object position.${flooringRules}
-- Photorealistic result with accurate shadows and reflections.${invariantBlock}`;
+- Photorealistic result with accurate shadows and reflections.${applianceRules}${invariantBlock}`;
 
   return { prompt, swatches };
 }
