@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     // Single query: get the row regardless of pending state
     const { data: row, error: queryError } = await supabase
       .from("generated_images")
-      .select("id, image_path")
+      .select("id, image_path, scoped_edit_depth")
       .eq("selections_hash", hash)
       .single();
 
@@ -105,6 +105,7 @@ export async function POST(request: Request) {
       status: "complete",
       imageUrl: publicUrl,
       generatedImageId: String(row.id),
+      scopedEditDepth: (row.scoped_edit_depth as number) ?? 0,
     });
   } catch {
     // Transient error (DB hiccup, timeout) — don't report as not_found

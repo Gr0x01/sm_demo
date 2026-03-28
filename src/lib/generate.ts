@@ -17,7 +17,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v29";
+export const GENERATION_CACHE_VERSION = "v30";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -253,6 +253,131 @@ PRESERVE:
 }
 
 /**
+ * Build a scoped edit prompt for changing a single surface in an already-generated image.
+ * Reuses the policy/rules system from buildEditPrompt but produces a targeted prompt.
+ */
+export async function buildScopedEditPrompt(
+  changedSubcategoryId: string,
+  changedOptionId: string,
+  allSelections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  spatialHints: Record<string, string>,
+  scopedSubcategoryIds: string[],
+  sceneDescription?: string | null,
+  photoSpatialHint?: string | null,
+  resolveSwatchBuffer?: SwatchBufferResolver,
+  promptPolicyOverrides?: PromptPolicyOverrides,
+): Promise<{ prompt: string; swatches: SwatchImage[] }> {
+  const swatches: SwatchImage[] = [];
+  const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
+  if (!changed) {
+    return { prompt: "Return this image unchanged.", swatches: [] };
+  }
+
+  const { option, subCategory } = changed;
+
+  // Resolve swatch for the changed surface
+  let swatchLine = "";
+  if (option.swatchUrl && resolveSwatchBuffer) {
+    try {
+      const resolved = await resolveSwatchBuffer(option.swatchUrl);
+      if (resolved) {
+        const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
+        swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined });
+        const anchorSuffix = anchorHex ? ` (swatch-derived color anchor ${anchorHex})` : "";
+        swatchLine = `Match attached swatch #1 exactly for color, pattern, and texture${anchorSuffix}.`;
+      }
+    } catch { /* fallback below */ }
+  }
+  if (!swatchLine) {
+    const hex = option.swatchColor?.trim();
+    if (hex) {
+      swatchLine = `Apply color ${hex}.`;
+    } else {
+      swatchLine = `Apply: ${option.name}${option.promptDescriptor ? ` (${option.promptDescriptor})` : ""}.`;
+    }
+  }
+
+  const dimLine = option.dimensions?.trim() ? `\nDimensions/format: ${option.dimensions.trim()}` : "";
+  const hint = spatialHints[changedSubcategoryId];
+  const locationLine = hint ? `\nLocation: ${hint}` : "";
+
+  // Build preserve list from other selections
+  const preserveLines: string[] = [];
+  for (const [subId, optId] of Object.entries(allSelections).sort(([a], [b]) => a.localeCompare(b))) {
+    if (subId === changedSubcategoryId) continue;
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+    preserveLines.push(`- ${found.subCategory.name}`);
+  }
+  preserveLines.push("- All appliances, fixtures, hardware, and lighting");
+  preserveLines.push("- Room layout, camera angle, and perspective");
+
+  // Collect generation rules from policy system (same logic as buildEditPrompt)
+  const selectedSubIds = new Set(Object.keys(allSelections));
+  const dynamicInvariantRules = new Set<string>();
+
+  for (const [subId, optId] of Object.entries(allSelections)) {
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+    if (found.subCategory.generationRules) {
+      for (const rule of found.subCategory.generationRules) dynamicInvariantRules.add(rule);
+    }
+    if (found.option.generationRules) {
+      for (const rule of found.option.generationRules) dynamicInvariantRules.add(rule);
+    }
+  }
+
+  // Negative-guard rules for unselected subcategories
+  const subCategoryById = new Map<string, SubCategory>();
+  for (const [, { subCategory: sc }] of optionLookup) {
+    if (!subCategoryById.has(sc.id)) subCategoryById.set(sc.id, sc);
+  }
+  for (const subId of scopedSubcategoryIds) {
+    if (selectedSubIds.has(subId)) continue;
+    const sub = subCategoryById.get(subId);
+    if (sub?.generationRulesWhenNotSelected?.length) {
+      for (const rule of sub.generationRulesWhenNotSelected) dynamicInvariantRules.add(rule);
+    }
+  }
+
+  // Policy overrides
+  const invariantRules = new Set<string>(dynamicInvariantRules);
+  for (const rule of promptPolicyOverrides?.invariantRulesAlways ?? []) invariantRules.add(rule);
+  for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenSelected ?? {})) {
+    if (!selectedSubIds.has(subId)) continue;
+    for (const rule of rules) invariantRules.add(rule);
+  }
+  for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenNotSelected ?? {})) {
+    if (selectedSubIds.has(subId)) continue;
+    for (const rule of rules) invariantRules.add(rule);
+  }
+
+  const rulesBlock = invariantRules.size > 0
+    ? `\n\nSURFACE & PLACEMENT RULES:\n${Array.from(invariantRules).map(r => `- ${r}`).join("\n")}`
+    : "";
+
+  // Scene context
+  const sceneContextLines: string[] = [];
+  if (sceneDescription?.trim()) sceneContextLines.push(`SCENE: ${sceneDescription.trim()}`);
+  if (photoSpatialHint?.trim()) sceneContextLines.push(`PHOTO_LAYOUT: ${photoSpatialHint.trim()}`);
+  const sceneBlock = sceneContextLines.length > 0 ? `${sceneContextLines.join("\n")}\n\n` : "";
+
+  const prompt = `${sceneBlock}TASK: Edit this room visualization. Change ONLY the ${subCategory.name}.
+
+WHAT TO CHANGE:
+${subCategory.name} — apply the material/color from the attached swatch.${dimLine}${locationLine}
+${swatchLine}
+
+DO NOT MODIFY (these must remain exactly as they currently appear):
+${preserveLines.join("\n")}
+
+Photorealistic result with accurate shadows and reflections.${rulesBlock}`;
+
+  return { prompt, swatches };
+}
+
+/**
  * Build a deterministic signature of the prompt context fields that affect generation output.
  * Used in the selections hash so cache invalidates when prompts/spatial hints/generation rules change.
  */
@@ -357,6 +482,8 @@ export interface DerivedGenerationContext {
   /** The composite key that was hashed — use as selections_json for DB claims. */
   hashInputs: Record<string, string>;
   modelName: string;
+  /** Pre-computed hashes for single-surface diff matching (partial cache). */
+  leaveOneOutHashes: string[];
 }
 
 /**
@@ -447,6 +574,7 @@ export function deriveGenerationContext(
   };
   const selectionsHash = hashSelections(hashInputs);
   const selectionsFingerprint = hashSelections(scopedSelections);
+  const leaveOneOutHashes = computeLeaveOneOutHashes(hashInputs, scopedSelections);
 
   return {
     scopedSelections,
@@ -460,7 +588,54 @@ export function deriveGenerationContext(
     selectionsFingerprint,
     hashInputs,
     modelName,
+    leaveOneOutHashes,
   };
+}
+
+/**
+ * Compute leave-one-out hashes for single-surface diff matching.
+ * For each subcategory in scopedSelections, computes a hash of all hashInputs
+ * EXCEPT that subcategory. Two selection sets that share a leave-one-out hash
+ * differ by exactly one subcategory.
+ */
+export function computeLeaveOneOutHashes(
+  hashInputs: Record<string, string>,
+  scopedSelections: Record<string, string>,
+): string[] {
+  return Object.keys(scopedSelections).sort().map(subId => {
+    const without = { ...hashInputs };
+    delete without[subId];
+    return hashSelections(without);
+  });
+}
+
+/**
+ * Given two selections maps, find the one subcategory that differs.
+ * Returns null if they differ by 0 or 2+ subcategories.
+ */
+export function identifyChangedSubcategory(
+  baseSelectionsJson: Record<string, unknown>,
+  newSelections: Record<string, string>,
+): { subcategoryId: string; oldOptionId: string; newOptionId: string } | null {
+  // Filter out _-prefixed metadata keys from the base
+  const baseSelections: Record<string, string> = {};
+  for (const [k, v] of Object.entries(baseSelectionsJson)) {
+    if (!k.startsWith("_") && typeof v === "string") baseSelections[k] = v;
+  }
+
+  let changed: { subcategoryId: string; oldOptionId: string; newOptionId: string } | null = null;
+  const allKeys = new Set([...Object.keys(baseSelections), ...Object.keys(newSelections)]);
+
+  for (const key of allKeys) {
+    const oldVal = baseSelections[key];
+    const newVal = newSelections[key];
+    if (oldVal !== newVal) {
+      if (changed) return null; // 2+ diffs
+      changed = { subcategoryId: key, oldOptionId: oldVal ?? "", newOptionId: newVal ?? "" };
+    }
+  }
+
+  return changed;
 }
 
 export function hashSelections(selections: Record<string, string>): string {

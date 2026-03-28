@@ -520,3 +520,33 @@ export async function getOptionLookup(orgId: string): Promise<Map<string, { opti
 
   return map;
 }
+
+// ---------- Partial cache: single-surface diff match ----------
+
+export async function findSingleSurfaceDiffMatch(
+  stepPhotoId: string,
+  leaveOneOutHashes: string[],
+  maxDepth: number,
+): Promise<{ imagePath: string; depth: number; selectionsJson: Record<string, unknown> } | null> {
+  if (leaveOneOutHashes.length === 0) return null;
+
+  const supabase = getServiceClient();
+  const { data, error } = await supabase
+    .from("generated_images")
+    .select("image_path, scoped_edit_depth, selections_json")
+    .eq("step_photo_id", stepPhotoId)
+    .lt("scoped_edit_depth", maxDepth)
+    .neq("image_path", "__pending__")
+    .overlaps("leave_one_out_hashes", leaveOneOutHashes)
+    .order("scoped_edit_depth", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  return {
+    imagePath: data.image_path as string,
+    depth: data.scoped_edit_depth as number,
+    selectionsJson: data.selections_json as Record<string, unknown>,
+  };
+}

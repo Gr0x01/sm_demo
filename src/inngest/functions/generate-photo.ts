@@ -1,10 +1,10 @@
 import OpenAI, { toFile } from "openai";
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
-import { buildEditPrompt } from "@/lib/generate";
+import { buildEditPrompt, buildScopedEditPrompt, identifyChangedSubcategory } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
-import { getStepPhotoAiConfig, getOptionLookup } from "@/lib/db-queries";
+import { getStepPhotoAiConfig, getOptionLookup, findSingleSurfaceDiffMatch } from "@/lib/db-queries";
 import { captureAiEvent, captureAiError, estimateOpenAICost, estimateGeminiImageCost } from "@/lib/posthog-server";
 
 const openai = new OpenAI();
@@ -66,7 +66,147 @@ export const generatePhoto = inngest.createFunction(
       spatialHints,
       photoSpatialHint,
       selectionsJsonForClaim,
+      leaveOneOutHashes,
     } = event.data;
+
+    const MAX_SCOPED_EDIT_DEPTH = 3;
+
+    // --- Step 0: Check for single-surface diff match (partial cache) ---
+    const diffMatch = await step.run("check-diff-cache", async () => {
+      return findSingleSurfaceDiffMatch(stepPhotoId, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH);
+    });
+
+    if (diffMatch) {
+      const changedSub = identifyChangedSubcategory(diffMatch.selectionsJson, scopedSelections);
+
+      if (changedSub) {
+        // --- Scoped edit: change only the differing surface ---
+        const scopedResult = await step.run("scoped-edit", async () => {
+          const supabase = getServiceClient();
+          const optionLookup = await getOptionLookup(orgId);
+
+          // Download the base image from storage
+          const { data: baseImageData, error: dlErr } = await supabase.storage
+            .from("generated-images")
+            .download(diffMatch.imagePath);
+          if (dlErr || !baseImageData) throw new Error(`Failed to download base image: ${dlErr?.message}`);
+
+          const baseBuffer = Buffer.from(await baseImageData.arrayBuffer());
+          const resolveSwatchBuffer = createSwatchResolver(supabase);
+
+          const { prompt, swatches } = await buildScopedEditPrompt(
+            changedSub.subcategoryId,
+            changedSub.newOptionId,
+            scopedSelections,
+            optionLookup,
+            spatialHints,
+            scopedSubcategoryIds,
+            sceneDescription,
+            photoSpatialHint,
+            resolveSwatchBuffer,
+            resolvedPolicy.promptOverrides,
+          );
+
+          // Filter unsupported swatch formats
+          const supportedSwatches = swatches.filter(s =>
+            ["image/jpeg", "image/png", "image/webp"].includes(s.mediaType),
+          );
+
+          const inputImages = [
+            await toFile(baseBuffer, "base.png", { type: "image/png" }),
+            ...await Promise.all(
+              supportedSwatches.map(s => {
+                const ext = s.mediaType.split("/")[1] || "png";
+                const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
+                return toFile(s.buffer, filename, { type: s.mediaType });
+              }),
+            ),
+          ];
+
+          console.log(`[generate/photo] Scoped edit for ${stepPhotoId}: changing ${changedSub.subcategoryId} (depth ${diffMatch.depth} → ${diffMatch.depth + 1})`);
+
+          const genStart = performance.now();
+          try {
+            const result = await openai.images.edit({
+              model: modelName,
+              image: inputImages,
+              prompt,
+              quality: "medium",
+              size: "1536x1024",
+              input_fidelity: "high",
+            });
+
+            const generatedData = result.data?.[0];
+            if (!generatedData?.b64_json) throw new Error("No image from scoped edit");
+
+            const durationMs = Math.round(performance.now() - genStart);
+            console.log(`[generate/photo] Scoped edit complete for ${stepPhotoId} in ${durationMs}ms`);
+            return { b64: generatedData.b64_json, prompt, durationMs };
+          } catch (err) {
+            const durationMs = Math.round(performance.now() - genStart);
+            await captureAiError(sessionId, {
+              provider: "openai",
+              model: modelName,
+              route: "/api/generate/photo",
+              duration_ms: durationMs,
+              error: err,
+              orgId, orgSlug, floorplanSlug,
+            });
+            throw err;
+          }
+        });
+
+        // --- Persist scoped edit result ---
+        await step.run("persist-scoped", async () => {
+          const supabase = getServiceClient();
+          const outputBuffer = Buffer.from(scopedResult.b64, "base64");
+          const outputPath = `${orgId}/${selectionsHash}.png`;
+
+          const { error: uploadError } = await supabase.storage
+            .from("generated-images")
+            .upload(outputPath, outputBuffer, { contentType: "image/png", upsert: true });
+
+          if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+
+          const { error: upsertError } = await supabase
+            .from("generated_images")
+            .upsert({
+              selections_hash: selectionsHash,
+              selections_json: selectionsJsonForClaim,
+              image_path: outputPath,
+              prompt: scopedResult.prompt,
+              step_id: stepId,
+              step_photo_id: stepPhotoId,
+              buyer_session_id: sessionId,
+              selections_fingerprint: selectionsFingerprint,
+              model: modelName,
+              org_id: orgId,
+              scoped_edit_depth: diffMatch.depth + 1,
+              leave_one_out_hashes: leaveOneOutHashes,
+            }, { onConflict: "selections_hash" });
+
+          if (upsertError) console.error("[generate/photo] DB upsert failed:", upsertError);
+
+          await captureAiEvent(sessionId, {
+            provider: "openai",
+            model: modelName,
+            route: "/api/generate/photo",
+            duration_ms: scopedResult.durationMs,
+            cost_usd: estimateOpenAICost(modelName, 1),
+            orgId, orgSlug, floorplanSlug,
+            image_size: "1536x1024",
+            image_quality: "medium",
+            scoped_edit: true,
+            scoped_edit_depth: diffMatch.depth + 1,
+            scoped_edit_surface: changedSub.subcategoryId,
+          });
+
+          console.log(`[generate/photo] Scoped edit persisted for ${stepPhotoId} (depth ${diffMatch.depth + 1})`);
+        });
+
+        return; // Done — skip full pipeline
+      }
+    }
 
     // --- Step 1: Main pass generation via OpenAI (up to 120s) ---
     const firstPass = await step.run("generate", async () => {
@@ -238,30 +378,67 @@ export const generatePhoto = inngest.createFunction(
         const supabase = getServiceClient();
         const optionLookup = await getOptionLookup(orgId);
 
-        // Build prompt with only the isolated subcategory selections
+        // Build a minimal prompt for the post-pass — only what Flash needs to change the surface.
+        // The full buildEditPrompt sends scene context, spatial hints, PRESERVE rules, etc.
+        // that cause Flash to hallucinate objects (e.g. adding a fridge to an empty alcove).
         const isolatedSubs = new Set(resolvedPolicy.flashPostPass!.isolateSubcategories);
-        const isolatedSelections: Record<string, string> = {};
-        for (const [subId, optId] of Object.entries(scopedSelections)) {
-          if (isolatedSubs.has(subId)) isolatedSelections[subId] = optId;
-        }
-
-        const isolatedSubIds = scopedSubcategoryIds.filter((id) => isolatedSubs.has(id));
-        const isolatedSpatialHints: Record<string, string> = {};
-        for (const [k, v] of Object.entries(spatialHints)) {
-          if (isolatedSubs.has(k)) isolatedSpatialHints[k] = v;
-        }
-
         const resolveSwatchBuffer = createSwatchResolver(supabase);
-        const { prompt, swatches } = await buildEditPrompt(
-          isolatedSelections,
-          optionLookup,
-          isolatedSpatialHints,
-          isolatedSubIds,
-          sceneDescription,
-          photoSpatialHint,
-          resolveSwatchBuffer,
-          resolvedPolicy.promptOverrides,
-        );
+
+        const swatches: Array<{ buffer: Buffer; mediaType: string }> = [];
+        const lines: string[] = [];
+        const rules: string[] = [];
+        let swatchIdx = 1;
+
+        for (const [subId, optId] of Object.entries(scopedSelections)) {
+          if (!isolatedSubs.has(subId)) continue;
+          const entry = optionLookup.get(`${subId}:${optId}`);
+          if (!entry) continue;
+          const { option, subCategory } = entry;
+
+          // Collect generation rules from subcategory + option
+          for (const r of subCategory.generationRules ?? []) rules.push(r);
+          for (const r of option.generationRules ?? []) rules.push(r);
+
+          const hint = spatialHints[subId];
+          const target = hint ? `${subCategory.name} → apply to ${hint}` : subCategory.name;
+          const dimSuffix = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
+
+          if (option.swatchUrl) {
+            const resolved = await resolveSwatchBuffer(option.swatchUrl);
+            if (resolved) {
+              swatches.push(resolved);
+              lines.push(`${swatchIdx}. ${target}${dimSuffix} (use swatch #${swatchIdx})`);
+              swatchIdx += 1;
+              continue;
+            }
+          }
+          // Fallback: no swatch
+          const hex = option.swatchColor?.trim();
+          if (hex) {
+            lines.push(`${swatchIdx}. ${target} (no swatch; target color ${hex})`);
+          } else {
+            lines.push(`${swatchIdx}. ${target}: ${option.name} (no swatch; follow text)`);
+          }
+          swatchIdx += 1;
+        }
+
+        // Guard: if no lines were produced, the post-pass has nothing to do.
+        // Return null to fall back to the main pass output rather than sending an empty prompt.
+        if (lines.length === 0) {
+          console.warn(`[generate/photo] Flash post-pass skipped for ${stepPhotoId}: no isolated selections resolved`);
+          return null;
+        }
+
+        const rulesBlock = rules.length > 0
+          ? `\n\nRULES:\n${rules.map(r => `- ${r}`).join("\n")}`
+          : "";
+
+        const prompt = `Edit this room photo. Change ONLY the surface(s) listed below. Do not alter anything else in the image — no objects, appliances, fixtures, alcoves, or other surfaces.
+
+${lines.join("\n")}
+
+Swatch mapping: after the room photo, attached swatches are ordered #1..#${swatches.length}.
+Match each swatch's color, pattern, and texture EXACTLY on its specified surface.${rulesBlock}`;
 
         // Build multimodal parts for Gemini: previous output + swatches + prompt
         const prevOutputBuffer = Buffer.from(finalB64, "base64");
@@ -282,7 +459,7 @@ export const generatePhoto = inngest.createFunction(
         const ai = new GoogleGenAI({ apiKey: googleApiKey });
 
         console.log(
-          `[generate/photo] Flash post-pass: sending ${swatches.length + 1} images to ${postPassModel} for photo ${stepPhotoId} (isolated: ${Object.keys(isolatedSelections).join(", ")})`,
+          `[generate/photo] Flash post-pass: sending ${swatches.length + 1} images to ${postPassModel} for photo ${stepPhotoId} (isolated: ${lines.length} surface(s))`,
         );
 
         const genStart = performance.now();
@@ -309,8 +486,14 @@ export const generatePhoto = inngest.createFunction(
           }
           if (!imageB64) throw new Error("Flash post-pass model returned no image");
 
+          // Resize to match OpenAI main pass output (1536x1024) — Flash may return different dimensions
+          const resized = await sharp(Buffer.from(imageB64, "base64"))
+            .resize(1536, 1024, { fit: "fill" })
+            .png()
+            .toBuffer();
+
           console.log(`[generate/photo] Flash post-pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { b64: imageB64, prompt, durationMs };
+          return { b64: resized.toString("base64"), prompt, durationMs };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
           await captureAiError(sessionId, {
@@ -371,6 +554,8 @@ export const generatePhoto = inngest.createFunction(
           selections_fingerprint: selectionsFingerprint,
           model: modelName,
           org_id: orgId,
+          scoped_edit_depth: 0,
+          leave_one_out_hashes: leaveOneOutHashes,
         }, { onConflict: "selections_hash" });
 
       if (upsertError) {

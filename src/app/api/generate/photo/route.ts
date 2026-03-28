@@ -26,6 +26,7 @@ async function claimGenerationSlot(
   orgId: string,
   stepId: string,
   selectionsJson: Record<string, unknown>,
+  leaveOneOutHashes: string[],
 ): Promise<ClaimResult> {
   // Clean up stale pending rows (older than 5 min — safely above maxDuration of 120s)
   const staleThreshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();
@@ -45,6 +46,8 @@ async function claimGenerationSlot(
       step_photo_id: stepPhotoId,
       org_id: orgId,
       step_id: stepId,
+      leave_one_out_hashes: leaveOneOutHashes,
+      scoped_edit_depth: 0,
     });
 
   if (error) {
@@ -120,6 +123,7 @@ export async function POST(request: Request) {
     const {
       scopedSelections, scopedSubcategoryIds, spatialHints, sceneDescription,
       resolvedPolicy, selectionsHash, selectionsFingerprint, hashInputs, modelName,
+      leaveOneOutHashes,
     } = deriveGenerationContext(aiConfig, mergedSelections, optionLookup, { orgSlug, floorplanSlug, stepPhotoId }, dbPolicy);
 
     // --- Retry: delete existing cached image so we regenerate fresh ---
@@ -153,7 +157,7 @@ export async function POST(request: Request) {
     }
 
     // --- Double-click guard via DB placeholder row (cross-instance safe) ---
-    const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId, hashInputs);
+    const claimResult = await claimGenerationSlot(supabase, selectionsHash, stepPhotoId, org.id, aiConfig.stepId, hashInputs, leaveOneOutHashes);
     if (claimResult === "in_progress") {
       return NextResponse.json(
         { error: "This combination is already being generated", selectionsHash },
@@ -188,6 +192,7 @@ export async function POST(request: Request) {
           spatialHints,
           photoSpatialHint: aiConfig.photo.spatialHint,
           selectionsJsonForClaim: hashInputs,
+          leaveOneOutHashes,
         },
       });
     } catch (sendError) {
