@@ -37,7 +37,7 @@ export function computeDemoLeaveOneOutHashes(
   effectiveSelections: Record<string, string>,
 ): string[] {
   return Object.keys(effectiveSelections).sort().map(subId => {
-    const without = { ...effectiveSelections, _cacheVersion: DEMO_GENERATION_CACHE_VERSION };
+    const without: Record<string, string> = { ...effectiveSelections, _cacheVersion: DEMO_GENERATION_CACHE_VERSION };
     delete without[subId];
     const selectionsHash = hashSelections(without);
     return createHash("sha256")

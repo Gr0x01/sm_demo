@@ -567,7 +567,7 @@ export async function findDemoDiffMatch(
   const { data, error } = await supabase
     .from("generated_images")
     .select("image_path, scoped_edit_depth, selections_json")
-    .eq("selections_json->>photo_hash", photoHash)
+    .eq("selections_json->>_photo_hash", photoHash)
     .eq("selections_json->>_source", "demo")
     .lt("scoped_edit_depth", maxDepth)
     .neq("image_path", "__pending__")

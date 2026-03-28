@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       .eq("org_id", DEMO_ORG_ID)
       .neq("image_path", "__pending__")
       .eq("selections_json->>_source", "demo")
-      .eq("selections_json->>session_id", sessionId);
+      .eq("selections_json->>_session_id", sessionId);
 
     if ((genCount ?? 0) >= MAX_DEMO_GENERATIONS) {
       return NextResponse.json(
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       .from("generated_images")
       .insert({
         selections_hash: combinedHash,
-        selections_json: { _source: "demo", session_id: sessionId, ...effectiveSelections },
+        selections_json: { _source: "demo", _session_id: sessionId, ...effectiveSelections },
         image_path: "__pending__",
         org_id: DEMO_ORG_ID,
         step_id: null,

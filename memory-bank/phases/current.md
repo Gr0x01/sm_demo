@@ -133,7 +133,17 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key fix — `@google/genai` was devDependency**: Flash post-pass import failed on Vercel (devDeps not installed in production). Moved to production dependencies.
 - **API fix — `selectionsHash` in cache hit response**: `/api/generate/photo` now returns `selectionsHash` on cache hits too, so scripts can track all dispatched hashes.
 - **All prospect demo presets regenerated (2026-03-28)**: All 10 demos × 3 presets = 30 images regenerated with the new pipeline (dimensions, backsplash rules, flash post-pass for herringbone). Config files created for all 10 demos in `scripts/prospect-configs/`.
-- **Cache version**: v34
+- **Cache version**: v35
+
+**Generation pipeline optimization (2026-03-29):**
+- **I/O parallelization**: All generation steps (generate, scoped-edit, flash-post-pass) now parallelize DB queries, hero/swatch downloads, and intermediate fetches via `Promise.all`. `preWarmSwatchCache` helper batch-downloads all swatches upfront; `buildEditPrompt` serves from memory cache.
+- **PNG → JPEG switch**: All intermediate and final images now JPEG quality 90 (~10x smaller). `outputPath` changed from `.jpg`. Old PNG cache entries deleted from DB (211 rows) and storage (461 orphaned files). 30 preset-referenced PNGs preserved.
+- **Top-level `@google/genai`**: Moved from dynamic `await import()` to static import — eliminates module load overhead per invocation.
+- **Demo b64 fix**: `generate-demo.ts` now uploads to storage within the generate step and passes only the path through Inngest (was passing full b64 through step output, risking Inngest size limit).
+- **Demo partial cache**: Full scoped-edit branch ported to `/try` demo pipeline. `computeDemoLeaveOneOutHashes` in `demo-generate.ts` (embeds photoHash so different users' photos never cross-match). `findDemoDiffMatch` in `db-queries.ts` (filters by `selections_json->>_photo_hash` + `_source = demo` since demo rows have no `step_photo_id`). `generate-demo.ts` Inngest function: `check-diff-cache` → `scoped-edit` → `persist-scoped` or fallback to full pipeline. Uses OpenAI 1.5 for scoped edits (not Flash — hallucination risk on unknown user-uploaded photos). Only new generations (post-deploy) eligible as diff-cache sources.
+- **Key fix — `selections_json` metadata keys need `_` prefix**: Demo rows stored `session_id` and `photo_hash` without `_` prefixes. `identifyChangedSubcategory` only filters keys starting with `_`, so it treated these metadata keys as selection diffs → always returned null → scoped edit never fired. Fixed to `_session_id` and `_photo_hash` everywhere (route claim, both persist upserts, generation cap query, diff match query).
+- **Result**: Flash post-pass dropped from 35-50s to ~30s. Main pass I/O overhead reduced by parallelizing aiConfig + optionLookup + hero download + swatch downloads.
+- **Cache versions bumped**: `GENERATION_CACHE_VERSION` v34→v35, `DEMO_GENERATION_CACHE_VERSION` v8→v9.
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)

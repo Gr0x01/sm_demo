@@ -62,9 +62,157 @@ export const generateDemo = inngest.createFunction(
   },
   { event: "demo/generate.requested" },
   async ({ event, step }) => {
-    const { combinedHash, photoHash, sessionId, effectiveSelections, sceneAnalysis } = event.data;
+    const { combinedHash, photoHash, sessionId, effectiveSelections, sceneAnalysis, leaveOneOutHashes } = event.data;
 
-    // --- Step 1: Prep + generate ---
+    const MAX_SCOPED_EDIT_DEPTH = 3;
+    const outputPath = `demo-${combinedHash}.jpg`;
+
+    // --- Step 0: Check for single-surface diff match (partial cache) ---
+    const diffMatch = await step.run("check-diff-cache", async () => {
+      return findDemoDiffMatch(photoHash, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH);
+    });
+
+    if (diffMatch) {
+      const changedSub = identifyChangedSubcategory(diffMatch.selectionsJson, effectiveSelections);
+
+      if (changedSub) {
+        // --- Scoped edit: change only the differing surface ---
+        const scopedResult = await step.run("scoped-edit", async () => {
+          const supabase = getServiceClient();
+          const optionLookup = buildDemoOptionLookup();
+
+          // Download the base image (previously generated)
+          const { data: baseImageData, error: dlErr } = await supabase.storage
+            .from("demo-generated")
+            .download(diffMatch.imagePath);
+          if (dlErr || !baseImageData) throw new Error(`Failed to download base image: ${dlErr?.message}`);
+
+          const baseBuffer = Buffer.from(await baseImageData.arrayBuffer());
+
+          // Merge spatial hints
+          const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
+          if (sceneAnalysis?.spatialHints) {
+            for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
+              if (hint && hint.trim()) spatialHints[key] = hint;
+            }
+          }
+
+          const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
+
+          const { prompt, swatches } = await buildScopedEditPrompt(
+            changedSub.subcategoryId,
+            changedSub.newOptionId,
+            effectiveSelections,
+            optionLookup,
+            spatialHints,
+            scopedSubcategoryIds,
+            sceneAnalysis?.sceneDescription ?? null,
+            null, // photoSpatialHint
+            resolveLocalSwatch,
+          );
+
+          const supportedSwatches = swatches.filter(s =>
+            ["image/jpeg", "image/png", "image/webp"].includes(s.mediaType),
+          );
+
+          const inputImages = [
+            await toFile(baseBuffer, "base.jpg", { type: "image/jpeg" }),
+            ...await Promise.all(
+              supportedSwatches.map(s => {
+                const ext = s.mediaType.split("/")[1] || "png";
+                const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
+                return toFile(s.buffer, filename, { type: s.mediaType });
+              }),
+            ),
+          ];
+
+          console.log(`[demo/generate] Scoped edit: changing ${changedSub.subcategoryId} (depth ${diffMatch.depth} → ${diffMatch.depth + 1})`);
+
+          const genStart = performance.now();
+          try {
+            const result = await openai.images.edit({
+              model: IMAGE_MODEL,
+              image: inputImages,
+              prompt,
+              quality: "medium",
+              size: "1536x1024",
+              input_fidelity: "high",
+            });
+
+            const generatedData = result.data?.[0];
+            if (!generatedData?.b64_json) throw new Error("No image from scoped edit");
+
+            const durationMs = Math.round(performance.now() - genStart);
+
+            const jpegBuffer = await sharp(Buffer.from(generatedData.b64_json, "base64"))
+              .jpeg({ quality: 90 })
+              .toBuffer();
+
+            const { error: uploadError } = await supabase.storage
+              .from("demo-generated")
+              .upload(outputPath, jpegBuffer, { contentType: "image/jpeg", upsert: true });
+            if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
+
+            console.log(`[demo/generate] Scoped edit complete in ${durationMs}ms`);
+            return { prompt, durationMs };
+          } catch (err) {
+            const durationMs = Math.round(performance.now() - genStart);
+            await captureAiError("anonymous", {
+              provider: "openai",
+              model: IMAGE_MODEL,
+              route: "/api/try/generate",
+              duration_ms: durationMs,
+              error: err,
+            });
+            throw err;
+          }
+        });
+
+        // --- Persist scoped edit ---
+        await step.run("persist-scoped", async () => {
+          const supabase = getServiceClient();
+
+          const { error: upsertError } = await supabase.from("generated_images").upsert({
+            selections_hash: combinedHash,
+            selections_json: {
+              _source: "demo",
+              _cacheVersion: DEMO_GENERATION_CACHE_VERSION,
+              _session_id: sessionId,
+              _photo_hash: photoHash,
+              ...effectiveSelections,
+            },
+            image_path: outputPath,
+            prompt: scopedResult.prompt,
+            step_id: null,
+            model: IMAGE_MODEL,
+            org_id: DEMO_ORG_ID,
+            scoped_edit_depth: diffMatch.depth + 1,
+            leave_one_out_hashes: leaveOneOutHashes,
+          }, { onConflict: "selections_hash" });
+
+          if (upsertError) console.error("[demo/generate] DB upsert failed:", upsertError);
+
+          await captureAiEvent("anonymous", {
+            provider: "openai",
+            model: IMAGE_MODEL,
+            route: "/api/try/generate",
+            duration_ms: scopedResult.durationMs,
+            cost_usd: estimateOpenAICost(IMAGE_MODEL, 1),
+            image_size: "1536x1024",
+            image_quality: "medium",
+            scoped_edit: true,
+            scoped_edit_depth: diffMatch.depth + 1,
+            scoped_edit_surface: changedSub.subcategoryId,
+          });
+
+          console.log(`[demo/generate] Scoped edit persisted (depth ${diffMatch.depth + 1})`);
+        });
+
+        return; // Done — skip full pipeline
+      }
+    }
+
+    // --- Step 1: Full generation via OpenAI ---
     const result = await step.run("generate", async () => {
       const supabase = getServiceClient();
 
@@ -177,7 +325,6 @@ export const generateDemo = inngest.createFunction(
         const durationMs = Math.round(performance.now() - genStart);
 
         // Convert PNG → JPEG and upload within this step — don't return b64 through Inngest
-        const outputPath = `demo-${combinedHash}.jpg`;
         const jpegBuffer = await sharp(Buffer.from(imageData.b64_json, "base64"))
           .jpeg({ quality: 90 })
           .toBuffer();
@@ -189,7 +336,7 @@ export const generateDemo = inngest.createFunction(
 
         console.log(`[demo/generate] Generation complete in ${durationMs}ms`);
 
-        return { outputPath, prompt, durationMs };
+        return { prompt, durationMs };
       } catch (err) {
         const durationMs = Math.round(performance.now() - genStart);
         await captureAiError("anonymous", {
@@ -213,15 +360,17 @@ export const generateDemo = inngest.createFunction(
         selections_json: {
           _source: "demo",
           _cacheVersion: DEMO_GENERATION_CACHE_VERSION,
-          session_id: sessionId,
-          photo_hash: photoHash,
+          _session_id: sessionId,
+          _photo_hash: photoHash,
           ...effectiveSelections,
         },
-        image_path: result.outputPath,
+        image_path: outputPath,
         prompt: result.prompt,
         step_id: null,
         model: IMAGE_MODEL,
         org_id: DEMO_ORG_ID,
+        scoped_edit_depth: 0,
+        leave_one_out_hashes: leaveOneOutHashes,
       }, { onConflict: "selections_hash" });
 
       if (upsertError) {
@@ -239,7 +388,7 @@ export const generateDemo = inngest.createFunction(
         second_pass: false,
       });
 
-      console.log(`[demo/generate] Cached: ${combinedHash} → ${result.outputPath}`);
+      console.log(`[demo/generate] Cached: ${combinedHash} → ${outputPath}`);
     });
   },
 );

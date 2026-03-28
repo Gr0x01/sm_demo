@@ -138,11 +138,11 @@ Supabase
 3. Cache hit → returns 200 with URL + `cacheHit: true`
 4. Cache miss → claim `__pending__` slot (DB dedup, 5 min stale TTL) → dispatch `photo/generate.requested` to Inngest → return **202** with `selectionsHash`
 5. **Inngest function** (`generate-photo`): up to 4 steps, each gets its own 120s Vercel invocation:
-   - `generate` — load hero photo + swatches from Supabase Storage, build prompt via `buildEditPrompt`, call OpenAI `images.edit` (gpt-image-1.5, quality: medium, 1536x1024, input_fidelity: high), upload result to Storage
+   - `generate` — parallel fetch aiConfig + optionLookup + hero photo + swatches (pre-warmed cache), build prompt via `buildEditPrompt`, call OpenAI `images.edit` (gpt-image-1.5, quality: medium, 1536x1024, input_fidelity: high), convert PNG→JPEG q90, upload to Storage
    - `refine` — conditional policy second pass (e.g., slide-in range correction), only when policy requires it
-   - `flash-post-pass` — conditional Gemini isolation pass for `needs_isolation` options (e.g., herringbone tile)
+   - `flash-post-pass` — conditional Gemini isolation pass for `needs_isolation` options (e.g., herringbone tile). Parallel fetch optionLookup + intermediate download + all swatches.
    - `persist` — upsert cache row replacing `__pending__`, PostHog event (image already in Storage from prior step)
-   - Steps pass images via Supabase Storage between invocations (Inngest step output size limit prevents b64 transfer).
+   - Steps pass images via Supabase Storage as JPEG between invocations (~300KB vs ~3-4MB PNG). Inngest step output size limit prevents b64 transfer.
    - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
 6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.
 7. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs
