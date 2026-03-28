@@ -13,6 +13,7 @@ const updateSchema = z.object({
   swatch_color: z.string().nullable().optional(),
   nudge: z.string().nullable().optional(),
   is_default: z.boolean().optional(),
+  needs_isolation: z.boolean().optional(),
   sort_order: z.number().int().optional(),
   generation_rules: z.array(z.string().min(1).max(500)).max(20).nullable().optional(),
   dimensions: z.string().max(100).nullable().optional(),

@@ -1274,6 +1274,7 @@ function OptionEditorModal({
     promptDescriptor: option.prompt_descriptor ?? "",
     dimensions: option.dimensions ?? "",
     isDefault: option.is_default,
+    needsIsolation: option.needs_isolation ?? false,
     generationRulesText: rulesToText(option.generation_rules),
   });
   const [saving, setSaving] = useState(false);
@@ -1291,6 +1292,7 @@ function OptionEditorModal({
       promptDescriptor: option.prompt_descriptor ?? "",
       dimensions: option.dimensions ?? "",
       isDefault: option.is_default,
+      needsIsolation: option.needs_isolation ?? false,
       generationRulesText: rulesToText(option.generation_rules),
     });
   }, [
@@ -1304,6 +1306,7 @@ function OptionEditorModal({
     option.prompt_descriptor,
     option.dimensions,
     option.is_default,
+    option.needs_isolation,
     option.generation_rules,
   ]);
 
@@ -1329,6 +1332,7 @@ function OptionEditorModal({
     if (normalizedDimensions !== (option.dimensions ?? null)) updates.dimensions = normalizedDimensions;
     if (normalizedSwatchUrl !== (option.swatch_url ?? null)) updates.swatch_url = normalizedSwatchUrl;
     if (draft.isDefault !== option.is_default) updates.is_default = draft.isDefault;
+    if (draft.needsIsolation !== (option.needs_isolation ?? false)) updates.needs_isolation = draft.needsIsolation;
     const normalizedGenRules = parseRulesText(draft.generationRulesText);
     if (JSON.stringify(normalizedGenRules) !== JSON.stringify(option.generation_rules ?? null)) updates.generation_rules = normalizedGenRules;
 
@@ -1535,6 +1539,7 @@ function OptionDetailPanel({
     promptDescriptor: string;
     dimensions: string;
     isDefault: boolean;
+    needsIsolation: boolean;
     generationRulesText: string;
   };
   setDraft: React.Dispatch<React.SetStateAction<{
@@ -1547,6 +1552,7 @@ function OptionDetailPanel({
     promptDescriptor: string;
     dimensions: string;
     isDefault: boolean;
+    needsIsolation: boolean;
     generationRulesText: string;
   }>>;
   generating: boolean;
@@ -1682,15 +1688,26 @@ function OptionDetailPanel({
       </div>
 
       <div className="border border-slate-200 bg-slate-50 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={draft.isDefault}
-            onChange={(e) => setDraft((prev) => ({ ...prev, isDefault: e.target.checked }))}
-            className="accent-[var(--color-navy)]"
-          />
-          Default (included)
-        </label>
+        <div className="flex items-center gap-5">
+          <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={draft.isDefault}
+              onChange={(e) => setDraft((prev) => ({ ...prev, isDefault: e.target.checked }))}
+              className="accent-[var(--color-navy)]"
+            />
+            Default (included)
+          </label>
+          <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={draft.needsIsolation}
+              onChange={(e) => setDraft((prev) => ({ ...prev, needsIsolation: e.target.checked }))}
+              className="accent-amber-600"
+            />
+            Needs isolation pass
+          </label>
+        </div>
         <div className="text-slate-500 text-xs">
           Slug: <span className="font-mono text-slate-700">{option.slug}</span>
         </div>

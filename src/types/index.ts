@@ -9,6 +9,7 @@ export interface Option {
   nudge?: string;
   generationRules?: string[];
   isDefault?: boolean;
+  needsIsolation?: boolean;
 }
 
 export interface SubCategory {
@@ -69,6 +70,7 @@ export interface AdminOption {
   floorplan_ids: string[];
   generation_rules: string[] | null;
   dimensions: string | null;
+  needs_isolation: boolean;
 }
 
 export interface AdminSubcategory {

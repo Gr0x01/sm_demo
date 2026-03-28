@@ -105,11 +105,16 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
   - HQ picket swatch + installed reference photo uploaded to storage
   - `GENERATION_CACHE_VERSION` bumped v27→v28
 - **Key finding — isolation works**: Single backsplash-only pass (1 swatch) produces dramatically better pattern + color than the full 19-item pass. Proven for herringbone, subway, square tiles. This is the path for a two-pass backsplash system.
-- **Key finding — picket tiles unsolved**: Elongated hexagon picket tiles fail across ALL models and approaches tested. Shape vs scale tradeoff: AI gets shape right at wrong scale, or scale right with wrong shape. Never both.
-- **Approaches tested for picket** (all failed): prompt-only variations (7 tests), masked inpainting (Gemini mask + OpenAI), texture composite (tiled swatch + AI refinement), FLUX Pro v1 Fill (fal.ai), Ideogram v3/edit, Reve/edit, tile patch generation (flat texture worked but composite didn't).
-- **Flat tile texture generation works**: gpt-image-1.5 CAN generate correct picket hexagons as a flat texture (no room context). The tile-patch approach (generate flat → composite → blend) is the most promising direction.
-- **Next**: Two-pass system — Nano Banana (pass 1) then gpt-image-1.5 (pass 2). Also test combining tile scale context + geometry description + reference photo in the standard pipeline.
-- **Full research**: `memory-bank/backsplash-pattern-research.md`, test scripts in `scripts/test-backsplash-*.ts`
+- **Key finding — picket tiles unsolved in single pass**: Elongated hexagon picket tiles fail across ALL models and approaches in a single pass. Shape vs scale tradeoff. Not just an SM problem — any builder with non-standard tile patterns will hit this.
+- **Nano Banana (Gemini) tested (2026-03-28)**: Flash 3.1 competitive with Pro for backsplash isolation. Hex shapes slightly better than 1.5. ~22s warm per pass. Reference photos marginal. Dimensions help.
+- **Pre-pass tested and REJECTED (2026-03-28)**: 1.5 overwrites whatever the pre-pass renders — even with preservation rules, even at 2K resolution. The AI reinterprets the backsplash surface when processing multiple swatches.
+- **Flash POST-pass isolation SHIPPED (2026-03-28)**: Option-driven — `needs_isolation` boolean on options table. Test a tile, it's bad, flip the flag. Pipeline auto-detects and splits into: 1.5 main (everything except isolated options) → 1.5 oven (if needed) → Flash post-pass (isolated surfaces). B ordering. Combined single-Flash-pass documented as fallback. SM picket options flagged. Admin UI toggle added. Zod schemas, hash signatures, cost tracking all wired up.
+- **Key finding — dimensions must describe installed appearance**: "12+ rows on 18-inch backsplash" not "8 tiles on 11x12 sheet." AI was rendering sheet layouts. Massive quality improvement from this one change. All SM picket options updated.
+- **Key finding — `generation_rules_when_not_selected` needed for isolated surfaces**: Without it, the main pass has no instruction to preserve the surface. Added to SM + Demo backsplash subcategories.
+- **Key finding — boundary rule critical for dark tiles**: Without explicit "do NOT extend tile below the countertop" rule, dark herringbone/carbon tiles bled onto cabinet faces. Both Flash and Pro had the same issue. Added boundary constraint to backsplash `generation_rules` on SM + Demo.
+- **Pro vs Flash tested**: `gemini-3-pro-image-preview` produced identical results to Flash for isolation passes. No improvement. Staying with Flash (cheaper).
+- **SM options flagged**: 6 picket + 5 herringbone = 11 options with `needs_isolation = true`. Subway/square/beveled stay single-pass.
+- **Full research**: `memory-bank/backsplash-pattern-research.md`, test scripts in `scripts/test-backsplash-*.ts`, `scripts/test-two-pass-backsplash.ts`, `scripts/test-post-pass-ordering.ts`
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)

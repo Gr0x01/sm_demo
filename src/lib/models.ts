@@ -6,3 +6,4 @@
  */
 export const VISION_MODEL = "gemini-3-flash-preview";
 export const IMAGE_MODEL = "gpt-image-1.5";
+export const ISOLATION_IMAGE_MODEL = "gemini-3.1-flash-image-preview";

@@ -16,11 +16,22 @@ export interface ResolvePhotoGenerationPolicyInput {
 export interface ResolvedPhotoGenerationPolicy {
   policyKey: string;
   promptOverrides?: PromptPolicyOverrides;
+  flashPostPass?: {
+    reason: string;
+    model: string;
+    isolateSubcategories: string[];
+  };
   secondPass?: {
     reason: string;
     prompt: string;
     inputFidelity: InputFidelity;
   };
+}
+
+interface FlashPostPassPolicyConfig {
+  reason: string;
+  model: string;
+  isolateSubcategories: string[];
 }
 
 interface SecondPassPolicyConfig {
@@ -48,6 +59,10 @@ function resolveDbBackedPolicy(
   if (!dbPolicy?.isActive) return null;
 
   const promptOverrides = parsePromptOverrides(dbPolicy.policyJson.promptOverrides);
+  const flashPostPassConfig = parseFlashPostPassConfig(dbPolicy.policyJson.flashPostPass);
+  const flashPostPass = flashPostPassConfig && shouldRunFlashPostPass(input, flashPostPassConfig)
+    ? flashPostPassConfig
+    : undefined;
   const secondPassConfig = parseSecondPassConfig(dbPolicy.policyJson.secondPass);
   const secondPass = secondPassConfig && shouldRunSecondPassConfig(input, secondPassConfig)
     ? {
@@ -60,6 +75,7 @@ function resolveDbBackedPolicy(
   return {
     policyKey: dbPolicy.policyKey || "db",
     promptOverrides,
+    flashPostPass,
     secondPass,
   };
 }
@@ -82,6 +98,26 @@ function parsePromptOverrides(value: unknown): PromptPolicyOverrides | undefined
     return undefined;
   }
   return overrides;
+}
+
+function parseFlashPostPassConfig(value: unknown): FlashPostPassPolicyConfig | null {
+  if (!value || typeof value !== "object") return null;
+  const obj = value as Record<string, unknown>;
+
+  const reason = typeof obj.reason === "string" ? obj.reason.trim() : "";
+  const model = typeof obj.model === "string" ? obj.model.trim() : "";
+  const isolateSubcategories = toStringArray(obj.isolateSubcategories);
+
+  if (!reason || !model || !isolateSubcategories || isolateSubcategories.length === 0) return null;
+  return { reason, model, isolateSubcategories };
+}
+
+function shouldRunFlashPostPass(
+  input: ResolvePhotoGenerationPolicyInput,
+  config: FlashPostPassPolicyConfig,
+): boolean {
+  // Only run if at least one isolated subcategory is actually selected
+  return config.isolateSubcategories.some((subId) => subId in input.selections);
 }
 
 function parseSecondPassConfig(value: unknown): SecondPassPolicyConfig | null {

@@ -5,7 +5,7 @@ import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { IMAGE_MODEL } from "@/lib/models";
+import { IMAGE_MODEL, ISOLATION_IMAGE_MODEL } from "@/lib/models";
 
 export interface SwatchImage {
   label: string;
@@ -17,7 +17,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v28";
+export const GENERATION_CACHE_VERSION = "v29";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -290,6 +290,9 @@ export function buildPromptContextSignature(
       if (found.option.dimensions?.trim()) {
         ruleParts.push(`d:${optId}:${found.option.dimensions.trim()}`);
       }
+      if (found.option.needsIsolation) {
+        ruleParts.push(`iso:${optId}`);
+      }
     }
     // Negative-guard rules: include generationRulesWhenNotSelected for in-scope but unselected subcategories
     if (scopedSubcategoryIds?.length) {
@@ -403,7 +406,7 @@ export function deriveGenerationContext(
     },
   }, scopedSelections, optionLookup, scopedSubcategoryIds);
 
-  const resolvedPolicy = resolvePhotoGenerationPolicy({
+  let resolvedPolicy = resolvePhotoGenerationPolicy({
     orgSlug: policyContext.orgSlug,
     floorplanSlug: policyContext.floorplanSlug,
     stepSlug: aiConfig.stepSlug,
@@ -412,6 +415,27 @@ export function deriveGenerationContext(
     modelName,
     selections: scopedSelections,
   }, dbPolicy);
+
+  // Option-driven flash isolation: scan selected options for needs_isolation flag
+  const optionIsolatedSubs = new Set<string>();
+  for (const [subId, optId] of Object.entries(scopedSelections)) {
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (found?.option.needsIsolation) {
+      optionIsolatedSubs.add(subId);
+    }
+  }
+  if (optionIsolatedSubs.size > 0) {
+    const existingSubs = new Set(resolvedPolicy.flashPostPass?.isolateSubcategories ?? []);
+    for (const sub of optionIsolatedSubs) existingSubs.add(sub);
+    resolvedPolicy = {
+      ...resolvedPolicy,
+      flashPostPass: {
+        reason: resolvedPolicy.flashPostPass?.reason ?? "option-level isolation",
+        model: resolvedPolicy.flashPostPass?.model ?? ISOLATION_IMAGE_MODEL,
+        isolateSubcategories: [...existingSubs],
+      },
+    };
+  }
 
   const hashInputs: Record<string, string> = {
     ...scopedSelections,

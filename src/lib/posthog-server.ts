@@ -27,6 +27,14 @@ const GEMINI_TOKEN_COST: Record<string, { input: number; output: number }> = {
 };
 const DEFAULT_GEMINI_TOKEN_COST = { input: 0.50 / 1_000_000, output: 3.00 / 1_000_000 };
 
+// Gemini image generation — flat per-image cost (input image tokens + output image)
+// https://ai.google.dev/gemini-api/docs/image-generation#pricing
+const GEMINI_IMAGE_COST: Record<string, number> = {
+  "gemini-3.1-flash-image-preview": 0.04,  // ~$0.04 per image (input tokens + output image)
+  "gemini-3-pro-image-preview": 0.07,
+};
+const DEFAULT_GEMINI_IMAGE_COST = 0.04;
+
 interface BaseEvent {
   provider: "openai" | "google";
   model: string;
@@ -43,6 +51,8 @@ interface OpenAIEvent extends BaseEvent {
   image_size?: string;
   image_quality?: string;
   second_pass?: boolean;
+  flash_post_pass?: boolean;
+  flash_post_pass_model?: string;
 }
 
 interface GeminiEvent extends BaseEvent {
@@ -161,6 +171,10 @@ export async function captureEvent(
 
 export function estimateOpenAICost(model: string, passes: number): number {
   return (OPENAI_IMAGE_COST[model] ?? DEFAULT_OPENAI_IMAGE_COST) * passes;
+}
+
+export function estimateGeminiImageCost(model: string): number {
+  return GEMINI_IMAGE_COST[model] ?? DEFAULT_GEMINI_IMAGE_COST;
 }
 
 export function estimateGeminiCost(model: string, usage: { inputTokens?: number; outputTokens?: number }): number {
