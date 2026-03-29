@@ -232,17 +232,21 @@ State shape:
 
 1. User clicks "Visualize" on a photo card (available on steps with `step_photos`)
 2. Client sends POST to `/api/generate/photo` with orgSlug, floorplanSlug, stepPhotoId, selections, sessionId
-3. Route validates ownership, scopes selections, computes hash, claims `__pending__` slot
+3. Route validates ownership, scopes selections, resolves linked options, computes hash, claims `__pending__` slot
 4. Route dispatches `photo/generate.requested` event to Inngest, returns 202
-5. Inngest `generate-photo` function runs in background (3 steps, each up to 120s):
-   - Downloads hero photo + swatches from Supabase Storage, builds prompt via `buildEditPrompt`
-   - Calls OpenAI `images.edit` (gpt-image-1.5, quality: high, 1536x1024, input_fidelity: high)
-   - Optional policy second pass (e.g., slide-in range correction)
-   - Uploads final image to `generated-images` bucket, upserts cache row
+5. Inngest `generate-photo` function runs in background (up to 5 steps, each up to 120s):
+   a. **check-diff-cache** — partial cache lookup for single-surface scoped edits
+   b. **generate** — main 1.5 pass: downloads hero photo + swatches in parallel, builds prompt via `buildEditPrompt`, calls OpenAI `images.edit`
+   c. **refine** (conditional) — second 1.5 pass for slide-in range geometry correction
+   d. **pro-post-pass** (conditional) — Gemini Pro refinement for cabinet stain depth + backsplash tile patterns. Fires when stain cabinet options selected. Absorbs Flash backsplash isolation when both are needed.
+   e. **flash-post-pass** (conditional) — Gemini Flash for backsplash tile isolation only (when no stain cabinets). Suppressed when Pro handles backsplash.
+   f. **persist** — uploads final image, upserts cache row
 6. Client polls `/api/generate/photo/check` every 3s until result is ready
 7. Client displays in StepPhotoGrid (per-photo cards with retry via ImageLightbox)
 
-**Image approach**: OpenAI `gpt-image-1.5` via `images.edit` endpoint. Sends base room photo + individually attached swatch images (via `openai.toFile()`). Prompt lines explicitly map each item to `swatch #N` in deterministic order. Config: `quality: "medium"` (D80), `size: "1536x1024"`, `input_fidelity: "high"`. Typical generation time: ~30-40s per pass (was 45-90s at high quality). Cost: ~$0.05/image (was $0.20 at high).
+**Image approach**: OpenAI `gpt-image-1.5` via `images.edit` endpoint for main pass. Gemini Pro (`gemini-3-pro-image-preview`) for cabinet/backsplash refinement post-pass. Gemini Flash (`gemini-3.1-flash-image-preview`) for backsplash-only isolation. Sends base room photo + individually attached swatch images. Prompt lines explicitly map each item to `swatch #N` in deterministic order. Config: `quality: "medium"` (D80), `size: "1536x1024"`, `input_fidelity: "high"`. Typical generation time: ~40s main + ~40s Pro post-pass when triggered. Common case: ~80s. Worst case (stain + slide-in + herringbone): ~115s.
+
+**Linked option resolution**: Options with `linked_to_subcategory` (e.g. "Match to Main Kitchen Cabinet Color") are resolved before prompt building. When the resolved swatch matches the source, the two selections are merged into a single prompt line covering both zones, and conflicting exclusion rules are stripped. When they differ, both remain as separate swatch-backed selections with their exclusion rules intact.
 
 **Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Base rules are global; tenant/photo-specific constraints are layered via per-photo policy overrides (DB-backed, internal-only), including optional second-pass refinements.
 
@@ -260,7 +264,9 @@ Generation hash also includes policy and prompt context inputs (`_promptPolicy`,
 
 **Reliability playbook**: See `generation-reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
 
-**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (good quality, expensive, slow) → Gemini `gemini-3-pro-image-preview` (faster/cheaper but unpredictable hallucinations — reverted D77) → **OpenAI `gpt-image-1.5`** (current — reliable output, ~60-120s per pass). `@google/genai` kept as devDependency for test scripts.
+**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (good quality, expensive, slow) → Gemini `gemini-3-pro-image-preview` (faster/cheaper but unpredictable hallucinations — reverted D77) → **OpenAI `gpt-image-1.5`** (current main pass — reliable geometry, ~40s). `@google/genai` is a production dependency — used by Flash post-pass (backsplash isolation) and Pro post-pass (cabinet stain refinement + combined backsplash).
+
+**Multi-model pipeline rationale**: 1.5 handles geometry and most surfaces well but under-applies dramatic color changes (white→wood stain) when competing with 11+ swatches. Pro excels at focused refinement (2-3 swatches) with better color/texture fidelity. Flash handles single-surface tile pattern isolation cheaply. Each model is used where it performs best.
 
 ## Swatch Images
 

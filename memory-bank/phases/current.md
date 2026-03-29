@@ -133,7 +133,22 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key fix — `@google/genai` was devDependency**: Flash post-pass import failed on Vercel (devDeps not installed in production). Moved to production dependencies.
 - **API fix — `selectionsHash` in cache hit response**: `/api/generate/photo` now returns `selectionsHash` on cache hits too, so scripts can track all dispatched hashes.
 - **All prospect demo presets regenerated (2026-03-28)**: All 10 demos × 3 presets = 30 images regenerated with the new pipeline (dimensions, backsplash rules, flash post-pass for herringbone). Config files created for all 10 demos in `scripts/prospect-configs/`.
-- **Cache version**: v35
+- **Cache version**: v37
+
+**Pro post-pass for cabinet stain refinement (2026-03-29):**
+- **Problem**: 1.5 with 11 swatches under-applies dramatic cabinet color changes (white → wood stain). Driftwood Stain rendered near-white. Batch testing confirmed: isolated (2 swatches) = perfect, full pass (11 swatches) = unreliable.
+- **Solution**: Gemini Pro post-pass after main 1.5 pass. Pro refines cabinet color depth + wood grain texture. Also handles backsplash tile isolation when both are needed (replaces Flash for combined case).
+- **Pipeline**: main (1.5, all swatches) → refine/oven (1.5, conditional) → pro-post-pass (Pro, conditional) OR flash-post-pass (Flash, conditional) → persist
+- **Linked option resolution**: `linked_to_subcategory` column on options. "Match to Main" copies perimeter swatch to island. When same swatch: merges into single prompt line, strips exclusion rules. When different: keeps separate with exclusion rules.
+- **Stain detection**: Scans `option.generationRules` for "wood STAIN" marker. Also includes linked subcategories (e.g. island linked to perimeter stain). When Pro post-pass fires, absorbs Flash backsplash isolation too.
+- **Generation rules added**: All 18 stain options (Driftwood, Cappuccino, Sahara × 6 subcategories) got "wood STAIN, not paint" rules.
+- **Spatial hints updated**: "wall cabinets (upper cabinets mounted on walls)" → "all perimeter cabinet doors and drawer fronts along the walls — both upper and lower rows. NOT the island." Critical for model coverage.
+- **Key finding — cabinets must stay in main pass**: Excluding them causes layout hallucinations (fridge alcove filled with cabinets, phantom fridges).
+- **Key finding — Pro > Flash for combined post-pass**: Flash can't handle cabinets + backsplash together (oversized tiles, uneven application). Pro handles both.
+- **Key finding — Pro combined everything (cab+bs+oven) is unreliable**: 4 tasks in one pass = ~50% miss rate. Oven stays separate.
+- **Key finding — conflicting exclusion rules break "Match to Main"**: "Do NOT apply to island" + "apply identical swatch to island" contradicts. Merging into single line when same swatch fixes it.
+- **Timing**: Common case (stain + freestanding range) = ~80s. Worst case (stain + slide-in + herringbone) = ~115s.
+- **R&D docs**: `memory/project_cabinet_postpass_architecture.md`
 
 **Generation pipeline optimization (2026-03-29):**
 - **I/O parallelization**: All generation steps (generate, scoped-edit, flash-post-pass) now parallelize DB queries, hero/swatch downloads, and intermediate fetches via `Promise.all`. `preWarmSwatchCache` helper batch-downloads all swatches upfront; `buildEditPrompt` serves from memory cache.
