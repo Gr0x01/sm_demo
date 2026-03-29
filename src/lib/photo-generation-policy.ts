@@ -21,6 +21,13 @@ export interface ResolvedPhotoGenerationPolicy {
     model: string;
     isolateSubcategories: string[];
   };
+  /** Pro refinement post-pass for cabinets (+ optionally backsplash).
+   *  Unlike flashPostPass, these subcategories stay IN the main pass for geometry. */
+  proPostPass?: {
+    reason: string;
+    model: string;
+    subcategories: string[];
+  };
   secondPass?: {
     reason: string;
     prompt: string;

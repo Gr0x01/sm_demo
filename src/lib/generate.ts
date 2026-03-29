@@ -5,7 +5,58 @@ import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { IMAGE_MODEL, ISOLATION_IMAGE_MODEL } from "@/lib/models";
+import { IMAGE_MODEL, ISOLATION_IMAGE_MODEL, REFINEMENT_IMAGE_MODEL } from "@/lib/models";
+
+/**
+ * Resolve linked options (e.g. "Match to Main Kitchen Cabinet Color").
+ *
+ * When the linked option resolves to the SAME swatch as the source:
+ *   - Removes the linked subcategory from selections entirely
+ *   - Merges spatial hints so the source covers both zones
+ *   - Strips exclusion rules (e.g. "Do NOT apply to island") from the source
+ *
+ * When it resolves to a DIFFERENT swatch (shouldn't happen for "Match" options,
+ * but defensive): copies the swatch so buildEditPrompt sees two swatch-backed selections.
+ *
+ * Mutates selections, spatialHints, and optionLookup in place.
+ */
+export function resolveLinkedOptions(
+  selections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  spatialHints?: Record<string, string>,
+): void {
+  for (const [subId, optId] of Object.entries(selections)) {
+    const entry = optionLookup.get(`${subId}:${optId}`);
+    if (!entry) continue;
+    const linkedSub = entry.option.linkedToSubcategory;
+    if (!linkedSub || entry.option.swatchUrl) continue;
+
+    const sourceOptId = selections[linkedSub];
+    if (!sourceOptId) continue;
+    const sourceEntry = optionLookup.get(`${linkedSub}:${sourceOptId}`);
+    if (!sourceEntry?.option.swatchUrl) continue;
+
+    // Same swatch → merge into one selection covering both zones
+    // Remove linked subcategory from selections
+    delete selections[subId];
+
+    // Merge spatial hints: source hint expands to cover both zones
+    if (spatialHints && spatialHints[linkedSub] && spatialHints[subId]) {
+      spatialHints[linkedSub] = `${spatialHints[linkedSub]} AND ${spatialHints[subId]}`;
+      delete spatialHints[subId];
+    }
+
+    // Strip exclusion rules from the source subcategory (e.g. "Do NOT apply it to island")
+    if (sourceEntry.subCategory.generationRules?.length) {
+      sourceEntry.subCategory = {
+        ...sourceEntry.subCategory,
+        generationRules: sourceEntry.subCategory.generationRules.filter(
+          r => !r.toLowerCase().includes("do not apply it to"),
+        ),
+      };
+    }
+  }
+}
 
 export interface SwatchImage {
   label: string;
@@ -17,7 +68,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v36";
+export const GENERATION_CACHE_VERSION = "v37";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -517,9 +568,10 @@ export function deriveGenerationContext(
     aiConfig.sceneDescription ?? "",
   ].join("\n");
   scopedSelections = resolveScopedFlooringSelections(scopedSelections, flooringContextText);
+  const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
+  resolveLinkedOptions(scopedSelections, optionLookup, spatialHints);
   scopedSelections = normalizePrimaryAccentAsWallPaint(scopedSelections, aiConfig.photo.remapAccentAsWallPaint);
 
-  const spatialHints = filterSpatialHints(aiConfig.spatialHints, photoScopedIds);
   const sceneDescription = buildSceneDescription(aiConfig);
 
   const modelName = IMAGE_MODEL;
@@ -560,6 +612,47 @@ export function deriveGenerationContext(
         reason: resolvedPolicy.flashPostPass?.reason ?? "option-level isolation",
         model: resolvedPolicy.flashPostPass?.model ?? ISOLATION_IMAGE_MODEL,
         isolateSubcategories: [...existingSubs],
+      },
+    };
+  }
+
+  // Option-driven Pro refinement: scan for stain cabinet options that need a post-pass
+  const STAIN_MARKER = "wood STAIN";
+  const cabinetPostPassSubs = new Set<string>();
+  for (const [subId, optId] of Object.entries(scopedSelections)) {
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+    const rules = found.option.generationRules ?? [];
+    if (rules.some(r => r.includes(STAIN_MARKER))) {
+      cabinetPostPassSubs.add(subId);
+    }
+  }
+  // Also include subcategories whose selected option links TO a detected stain subcategory
+  // (e.g. "Match to Main" island links to kitchen-cabinet-color)
+  for (const [subId, optId] of Object.entries(scopedSelections)) {
+    if (cabinetPostPassSubs.has(subId)) continue;
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (found?.option.linkedToSubcategory && cabinetPostPassSubs.has(found.option.linkedToSubcategory)) {
+      cabinetPostPassSubs.add(subId);
+    }
+  }
+  if (cabinetPostPassSubs.size > 0) {
+    // If backsplash also needs isolation, include it in the Pro post-pass (Pro handles both)
+    // and remove it from Flash (so Flash doesn't also run)
+    const proSubs = new Set(cabinetPostPassSubs);
+    if (resolvedPolicy.flashPostPass) {
+      for (const sub of resolvedPolicy.flashPostPass.isolateSubcategories) {
+        proSubs.add(sub);
+      }
+      // Suppress Flash — Pro handles everything
+      resolvedPolicy = { ...resolvedPolicy, flashPostPass: undefined };
+    }
+    resolvedPolicy = {
+      ...resolvedPolicy,
+      proPostPass: {
+        reason: "cabinet stain refinement",
+        model: REFINEMENT_IMAGE_MODEL,
+        subcategories: [...proSubs],
       },
     };
   }

@@ -10,6 +10,7 @@ export interface Option {
   generationRules?: string[];
   isDefault?: boolean;
   needsIsolation?: boolean;
+  linkedToSubcategory?: string;
 }
 
 export interface SubCategory {

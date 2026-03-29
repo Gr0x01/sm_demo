@@ -2,7 +2,7 @@ import OpenAI, { toFile } from "openai";
 import sharp from "sharp";
 import { GoogleGenAI } from "@google/genai";
 import { inngest } from "@/inngest/client";
-import { buildEditPrompt, buildScopedEditPrompt, identifyChangedSubcategory } from "@/lib/generate";
+import { buildEditPrompt, buildScopedEditPrompt, identifyChangedSubcategory, resolveLinkedOptions } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getOptionLookup, findSingleSurfaceDiffMatch } from "@/lib/db-queries";
@@ -596,6 +596,126 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
       }
     }
 
+    // --- Step 3b: Pro refinement post-pass for cabinets + optionally backsplash (conditional) ---
+    let proPostPassResult: { prompt: string; durationMs: number } | null = null;
+
+    if (resolvedPolicy.proPostPass) {
+      proPostPassResult = await step.run("pro-post-pass", async () => {
+        const supabase = getServiceClient();
+        const proSubs = new Set(resolvedPolicy.proPostPass!.subcategories);
+
+        // Phase 1: Parallel — option lookup + previous output download
+        const [optionLookup, prevOutputBuffer] = await Promise.all([
+          getOptionLookup(orgId),
+          downloadIntermediate(supabase, outputPath),
+        ]);
+
+        // Resolve linked options (e.g. "Match to Main" → merge into source when same swatch)
+        // Copy spatialHints so we don't mutate the event data
+        const postPassHints = { ...spatialHints };
+        resolveLinkedOptions(scopedSelections, optionLookup, postPassHints);
+
+        // Build selections for just the post-pass subcategories
+        const postPassSelections: Record<string, string> = {};
+        for (const [subId, optId] of Object.entries(scopedSelections)) {
+          if (proSubs.has(subId)) postPassSelections[subId] = optId;
+        }
+
+        const baseResolver = createSwatchResolver(supabase);
+        const cachedResolver = await preWarmSwatchCache(postPassSelections, optionLookup, baseResolver);
+
+        const { prompt, swatches } = await buildEditPrompt(
+          postPassSelections,
+          optionLookup,
+          postPassHints,
+          [...proSubs],
+          sceneDescription,
+          photoSpatialHint,
+          cachedResolver,
+          resolvedPolicy.promptOverrides,
+        );
+
+        const supportedSwatches = swatches.filter(s =>
+          ["image/jpeg", "image/png", "image/webp"].includes(s.mediaType),
+        );
+
+        if (supportedSwatches.length === 0) {
+          console.warn(`[generate/photo] Pro post-pass skipped for ${stepPhotoId}: no swatches resolved`);
+          return null;
+        }
+
+        // Build Gemini multimodal request
+        const parts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [
+          { text: prompt },
+          { inlineData: { mimeType: "image/jpeg", data: prevOutputBuffer.toString("base64") } },
+        ];
+        for (const swatch of supportedSwatches) {
+          parts.push({ inlineData: { mimeType: swatch.mediaType, data: swatch.buffer.toString("base64") } });
+        }
+
+        const postPassModel = resolvedPolicy.proPostPass!.model;
+        const googleApiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        if (!googleApiKey) throw new Error("Missing GOOGLE_API_KEY for Pro post-pass");
+
+        const ai = new GoogleGenAI({ apiKey: googleApiKey });
+
+        console.log(
+          `[generate/photo] Pro post-pass: sending ${supportedSwatches.length + 1} images to ${postPassModel} for photo ${stepPhotoId} (${[...proSubs].join(", ")})`,
+        );
+
+        const genStart = performance.now();
+        try {
+          const response = await ai.models.generateContent({
+            model: postPassModel,
+            contents: [{ role: "user", parts }],
+            config: {
+              responseModalities: ["TEXT", "IMAGE"],
+              imageConfig: { aspectRatio: "3:2", imageSize: "2K" },
+            },
+          });
+          const durationMs = Math.round(performance.now() - genStart);
+
+          const candidate = response.candidates?.[0];
+          if (!candidate?.content?.parts) throw new Error("No response from Pro post-pass model");
+
+          let imageB64: string | null = null;
+          for (const part of candidate.content.parts) {
+            if ((part as any).inlineData) {
+              imageB64 = (part as any).inlineData.data;
+              break;
+            }
+          }
+          if (!imageB64) throw new Error("Pro post-pass model returned no image");
+
+          const resized = await sharp(Buffer.from(imageB64, "base64"))
+            .resize(1536, 1024, { fit: "fill" })
+            .jpeg({ quality: 90 })
+            .toBuffer();
+
+          await uploadIntermediate(supabase, resized, outputPath);
+
+          console.log(`[generate/photo] Pro post-pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          return { prompt, durationMs };
+        } catch (err) {
+          const durationMs = Math.round(performance.now() - genStart);
+          await captureAiError(sessionId, {
+            provider: "google",
+            model: postPassModel,
+            route: "/api/generate/photo",
+            duration_ms: durationMs,
+            error: err,
+            orgId, orgSlug, floorplanSlug,
+          });
+          console.warn(`[generate/photo] Pro post-pass failed for ${stepPhotoId}; keeping previous output.`, err);
+          return null;
+        }
+      });
+
+      if (proPostPassResult) {
+        totalDurationMs += proPostPassResult.durationMs;
+      }
+    }
+
     // --- Step 4: Persist to DB (image already in storage from previous steps) ---
     await step.run("persist", async () => {
       const supabase = getServiceClient();
@@ -604,6 +724,9 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
       let promptLog = finalPrompt;
       if (flashPostPassResult) {
         promptLog = `${promptLog}\n\nFLASH_POST_PASS (${resolvedPolicy.flashPostPass!.reason}, ${resolvedPolicy.flashPostPass!.model}):\n${flashPostPassResult.prompt}`;
+      }
+      if (proPostPassResult) {
+        promptLog = `${promptLog}\n\nPRO_POST_PASS (${resolvedPolicy.proPostPass!.reason}, ${resolvedPolicy.proPostPass!.model}):\n${proPostPassResult.prompt}`;
       }
 
       const { error: upsertError } = await supabase
@@ -627,7 +750,7 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
         console.error("[generate/photo] DB upsert failed:", upsertError);
       }
 
-      const totalPasses = openaiPasses + (flashPostPassResult ? 1 : 0);
+      const totalPasses = openaiPasses + (flashPostPassResult ? 1 : 0) + (proPostPassResult ? 1 : 0);
 
       await captureAiEvent(sessionId, {
         provider: "openai",
@@ -635,7 +758,8 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
         route: "/api/generate/photo",
         duration_ms: totalDurationMs,
         cost_usd: estimateOpenAICost(modelName, openaiPasses)
-          + (flashPostPassResult ? estimateGeminiImageCost(resolvedPolicy.flashPostPass!.model) : 0),
+          + (flashPostPassResult ? estimateGeminiImageCost(resolvedPolicy.flashPostPass!.model) : 0)
+          + (proPostPassResult ? estimateGeminiImageCost(resolvedPolicy.proPostPass!.model) : 0),
         orgId,
         orgSlug,
         floorplanSlug,
@@ -644,9 +768,16 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
         second_pass: openaiPasses > 1,
         flash_post_pass: !!flashPostPassResult,
         flash_post_pass_model: flashPostPassResult ? resolvedPolicy.flashPostPass!.model : undefined,
+        pro_post_pass: !!proPostPassResult,
+        pro_post_pass_model: proPostPassResult ? resolvedPolicy.proPostPass!.model : undefined,
       });
 
-      console.log(`[generate/photo] Completed for photo ${stepPhotoId} in ${totalDurationMs}ms (${totalPasses} pass${totalPasses > 1 ? "es" : ""}${flashPostPassResult ? ", with flash post-pass" : ""})`);
+      const passLabels = [
+        `${openaiPasses} OpenAI`,
+        flashPostPassResult ? "flash post-pass" : null,
+        proPostPassResult ? "pro post-pass" : null,
+      ].filter(Boolean).join(", ");
+      console.log(`[generate/photo] Completed for photo ${stepPhotoId} in ${totalDurationMs}ms (${totalPasses} passes: ${passLabels})`);
     });
   },
 );

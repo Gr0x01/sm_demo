@@ -53,6 +53,8 @@ interface OpenAIEvent extends BaseEvent {
   second_pass?: boolean;
   flash_post_pass?: boolean;
   flash_post_pass_model?: string;
+  pro_post_pass?: boolean;
+  pro_post_pass_model?: string;
   scoped_edit?: boolean;
   scoped_edit_depth?: number;
   scoped_edit_surface?: string;

@@ -87,7 +87,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
       id, slug, name, sort_order,
       subcategories (
         id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, needs_isolation )
+        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, needs_isolation, linked_to_subcategory )
       )
     `)
     .eq("org_id", orgId)
@@ -107,6 +107,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
         id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
         dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
         sort_order: number; generation_rules: string[] | null; is_default: boolean; needs_isolation: boolean;
+        linked_to_subcategory: string | null;
       }[];
     }[])
       .sort((a, b) => a.sort_order - b.sort_order)
@@ -136,6 +137,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
             generationRules: opt.generation_rules ?? undefined,
             isDefault: opt.is_default || undefined,
             needsIsolation: opt.needs_isolation || undefined,
+            linkedToSubcategory: opt.linked_to_subcategory ?? undefined,
           })),
       })),
   }));
@@ -161,7 +163,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
         id, slug, name, sort_order,
         subcategories (
           id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-          options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default, needs_isolation )
+          options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default, needs_isolation, linked_to_subcategory )
         )
       `)
       .eq("org_id", orgId)
@@ -200,6 +202,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
       id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
       dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
       sort_order: number; floorplan_ids: string[]; generation_rules: string[] | null; is_default: boolean; needs_isolation: boolean;
+      linked_to_subcategory: string | null;
     }[];
   };
 
@@ -241,6 +244,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
               generationRules: opt.generation_rules ?? undefined,
               isDefault: opt.is_default || undefined,
               needsIsolation: opt.needs_isolation || undefined,
+              linkedToSubcategory: opt.linked_to_subcategory ?? undefined,
             })),
         })),
     }))
