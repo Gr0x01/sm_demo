@@ -68,7 +68,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v37";
+export const GENERATION_CACHE_VERSION = "v39";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -275,7 +275,8 @@ export async function buildEditPrompt(
     : "";
 
   const applianceRules = hasApplianceSelection
-    ? `\n- Appliance selections may require model-shape changes. Replace ONLY the selected appliance in-place — same location, same footprint.
+    ? `\n- Appliance selections may require model-shape changes. Replace ONLY the selected appliance in-place.
+- Keep each appliance in the same location, opening, perspective, and approximate footprint.
 - Appliance swatches are authoritative for finish/color/material. Only follow text descriptors when no swatch is available.`
     : "";
 
@@ -293,6 +294,7 @@ RULES:
 - The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
 - If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.${flooringRules}
 - Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
+- Never add extra cabinetry, built-ins, or pantry units unless that exact item is explicitly selected in the list above.
 - In doorway or multi-room views, keep edits inside the explicitly targeted visible zone and do NOT propagate flooring/fixtures into adjacent rooms.
 - Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.
 - Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.

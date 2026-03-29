@@ -134,7 +134,14 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key fix — `@google/genai` was devDependency**: Flash post-pass import failed on Vercel (devDeps not installed in production). Moved to production dependencies.
 - **API fix — `selectionsHash` in cache hit response**: `/api/generate/photo` now returns `selectionsHash` on cache hits too, so scripts can track all dispatched hashes.
 - **All prospect demo presets regenerated (2026-03-28)**: All 10 demos × 3 presets = 30 images regenerated with the new pipeline (dimensions, backsplash rules, flash post-pass for herringbone). Config files created for all 10 demos in `scripts/prospect-configs/`.
-- **Cache version**: v37
+- **Cache version**: v39
+
+**Prompt rule restoration (2026-03-29):**
+- **Problem**: Fridge displaced from alcove to next to range on kitchen-close photo. Model was filling alcove with extra cabinetry and placing fridge in wrong location.
+- **Root cause**: Two rules were removed during the v28→v34 prompt restructure: (1) anti-cabinetry rule ("Never add extra cabinetry, built-ins, or pantry units unless explicitly selected") and (2) appliance position rule ("Keep each appliance in the same location, opening, perspective, and approximate footprint"). Without these, the model freely rearranged the kitchen layout.
+- **Fix**: Restored both rules to the main `RULES:` block in `buildEditPrompt`. Cache version bumped v37→v39.
+- **Also fixed**: `invariantRulesWhenSelected.refrigerator` policy changed from directive "Place the selected refrigerator in that opening" to defensive "Keep the refrigerator in its existing alcove/opening" (DB policy update on kitchen-close step photo).
+- **Key lesson**: Prompt rules that constrain layout/geometry should never be removed without testing appliance placement. The model needs explicit anti-hallucination guardrails.
 
 **Pro post-pass for cabinet stain refinement (2026-03-29):**
 - **Problem**: 1.5 with 11 swatches under-applies dramatic cabinet color changes (white → wood stain). Driftwood Stain rendered near-white. Batch testing confirmed: isolated (2 swatches) = perfect, full pass (11 swatches) = unreliable.
