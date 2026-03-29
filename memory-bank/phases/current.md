@@ -124,7 +124,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key fix — photo scoping critical**: SM kitchen-close had 19 subcategories scoped (full step) including 6 not visible (dishwasher, trash can, light rail, etc.). Caused dishwasher hallucination and swatch mapping confusion. Trimmed to 13 visible subcategories. **All photos must scope only to visible surfaces.**
 - **Key fix — flash post-pass `optionLookup.get` key format**: Was `optionLookup.get(optId)`, should be `optionLookup.get(\`${subId}:${optId}\`)`. Caused post-pass to find nothing and send empty prompt.
 - **Key fix — empty post-pass guard**: If flash post-pass builds 0 swatch lines, return null immediately instead of sending empty prompt to model.
-- **Known issue — backsplash drift on scoped edits**: 1.5 scoped edits re-process the whole image, degrading backsplash patterns. Same problem as the main pass. Scoped edit path needs Flash backsplash post-pass after the 1.5 edit (not yet implemented).
+- **Fixed — backsplash drift on scoped edits (2026-03-29)**: Scoped edits now flow through the same flash/pro post-pass steps as the full pipeline instead of returning early. Scoped edit uploads to intermediate `_scoped.jpg`, post-passes run on top. Scoped edit with isolated backsplash: ~54s (was ~32s without post-pass, but backsplash was destroyed). Persist step unified — handles both paths with `scoped_edit_depth` set correctly.
 - **Key fix — appliance add/remove skips scoped edit (2026-03-29)**: Scoped edits for adding/removing appliances (e.g. `refrigerator-none` → fridge) caused spatial displacement — model placed fridge next to range instead of in its alcove. Scoped edits are designed for surface swaps, not structural additions. Now skips scoped edit when old or new option slug ends with `-none`, falls through to full pipeline. Applied to both `generate-photo.ts` and `generate-demo.ts`.
 - **Prompt reverted to v26 structure**: APPLY/PRESERVE/SURFACE & PLACEMENT split reverted to single `RULES:` block. Edit instruction back to "match the selected finishes."
 - **SM paint SVG swatches cleaned**: 16 SVGs in Supabase storage had white label bars at the bottom diluting the swatch anchor hex. Stripped to clean solid-color rectangles.
@@ -134,7 +134,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key fix — `@google/genai` was devDependency**: Flash post-pass import failed on Vercel (devDeps not installed in production). Moved to production dependencies.
 - **API fix — `selectionsHash` in cache hit response**: `/api/generate/photo` now returns `selectionsHash` on cache hits too, so scripts can track all dispatched hashes.
 - **All prospect demo presets regenerated (2026-03-28)**: All 10 demos × 3 presets = 30 images regenerated with the new pipeline (dimensions, backsplash rules, flash post-pass for herringbone). Config files created for all 10 demos in `scripts/prospect-configs/`.
-- **Cache version**: v39
+- **Cache version**: v45
 
 **Prompt rule restoration (2026-03-29):**
 - **Problem**: Fridge displaced from alcove to next to range on kitchen-close photo. Model was filling alcove with extra cabinetry and placing fridge in wrong location.
@@ -174,6 +174,13 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **heroImagePath passed through Inngest event**: Route already fetches `aiConfig` — now passes `heroImagePath` through the event payload. Generate step no longer calls `getStepPhotoAiConfig` (was 2 sequential DB queries). Within the step, hero download + optionLookup + swatch pre-warm run as chained parallel promises.
 - **Adaptive polling**: Client polls at 1.5s intervals for first 10 polls, then 3s. Applied to both `UpgradePicker.tsx` and `DemoClient.tsx`. Reduces average wait-after-completion from ~1.5s to ~0.75s.
 - **Total estimated savings**: ~3-4s off common single-pass case.
+
+**Linked option + prompt fixes (2026-03-29):**
+- **Spatial hint exclusion stripping on merge**: `resolveLinkedOptions` now strips "NOT the island" / "NOT the perimeter" clauses from spatial hints when merging Match-to-Main selections. Previously the merged hint read "...NOT the island. AND island cabinet doors..." — model saw "NOT the island" first and stopped. Regex strips `. NOT...` / `— NOT...` to end of string.
+- **Generation rule stripping in Inngest function**: `resolveLinkedOptions` in the route handler stripped "Do NOT apply it to" rules from the optionLookup, but the Inngest function re-fetches a fresh optionLookup from DB — stripping was lost. Fix: Inngest's generate step now detects merged linked subcategories (scoped but not in selections, with `linkedToSubcategory` pointing to a selected sub) and strips the exclusion rules from the fresh optionLookup. Key lesson: optionLookup is not passed through Inngest events (too large), so any mutation in the route handler must be replicated in the Inngest function.
+- **Subtle color enforcement**: Prompt rule added: "Apply every swatch even when the existing surface appears to already be a similar color — small differences matter (e.g. buttercream vs pure white, warm gray vs cool gray)." Without this, 1.5 skipped near-identical color changes.
+- **Flash post-pass preservation**: Strengthened flash post-pass prompt from "Do not alter anything else" to "Every other pixel in the image must remain identical" + explicit pantry contents/shelves/doorways. Flash was hallucinating food in the pantry.
+- **Cache version**: v42→v45
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)

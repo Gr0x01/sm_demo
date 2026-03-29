@@ -40,9 +40,12 @@ export function resolveLinkedOptions(
     // Remove linked subcategory from selections
     delete selections[subId];
 
-    // Merge spatial hints: source hint expands to cover both zones
+    // Merge spatial hints: source hint expands to cover both zones.
+    // Strip exclusion clauses (". NOT ..." / " — NOT ...") since the merged
+    // selection now intentionally covers both zones.
     if (spatialHints && spatialHints[linkedSub] && spatialHints[subId]) {
-      spatialHints[linkedSub] = `${spatialHints[linkedSub]} AND ${spatialHints[subId]}`;
+      const stripExclusion = (h: string) => h.replace(/[.—–]\s*NOT\b.*$/i, "").trim();
+      spatialHints[linkedSub] = `${stripExclusion(spatialHints[linkedSub])} AND ${stripExclusion(spatialHints[subId])}`;
       delete spatialHints[subId];
     }
 
@@ -68,7 +71,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v42";
+export const GENERATION_CACHE_VERSION = "v45";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -286,7 +289,7 @@ ${listLines.join("\n")}
 
 RULES:
 - ${swatchMappingLine}
-- For each item marked "(use swatch #N)", match that swatch's color, pattern, and texture EXACTLY on the specified surface.
+- For each item marked "(use swatch #N)", match that swatch's color, pattern, and texture EXACTLY on the specified surface. Apply every swatch even when the existing surface appears to already be a similar color — small differences matter (e.g. buttercream vs pure white, warm gray vs cool gray).
 - For swatch-backed edits (including appliances), the swatch image is the ONLY appearance authority. Treat option names/descriptors as non-authoritative for color/finish/material.
 - If a line includes "swatch-derived color anchor #RRGGBB", use it as a numeric target from that swatch image and avoid hue drift (no unintended green/blue cast).
 - If a line includes "dimensions:", use them as scale/format context alongside the swatch (e.g. tile size, plank width, mosaic pattern).

@@ -141,6 +141,7 @@ export const generatePhoto = inngest.createFunction(
     const outputPath = `${orgId}/${selectionsHash}.jpg`;
     // Intermediate paths per step — lets us inspect each step's output for debugging
     const mainPassPath = `${orgId}/${selectionsHash}_main.jpg`;
+    const scopedEditPath = `${orgId}/${selectionsHash}_scoped.jpg`;
     const refinePath = `${orgId}/${selectionsHash}_refine.jpg`;
     const flashPath = `${orgId}/${selectionsHash}_flash.jpg`;
     const proPath = `${orgId}/${selectionsHash}_pro.jpg`;
@@ -185,7 +186,33 @@ export const generatePhoto = inngest.createFunction(
       const baseResolver = createSwatchResolver(supabase);
 
       // Parallel — hero download runs alongside optionLookup → swatch pre-warm chain
-      const optionLookupP = getOptionLookup(orgId);
+      const optionLookupP = getOptionLookup(orgId).then(ol => {
+        // Strip exclusion rules for merged linked subcategories.
+        // resolveLinkedOptions in the route handler removed linked subs from selections
+        // and merged spatial hints, but this fresh optionLookup still has the original
+        // exclusion rules (e.g. "Do NOT apply it to island"). Detect merges by finding
+        // scoped subcategories absent from selections whose options link to a selected one.
+        for (const subId of scopedSubcategoryIds) {
+          if (subId in mainSelections || subId in scopedSelections) continue;
+          for (const [key, entry] of ol) {
+            if (!key.startsWith(`${subId}:`)) continue;
+            const linkedSub = entry.option.linkedToSubcategory;
+            if (!linkedSub || linkedSub in mainSelections === false) continue;
+            const sourceKey = `${linkedSub}:${mainSelections[linkedSub]}`;
+            const sourceEntry = ol.get(sourceKey);
+            if (sourceEntry?.subCategory.generationRules?.length) {
+              sourceEntry.subCategory = {
+                ...sourceEntry.subCategory,
+                generationRules: sourceEntry.subCategory.generationRules.filter(
+                  r => !r.toLowerCase().includes("do not apply it to"),
+                ),
+              };
+            }
+            break;
+          }
+        }
+        return ol;
+      });
       const [heroResult, optionLookup, cachedResolver] = await Promise.all([
         supabase.storage.from("rooms").download(heroImagePath),
         optionLookupP,
@@ -276,9 +303,21 @@ export const generatePhoto = inngest.createFunction(
       }
     });
 
+    // --- Tracking vars shared across scoped-edit and full-pipeline paths ---
+    let isScopedEdit = false;
+    let scopedEditDepth = 0;
+    let scopedEditSurface: string | undefined;
+    let finalPrompt: string;
+    let openaiPasses = 1;
+    let totalDurationMs: number;
+    let currentPath: string;
+
     // --- Scoped edit path (diff cache hit) ---
     if (generateResult.type === "scoped-edit-needed") {
       const { imagePath: baseImagePath, depth, changedSubcategoryId, changedNewOptionId } = generateResult;
+      isScopedEdit = true;
+      scopedEditDepth = depth + 1;
+      scopedEditSurface = changedSubcategoryId;
 
       const scopedResult = await step.run("scoped-edit", async () => {
         const supabase = getServiceClient();
@@ -340,8 +379,8 @@ export const generatePhoto = inngest.createFunction(
 
           const durationMs = Math.round(performance.now() - genStart);
 
-          // Convert PNG → JPEG and upload — don't return b64 through Inngest
-          await uploadIntermediate(supabase, await toJpeg(Buffer.from(generatedData.b64_json, "base64")), outputPath);
+          // Upload to intermediate path — post-passes may follow
+          await uploadIntermediate(supabase, await toJpeg(Buffer.from(generatedData.b64_json, "base64")), scopedEditPath);
 
           console.log(`[generate/photo] Scoped edit complete for ${stepPhotoId} in ${durationMs}ms`);
           return { prompt, durationMs };
@@ -359,57 +398,19 @@ export const generatePhoto = inngest.createFunction(
         }
       });
 
-      // --- Persist scoped edit to DB ---
-      await step.run("persist-scoped", async () => {
-        const supabase = getServiceClient();
-
-        const { error: upsertError } = await supabase
-          .from("generated_images")
-          .upsert({
-            selections_hash: selectionsHash,
-            selections_json: selectionsJsonForClaim,
-            image_path: outputPath,
-            prompt: scopedResult.prompt,
-            step_id: stepId,
-            step_photo_id: stepPhotoId,
-            buyer_session_id: sessionId,
-            selections_fingerprint: selectionsFingerprint,
-            model: modelName,
-            org_id: orgId,
-            scoped_edit_depth: depth + 1,
-            leave_one_out_hashes: leaveOneOutHashes,
-          }, { onConflict: "selections_hash" });
-
-        if (upsertError) console.error("[generate/photo] DB upsert failed:", upsertError);
-
-        await captureAiEvent(sessionId, {
-          provider: "openai",
-          model: modelName,
-          route: "/api/generate/photo",
-          duration_ms: scopedResult.durationMs,
-          cost_usd: estimateOpenAICost(modelName, 1),
-          orgId, orgSlug, floorplanSlug,
-          image_size: "1536x1024",
-          image_quality: "medium",
-          scoped_edit: true,
-          scoped_edit_depth: depth + 1,
-          scoped_edit_surface: changedSubcategoryId,
-        });
-
-        console.log(`[generate/photo] Scoped edit persisted for ${stepPhotoId} (depth ${depth + 1})`);
-      });
-
-      return; // Done — skip full pipeline
+      currentPath = scopedEditPath;
+      finalPrompt = scopedResult.prompt;
+      totalDurationMs = scopedResult.durationMs;
+    } else {
+      // --- Full pipeline: main pass completed ---
+      finalPrompt = generateResult.prompt;
+      totalDurationMs = generateResult.durationMs;
+      currentPath = generateResult.lastPath;
     }
 
-    // --- Step 2: Second pass / oven refinement (conditional, gets its own 120s) ---
-    const firstPass = generateResult;
-    let finalPrompt = firstPass.prompt;
-    let openaiPasses = 1;
-    let totalDurationMs = firstPass.durationMs;
-    let currentPath = firstPass.lastPath;
+    // --- Step 2: Second pass / oven refinement (full pipeline only, gets its own 120s) ---
 
-    if (resolvedPolicy.secondPass) {
+    if (!isScopedEdit && resolvedPolicy.secondPass) {
       const secondPass = await step.run("refine", async () => {
         const supabase = getServiceClient();
         const prevBuffer = await downloadIntermediate(supabase, currentPath);
@@ -453,7 +454,7 @@ export const generatePhoto = inngest.createFunction(
       totalDurationMs += secondPass.durationMs;
       if (secondPass.success) {
         currentPath = secondPass.path;
-        finalPrompt = `${firstPass.prompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
+        finalPrompt = `${finalPrompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
         openaiPasses += 1;
       }
     }
@@ -531,7 +532,7 @@ export const generatePhoto = inngest.createFunction(
           ? `\n\nRULES:\n${rules.map(r => `- ${r}`).join("\n")}`
           : "";
 
-        const prompt = `Edit this room photo. Change ONLY the surface(s) listed below. Do not alter anything else in the image — no objects, appliances, fixtures, alcoves, or other surfaces.
+        const prompt = `Edit this room photo. Change ONLY the surface(s) listed below. Every other pixel in the image must remain identical — do not add, remove, or alter any objects, appliances, fixtures, shelves, pantry contents, doorways, alcoves, or other surfaces.
 
 ${lines.join("\n")}
 
@@ -767,7 +768,7 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
           selections_fingerprint: selectionsFingerprint,
           model: modelName,
           org_id: orgId,
-          scoped_edit_depth: 0,
+          scoped_edit_depth: isScopedEdit ? scopedEditDepth : 0,
           leave_one_out_hashes: leaveOneOutHashes,
         }, { onConflict: "selections_hash" });
 
@@ -795,6 +796,9 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
         flash_post_pass_model: flashPostPassResult ? resolvedPolicy.flashPostPass!.model : undefined,
         pro_post_pass: !!proPostPassResult,
         pro_post_pass_model: proPostPassResult ? resolvedPolicy.proPostPass!.model : undefined,
+        scoped_edit: isScopedEdit,
+        scoped_edit_depth: isScopedEdit ? scopedEditDepth : undefined,
+        scoped_edit_surface: scopedEditSurface,
       });
 
       const passLabels = [
