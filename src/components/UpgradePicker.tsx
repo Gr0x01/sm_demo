@@ -359,13 +359,14 @@ export function UpgradePicker({
   ): Promise<void> => {
     const abort = new AbortController();
     pollAbortControllersRef.current.add(abort);
-    const pollInterval = 3000;
-    const maxPolls = 50; // ~2.5 min
+    // Adaptive polling: 1.5s for the first 10 polls (~15s), then 3s after
+    const maxPolls = 50; // ~2.5 min worst case
     let consecutiveFailures = 0;
     let exitReason: "complete" | "not_found" | "timeout" | "aborted" = "timeout";
     try {
       for (let poll = 0; poll < maxPolls; poll++) {
-        await new Promise(r => setTimeout(r, pollInterval));
+        const interval = poll < 10 ? 1500 : 3000;
+        await new Promise(r => setTimeout(r, interval));
         if (abort.signal.aborted) { exitReason = "aborted"; break; }
         try {
           const checkRes = await fetch("/api/generate/photo/check", {

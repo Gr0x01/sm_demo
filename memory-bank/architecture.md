@@ -43,17 +43,20 @@ Server (Next.js API routes + Inngest background functions)
   ├── POST /api/inngest — Inngest serve endpoint (GET/POST/PUT)
   └── Inngest background functions (src/inngest/functions/):
         ├── generate-photo — partial cache fast path OR full pipeline:
-        │     Fast path: check-diff-cache → scoped-edit → persist-scoped (~32s)
+        │     Diff cache check is merged into the generate step (saves a step transition).
+        │     Fast path: generate (diff check → scoped-edit-needed) → scoped-edit → persist-scoped (~32s)
         │       Leave-one-out hash overlap query (GIN-indexed) finds cached image
         │       differing by 1 subcategory. 1.5 scoped edit changes only that surface.
         │       Depth capped at 3 to bound quality degradation.
-        │     Full pipeline: generate → refine → flash-post-pass → persist (~60-80s)
+        │     Full pipeline: generate (diff check miss → OpenAI) → refine → flash-post-pass → persist (~60-80s)
         │       OpenAI gpt-image-1.5 via images.edit endpoint. Hero photo + swatches.
+        │       heroImagePath passed via event payload (no re-fetch inside step).
         │     Each step gets its own 120s Vercel function invocation.
         │     Steps pass images via Supabase Storage (not b64 in step output —
         │       Inngest has a step output size limit that b64 images exceed).
         │     Config: retries: 2, concurrency: { limit: 5 }
-        └── generate-demo — 2 steps: generate → persist
+        └── generate-demo — same merged-step pattern as generate-photo
+              Diff cache check merged into generate step (discriminated union return).
               Uses buildEditPrompt (same prompt pipeline as generate-photo)
               Reads swatches from local public/ dir, photos from demo-uploads bucket
               Config: retries: 2, concurrency: { limit: 3 }
@@ -137,11 +140,13 @@ Supabase
 2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
 3. Cache hit → returns 200 with URL + `cacheHit: true`
 4. Cache miss → claim `__pending__` slot (DB dedup, 5 min stale TTL) → dispatch `photo/generate.requested` to Inngest → return **202** with `selectionsHash`
-5. **Inngest function** (`generate-photo`): up to 4 steps, each gets its own 120s Vercel invocation:
+5. **Inngest function** (`generate-photo`): up to 5 steps, each gets its own 120s Vercel invocation:
    - `generate` — parallel fetch aiConfig + optionLookup + hero photo + swatches (pre-warmed cache), build prompt via `buildEditPrompt`, call OpenAI `images.edit` (gpt-image-1.5, quality: medium, 1536x1024, input_fidelity: high), convert PNG→JPEG q90, upload to Storage
    - `refine` — conditional policy second pass (e.g., slide-in range correction), only when policy requires it
-   - `flash-post-pass` — conditional Gemini isolation pass for `needs_isolation` options (e.g., herringbone tile). Parallel fetch optionLookup + intermediate download + all swatches.
+   - `pro-post-pass` — conditional Gemini Pro (`gemini-3-pro-image-preview`) refinement for cabinet stain colors + optionally backsplash tile isolation. Triggered by "wood STAIN" marker in option `generation_rules`. Resolves linked options (e.g. "Match to Main" → merge zones). Suppresses Flash when active (Pro handles both). Parallel I/O.
+   - `flash-post-pass` — conditional Gemini Flash isolation pass for `needs_isolation` options (e.g., herringbone tile). Suppressed when Pro post-pass is active. Parallel fetch optionLookup + intermediate download + all swatches.
    - `persist` — upsert cache row replacing `__pending__`, PostHog event (image already in Storage from prior step)
+   - **Scoped edit path** (partial cache): `check-diff-cache` → `scoped-edit` → `persist-scoped`, skips full pipeline. Skipped for appliance add/remove (`-none` option transitions) — full pipeline needed for correct spatial placement.
    - Steps pass images via Supabase Storage as JPEG between invocations (~300KB vs ~3-4MB PNG). Inngest step output size limit prevents b64 transfer.
    - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
 6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.

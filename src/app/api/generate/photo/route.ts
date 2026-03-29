@@ -88,38 +88,43 @@ export async function POST(request: Request) {
     const supabase = getServiceClient();
 
     // --- Validate ownership chain: org → floorplan → step → step_photo, session → org/floorplan ---
-    const org = await getOrgBySlug(orgSlug);
+    // Phase 1: queries with no inter-dependencies (parallel)
+    const [org, aiConfig, sessionResult] = await Promise.all([
+      getOrgBySlug(orgSlug),
+      getStepPhotoAiConfig(stepPhotoId),
+      supabase
+        .from("buyer_sessions")
+        .select("id, org_id, floorplan_id, selections")
+        .eq("id", sessionId)
+        .single(),
+    ]);
+
     if (!org) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const floorplan = await getFloorplan(org.id, floorplanSlug);
+    // Phase 2: queries that need org.id (parallel)
+    const [floorplan, optionLookup, dbPolicy] = await Promise.all([
+      getFloorplan(org.id, floorplanSlug),
+      getOptionLookup(org.id),
+      getStepPhotoGenerationPolicy(org.id, stepPhotoId),
+    ]);
+
     if (!floorplan) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const aiConfig = await getStepPhotoAiConfig(stepPhotoId);
     if (!aiConfig || aiConfig.orgId !== org.id || aiConfig.floorplanId !== floorplan.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Validate session ownership
-    const { data: session } = await supabase
-      .from("buyer_sessions")
-      .select("id, org_id, floorplan_id, selections")
-      .eq("id", sessionId)
-      .single();
-
+    const session = sessionResult.data;
     if (!session || session.org_id !== org.id || session.floorplan_id !== floorplan.id) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const optionLookup = await getOptionLookup(org.id);
     const defaultBySubcategory = buildDefaultOptionBySubcategory(optionLookup);
     const mergedSelections = reconcileClientAndSessionSelections(
       normalizeSelectionRecord(selections),
       normalizeSelectionRecord(session.selections),
       defaultBySubcategory,
     );
-
-    // --- Server-side per-photo selection scoping + hash derivation ---
-    const dbPolicy = await getStepPhotoGenerationPolicy(org.id, stepPhotoId);
     const {
       scopedSelections, scopedSubcategoryIds, spatialHints, sceneDescription,
       resolvedPolicy, selectionsHash, selectionsFingerprint, hashInputs, modelName,
@@ -194,6 +199,7 @@ export async function POST(request: Request) {
           photoSpatialHint: aiConfig.photo.spatialHint,
           selectionsJsonForClaim: hashInputs,
           leaveOneOutHashes,
+          heroImagePath: aiConfig.photo.imagePath,
         },
       });
     } catch (sendError) {

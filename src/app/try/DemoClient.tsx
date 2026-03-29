@@ -212,12 +212,12 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
       // 202 or 429 — poll /check until result is ready
       if ((genRes.status === 202 || genRes.status === 429) && (genData.combinedHash || genData.imageUrl === undefined)) {
-        const pollInterval = 3000;
-        const maxPolls = 50; // ~2.5 min
+        const maxPolls = 50; // ~2.5 min worst case
         let imageUrl: string | null = null;
 
         for (let i = 0; i < maxPolls; i++) {
-          await new Promise((r) => setTimeout(r, pollInterval));
+          // Adaptive polling: 1.5s for the first 10 polls, then 3s after
+          await new Promise((r) => setTimeout(r, i < 10 ? 1500 : 3000));
 
           const pollRes = await fetch("/api/try/check", {
             method: "POST",

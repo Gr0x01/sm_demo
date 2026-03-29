@@ -125,6 +125,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key fix — flash post-pass `optionLookup.get` key format**: Was `optionLookup.get(optId)`, should be `optionLookup.get(\`${subId}:${optId}\`)`. Caused post-pass to find nothing and send empty prompt.
 - **Key fix — empty post-pass guard**: If flash post-pass builds 0 swatch lines, return null immediately instead of sending empty prompt to model.
 - **Known issue — backsplash drift on scoped edits**: 1.5 scoped edits re-process the whole image, degrading backsplash patterns. Same problem as the main pass. Scoped edit path needs Flash backsplash post-pass after the 1.5 edit (not yet implemented).
+- **Key fix — appliance add/remove skips scoped edit (2026-03-29)**: Scoped edits for adding/removing appliances (e.g. `refrigerator-none` → fridge) caused spatial displacement — model placed fridge next to range instead of in its alcove. Scoped edits are designed for surface swaps, not structural additions. Now skips scoped edit when old or new option slug ends with `-none`, falls through to full pipeline. Applied to both `generate-photo.ts` and `generate-demo.ts`.
 - **Prompt reverted to v26 structure**: APPLY/PRESERVE/SURFACE & PLACEMENT split reverted to single `RULES:` block. Edit instruction back to "match the selected finishes."
 - **SM paint SVG swatches cleaned**: 16 SVGs in Supabase storage had white label bars at the bottom diluting the swatch anchor hex. Stripped to clean solid-color rectangles.
 - **R&D test script**: `scripts/test-scoped-surface-edit.ts` — validates scoped editing across surface types. 1.5 is the default model (no hallucinations), Flash for backsplash only.
@@ -159,6 +160,13 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key fix — `selections_json` metadata keys need `_` prefix**: Demo rows stored `session_id` and `photo_hash` without `_` prefixes. `identifyChangedSubcategory` only filters keys starting with `_`, so it treated these metadata keys as selection diffs → always returned null → scoped edit never fired. Fixed to `_session_id` and `_photo_hash` everywhere (route claim, both persist upserts, generation cap query, diff match query).
 - **Result**: Flash post-pass dropped from 35-50s to ~30s. Main pass I/O overhead reduced by parallelizing aiConfig + optionLookup + hero download + swatch downloads.
 - **Cache versions bumped**: `GENERATION_CACHE_VERSION` v34→v35, `DEMO_GENERATION_CACHE_VERSION` v8→v9.
+
+**Pipeline latency reduction (2026-03-29):**
+- **Route DB query parallelization**: 6 sequential queries → 2 parallel rounds. Phase 1: `getOrgBySlug` + `getStepPhotoAiConfig` + session fetch. Phase 2 (needs org.id): `getFloorplan` + `getOptionLookup` + `getStepPhotoGenerationPolicy`. Saves ~300-600ms.
+- **Merged diff-cache check into generate step**: Both `generate-photo.ts` and `generate-demo.ts` now run the diff-cache DB query at the top of the `generate` step instead of as a separate Inngest step. Returns discriminated union (`type: "scoped-edit-needed"` or `type: "generated"`). Eliminates one full Inngest step transition (~0.5-1s) on every generation.
+- **heroImagePath passed through Inngest event**: Route already fetches `aiConfig` — now passes `heroImagePath` through the event payload. Generate step no longer calls `getStepPhotoAiConfig` (was 2 sequential DB queries). Within the step, hero download + optionLookup + swatch pre-warm run as chained parallel promises.
+- **Adaptive polling**: Client polls at 1.5s intervals for first 10 polls, then 3s. Applied to both `UpgradePicker.tsx` and `DemoClient.tsx`. Reduces average wait-after-completion from ~1.5s to ~0.75s.
+- **Total estimated savings**: ~3-4s off common single-pass case.
 
 **Previous prospect demo page updates (2026-03-23):**
 - Hero: "I put this together in about ten minutes" + speed/cost messaging ($500/mo, no 3D, no six-figure setup)

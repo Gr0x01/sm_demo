@@ -20,6 +20,7 @@ export interface PhotoGenerateRequestedData {
   photoSpatialHint: string | null;
   selectionsJsonForClaim: Record<string, unknown>;
   leaveOneOutHashes: string[];
+  heroImagePath: string;
 }
 
 export interface DemoGenerateRequestedData {
