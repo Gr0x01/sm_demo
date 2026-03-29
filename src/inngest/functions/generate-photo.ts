@@ -139,6 +139,11 @@ export const generatePhoto = inngest.createFunction(
 
     const MAX_SCOPED_EDIT_DEPTH = 3;
     const outputPath = `${orgId}/${selectionsHash}.jpg`;
+    // Intermediate paths per step — lets us inspect each step's output for debugging
+    const mainPassPath = `${orgId}/${selectionsHash}_main.jpg`;
+    const refinePath = `${orgId}/${selectionsHash}_refine.jpg`;
+    const flashPath = `${orgId}/${selectionsHash}_flash.jpg`;
+    const proPath = `${orgId}/${selectionsHash}_pro.jpg`;
 
     // --- Step 1: Diff cache check + main pass generation (merged to save a step transition) ---
     // Returns either a scoped-edit signal or full generation result.
@@ -251,10 +256,10 @@ export const generatePhoto = inngest.createFunction(
         const durationMs = Math.round(performance.now() - genStart);
 
         // Convert PNG → JPEG (10x smaller) and upload — don't return b64 through Inngest
-        await uploadIntermediate(supabase, await toJpeg(Buffer.from(generatedData.b64_json, "base64")), outputPath);
+        await uploadIntermediate(supabase, await toJpeg(Buffer.from(generatedData.b64_json, "base64")), mainPassPath);
 
         console.log(`[generate/photo] Main pass complete for ${stepPhotoId} in ${durationMs}ms`);
-        return { type: "generated" as const, prompt, durationMs };
+        return { type: "generated" as const, prompt, durationMs, lastPath: mainPassPath };
       } catch (err) {
         const durationMs = Math.round(performance.now() - genStart);
         await captureAiError(sessionId, {
@@ -402,11 +407,12 @@ export const generatePhoto = inngest.createFunction(
     let finalPrompt = firstPass.prompt;
     let openaiPasses = 1;
     let totalDurationMs = firstPass.durationMs;
+    let currentPath = firstPass.lastPath;
 
     if (resolvedPolicy.secondPass) {
       const secondPass = await step.run("refine", async () => {
         const supabase = getServiceClient();
-        const prevBuffer = await downloadIntermediate(supabase, outputPath);
+        const prevBuffer = await downloadIntermediate(supabase, currentPath);
         const secondPassInput = [
           await toFile(prevBuffer, "first-pass.jpg", { type: "image/jpeg" }),
         ];
@@ -430,9 +436,9 @@ export const generatePhoto = inngest.createFunction(
           const durationMs = Math.round(performance.now() - genStart);
 
           if (secondPassData?.b64_json) {
-            await uploadIntermediate(supabase, await toJpeg(Buffer.from(secondPassData.b64_json, "base64")), outputPath);
+            await uploadIntermediate(supabase, await toJpeg(Buffer.from(secondPassData.b64_json, "base64")), refinePath);
             console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
-            return { durationMs, success: true as const };
+            return { durationMs, success: true as const, path: refinePath };
           }
 
           console.warn(`[generate/photo] Second pass produced no image for ${stepPhotoId}; keeping first-pass output.`);
@@ -446,13 +452,14 @@ export const generatePhoto = inngest.createFunction(
 
       totalDurationMs += secondPass.durationMs;
       if (secondPass.success) {
+        currentPath = secondPass.path;
         finalPrompt = `${firstPass.prompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
         openaiPasses += 1;
       }
     }
 
     // --- Step 3: Flash post-pass for isolated surfaces (conditional, gets its own 120s) ---
-    let flashPostPassResult: { prompt: string; durationMs: number } | null = null;
+    let flashPostPassResult: { prompt: string; durationMs: number; path: string } | null = null;
 
     if (resolvedPolicy.flashPostPass) {
       flashPostPassResult = await step.run("flash-post-pass", async () => {
@@ -463,7 +470,7 @@ export const generatePhoto = inngest.createFunction(
         // Phase 1: Parallel — option lookup + previous output download
         const [optionLookup, prevOutputBuffer] = await Promise.all([
           getOptionLookup(orgId),
-          downloadIntermediate(supabase, outputPath),
+          downloadIntermediate(supabase, currentPath),
         ]);
 
         // Identify isolated entries
@@ -579,11 +586,10 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
             .jpeg({ quality: 90 })
             .toBuffer();
 
-          // Upload to storage — overwrites the main pass output
-          await uploadIntermediate(supabase, resized, outputPath);
+          await uploadIntermediate(supabase, resized, flashPath);
 
           console.log(`[generate/photo] Flash post-pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { prompt, durationMs };
+          return { prompt, durationMs, path: flashPath };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
           await captureAiError(sessionId, {
@@ -603,12 +609,13 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
       });
 
       if (flashPostPassResult) {
+        currentPath = flashPostPassResult.path;
         totalDurationMs += flashPostPassResult.durationMs;
       }
     }
 
     // --- Step 3b: Pro refinement post-pass for cabinets + optionally backsplash (conditional) ---
-    let proPostPassResult: { prompt: string; durationMs: number } | null = null;
+    let proPostPassResult: { prompt: string; durationMs: number; path: string } | null = null;
 
     if (resolvedPolicy.proPostPass) {
       proPostPassResult = await step.run("pro-post-pass", async () => {
@@ -618,7 +625,7 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
         // Phase 1: Parallel — option lookup + previous output download
         const [optionLookup, prevOutputBuffer] = await Promise.all([
           getOptionLookup(orgId),
-          downloadIntermediate(supabase, outputPath),
+          downloadIntermediate(supabase, currentPath),
         ]);
 
         // Resolve linked options (e.g. "Match to Main" → merge into source when same swatch)
@@ -703,10 +710,10 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
             .jpeg({ quality: 90 })
             .toBuffer();
 
-          await uploadIntermediate(supabase, resized, outputPath);
+          await uploadIntermediate(supabase, resized, proPath);
 
           console.log(`[generate/photo] Pro post-pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { prompt, durationMs };
+          return { prompt, durationMs, path: proPath };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
           await captureAiError(sessionId, {
@@ -723,13 +730,20 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
       });
 
       if (proPostPassResult) {
+        currentPath = proPostPassResult.path;
         totalDurationMs += proPostPassResult.durationMs;
       }
     }
 
-    // --- Step 4: Persist to DB (image already in storage from previous steps) ---
+    // --- Step 4: Persist — copy final intermediate to canonical path + write DB ---
     await step.run("persist", async () => {
       const supabase = getServiceClient();
+
+      // Copy the final intermediate image to the canonical output path
+      if (currentPath !== outputPath) {
+        const finalBuffer = await downloadIntermediate(supabase, currentPath);
+        await uploadIntermediate(supabase, finalBuffer, outputPath);
+      }
 
       // Build full prompt log
       let promptLog = finalPrompt;

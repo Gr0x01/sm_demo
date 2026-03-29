@@ -68,7 +68,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v39";
+export const GENERATION_CACHE_VERSION = "v42";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -292,8 +292,8 @@ RULES:
 - If a line includes "dimensions:", use them as scale/format context alongside the swatch (e.g. tile size, plank width, mosaic pattern).
 - For each item marked "(no swatch image available; follow text exactly)", use the text descriptor and keep edits subtle.
 - The "→ apply to" text tells you WHERE in the photo to apply each change. Treat each listed target as a separate mask; do NOT bleed one finish into another.
-- If a requested surface or appliance is not clearly visible in the source photo, do NOT invent new geometry or objects to satisfy the request. Leave that target unchanged instead of hallucinating additions.${flooringRules}
-- Do NOT add, remove, or move any object except in-place replacement of explicitly selected appliances. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
+- If a requested surface is not clearly visible in the source photo, do NOT invent new geometry to satisfy the request. Leave that target unchanged instead of hallucinating additions. Exception: explicitly selected appliances with placement instructions (e.g. "place in the empty alcove") MUST be added as directed.${flooringRules}
+- Do NOT add, remove, or move any object except explicitly selected appliances placed according to their instructions. Keep exact counts of cabinets, drawer fronts, fixtures, and hardware.
 - Never add extra cabinetry, built-ins, or pantry units unless that exact item is explicitly selected in the list above.
 - In doorway or multi-room views, keep edits inside the explicitly targeted visible zone and do NOT propagate flooring/fixtures into adjacent rooms.
 - Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.
