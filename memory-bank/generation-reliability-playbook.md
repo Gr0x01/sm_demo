@@ -4,41 +4,117 @@ How to set up, tune, and troubleshoot AI-generated room photos in the Finch pipe
 
 ## 1. Pipeline Overview
 
+Two pipelines exist. Multi-pass is the new approach (feature-flagged). Legacy single-pass is the default.
+
+### Multi-Pass Pipeline (recommended for kitchens)
+
 ```
-Main Pass (OpenAI gpt-image-1.5)
-  Hero photo + up to ~15 swatches → edited room image
-  Quality: medium, 1536x1024, input_fidelity high, ~35-45s
-    │
-    ├─── Scoped Edit (fast path)
-    │    Single-surface change on a previously cached image
-    │    Same model (1.5), ~30-35s, depth capped at 3
+Structural (OpenAI 1.5, ~38s)
+  Cabinets, countertop, flooring, paint — 3-6 swatches
     │
     ▼
-Oven/Refine Pass (OpenAI 1.5, conditional)
-  Geometry correction (e.g. slide-in range). Policy-driven.
-  ~30-35s, input_fidelity low
+Fixtures (OpenAI 1.5, ~37s)
+  Hardware, sink, faucet, lighting, range — 2-5 swatches
     │
     ▼
-Pro Post-Pass (Gemini Pro, conditional)
-  Cabinet stain refinement + backsplash isolation when both needed.
-  Option-driven: fires when any selected option has "wood STAIN" marker.
-  Absorbs Flash isolation when both are needed. ~40s.
+Oven (OpenAI 1.5, conditional)
+  Slide-in range geometry correction. Only fires for slide-in options.
     │
     ▼
-Flash Post-Pass (Gemini Flash, conditional)
-  Backsplash tile isolation (when Pro didn't already handle it).
-  Option-driven: fires when any selected option has needsIsolation flag.
-  Suppressed when Pro post-pass fires. ~22-30s.
+Specialty (Gemini Flash, ~30s)
+  Backsplash tile. Always Flash, never 1.5.
     │
     ▼
 Persist: upload final JPEG → Supabase Storage, upsert generated_images row
 ```
 
+### Legacy Single-Pass Pipeline (default)
+
+```
+Main Pass (OpenAI 1.5)
+  Hero photo + all swatches → edited room image
+  ~35-45s
+    │
+    ▼
+Oven/Refine (1.5, conditional) → Pro Post-Pass (Gemini Pro, conditional)
+  → Flash Post-Pass (Gemini Flash, conditional) → Persist
+```
+
 **Key files:**
 - `src/lib/generate.ts` — `buildEditPrompt`, `deriveGenerationContext`, linked option resolution
-- `src/inngest/functions/generate-photo.ts` — pipeline orchestration (all steps)
+- `src/lib/pass-definitions.ts` — multi-pass subcategory classification
+- `src/inngest/functions/generate-photo-multipass.ts` — multi-pass pipeline
+- `src/inngest/functions/generate-photo.ts` — legacy single-pass pipeline
 - `src/lib/photo-generation-policy.ts` — policy resolution (DB-backed + option-driven)
 - `src/lib/models.ts` — centralized model constants
+
+---
+
+## 1b. Multi-Pass Pipeline
+
+Feature-flagged alternative to the single-pass pipeline. Splits generation into sequential passes with fewer swatches per pass. Better quality for kitchens and complex rooms.
+
+```
+Structural (1.5, ~38s)   cabinets, countertop, flooring, paint
+     ↓
+Fixtures (1.5, ~37s)     hardware, sink, faucet, lighting, range
+     ↓
+Oven (1.5, conditional)  slide-in range geometry correction
+     ↓
+Specialty (Flash, ~30s)  backsplash (always Flash, never 1.5)
+     ↓
+Persist
+```
+
+**Key files:**
+- `src/lib/pass-definitions.ts` — `derivePassDefinitions` classifies subcategories into pass groups
+- `src/inngest/functions/generate-photo-multipass.ts` — pipeline orchestration
+- `memory-bank/project/multi-pass-pipeline-architecture.md` — full architecture doc
+
+### Enabling Multi-Pass on a Photo
+
+1. **Set `useMultiPass: true`** in the photo's `step_photo_generation_policies` JSONB:
+   ```sql
+   UPDATE step_photo_generation_policies
+   SET policy_json = policy_json || '{"useMultiPass": true}'::jsonb
+   WHERE step_photo_id = '<photo-id>'
+   ```
+
+2. **Verify subcategory flags are correct:**
+   - `is_appliance = true` on appliance subcategories (range, refrigerator, dishwasher). Hardware, sink, faucet, lighting are classified by slug pattern, not this flag.
+   - `needsIsolation` on backsplash options that need tile pattern isolation (herringbone, picket, etc.). Even without this flag, backsplash always routes to specialty by slug.
+
+3. **Verify slug naming:**
+   Pass classification uses slug patterns. These must be present in the subcategory slug:
+   - Fixtures: `hardware`, `faucet`, `sink`, `lighting`, `fan`, `refrigerator`, `range`, `dishwasher`
+   - Specialty: `backsplash`
+   - Everything else → structural
+
+4. **Check `-none` options exist** for appliances that may not be selected (e.g. `refrigerator-none`). These are excluded from pass definitions so negative guard rules fire correctly.
+
+5. **Test locally** with Inngest dev. Watch the terminal for `[multipass]` log lines confirming pass-structural → pass-fixtures → pass-specialty → persist.
+
+### When to Use Multi-Pass vs Single-Pass
+
+| Room | Recommendation | Why |
+|------|---------------|-----|
+| Kitchen (10+ subcategories) | Multi-pass | Too many swatches for single pass. Stain cabinets need fewer swatches to apply correctly. |
+| Bathroom (7-12 subcategories) | Test both | May benefit from structural + specialty split if shower tile needs isolation. |
+| Bedroom/living (5-8 subcategories) | Single-pass | Low swatch count, 1.5 handles fine in one pass. |
+
+### How Caching Works with Multi-Pass
+
+4-layer cache hierarchy:
+1. **Full hash match** — identical selections → serve cached final image (instant)
+2. **Scoped +1 edit** — one surface changed on a cached final image (~32s). Skipped for specialty surfaces (backsplash falls through to Layer 3 so Flash handles it).
+3. **Intermediate pass cache** — `pass_cache` table stores each pass's output. Changing backsplash? Structural + fixtures cached, only specialty re-runs from cached fixtures output (~30s).
+4. **Full cold generation** — all passes from hero photo (fallback)
+
+### Pass Classification Gotchas
+
+- **Countertop edge** — classified as structural but not visible in photos. Should be excluded from photo scope (not pass classification).
+- **Island cabinet color** — usually merged into perimeter cabinet entry by `resolveLinkedOptions` when same color. When different, both appear in structural pass.
+- **Slide-in range** — goes to fixtures pass first (gets placed), then oven correction pass fixes geometry. Only fires when option slug contains `slide-in`.
 
 ---
 
@@ -323,6 +399,11 @@ Note: most isolation is option-driven (`needsIsolation` flag), not policy-driven
 **Symptoms**: Quality drops after 3+ chained edits. Appliance add/remove causes spatial displacement.
 **Cause**: Compounding artifacts from chained edits. Scoped edits designed for surface swaps, not structural changes.
 **Fix**: Depth cap at 3 (built into pipeline). Appliance add/remove (option slug ending in `-none`) automatically skips scoped edit and falls through to full pipeline.
+
+### 11. Scoped Edit Preserve-List Contradiction
+**Symptoms**: Hardware placed on island side panel. Fixture added where none existed. Object type appears in wrong location during scoped edit.
+**Cause**: `buildScopedEditPrompt` catch-all preserve line ("All appliances, fixtures, hardware, and lighting") contradicts the change instruction when hardware/fixture/lighting IS the thing being changed. Model sees "change hardware" + "preserve hardware" and misinterprets placement.
+**Fix**: Catch-all preserve line now dynamically excludes the type being changed (`generate.ts` line ~370). When hardware is the changed subcategory, preserve line omits "hardware."
 
 ### 9. Wainscoting/Panel Spreading
 **Symptoms**: Wainscoting appears on walls where it shouldn't. Panel style changes to a different pattern.

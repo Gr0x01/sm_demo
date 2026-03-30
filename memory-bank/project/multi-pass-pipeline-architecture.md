@@ -209,7 +209,7 @@ Scenario: First generation, but a previous buyer already generated with
 
 **Layer 2 vs Layer 3 quality difference:** Layer 2 takes a final image and does a scoped edit. Layer 3 builds from an intermediate via sequential passes. For the same final selections, these produce visually different images (different code paths, different model invocations). Since we upsert on `selectionsHash`, first to complete wins. This is acceptable — both should look good, and buyers never see both side-by-side.
 
-**Layer 2 model mismatch for specialty surfaces:** Today, scoped edits always use 1.5. But specialty surfaces (backsplash) are in the specialty pass because 1.5 can't handle them. If Layer 2 fires for a backsplash change, it uses 1.5 — the wrong model. Accepted tradeoff for now (fast > perfect during browsing). Future improvement: scoped edits should respect the per-surface model assignment from pass definitions.
+**Specialty surfaces skip Layer 2:** When the changed surface belongs to a Gemini pass (e.g. backsplash), Layer 2 scoped edit is skipped. Falls through to Layer 3 which re-runs the specialty pass from the cached fixtures intermediate using Flash. This ensures backsplash always gets the correct model.
 
 **What's in storage today vs what we need:**
 

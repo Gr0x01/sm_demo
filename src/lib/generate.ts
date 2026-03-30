@@ -367,7 +367,13 @@ export async function buildScopedEditPrompt(
     if (!found) continue;
     preserveLines.push(`- ${found.subCategory.name}`);
   }
-  preserveLines.push("- All appliances, fixtures, hardware, and lighting");
+  // Build catch-all preserve line, excluding the type being changed
+  const changedName = subCategory.name.toLowerCase();
+  const catchAllParts = ["appliances", "fixtures", "hardware", "lighting"]
+    .filter(part => !changedName.includes(part.replace(/s$/, "")));
+  if (catchAllParts.length > 0) {
+    preserveLines.push(`- All ${catchAllParts.join(", ")}`);
+  }
   preserveLines.push("- Room layout, camera angle, and perspective");
 
   // Collect generation rules from policy system (same logic as buildEditPrompt)

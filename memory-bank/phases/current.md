@@ -241,6 +241,8 @@ hero → Structural (1.5, cabs/counter/floor/paint, ~38s)
 
 **Architecture doc:** `memory-bank/project/multi-pass-pipeline-architecture.md`
 
+**Key fix — scoped edit preserve-list contradiction (2026-03-30):** `buildScopedEditPrompt` catch-all preserve line always said "All appliances, fixtures, hardware, and lighting" even when hardware was the changed subcategory. Model saw "change hardware" + "preserve hardware" and placed hardware on island side panel. Fix: catch-all now dynamically excludes the type being changed. Applies to hardware, fixtures, appliances, and lighting scoped edits.
+
 **Remaining:**
 - [ ] More local testing — verify output quality across different selection combos
 - [ ] Test pass cache hits — change one surface, verify earlier passes skip

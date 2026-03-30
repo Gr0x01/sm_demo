@@ -247,13 +247,18 @@ export const generatePhotoMultipass = inngest.createFunction(
     // --- Step: Plan — determine execution path ---
     const plan = await step.run("plan", async () => {
       // Layer 2: check scoped +1 edit on final image (existing leave-one-out)
+      // Skip for specialty surfaces (backsplash) — they should re-run from the pass cache
+      // via Layer 3 so Flash handles them, not 1.5.
       const diffMatch = await findSingleSurfaceDiffMatch(stepPhotoId, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH);
       if (diffMatch) {
         const changedSub = identifyChangedSubcategory(diffMatch.selectionsJson, scopedSelections);
         const isApplianceAddRemove = changedSub && (
           changedSub.oldOptionId.endsWith("-none") || changedSub.newOptionId.endsWith("-none")
         );
-        if (changedSub && !isApplianceAddRemove) {
+        const isSpecialtySurface = changedSub && (passDefinitions as PassDefinition[]).some(
+          p => p.promptStyle === "gemini" && p.subcategoryIds.includes(changedSub.subcategoryId),
+        );
+        if (changedSub && !isApplianceAddRemove && !isSpecialtySurface) {
           return {
             type: "scoped-edit" as const,
             baseImagePath: diffMatch.imagePath,
