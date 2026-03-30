@@ -7,6 +7,7 @@ import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getOptionLookup, findSingleSurfaceDiffMatch, findPassCacheHit, upsertPassCache } from "@/lib/db-queries";
 import { captureAiEvent, captureAiError, estimateOpenAICost, estimateGeminiImageCost } from "@/lib/posthog-server";
+import { ISOLATION_IMAGE_MODEL } from "@/lib/models";
 import type { PassDefinition } from "@/lib/pass-definitions";
 import type { Option, SubCategory } from "@/types";
 
@@ -319,9 +320,16 @@ export const generatePhotoMultipass = inngest.createFunction(
           sceneDescription, photoSpatialHint, createSwatchResolver(supabase), resolvedPolicy.promptOverrides,
         );
 
-        const result = await generateOpenAI(baseBuffer, "image/jpeg", "base.jpg", prompt, swatches, modelName);
+        // Use Flash for scoped edits — 1.5 destroys specialty surfaces (herringbone
+        // backsplash, picket tiles) that were applied by the Flash specialty pass.
+        // Flash preserves them while making the single-surface change. R&D confirmed
+        // across oven, countertop, cabinets, paint, and flooring scoped edits.
+        const flashSwatches = swatches.map(s => ({ buffer: s.buffer, mediaType: s.mediaType }));
+        const result = await generateGemini(baseBuffer, prompt, flashSwatches, ISOLATION_IMAGE_MODEL);
         const intermediatePath = `${orgId}/${selectionsHash}_scoped.jpg`;
         await uploadIntermediate(supabase, await toJpeg(result.imageBuffer), intermediatePath);
+
+        console.log(`[multipass] Flash scoped edit for ${stepPhotoId}: ${plan.changedSubcategoryId} in ${result.durationMs}ms`);
         return { path: intermediatePath, durationMs: result.durationMs, prompt };
       });
 
@@ -518,14 +526,16 @@ export const generatePhotoMultipass = inngest.createFunction(
       }
 
       const passes = passDefinitions as PassDefinition[];
-      const openaiPasses = isScopedEdit ? 1 : passes.filter(p => p.promptStyle === "openai").length;
-      const geminiPasses = isScopedEdit ? 0 : passes.filter(p => p.promptStyle === "gemini").length;
-      const totalCost = estimateOpenAICost(modelName, openaiPasses)
-        + passes.filter(p => p.promptStyle === "gemini").reduce((sum, p) => sum + estimateGeminiImageCost(p.model), 0);
+      const openaiPasses = isScopedEdit ? 0 : passes.filter(p => p.promptStyle === "openai").length;
+      const geminiPasses = isScopedEdit ? 1 : passes.filter(p => p.promptStyle === "gemini").length;
+      const totalCost = isScopedEdit
+        ? estimateGeminiImageCost(ISOLATION_IMAGE_MODEL)
+        : estimateOpenAICost(modelName, openaiPasses)
+          + passes.filter(p => p.promptStyle === "gemini").reduce((sum, p) => sum + estimateGeminiImageCost(p.model), 0);
 
       await captureAiEvent(sessionId, {
-        provider: "openai",
-        model: modelName,
+        provider: isScopedEdit ? "google" : "openai",
+        model: isScopedEdit ? ISOLATION_IMAGE_MODEL : modelName,
         route: "/api/generate/photo",
         duration_ms: totalDurationMs,
         cost_usd: totalCost,

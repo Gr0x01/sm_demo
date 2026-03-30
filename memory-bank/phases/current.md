@@ -243,10 +243,12 @@ hero → Structural (1.5, cabs/counter/floor/paint, ~38s)
 
 **Key fix — scoped edit preserve-list contradiction (2026-03-30):** `buildScopedEditPrompt` catch-all preserve line always said "All appliances, fixtures, hardware, and lighting" even when hardware was the changed subcategory. Model saw "change hardware" + "preserve hardware" and placed hardware on island side panel. Fix: catch-all now dynamically excludes the type being changed. Applies to hardware, fixtures, appliances, and lighting scoped edits.
 
+**Key fix — Flash scoped edits for multi-pass (2026-03-31):** 1.5 scoped edits on multi-pass output destroyed herringbone backsplash applied by the Flash specialty pass. The scoped edit path went plan → scoped-edit (1.5) → persist, never re-running specialty. Switching scoped edits to Flash (Gemini) solves this — Flash preserves specialty surfaces while changing the target surface. R&D tested across 6 surface types (oven, countertop, cabinets, paint, flooring, hardware): Flash preserved herringbone in all cases, 1.5 destroyed it in all cases. Flash avg ~34s, comparable to 1.5 ~30s. Also confirmed Flash can't handle oven + all fixtures combined (stays as 1.5 oven pass). Test script: `scripts/test-flash-scoped-edit.ts`. Legacy single-pass `generate-photo.ts` unchanged (no specialty surfaces to worry about).
+
 **Remaining:**
 - [ ] More local testing — verify output quality across different selection combos
 - [ ] Test pass cache hits — change one surface, verify earlier passes skip
-- [ ] Test scoped +1 edits still work with multi-pass output
+- [x] ~~Test scoped +1 edits still work with multi-pass output~~ — Fixed: scoped edits now use Flash
 - [ ] Deploy to Vercel and test in production (SM kitchen-close only)
 - [ ] Pre-generate structural intermediates for popular combos
 - [ ] Deprecate old post-pass logic once multi-pass is proven

@@ -1,7 +1,7 @@
 # Multi-Pass Generation Pipeline Architecture
 
-**Status**: Design phase. Phase 1 R&D in progress.
-**Date**: 2026-03-30
+**Status**: Shipped (feature-flagged on SM kitchen-close). Flash scoped edits added 2026-03-31.
+**Date**: 2026-03-31
 **Reviewed by**: backend-architect agent (2026-03-30)
 
 ## Phase 1 R&D Results (2026-03-30)
@@ -210,6 +210,8 @@ Scenario: First generation, but a previous buyer already generated with
 **Layer 2 vs Layer 3 quality difference:** Layer 2 takes a final image and does a scoped edit. Layer 3 builds from an intermediate via sequential passes. For the same final selections, these produce visually different images (different code paths, different model invocations). Since we upsert on `selectionsHash`, first to complete wins. This is acceptable — both should look good, and buyers never see both side-by-side.
 
 **Specialty surfaces skip Layer 2:** When the changed surface belongs to a Gemini pass (e.g. backsplash), Layer 2 scoped edit is skipped. Falls through to Layer 3 which re-runs the specialty pass from the cached fixtures intermediate using Flash. This ensures backsplash always gets the correct model.
+
+**Layer 2 scoped edits use Flash (not 1.5):** 1.5 scoped edits destroy specialty surfaces (herringbone/picket backsplash) applied by the Flash specialty pass. R&D (2026-03-31) tested Flash scoped edits across 6 surface types (oven, countertop, cabinets, paint, flooring, hardware) — Flash preserved herringbone in all cases, 1.5 destroyed it in all cases. Flash avg ~34s, comparable to 1.5 ~30s. Flash can NOT handle oven + all fixtures combined (stays as 1.5 oven pass in multi-pass chain). Legacy single-pass `generate-photo.ts` still uses 1.5 for scoped edits (no specialty surfaces). Test script: `scripts/test-flash-scoped-edit.ts`.
 
 **What's in storage today vs what we need:**
 
