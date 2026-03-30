@@ -325,7 +325,16 @@ export const generatePhotoMultipass = inngest.createFunction(
         // Flash preserves them while making the single-surface change. R&D confirmed
         // across oven, countertop, cabinets, paint, and flooring scoped edits.
         const flashSwatches = swatches.map(s => ({ buffer: s.buffer, mediaType: s.mediaType }));
-        const result = await generateGemini(baseBuffer, prompt, flashSwatches, ISOLATION_IMAGE_MODEL);
+        let result: { imageBuffer: Buffer; durationMs: number };
+        try {
+          result = await generateGemini(baseBuffer, prompt, flashSwatches, ISOLATION_IMAGE_MODEL);
+        } catch (err) {
+          await captureAiError(sessionId, {
+            provider: "google", model: ISOLATION_IMAGE_MODEL, route: "/api/generate/photo",
+            duration_ms: 0, error: err, orgId, orgSlug, floorplanSlug,
+          });
+          throw err;
+        }
         const intermediatePath = `${orgId}/${selectionsHash}_scoped.jpg`;
         await uploadIntermediate(supabase, await toJpeg(result.imageBuffer), intermediatePath);
 
