@@ -6,6 +6,7 @@ import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/phot
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL, ISOLATION_IMAGE_MODEL, REFINEMENT_IMAGE_MODEL } from "@/lib/models";
+import type { PassDefinition } from "@/lib/pass-definitions";
 
 /**
  * Resolve linked options (e.g. "Match to Main Kitchen Cabinet Color").
@@ -753,4 +754,84 @@ export function hashSelections(selections: Record<string, string>): string {
     .map((k) => `${k}:${selections[k]}`)
     .join("|");
   return createHash("sha256").update(sorted).digest("hex").slice(0, 16);
+}
+
+// ---------- Multi-pass pipeline hash helpers ----------
+
+export interface PassHashEntry {
+  passName: string;
+  passHash: string;
+  upstreamHash: string;
+}
+
+/**
+ * Compute per-pass hashes and upstream chain hashes.
+ *
+ * Each pass hash includes:
+ *   - That pass's selections only
+ *   - Generation rules for those subcategories (per-pass rules signature)
+ *   - cache_version
+ *
+ * The upstream_hash ensures chain integrity — a cached fixtures intermediate
+ * is only valid if the structural pass that produced its input hasn't changed.
+ */
+export function computePassHashes(
+  passes: PassDefinition[],
+  scopedSelections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  cacheVersion: string,
+  heroPhotoId: string,
+): PassHashEntry[] {
+  const entries: PassHashEntry[] = [];
+
+  for (let i = 0; i < passes.length; i++) {
+    const pass = passes[i];
+
+    // Build hash inputs for this pass's selections + rules
+    const passSelections: Record<string, string> = {};
+    for (const subId of pass.subcategoryIds) {
+      if (subId in scopedSelections) passSelections[subId] = scopedSelections[subId];
+    }
+
+    // Per-pass rules signature: generation rules for this pass's subcategories only
+    const ruleParts: string[] = [];
+    for (const [subId, optId] of Object.entries(passSelections).sort(([a], [b]) => a.localeCompare(b))) {
+      const found = optionLookup.get(`${subId}:${optId}`);
+      if (!found) continue;
+      if (found.subCategory.generationRules?.length) {
+        ruleParts.push(`s:${subId}:${found.subCategory.generationRules.join(";")}`);
+      }
+      if (found.option.generationRules?.length) {
+        ruleParts.push(`o:${optId}:${found.option.generationRules.join(";")}`);
+      }
+      if (found.option.dimensions?.trim()) {
+        ruleParts.push(`d:${optId}:${found.option.dimensions.trim()}`);
+      }
+    }
+
+    const passHashInputs: Record<string, string> = {
+      ...passSelections,
+      _passRules: ruleParts.join("|"),
+      _cacheVersion: cacheVersion,
+      _model: pass.model,
+    };
+    const passHash = hashSelections(passHashInputs);
+
+    // Upstream hash: structural has no upstream (uses hero photo ID),
+    // each subsequent pass chains from both the previous upstream AND pass hash
+    // so a change in ANY earlier pass invalidates all downstream cache entries.
+    let upstreamHash: string;
+    if (i === 0) {
+      upstreamHash = hashSelections({ _heroPhotoId: heroPhotoId, _cacheVersion: cacheVersion });
+    } else {
+      upstreamHash = hashSelections({
+        _prevUpstream: entries[i - 1].upstreamHash,
+        _prevPass: entries[i - 1].passHash,
+      });
+    }
+
+    entries.push({ passName: pass.name, passHash, upstreamHash });
+  }
+
+  return entries;
 }

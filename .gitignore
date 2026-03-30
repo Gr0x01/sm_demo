@@ -48,3 +48,4 @@ scripts/quality-fidelity-test-outputs/
 scripts/texture-swap-poc/output/
 scripts/backsplash-test-outputs/
 scripts/scoped-edit-test-outputs/
+scripts/multi-pass-test-outputs/

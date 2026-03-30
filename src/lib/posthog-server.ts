@@ -58,6 +58,8 @@ interface OpenAIEvent extends BaseEvent {
   scoped_edit?: boolean;
   scoped_edit_depth?: number;
   scoped_edit_surface?: string;
+  multi_pass?: boolean;
+  multi_pass_count?: number;
 }
 
 interface GeminiEvent extends BaseEvent {

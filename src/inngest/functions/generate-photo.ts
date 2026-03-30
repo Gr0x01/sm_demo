@@ -116,6 +116,9 @@ export const generatePhoto = inngest.createFunction(
   },
   { event: "photo/generate.requested" },
   async ({ event, step }) => {
+    // Skip if multi-pass pipeline is handling this event
+    if (event.data.passDefinitions?.length) return;
+
     const {
       selectionsHash,
       selectionsFingerprint,

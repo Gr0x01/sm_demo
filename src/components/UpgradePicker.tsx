@@ -360,7 +360,7 @@ export function UpgradePicker({
     const abort = new AbortController();
     pollAbortControllersRef.current.add(abort);
     // Adaptive polling: 1.5s for the first 10 polls (~15s), then 3s after
-    const maxPolls = 50; // ~2.5 min worst case
+    const maxPolls = 80; // ~4 min worst case (multi-pass pipeline can take 3+ min)
     let consecutiveFailures = 0;
     let exitReason: "complete" | "not_found" | "timeout" | "aborted" = "timeout";
     try {

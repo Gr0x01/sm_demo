@@ -192,7 +192,64 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - AVIF photo support: generate-photo.ts now converts non-standard formats (AVIF, etc.) to PNG via sharp before sending to OpenAI
 - Davidson Homes prospect demo page built: `withfin.ch/for/davidson` (Hidden Hills kitchen, waterfall island, exterior cover)
 
-### 2. SEO Strategy + Content
+### 2. Multi-Pass Generation Pipeline (Active — 2026-03-30)
+
+**Problem**: 1.5 degrades with 12+ swatches in a single pass. Built compensatory post-passes (Flash for backsplash, Pro for cabinet stain) but each adds 22-40s latency. Worst case ~115s. Architecture was reactive, not proactive.
+
+**Solution**: Purpose-built sequential passes with intermediate caching. Each pass handles 3-6 swatches instead of 12+.
+
+**R&D results (2026-03-30):**
+- Stain hypothesis confirmed: 1.5 with 3 structural swatches reliably applies dramatic stains that it fails with 8+. Tested Driftwood, Cappuccino, Sahara, and two-tone combinations — all confirmed. Pro post-pass eliminated.
+- Flooring works in structural pass.
+- Slide-in range does NOT fold into fixtures — needs separate oven correction pass (same as today).
+- Flash specialty pass works for backsplash but inconsistently preserves stain cabinets. Needs stronger anti-prompting.
+- Test script: `scripts/test-multi-pass-pipeline.ts`, outputs in `scripts/multi-pass-test-outputs/`.
+
+**Implementation shipped (2026-03-30):**
+- `pass_cache` table in Supabase for intermediate image caching
+- `useMultiPass` feature flag on `step_photo_generation_policies` JSONB — per-photo opt-in, rollback = one DB update
+- `src/lib/pass-definitions.ts` — classifies subcategories into pass groups: structural (cabinets, counter, floor, paint), fixtures (hardware, sink, faucet, lighting, appliances), oven (conditional, slide-in only), specialty (backsplash, Gemini Flash)
+- `src/inngest/functions/generate-photo-multipass.ts` — new Inngest function alongside existing one. Plan step checks Layer 2 (scoped +1) then Layer 3 (pass cache), then runs only needed passes.
+- Pass-level hashes with chained upstream hashes for cache integrity
+- Existing `generate-photo.ts` untouched — skips when `passDefinitions` present
+- `/try` demo stays on single-pass pipeline
+
+**Local testing (2026-03-30):**
+- Multi-pass function fires correctly via Inngest dev. All steps complete: plan → pass-structural → pass-fixtures → pass-specialty → persist.
+- Structural: ~38s (6 selections, 6 swatches). Fixtures: ~37s (5 selections, 5 swatches). In line with R&D.
+- Polling timeout bumped from 50 to 80 polls (~4 min) to cover multi-pass worst case.
+- Fixed: `-none` selections (e.g. `refrigerator-none`) now excluded from pass definitions — prevents hallucinating appliances.
+- Fixed: Pass classification now uses slug patterns (not just `isAppliance` flag) so hardware/sink/faucet/lighting correctly route to fixtures and backsplash routes to specialty.
+- Fixed: Mid-file import in `generate.ts` broke runtime — moved to top of file.
+
+**Pass chain (kitchen):**
+```
+hero → Structural (1.5, cabs/counter/floor/paint, ~38s)
+     → Fixtures (1.5, hardware/sink/faucet/lighting/range, ~37s)
+     → Oven correction (1.5, conditional, slide-in only)
+     → Specialty (Flash, backsplash, ~30s)
+     → final image
+```
+
+**Cache hierarchy (4 layers):**
+1. Full hash match → instant (existing)
+2. Scoped +1 edit on final image → ~32s (existing, the workhorse)
+3. Intermediate pass cache → skip unchanged passes (new, `pass_cache` table)
+4. Full cold generation → all passes from hero (fallback)
+
+**Currently enabled on:** SM kitchen-close step photo only (`useMultiPass: true` in policy)
+
+**Architecture doc:** `memory-bank/project/multi-pass-pipeline-architecture.md`
+
+**Remaining:**
+- [ ] More local testing — verify output quality across different selection combos
+- [ ] Test pass cache hits — change one surface, verify earlier passes skip
+- [ ] Test scoped +1 edits still work with multi-pass output
+- [ ] Deploy to Vercel and test in production (SM kitchen-close only)
+- [ ] Pre-generate structural intermediates for popular combos
+- [ ] Deprecate old post-pass logic once multi-pass is proven
+
+### 3. SEO Strategy + Content
 
 **Completed:** Keyword research, competitive analysis, strategy doc (`seo-strategy.md`), JSON-LD + manifest + OG images, LLM search optimization (`llms.txt`/`llms-full.txt`), anchor page (`/learn/new-construction-upgrades`), upgrade guide visual polish, builder design center pages (Pulte, Arbor, Ryan, Richmond American), visualization lift research page, `/research` and `/learn` index hubs, VS page optimization (`/vs/envision`, `/vs/pdf-option-sheets`), `/vs/eci-insearch` comparison page, `/vs/chameleon-power` comparison page, IndexNow submission script, SiteNav/SiteFooter defaults, `/pricing` page ($500/mo per plan, ROI table, FAQs, JSON-LD), `/pricing/enterprise` page ("Still $500 per floor plan" — no enterprise tier messaging).
 

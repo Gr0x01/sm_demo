@@ -1,6 +1,8 @@
 import { Inngest, EventSchemas } from "inngest";
 import type { ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
+import type { PassDefinition } from "@/lib/pass-definitions";
+import type { PassHashEntry } from "@/lib/generate";
 
 export interface PhotoGenerateRequestedData {
   selectionsHash: string;
@@ -21,6 +23,10 @@ export interface PhotoGenerateRequestedData {
   selectionsJsonForClaim: Record<string, unknown>;
   leaveOneOutHashes: string[];
   heroImagePath: string;
+  /** Multi-pass pipeline: ordered pass definitions (present when useMultiPass is true) */
+  passDefinitions?: PassDefinition[];
+  /** Multi-pass pipeline: per-pass hashes for cache lookup */
+  passHashes?: PassHashEntry[];
 }
 
 export interface DemoGenerateRequestedData {

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { deriveGenerationContext } from "@/lib/generate";
+import { deriveGenerationContext, computePassHashes, GENERATION_CACHE_VERSION } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getStepPhotoAiConfig, getStepPhotoGenerationPolicy, getOptionLookup, getOrgBySlug, getFloorplan } from "@/lib/db-queries";
+import { derivePassDefinitions } from "@/lib/pass-definitions";
 import {
   buildDefaultOptionBySubcategory,
   normalizeSelectionRecord,
@@ -177,6 +178,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // --- Compute multi-pass data if enabled ---
+    let passDefinitions: ReturnType<typeof derivePassDefinitions> | undefined;
+    let passHashes: ReturnType<typeof computePassHashes> | undefined;
+    if (resolvedPolicy.useMultiPass) {
+      passDefinitions = derivePassDefinitions(scopedSelections, optionLookup);
+      passHashes = computePassHashes(passDefinitions, scopedSelections, optionLookup, GENERATION_CACHE_VERSION, stepPhotoId);
+    }
+
     // --- Dispatch to Inngest for background generation ---
     try {
       await inngest.send({
@@ -200,6 +209,8 @@ export async function POST(request: Request) {
           selectionsJsonForClaim: hashInputs,
           leaveOneOutHashes,
           heroImagePath: aiConfig.photo.imagePath,
+          passDefinitions,
+          passHashes,
         },
       });
     } catch (sendError) {

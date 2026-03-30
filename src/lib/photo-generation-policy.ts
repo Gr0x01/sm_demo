@@ -15,6 +15,7 @@ export interface ResolvePhotoGenerationPolicyInput {
 
 export interface ResolvedPhotoGenerationPolicy {
   policyKey: string;
+  useMultiPass?: boolean;
   promptOverrides?: PromptPolicyOverrides;
   flashPostPass?: {
     reason: string;
@@ -65,6 +66,7 @@ function resolveDbBackedPolicy(
 ): ResolvedPhotoGenerationPolicy | null {
   if (!dbPolicy?.isActive) return null;
 
+  const useMultiPass = dbPolicy.policyJson.useMultiPass === true ? true : undefined;
   const promptOverrides = parsePromptOverrides(dbPolicy.policyJson.promptOverrides);
   const flashPostPassConfig = parseFlashPostPassConfig(dbPolicy.policyJson.flashPostPass);
   const flashPostPass = flashPostPassConfig && shouldRunFlashPostPass(input, flashPostPassConfig)
@@ -81,6 +83,7 @@ function resolveDbBackedPolicy(
 
   return {
     policyKey: dbPolicy.policyKey || "db",
+    useMultiPass,
     promptOverrides,
     flashPostPass,
     secondPass,
