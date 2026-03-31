@@ -12,7 +12,19 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 
 **Strategy shift (2026-03-23):** Moved from inquisitive outreach (asking about their process) to provocation-first. Lead with visualization lift data (every builder doing viz sees 20-40% more in option sales), not Toll/Pulte SEC comparisons (dismissable as luxury). Practitioner voice, not tinkerer. Demo pages are a follow-up asset built after engagement, not pre-outreach. LinkedIn connection requests have no links (platform blocks them) — links go in the first DM after they accept.
 
-**Cold email campaign — LIVE (activated 2026-03-24):**
+**Campaign 3 — LIVE (launched 2026-04-01):**
+- **Approach**: Permission-ask. One sentence asking to send a video of their kitchen with different finishes. If they reply yes, build demo + record Loom.
+- **Template**: "Hey {{firstName}}, I put together a short video of your {{floorplan}} kitchen with different finishes. Want me to send it over?" Bump Day 3: "Hey {{firstName}}, want me to send it over? Yes or no works."
+- **104 leads** across ~54 companies. All Apollo-verified emails. All floorplan names verified on builder websites.
+- **Sending from**: rashaad@heyfin.ch + anton@heyfin.ch (both warmed since mid-March)
+- **Daily limit**: 10/mailbox (20 total), weekdays 8am-5pm Central
+- **Settings**: Plain text, no tracking, no links, stop on reply
+- **All 104 out in ~5 business days**
+- **Removed before launch**: LGI (bundled upgrades), Drees/M|I (Envision), Highland TX (has kitchen viz), Jagoe (has interior rendering), Lombardo (Anewgo), Christopher Alan (no selections), David Weekley (enterprise), CBH (packages only), Epcon (franchise model)
+- **Full CRM docs**: `memory-bank/crm-system.md`
+- **Pipeline script**: `scripts/campaign3-pipeline.sh` (Apollo search → reveal → CSV generation)
+
+**Cold email campaign C1 — completed (activated 2026-03-24):**
 - Full architecture doc: `memory-bank/project/cold-email-campaign.md`
 - **Campaign**: "Builder Outreach - Week 1" in Instantly, ACTIVE
 - **Sending from**: `rashaad@heyfin.ch` only (anton@heyfin.ch held back — only 5 days warmup)

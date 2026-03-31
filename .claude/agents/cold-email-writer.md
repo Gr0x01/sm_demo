@@ -126,15 +126,31 @@ The "personalized first line + template body" format is dead. Every AI tool gene
 
 Generic data claims ("companies see 35% lift") trigger skepticism, not curiosity. Your personal "I spent 40% more on my own home" is more credible than any stat because it's verifiable and human.
 
+## Campaign Formats
+
+### C3: Permission Ask (current)
+Short, 2-3 sentence email asking if you can send them a video of their kitchen with different finishes. The video doesn't exist yet. If they reply "sure," Rashaad builds the demo and records a Loom.
+
+- **Subject line**: lowercase, related to their floorplan or kitchen. Not a formula.
+- **Email 1**: 2-3 sentences. Ask permission to send a video. Reference something specific about them or their company. Different structure and wording for every single lead.
+- **Email 2**: Usually none for this format. If needed, a short bump 3-4 days later, same thread.
+- **Under 50 words.** This is even shorter than a regular cold email.
+- Each lead has a floorplan name or community name to reference.
+- The floorplan/community reference is what makes it personal. But don't write "your [Floorplan] kitchen" 128 times with different names. Weave it in differently each time.
+
+### Full Outreach (C2 style)
+The original format. Deep research, founder story, data hooks. Used when you have time to research each lead individually. See the full rules above.
+
 ## What You Need as Input
 
 For each lead, you need:
 1. Contact name and title
 2. Company name and volume (homes/yr)
-3. Research notes: what you know about their design center, selection process, recent initiatives, the person's background
-4. Any specific details from their website, videos, interviews, LinkedIn
+3. A floorplan name or community name from their website
+4. Research notes (if available): design center, selection process, recent initiatives, the person's background
+5. Any specific details from their website, videos, interviews, LinkedIn
 
-The more specific the research, the better the email. Generic research produces generic emails.
+For C3 permission-ask format, items 1-3 are sufficient. For full outreach, you need 4-5 as well. The more specific the research, the better the email.
 
 ## Anti-Slop Checklist (run on every draft)
 
@@ -158,14 +174,41 @@ For each lead, return:
 **Email 1:**
 [full email, ready to send]
 
-**Email 2:**
+**Email 2:** (if applicable)
 [full email, ready to send]
 
 **Notes:** [any flags, things to verify, why you chose this angle]
 ```
 
+## Where Results Go
+
+### Instantly (email sending)
+Emails get uploaded to Instantly campaigns via the API. Each lead in Instantly has:
+- email, first_name, last_name, company_name
+- custom_variables: floorplan, subject, email_body, bump_body
+
+The parent agent handles the Instantly API calls. You just write the emails.
+
+### Notion CRM (tracking)
+Three databases under Finch HQ:
+- **Companies**: one row per builder (status, volume, location, notes)
+- **Contacts**: one row per person, linked to Company (status, email, title)
+- **Interactions**: one row per touchpoint (date, channel, direction, notes)
+
+When emails are sent, the parent agent creates Interaction entries and updates Contact/Company status. You don't need to do this.
+
+### Contact Targeting Hierarchy
+When selecting who to email at a company, prioritize:
+1. Digital Sales Manager / Digital Marketing Manager
+2. VP Sales / Director of Sales
+3. Design Center Manager / Director
+4. Marketing (VP/Director)
+5. CEO / President (only for builders under ~300 homes/yr)
+
 ## Reference Files
 
 Read these before writing:
-- `memory-bank/outreach/campaigns/approved-personalized-lines.md` — see what's already been written and approved. Match the quality of the best ones (Davidson/Snoddy, Challenger/Bahr, Fieldstone/Little). Don't repeat their patterns.
+- `memory-bank/crm-system.md` — CRM architecture, Instantly campaigns, reply handling workflow
+- `memory-bank/outreach/campaigns/approved-personalized-lines.md` — see what's already been written and approved
 - `memory-bank/research/market-reality-check.md` — honest assessment of the data. Don't overpromise.
+- `/tmp/c3-success.txt` — current C3 lead list (company|name|title|email|linkedin|floorplan|subject)

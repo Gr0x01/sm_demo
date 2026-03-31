@@ -81,4 +81,5 @@ INNGEST_SIGNING_KEY=         # Inngest (auto-injected on Vercel)
 | `decisions.md` | Understanding "why" behind choices |
 | `seo-strategy.md` | SEO keyword research, content strategy |
 | `v1-product.md` | Historical — original V1 spec (shipped, archived) |
+| `crm-system.md` | Notion CRM (Companies/Contacts/Interactions), Instantly, Apollo, outreach workflow |
 | `research/` | Builder prospect lists + outreach playbooks |
