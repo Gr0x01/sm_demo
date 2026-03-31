@@ -3,6 +3,10 @@
     {
       "path": "/api/health/try/cron",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/instantly-sync",
+      "schedule": "*/15 * * * *"
     }
   ]
 }

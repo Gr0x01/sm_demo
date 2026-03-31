@@ -39,6 +39,7 @@ Server (Next.js API routes + Inngest background functions)
   ├── POST /api/try/check — demo cache check (complete/pending/not_found/error)
   ├── POST /api/try/validate-photo — Gemini scene analysis (kitchen detection, surface visibility)
   ├── GET  /api/health/try — health check: demo org + storage buckets. Vercel Cron hits /cron variant hourly, emails hello@withfin.ch on failure.
+  ├── GET  /api/cron/instantly-sync — polls Instantly API every 15 min for replies/bounces, syncs to Notion CRM (Contact status + Interaction rows). Cursor-based, idempotent.
   ├── POST /api/pilot-interest — persist lead to pilot_leads + notify hello@withfin.ch (upsert on email+source)
   ├── POST /api/inngest — Inngest serve endpoint (GET/POST/PUT)
   └── Inngest background functions (src/inngest/functions/):

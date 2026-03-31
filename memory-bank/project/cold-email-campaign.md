@@ -203,7 +203,10 @@ Total span: ~5 days of outreach. Then wait for signals.
 | **Sending platform** | Instantly.ai (connected via Google OAuth, API key in `.env.local`) |
 | **Domain redirect** | `heyfin.ch` → `withfin.ch` (307, Vercel) |
 | **DNS** | Vercel DNS (ns1/ns2.vercel-dns.com). SPF TXT record: `v=spf1 include:_spf.google.com ~all` |
-| **Contact database** | Apollo (free plan, 100 export credits/mo) |
+| **Contact database** | Apollo (paid plan) |
+| **Apollo → Instantly** | Native integration (API key linked in Instantly settings, `contacts/search` + `people/match` endpoints) |
+| **Apollo → Notion** | Script: `npx tsx scripts/apollo-to-notion.ts --csv <path> --campaign <tag>`. Requires `NOTION_API_KEY` in `.env.local` (Notion internal integration "Apollo Sync"). |
+| **Notion integration** | "Apollo Sync" internal integration connected to Contacts database (read/insert/update). Created at notion.so/my-integrations. |
 
 ## Instantly API Learnings (2026-03-24)
 
@@ -216,13 +219,39 @@ The Instantly v2 API is partially useful:
 
 **Database**: "Contacts" under Finch HQ (database ID: d3d269c3b4b6450a8d871f1c406a5ca7)
 **Data source**: collection://f0ddea2f-03f1-41e7-8c8e-c44e5645ce13
+**Companies data source**: collection://95fee99f-d65d-48c3-9985-5d7a9df864bc
 
-**"This Week" view**: Filters on `Next Follow-Up ≤ 2026-03-31` (hardcoded date — relative date templates like `{{one_week_from_now}}` don't work reliably). Update the date filter weekly.
+### Key properties (added 2026-03-31)
+- **Campaign** (multi-select): C1, C2, C3, LinkedIn — tracks which batch a contact is part of
+- **Channel** (multi-select): Email, LinkedIn, Phone, In Person, HBA Event — tracks how you reached them
+- **Status** (select): Not Started → Researching → Draft Ready → Email Sent / DM Sent → Replied → Call Scheduled → Meeting Done → Pilot Proposed → Pilot Active → Closed Won / Not Interested / No Response / Not a good fit
+
+### Views (added 2026-03-31)
+- **Needs Email**: Contacts with no email, excluding "Not a good fit"
+- **Active Pipeline**: Board grouped by Status, excluding dead-end statuses and duplicates
+- **This Week**: Filters on `Next Follow-Up ≤ [date]` (hardcoded — update the date filter weekly)
 
 ### Sync rules
 | Instantly event | Notion update |
 |---|---|
 | Email reply received | Status → "Replied" |
 | Email bounced | Note in Notion, remove from outreach |
-| Meeting booked | Status → "Meeting Set" / "Call Scheduled" |
+| Meeting booked | Status → "Call Scheduled" |
 | Sequence complete, no reply | Leave as "Email Sent" — LinkedIn continues independently |
+
+## Pipeline Workflow (2026-03-31)
+
+**Notion is the ONLY CRM. Apollo finds contacts. Instantly sends email.**
+
+### Adding new contacts
+1. Search in Apollo → export CSV
+2. Run `npx tsx scripts/apollo-to-notion.ts --csv <path> --campaign <tag> --dry-run` (preview)
+3. Run without `--dry-run` to create Notion rows (auto-deduplicates by name + email)
+4. Upload same CSV to Instantly campaign for email sending
+5. Tag Campaign property in Notion if the script didn't (it should)
+
+### Rules
+- **NEVER create a separate Notion database for a new campaign.** Add a Campaign tag value.
+- **NEVER create a contact without dedup.** The script handles this. If creating manually, search first.
+- **Campaign ≠ Channel.** Campaign = which batch (C1, C2, C3). Channel = how you reached them (Email, LinkedIn).
+- **Status tracks the highest-signal state across all channels.** Reply > DM Sent > Email Sent.

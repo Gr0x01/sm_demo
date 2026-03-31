@@ -24,7 +24,18 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Full CRM docs**: `memory-bank/crm-system.md`
 - **Pipeline script**: `scripts/campaign3-pipeline.sh` (Apollo search → reveal → CSV generation)
 
-**Cold email campaign C1 — completed (activated 2026-03-24):**
+**Outreach automation (2026-04-01):**
+- **Apollo → Instantly**: Native integration connected (push leads directly, skip CSV export). Apollo Basic paid plan.
+- **Instantly → Notion auto-sync**: Vercel Cron polls Instantly API every 15 min (`/api/cron/instantly-sync`). On reply: finds Contact by email in Notion → updates Status to "Replied" → creates Interaction row. On bounce: updates Status to "Bounced" + Interaction row. Cursor-based (Supabase `sync_cursors` table) — only advances past successfully processed items.
+- **Files**: `src/lib/instantly.ts` (API client), `src/lib/notion-crm.ts` (Notion helpers), `src/lib/sync-cursors.ts` (cursor storage), `src/app/api/cron/instantly-sync/route.ts` (cron handler)
+- **Env vars needed on Vercel**: `NOTION_DB_CONTACTS`, `NOTION_DB_INTERACTIONS` (+ existing `NOTION_API_KEY`, `INSTANTLY_API_KEY`, `CRON_SECRET`)
+- **Instantly API**: Read-only access on current plan. Sufficient for polling replies/bounces. No Hypergrowth upgrade needed.
+
+**Cold email campaign C2 — completed, 0 replies (activated 2026-03-26):**
+- Fully custom emails per lead, different thesis per lead. 6 leads sent.
+- **Result**: 0 replies. Approach was too elaborate — long custom emails still read as cold outreach.
+
+**Cold email campaign C1 — completed, 0 replies (activated 2026-03-24):**
 - Full architecture doc: `memory-bank/project/cold-email-campaign.md`
 - **Campaign**: "Builder Outreach - Week 1" in Instantly, ACTIVE
 - **Sending from**: `rashaad@heyfin.ch` only (anton@heyfin.ch held back — only 5 days warmup)
