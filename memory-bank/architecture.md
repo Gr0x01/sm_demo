@@ -272,7 +272,7 @@ All rule fields are admin-editable via the OptionTree AI Rules UI. Conditional c
 **Cache semantic versioning**: Generation hash includes `_cacheVersion` so prompt/pipeline changes do not serve stale outputs. Bump `GENERATION_CACHE_VERSION` whenever generation semantics change.
 Generation hash also includes policy and prompt context inputs (`_promptPolicy`, `_promptContext`) so changes to per-photo hint/baseline/scene/policy invalidate stale cache entries.
 
-**Reliability playbook**: See `generation-reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
+**Reliability playbook**: See `generation/reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
 
 **Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (good quality, expensive, slow) → Gemini `gemini-3-pro-image-preview` (faster/cheaper but unpredictable hallucinations — reverted D77) → **OpenAI `gpt-image-1.5`** (current main pass — reliable geometry, ~40s). `@google/genai` is a production dependency — used by Flash post-pass (backsplash isolation) and Pro post-pass (cabinet stain refinement + combined backsplash).
 

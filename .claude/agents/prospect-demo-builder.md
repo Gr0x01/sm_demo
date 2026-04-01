@@ -36,7 +36,7 @@ Use WebSearch and WebFetch to find:
 - Any existing visualization or selection tools
 - Notable communities or model homes
 
-Write a research brief to `memory-bank/research/prospect-{slug}.md` with:
+Write a research brief to `memory-bank/prospects/{slug}.md` with:
 - Company overview (HQ, markets, annual closings, price range)
 - Design center details (name, process, appointment length if known)
 - Target contact info

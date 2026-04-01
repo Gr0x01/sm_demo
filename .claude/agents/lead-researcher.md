@@ -79,7 +79,7 @@ Before researching from scratch, check what already exists:
 - **`memory-bank/research/prospects-southeast.md`** — AL/GA builder intel
 - **`memory-bank/research/prospects-west-coast.md`** — West Coast builder intel
 - **`memory-bank/research/prospects-national.md`** — National Tier 1-3 builders
-- **`memory-bank/research/prospect-*.md`** — Individual prospect research files
+- **`memory-bank/prospects/*.md`** — Individual prospect research files
 
 If a builder already has research, use it. Don't redo work.
 

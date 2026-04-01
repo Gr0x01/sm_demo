@@ -109,7 +109,7 @@ If we don't know their avg upgrade spend, use $10-15K as a conservative range (i
 - Find a kitchen photo from their models (website gallery, Zillow, Realtor.com, Google Images)
 - Find an exterior/community photo for the cover image
 - Get target contact info (LinkedIn, Apollo)
-- Write research brief → `memory-bank/research/prospect-{slug}.md`
+- Write research brief → `memory-bank/prospects/{slug}.md`
 
 ### 2. Build the Config (15 min)
 

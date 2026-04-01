@@ -141,7 +141,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Key finding — boundary rule critical for dark tiles**: Without explicit "do NOT extend tile below the countertop" rule, dark herringbone/carbon tiles bled onto cabinet faces. Both Flash and Pro had the same issue. Added boundary constraint to backsplash `generation_rules` on SM + Demo.
 - **Pro vs Flash tested**: `gemini-3-pro-image-preview` produced identical results to Flash for isolation passes. No improvement. Staying with Flash (cheaper).
 - **SM options flagged**: 6 picket + 5 herringbone = 11 options with `needs_isolation = true`. Subway/square/beveled stay single-pass.
-- **Full research**: `memory-bank/backsplash-pattern-research.md`, test scripts in `scripts/test-backsplash-*.ts`, `scripts/test-two-pass-backsplash.ts`, `scripts/test-post-pass-ordering.ts`
+- **Full research**: `memory-bank/generation/backsplash-research.md`, test scripts in `scripts/test-backsplash-*.ts`, `scripts/test-two-pass-backsplash.ts`, `scripts/test-post-pass-ordering.ts`
 
 **Partial cache system (2026-03-28):**
 - **Architecture**: Diff-based scoped editing. When a buyer changes one surface, find a cached image that differs by one subcategory and run a scoped 1.5 edit (~32s vs 60-80s full pipeline). Leave-one-out hashes stored on `generated_images` for fast GIN-indexed lookup. Depth cap at 3 prevents quality degradation from chaining.
