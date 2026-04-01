@@ -13,6 +13,8 @@
 | Rocklyn Homes | rocklyn | withfin.ch/for/rocklyn | Tr Adams (VP Sales/Marketing) | Cold email (C2) |
 | Kolter Homes | kolter | withfin.ch/for/kolter | Marc Friedman (SVP Sales) | Fresh |
 | Neal Signature | neal | withfin.ch/for/neal | TBD | Fresh |
+| Chesapeake Homes | chesapeake | withfin.ch/for/chesapeake | Kerri Woodward (President) | Live, 3 presets |
+| Christopher Alan Homes | christopher-alan | withfin.ch/for/christopher-alan | Carlos Gilkey (VP Sales & Marketing), Alana Consolo (Dir Marketing, ex-Lennar) | Live, 3 presets |
 
 ## Positioning Rule
 
@@ -49,10 +51,18 @@ Short, one-line. Reference something specific to the builder where possible. Nev
 | Kolter | Your Design Studio, on every phone. |
 | Neal | The Design Gallery, from home. |
 | Rocklyn | More time with every buyer. |
+| Chesapeake | Room by room, before they walk in. |
+| Christopher Alan | Luxe Collection, room by room. |
 
 **Default fallback** (code): "Their selections, visualized."
 
-**Hero body** is the same pattern for all: "This is your [Floorplan] kitchen at [Community] with real upgrade selections wired up. Buyers pick finishes and see them in the room."
+**Hero body** must be unique per builder. No template. Rules:
+- Don't repeat the floorplan name (already a label on the page)
+- Be honest that selections are samples, not the builder's real catalog
+- Reference something specific to THIS builder (recent event, their design center name, their process)
+- Frame it as a proof of concept — "your real catalog drops in directly"
+- 2-3 sentences max. The demo speaks for itself.
+- See `prospect-demo-builder.md` agent for full rules + good/bad examples.
 
 ## Current Sidebar Insights (needs standardization)
 

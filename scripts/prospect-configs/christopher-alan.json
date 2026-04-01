@@ -1,0 +1,61 @@
+{
+  "slug": "christopher-alan",
+  "name": "Christopher Alan Homes — St. Augustine at Cape Coral",
+  "heroHeadline": "Luxe Collection, room by room.",
+  "heroBody": "You're opening in three new markets this year. This is how the Luxe Collection sells itself before your consultants even get there. The selections below are samples \u2014 your real catalog and pricing drop in directly.",
+  "kitchenPhoto": "/tmp/christopher-alan-kitchen.jpg",
+  "exteriorPhoto": "/tmp/christopher-alan-exterior.jpg",
+  "photoBaseline": "Open-concept kitchen in the St. Augustine model (Cape Coral, FL) viewed from the dining area looking toward the perimeter wall. White shaker-style cabinets on all perimeter walls — upper and lower rows. Stainless steel range on the back wall with stainless over-the-range microwave above. Stainless french-door refrigerator in a tall cabinet alcove to the right of the range. White quartz countertops on all perimeter surfaces and the island. Large rectangular island with white shaker cabinet base and white quartz top, three black metal bar stools on the far side facing the living area. Stainless gooseneck faucet and sink on the island. Vaulted ceiling with recessed can lighting — no pendants. Light wood-look tile flooring throughout. White/light gray painted walls. Sliding glass door with gray curtain panel on the right wall. Small decorative items on counters (clock on wall above fridge alcove, plant, fruit bowl on island). Laundry area partially visible through opening to the left of the range.",
+  "spatialHint": "Camera in the dining area looking toward the kitchen perimeter wall. Back wall (center-left): stainless range with OTR microwave, white shaker uppers and lowers flanking. Right of range: tall cabinet alcove with stainless french-door fridge, clock on wall above. Left of range: opening to laundry area. Right wall: sliding glass door with gray curtain. Foreground: large rectangular island with white quartz top, stainless gooseneck faucet and sink, three black metal bar stools on far side. Light wood-look tile flooring. White/light gray walls. Vaulted ceiling with recessed can lights.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Flooring", "subcategory_ids": ["main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "insights": [
+    { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },
+    { "label": "Typical margin on upgrades over cost", "value": "50-100%" },
+    { "label": "Even a 10% lift on $8K avg. upgrades", "value": "+$800 per home" }
+  ],
+  "closingLine": "At 580 closings a year, that is $464K in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-cab-match-to-main",
+        "counter-top": "ct-granite-dallas-white",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-fog",
+        "kitchen-island-cabinet-color": "island-cab-color-admiral-blue",
+        "counter-top": "ct-quartz-calacatta-duolina",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-hurricane-haze"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "kitchen-island-cabinet-color": "island-cab-color-onyx",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-whiskers"
+      }
+    }
+  ]
+}

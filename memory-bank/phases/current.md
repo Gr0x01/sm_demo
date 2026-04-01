@@ -20,7 +20,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Daily limit**: 10/mailbox (20 total), weekdays 8am-5pm Central
 - **Settings**: Plain text, no tracking, no links, stop on reply
 - **All 104 out in ~5 business days**
-- **Removed before launch**: LGI (bundled upgrades), Drees/M|I (Envision), Highland TX (has kitchen viz), Jagoe (has interior rendering), Lombardo (Anewgo), Christopher Alan (no selections), David Weekley (enterprise), CBH (packages only), Epcon (franchise model)
+- **Removed before launch**: LGI (bundled upgrades), Drees/M|I (Envision), Highland TX (has kitchen viz), Jagoe (has interior rendering), Lombardo (Anewgo), Christopher Alan (no selections — RE-EVALUATED: wrong, they do have selections), David Weekley (enterprise), CBH (packages only), Epcon (franchise model)
 - **Full CRM docs**: `memory-bank/crm-system.md`
 - **Pipeline script**: `scripts/campaign3-pipeline.sh` (Apollo search → reveal → CSV generation)
 
@@ -102,6 +102,10 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **$500/mo pricing removed** from all prospect demo hero copy (WestBay, Viera, McKinley, ICI).
 - **InMail target list**: 15 verified-active LinkedIn targets at `memory-bank/outreach/inmail-targets.md`. ScrapingDog used to verify LinkedIn activity before spending credits.
 - **Kolter Homes** demo built: `withfin.ch/for/kolter` (Bahia with Bonus kitchen at Cresswind Lakewood Ranch, exterior photo). 5 subcategories (no island cabinet — waterfall quartz island, barely any cabinet face visible). Hero: "What if buyers walked into the Design Studio already informed?" — uses their "Design Studio" language, positions Finch as prep tool not replacement. Revenue-math insights sidebar ($1.5M/yr at 1,500 closings). 3 presets: Standard / Mid-Range / Premium. Targets: Marc Friedman (SVP Sales), John Manrique (SVP Marketing). Config at `scripts/prospect-configs/kolter.json`.
+
+**Prospect research + demos (2026-04-01):**
+- **Schumacher Homes** researched and PASSED. Build-on-your-lot custom builder (not production ICP). 30 physical Design Studios, FrontDoor pricing tool (NAHB Gold), Matterport 3D, "YourHomeIn3D" in development. ~500 homes/yr across 14 states = ~16/location. Contacts added to Notion: Mary Becker (VP Sales, family member), Gabe Cotto (CMO, ex-Leaf Home), Dave MacDonald (CTO).
+- **Christopher Alan Homes** re-evaluated — previous C3 "no selections" flag was WRONG. Website disclaimers confirm "Final price depends on options selected." Luxe Collection finish tiers, 580 closings/yr (#58 private national), expanding to 3 new FL markets. Zero viz tools. Demo built: `withfin.ch/for/christopher-alan` (St. Augustine kitchen, Cape Coral). 5 subcategories including island cabinet two-tone. Hero: "Luxe Collection, room by room." Body references their 3-market expansion. 3 presets: Standard (white/match) / Mid-Range (fog/admiral blue island) / Premium (driftwood/onyx island). Targets: Carlos Gilkey (VP Sales & Marketing), Alana Consolo (Dir Marketing, ex-Lennar), Mike Bone (Dir Sales, ex-D.R. Horton). Config at `scripts/prospect-configs/christopher-alan.json`. Research brief at `memory-bank/research/prospect-christopher-alan.md`.
 
 **Prospect demo infrastructure (2026-03-27):**
 - **Headlines standardized**: All 9 demos rewritten to short, one-line headlines that extend the design center, never replace it. Positioning rule: never say "before the appointment," "already knowing," "instead of." Default fallback: "Their selections, visualized."

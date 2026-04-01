@@ -10,6 +10,10 @@ Plus two external tools:
 - **Instantly** — sends cold emails, tracks deliverability/opens/replies
 - **Apollo** — contact lookup + email verification (not a CRM)
 
+Plus automation:
+- **Scheduled Claude Code trigger** — daily at 4am JST, tags overdue follow-ups in Notion
+- **Claude Code (conversational)** — logs interactions, sets follow-ups, updates contacts when you tell it what you did
+
 ## Notion Databases
 
 ### Companies
@@ -20,7 +24,8 @@ One row per builder. Master prospect list.
 
 ### Contacts
 One row per person. Linked to Company via relation.
-- **Key fields**: Name (title), Contact Title, Email, Email Verified (checkbox), LinkedIn, Company (relation), Status, Channel (multi-select), Time Zone
+- **Key fields**: Name (title), Contact Title, Email, Email Verified (checkbox), LinkedIn, Company (relation), Status, Channel (multi-select), Time Zone, **Next Action** (select), **Next Follow-Up** (date)
+- **Next Action values**: Send Connect, Send InMail, Send Cold Email, Record Loom, Build Demo Page, Check for Reply, Follow Up DM
 - **Status flow**: Not Started → Draft Ready → Email Sent → DM Sent → Replied → Call Scheduled → Meeting Done → Pilot Proposed → Pilot Active → Closed Won / Not Interested / No Response
 - **Contact targeting hierarchy**: Digital Sales Manager > VP Sales > Design Center Manager > Marketing > CEO
 
@@ -38,10 +43,44 @@ One row per touchpoint. Activity log / timeline.
 - Companies > **Active Pipeline**: Contacted + Connected + Pilot
 - Companies > **Pipeline Board**: kanban by status
 
+## Outreach Follow-Up Automation
+
+### Daily Trigger (4am JST / 7pm UTC)
+Scheduled Claude Code remote agent (`trig_01MwNmpGSRgM8eDjyNnxPmUh`). Runs daily:
+1. Queries Contacts where Next Follow-Up ≤ today AND Next Action is set
+2. Prepends `[DUE TODAY]` to Notes so they surface in Notion views
+3. Auto-closes contacts overdue 3+ days with "Check for Reply" → sets Status to "No Response", clears Next Action
+4. Cleans up `[DUE TODAY]` tags when follow-up date has been pushed forward (action already taken)
+- Manage at: https://claude.ai/code/scheduled/trig_01MwNmpGSRgM8eDjyNnxPmUh
+
+### Conversational Workflow (Claude Code)
+When Rashaad says what he did, Claude handles all CRM updates:
+
+| You say | Claude does |
+|---------|-------------|
+| "I sent connects to Carlos, Mike, and Ian" | Creates 3 Interactions (LinkedIn, Outbound), sets Next Follow-Up = +3 days, Next Action = "Send InMail" |
+| "I sent the InMail to Carlos with the Loom" | Creates Interaction, sets Next Follow-Up = +7 days, Next Action = "Check for Reply" |
+| "Carlos replied" | Creates Interaction (Inbound), sets Status = "Replied", clears Next Action |
+| "What's due today?" | Queries Notion, reports who's due and what action |
+| "Build a demo for Chesapeake" | Launches prospect-demo-builder agent |
+
+### InMail Outreach Sequence
+1. **Day 0**: Send LinkedIn connect request with honest note ("I build upgrade visualization tools for home builders. Y'all came up in my research — would love to connect.")
+2. **Day 3**: Send InMail with custom Loom walkthrough of their demo page + link. "Hey, I made this for you."
+3. **Day 10**: If no response, move on. Come back in 60-90 days.
+
+If they accept the connect before Day 3, DM the Loom instead — save the InMail credit.
+
+Rules:
+- Don't fake personal interest in the connect note. Be honest about why you're connecting.
+- Don't reference the connect in the InMail. Each stands alone.
+- Don't hit multiple channels on the same day.
+
 ## System Ownership Rules
 - **Notion** owns relationship state, pipeline, notes, and interaction history
 - **Instantly** owns email sending, deliverability, open/reply tracking
 - **Apollo** is lookup only — find the person, get the email, move on
+- **Claude Code** owns CRM automation — follow-up dates, next actions, interaction logging
 - Don't duplicate tracking across systems
 
 ## Campaign Pipeline
@@ -52,6 +91,19 @@ Script: `scripts/campaign3-pipeline.sh`
 4. Generate CSV: `memory-bank/outreach/campaigns/c3-instantly-upload.csv`
 5. **Upload CSV manually in Instantly UI** (Add Leads button)
 6. Notion Companies + Contacts updated via API separately
+
+## Apollo CSV → Notion Sync
+Script: `scripts/apollo-to-notion.ts`
+- Imports Apollo CSV exports into the Notion Contacts database
+- Deduplicates by name (case-insensitive) and email
+- Supports both Apollo export columns (`First Name`, `Last Name`, `Email`, `Title`, `Company`, `LinkedIn Url`) and custom CSV columns (`contact_first`, `contact_last`, etc.)
+- Tags contacts with campaign via `--campaign` flag (multi-select)
+- Sets Status to "Not Started", Channel to "Email"
+- Company goes in Notes field (not the Company relation, which requires a linked page ID)
+- 350ms delay between creates to avoid Notion rate limits
+- Usage: `npx tsx scripts/apollo-to-notion.ts --csv <path> --campaign <tag> [--dry-run]`
+- Requires `NOTION_API_KEY` in `.env.local`
+- Contacts DB ID: uses env var `NOTION_DB_CONTACTS` from `.env.local`
 
 ## Instantly API Limitations — CRITICAL
 **Current plan (Growth $30/mo) does NOT support adding leads to campaigns via API.**
@@ -72,7 +124,7 @@ Script: `scripts/campaign3-pipeline.sh`
   - Open tracking: disabled. Text-only: enabled. Stop on reply: enabled.
   - All 104 out in ~5 business days
   - Leads uploaded via CSV (API doesn't support campaign association on Growth plan)
-  - 10 companies removed before launch: LGI (bundled), Drees/M\|I (Envision), Highland TX (has viz), Jagoe (has viz), Lombardo (Anewgo), Christopher Alan (no selections), David Weekley (enterprise), CBH (packages only), Epcon (franchise)
+  - 10 companies removed before launch: LGI (bundled), Drees/M|I (Envision), Highland TX (has viz), Jagoe (has viz), Lombardo (Anewgo), Christopher Alan (no selections), David Weekley (enterprise), CBH (packages only), Epcon (franchise)
 
 ## API Keys
 - `APOLLO_API_KEY` in `.env.local` — $59/mo plan, 2,500 credits/mo

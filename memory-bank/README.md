@@ -76,7 +76,7 @@ INNGEST_SIGNING_KEY=         # Inngest (auto-injected on Vercel)
 | `phases/current.md` | Starting work (ALWAYS) |
 | `phases/completed.md` | Need history of what was built |
 | `architecture.md` | System design, API patterns, admin, generation pipeline, business models |
-| `generation-reliability-playbook.md` | Fixing image-generation failures (prompt/mask/cache tactics) |
+| `generation/reliability-playbook.md` | Fixing image-generation failures (prompt/mask/cache tactics) |
 | `VISION.md` | Business strategy, pricing, GTM, competitive landscape |
 | `decisions.md` | Understanding "why" behind choices |
 | `seo-strategy.md` | SEO keyword research, content strategy |

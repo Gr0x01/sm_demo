@@ -1,0 +1,61 @@
+{
+  "slug": "chesapeake",
+  "name": "Chesapeake Homes — The Azalea",
+  "heroHeadline": "Room by room, before they walk in.",
+  "heroBody": "You just opened your second Design Gallery. This is what a digital one looks like. The selections below are samples \u2014 your real catalog and pricing drop in directly.",
+  "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/tmp/chesapeake/azalea-kitchen.avif",
+  "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/tmp/chesapeake/sandcastle-exterior.jpg",
+  "photoBaseline": "Kitchen in the Azalea model at Sandcastle community viewed straight on at the perimeter wall. L-shaped layout with no island. White shaker-style cabinets on all perimeter walls — upper and lower — with brushed nickel bar pull hardware. Speckled granite countertops in a Dallas White or similar warm white with gray and tan flecks on all perimeter surfaces. White subway tile backsplash running the full width of the back wall between the countertop and upper cabinets. Stainless steel gas range centered on the back wall with a stainless steel over-the-range microwave above. Stainless steel French door refrigerator on the right side of the perimeter wall. Gray-brown wood-look LVP plank flooring throughout. Light gray or greige painted walls. White flat ceiling with recessed can lights. No island. No pendant lights. No visible sink or faucet from this angle.",
+  "spatialHint": "Camera looking straight at the perimeter wall from the open living area. Back wall (center): stainless gas range with stainless OTR microwave above, white shaker upper and lower cabinets flanking both sides. White subway tile backsplash visible between countertop and upper cabinets across the back wall. Right side: stainless French door refrigerator with white shaker cabinets adjacent. Left side: more white shaker upper and lower cabinets continuing the L-shape. Speckled granite countertops on all perimeter surfaces. Gray-brown wood-look LVP flooring across entire floor area. Light gray/greige walls above cabinets and around any windows. White flat ceiling with recessed can lights. No island in view.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color",
+    "common-wall-paint"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
+    { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
+  ],
+  "insights": [
+    { "label": "Homes delivered/yr", "value": "~300" },
+    { "label": "Avg. upgrades per home", "value": "~$12K" },
+    { "label": "Even a 10% lift", "value": "+$1,200 per home" }
+  ],
+  "closingLine": "At 300 closings a year, that is $360K in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x16-white-gloss",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
+        "common-wall-paint": "wall-delicate-white"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-taupe",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes",
+        "common-wall-paint": "wall-fog"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-onyx",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-baker-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide",
+        "common-wall-paint": "wall-hurricane-haze"
+      }
+    }
+  ]
+}

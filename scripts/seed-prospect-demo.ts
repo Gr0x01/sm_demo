@@ -187,7 +187,9 @@ async function main() {
       "kitchen-cabinet-color": hasIsland
         ? "perimeter cabinet doors and drawer fronts on walls only, not the island"
         : "all cabinet doors and drawer fronts",
-      "counter-top": "all countertop surfaces on perimeter and island",
+      "counter-top": hasIsland
+        ? "all countertop surfaces on perimeter and island"
+        : "all countertop surfaces along the perimeter walls",
       "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
       "main-area-flooring-color": "all visible floor area throughout the kitchen",
       "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",

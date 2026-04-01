@@ -109,8 +109,26 @@ Read the positioning rules in `prospect-demos.md`. The headline must be:
 - Extend the design center, NEVER replace it
 - Never say "before the appointment," "already knowing," "instead of," or "does the same thing"
 
-The hero body follows this pattern:
-"This is your [Floorplan] kitchen at [Community] with real upgrade selections wired up. Buyers pick finishes and see them in the room."
+### 5b. Write the hero body
+
+The hero body is NOT a template. Every builder gets unique copy. Follow these rules:
+
+1. **Don't repeat the floorplan name** — it's already a label on the page. Restating it is filler.
+2. **Don't claim selections are "from their catalog"** — they're sample/demo selections. Be honest: "sample selections," "mocked this up," etc.
+3. **Reference something specific to THIS builder** that can't be swapped to another. A recent event, their design center name, their process language, a new community opening. The research step should surface this.
+4. **Frame the demo as a proof of concept** — what it would look like with their real selections plugged in. "Your real catalog and pricing drop in directly" or "Your [Design Studio] options plug right in."
+5. **Create an impulse to scroll and interact** — "swap a surface," "pick a countertop," "watch the room change."
+6. **2-3 sentences max.** The demo speaks for itself.
+7. **Never say "AI."**
+
+**Good examples:**
+- "You just opened your second Design Gallery. This is what a digital one looks like. The selections below are samples — your real catalog and pricing drop in directly."
+- "We mocked this up with sample selections to show you how it works. Swap a few surfaces below and watch the room follow. Your Design Studio options drop right in."
+
+**Bad examples (DO NOT USE):**
+- "This is your [Floorplan] kitchen at [Community] with real upgrade selections wired up. Buyers pick finishes and see them in the room." — generic template, repeats floorplan name, claims selections are real when they're samples
+- "Real selections from your catalog" — dishonest, they're demo selections
+- Anything that could work for any builder by swapping the company name
 
 ### 6. Write the sidebar insights
 
