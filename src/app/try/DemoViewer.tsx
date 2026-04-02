@@ -7,6 +7,7 @@ interface DemoViewerProps {
   generatedImageUrl: string | null;
   isGenerating: boolean;
   phase: "upload" | "picking" | "generating" | "result";
+  cacheHit?: boolean;
 }
 
 /** Staged messages shown during generation — one at a time, clean fades */
@@ -46,11 +47,42 @@ export function DemoViewer({
   generatedImageUrl,
   isGenerating,
   phase,
+  cacheHit,
 }: DemoViewerProps) {
   const [stageIndex, setStageIndex] = useState(0);
   const [stageFading, setStageFading] = useState(false);
   const [overlayVisible, setOverlayVisible] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Speed badge state — shown on result, auto-dismisses
+  const [showSpeedBadge, setShowSpeedBadge] = useState(false);
+  const [speedBadgeVisible, setSpeedBadgeVisible] = useState(false);
+  const speedBadgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (speedBadgeTimerRef.current) clearTimeout(speedBadgeTimerRef.current);
+
+    if (phase === "result" && !isGenerating && cacheHit !== undefined) {
+      // Delay entrance so the image registers first
+      speedBadgeTimerRef.current = setTimeout(() => {
+        setShowSpeedBadge(true);
+        requestAnimationFrame(() => setSpeedBadgeVisible(true));
+
+        // Auto-dismiss after 5s
+        speedBadgeTimerRef.current = setTimeout(() => {
+          setSpeedBadgeVisible(false);
+          speedBadgeTimerRef.current = setTimeout(() => setShowSpeedBadge(false), 400);
+        }, 5000);
+      }, 400);
+    } else {
+      setShowSpeedBadge(false);
+      setSpeedBadgeVisible(false);
+    }
+
+    return () => {
+      if (speedBadgeTimerRef.current) clearTimeout(speedBadgeTimerRef.current);
+    };
+  }, [phase, isGenerating, cacheHit, generatedImageUrl]);
 
   // Stage cycling during generation
   useEffect(() => {
@@ -168,9 +200,20 @@ export function DemoViewer({
 
       {/* Labels */}
       {phase === "result" && generatedImageUrl && !isGenerating && (
-        <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 border border-slate-200 text-[11px] uppercase tracking-[0.16em] text-slate-700">
-          AI Visualization
-        </div>
+        <>
+          {showSpeedBadge ? (
+            <div
+              className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 border border-slate-200 text-[11px] uppercase tracking-[0.16em] text-slate-700 transition-opacity duration-400"
+              style={{ opacity: speedBadgeVisible ? 1 : 0 }}
+            >
+              {cacheHit ? "Instant — cached" : "Saved for the next buyer"}
+            </div>
+          ) : (
+            <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 border border-slate-200 text-[11px] uppercase tracking-[0.16em] text-slate-700">
+              AI Visualization
+            </div>
+          )}
+        </>
       )}
       {phase === "picking" && !generatedImageUrl && (
         <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 border border-slate-200 text-[11px] uppercase tracking-[0.16em] text-slate-700">

@@ -54,6 +54,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
   const [generationsUsed, setGenerationsUsed] = useState(0);
   const [generationHistory, setGenerationHistory] = useState<GenerationEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [lastCacheHit, setLastCacheHit] = useState<boolean | undefined>(undefined);
   const previewSectionRef = useRef<HTMLDivElement | null>(null);
   const selectionsRef = useRef(selections);
   selectionsRef.current = selections;
@@ -154,6 +155,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
     // If we were viewing a result, go back to picking
     if (generatedImageUrl) {
       sessionStorage.removeItem(SS_GENERATED);
+      setLastCacheHit(undefined);
       setPhase("picking");
     }
   }, [generatedImageUrl, track]);
@@ -182,8 +184,10 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
       if (checkData.status === "complete" && checkData.imageUrl) {
         setGeneratedImageUrl(checkData.imageUrl);
         sessionStorage.setItem(SS_GENERATED, checkData.imageUrl);
+        setLastCacheHit(true);
         setPhase("result");
         setIsGenerating(false);
+        track("demo_generation_completed", { cacheHit: true, generationsUsed });
         return;
       }
 
@@ -205,6 +209,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
       if (genRes.ok && genRes.status === 200 && genData.imageUrl) {
         setGeneratedImageUrl(genData.imageUrl);
         sessionStorage.setItem(SS_GENERATED, genData.imageUrl);
+        setLastCacheHit(true);
         setPhase("result");
         track("demo_generation_completed", { cacheHit: true, generationsUsed });
         return;
@@ -247,6 +252,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
         setGeneratedImageUrl(imageUrl);
         sessionStorage.setItem(SS_GENERATED, imageUrl);
+        setLastCacheHit(false);
         setPhase("result");
 
         // Increment counter and save to history
@@ -290,6 +296,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
     sessionStorage.setItem(SS_SELECTIONS, JSON.stringify(entry.selections));
     setGeneratedImageUrl(entry.imageUrl);
     sessionStorage.setItem(SS_GENERATED, entry.imageUrl);
+    setLastCacheHit(undefined);
     setPhase("result");
     setError(null);
   }, [generationHistory]);
@@ -299,6 +306,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
     setSelections({});
     setGeneratedImageUrl(null);
     setGenerationHistory([]);
+    setLastCacheHit(undefined);
     setPhase("picking");
     setError(null);
     sessionStorage.removeItem(SS_PHOTO);
@@ -341,6 +349,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
                       generatedImageUrl={generatedImageUrl}
                       isGenerating={isGenerating}
                       phase={phase}
+                      cacheHit={lastCacheHit}
                     />
                   ) : (
                     <div className="h-full min-h-[400px] sm:min-h-[480px] md:min-h-[560px] border border-slate-200 bg-slate-50 p-4 md:p-6">

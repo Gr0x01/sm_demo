@@ -246,6 +246,13 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 
 **Cost**: ~$20 one-time. Re-run script if `DEMO_GENERATION_CACHE_VERSION` bumps.
 
+**Speed badge (2026-04-02):**
+- On cache hit: inline badge "Instant — cached" appears on the generated image (top-left, same slot as "AI Visualization" label). Fades in after 400ms, holds 5s, fades out, falls back to "AI Visualization".
+- On cold gen complete: same slot shows "Saved for the next buyer" for 5s. Tells the compounding story — the wait was productive, the next buyer sees it instantly.
+- `cacheHit` prop threaded from DemoClient → DemoViewer. Three code paths set it: check-endpoint cache hit, generate-endpoint 200 cache hit, cold gen poll completion.
+- Recalled history entries show no badge (`lastCacheHit` reset to `undefined`).
+- PostHog: check-endpoint cache hits now tracked (`demo_generation_completed` with `cacheHit: true`) — was previously untracked.
+
 ### 3. Multi-Pass Generation Pipeline (Active — 2026-03-30)
 
 **Problem**: 1.5 degrades with 12+ swatches in a single pass. Built compensatory post-passes (Flash for backsplash, Pro for cabinet stain) but each adds 22-40s latency. Worst case ~115s. Architecture was reactive, not proactive.
