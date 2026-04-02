@@ -67,6 +67,28 @@ export async function fetchRepliesSince(
 }
 
 /**
+ * Look up a single lead by email to get name/company metadata.
+ * Note: Instantly search is fuzzy/substring, not exact match.
+ */
+export async function fetchLeadByEmail(
+  email: string
+): Promise<InstantlyLead | null> {
+  try {
+    const res = await fetch(`${BASE}/leads/list`, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ search: email, limit: 1 }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const items: InstantlyLead[] = data.items ?? [];
+    return items[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Fetch bounced leads. Returns leads + last ID for cursor pagination.
  */
 export async function fetchBouncedLeads(

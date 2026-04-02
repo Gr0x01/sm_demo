@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
-import { fetchRepliesSince, fetchBouncedLeads } from "@/lib/instantly";
+import {
+  fetchRepliesSince,
+  fetchBouncedLeads,
+  fetchLeadByEmail,
+} from "@/lib/instantly";
 import {
   findContactByEmail,
   updateContactStatus,
   createInteraction,
+  createContactFromReply,
 } from "@/lib/notion-crm";
 import { getCursor, setCursor } from "@/lib/sync-cursors";
 
@@ -35,13 +40,21 @@ export async function GET(request: Request) {
         const leadEmail = email.lead || email.from_address_email;
         if (!leadEmail) continue;
 
-        const contact = await findContactByEmail(leadEmail);
-        if (!contact) {
-          results.skipped++;
-          continue;
-        }
+        let contact = await findContactByEmail(leadEmail);
 
-        await updateContactStatus(contact.pageId, "Replied");
+        if (!contact) {
+          // Lead replied but isn't in Notion yet — create a stub contact
+          const lead = await fetchLeadByEmail(leadEmail);
+          const stub = await createContactFromReply({
+            email: leadEmail,
+            firstName: lead?.first_name,
+            lastName: lead?.last_name,
+            companyName: lead?.company_name,
+          });
+          contact = { pageId: stub.pageId, companyId: null };
+        } else {
+          await updateContactStatus(contact.pageId, "Replied");
+        }
 
         await createInteraction({
           summary: `Reply: ${email.subject || "(no subject)"}`,

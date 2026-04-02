@@ -12,23 +12,36 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 
 **Strategy shift (2026-03-23):** Moved from inquisitive outreach (asking about their process) to provocation-first. Lead with visualization lift data (every builder doing viz sees 20-40% more in option sales), not Toll/Pulte SEC comparisons (dismissable as luxury). Practitioner voice, not tinkerer. Demo pages are a follow-up asset built after engagement, not pre-outreach. LinkedIn connection requests have no links (platform blocks them) — links go in the first DM after they accept.
 
-**Campaign 3 — LIVE (launched 2026-04-01):**
+**Campaign 3 — REBUILDING (original killed 2026-04-02, rebuilding from raw export):**
+- **What happened**: A bad CRM audit session deleted 50 leads from Instantly via the DELETE API, then tried to rebuild with unverified data. Campaign is currently empty in Instantly.
+- **Recovery**: Original data preserved in `/tmp/instantly-c3-raw1.json` + `/tmp/instantly-c3-raw2.json` (112 leads with full payloads). Rebuilt from original `c3-instantly-upload.csv`.
 - **Approach**: Permission-ask. One sentence asking to send a video of their kitchen with different finishes. If they reply yes, build demo + record Loom.
 - **Template**: "Hey {{firstName}}, I put together a short video of your {{floorplan}} kitchen with different finishes. Want me to send it over?" Bump Day 3: "Hey {{firstName}}, want me to send it over? Yes or no works."
-- **104 leads** across ~54 companies. All Apollo-verified emails. All floorplan names verified on builder websites.
+- **Clean leads**: 73 leads across 39 companies (original 104 minus 15 confirmed removals: 9 real viz tools + 6 non-ICP)
+- **CSVs**: `c3-batch1-10leads.csv` (10 leads, upload first) + `c3-batch2-remaining.csv` (63 leads, add after)
+- **`c3-rebuilt.csv` is DEAD** — do not use, marked with warning
 - **Sending from**: rashaad@heyfin.ch + anton@heyfin.ch (both warmed since mid-March)
 - **Daily limit**: 10/mailbox (20 total), weekdays 8am-5pm Central
 - **Settings**: Plain text, no tracking, no links, stop on reply
-- **All 104 out in ~5 business days**
-- **Removed before launch**: LGI (bundled upgrades), Drees/M|I (Envision), Highland TX (has kitchen viz), Jagoe (has interior rendering), Lombardo (Anewgo), Christopher Alan (no selections — RE-EVALUATED: wrong, they do have selections), David Weekley (enterprise), CBH (packages only), Epcon (franchise model)
+- **Confirmed removals (real interior viz)**: Adams Homes (Anewgo), Allen Edwin (Envision), Landmark (Anewgo), Wayne (Anewgo), EdgeHomes (Contrado VIP), Ivory (Envision/Contrado), Fischer (Design Visualizer), Maronda (RenoWorks), Smith Douglas (Anewgo Interiors)
+- **Confirmed removals (non-ICP)**: Schumacher (BOYL), Dream Finders (public enterprise), Homes by Dickerson (custom), Stanley Martin (Daiwa subsidiary), Pacesetter (Qualico subsidiary), Craftmark (luxury/semi-custom — RE-EVALUATED 2026-04-02: actually has individual selections, ~300/yr, recovered as prospect)
+- **Wrongly removed pre-launch (recovered 2026-04-02)**: Highland TX (floor plan tool ≠ kitchen viz), Jagoe (Higharc ≠ interior viz), Lombardo (Anewgo CMS ≠ viz tool), Scott Felder (doesn't use Anewgo at all)
 - **Full CRM docs**: `memory-bank/crm-system.md`
 - **Pipeline script**: `scripts/campaign3-pipeline.sh` (Apollo search → reveal → CSV generation)
+
+**CRM audit cleanup (2026-04-02):**
+- Previous session ran CRM auditor agent across 256 companies. Agent hallucinated viz tools, misclassified exterior-only tools as interior viz, and fabricated pass reasons.
+- **Full audit of all 60 Passed records completed.** 25% error rate (15 of 60 wrongly Passed).
+- **18 company records fixed**, **6 contact records fixed**, **7 data mismatches corrected**
+- **15 prospects recovered** (wrongly Passed, verified as valid ICP): Eastwood (1,800/yr), Highland TX (2,500/yr), Ashton Woods (5,000/yr), Hayden (1,000/yr), Lombardo (611/yr), Scott Felder (300-600/yr), Jagoe (350-400/yr), Homes by Taber (300+/yr), Craftmark (~300/yr), Van Metre (400/yr, tool dead), GHO (200+/yr), McKee (200-400/yr), Copper Builders (hundreds/yr), Pahlisch (150-250/yr), Shaw (100-200/yr)
+- **Key pattern**: "Other" and "Anewgo" viz tool claims are unreliable. Exterior-only tools (WTS Paradigm, Anewgo elevations), floor plan tools (Zonda VR), pricing configurators, and CMS platforms were all misclassified as interior finish viz. Only Envision, Roomored/ILG, Hyphen/Chameleon, and Contrado VIP are reliable disqualifiers.
+- **Memory saved**: `feedback_crm_audit_verification.md` — never trust viz tool claims without checking the actual website
 
 **Outreach automation (2026-04-01):**
 - **Apollo → Instantly**: Native integration connected (push leads directly, skip CSV export). Apollo Basic paid plan.
 - **Instantly → Notion auto-sync**: Vercel Cron polls Instantly API every 15 min (`/api/cron/instantly-sync`). On reply: finds Contact by email in Notion → updates Status to "Replied" → creates Interaction row. On bounce: updates Status to "Bounced" + Interaction row. Cursor-based (Supabase `sync_cursors` table) — only advances past successfully processed items.
 - **Files**: `src/lib/instantly.ts` (API client), `src/lib/notion-crm.ts` (Notion helpers), `src/lib/sync-cursors.ts` (cursor storage), `src/app/api/cron/instantly-sync/route.ts` (cron handler)
-- **Env vars needed on Vercel**: `NOTION_DB_CONTACTS`, `NOTION_DB_INTERACTIONS` (+ existing `NOTION_API_KEY`, `INSTANTLY_API_KEY`, `CRON_SECRET`)
+- **Env vars needed on Vercel**: `NOTION_DB_CONTACTS` (data source ID, for queries), `NOTION_DB_CONTACTS_PAGE_ID` (database page ID, for creates), `NOTION_DB_INTERACTIONS` (+ existing `NOTION_API_KEY`, `INSTANTLY_API_KEY`, `CRON_SECRET`)
 - **Instantly API**: Read-only access on current plan. Sufficient for polling replies/bounces. No Hypergrowth upgrade needed.
 
 **Cold email campaign C2 — completed, 0 replies (activated 2026-03-26):**

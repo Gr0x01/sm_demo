@@ -2,7 +2,8 @@ import { Client } from "@notionhq/client";
 
 const notion = new Client({ auth: process.env.NOTION_API_KEY });
 
-const DB_CONTACTS = process.env.NOTION_DB_CONTACTS!;
+const DB_CONTACTS = process.env.NOTION_DB_CONTACTS!; // data source ID (for queries)
+const DB_CONTACTS_PAGE = process.env.NOTION_DB_CONTACTS_PAGE_ID!; // database page ID (for creates)
 const DB_INTERACTIONS = process.env.NOTION_DB_INTERACTIONS!;
 
 /**
@@ -56,6 +57,43 @@ export async function updateContactStatus(
       Status: { select: { name: status } },
     },
   });
+}
+
+/**
+ * Create a stub Contact from an Instantly reply when no matching contact exists.
+ * Returns the new page ID so the caller can proceed with status updates + interactions.
+ */
+export async function createContactFromReply(params: {
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  companyName?: string;
+}): Promise<{ pageId: string }> {
+  const name =
+    [params.firstName, params.lastName].filter(Boolean).join(" ") ||
+    params.email;
+
+  const notes = [
+    "Auto-created from Instantly reply sync.",
+    params.companyName ? `Company: ${params.companyName}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const page = await notion.pages.create({
+    parent: { database_id: DB_CONTACTS_PAGE },
+    properties: {
+      Name: { title: [{ text: { content: name } }] },
+      Email: { email: params.email.toLowerCase() },
+      Status: { select: { name: "Replied" } },
+      Channel: { multi_select: [{ name: "Email" }] },
+      Notes: {
+        rich_text: [{ text: { content: notes } }],
+      },
+    },
+  } as Parameters<typeof notion.pages.create>[0]);
+
+  return { pageId: page.id };
 }
 
 /**
