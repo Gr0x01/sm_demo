@@ -72,7 +72,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v45";
+export const GENERATION_CACHE_VERSION = "v46";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
