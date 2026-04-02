@@ -43,6 +43,7 @@ export interface SelectionState {
   generatedWithSelections: Record<string, string>; // photoKey → fingerprint (JSON snapshot of visual selections at generation time)
   generatedImageIds: Record<string, string>; // photoKey → generated_image UUID/bigint from DB
   errors: Record<string, string>; // photoKey → error message
+  lastCacheHitPhotos: Record<string, boolean | undefined>; // photoKey → was last generation a cache hit?
 }
 
 // ---------- Admin types ----------
@@ -169,7 +170,7 @@ export type SelectionAction =
   | { type: "LOAD_SELECTIONS"; selections: Record<string, string>; quantities: Record<string, number> }
   | { type: "CLEAR_SELECTIONS" }
   | { type: "START_GENERATING_PHOTO"; photoKey: string }
-  | { type: "PHOTO_GENERATION_COMPLETE"; photoKey: string; imageUrl: string; selectionsSnapshot: string; generatedImageId: string }
+  | { type: "PHOTO_GENERATION_COMPLETE"; photoKey: string; imageUrl: string; selectionsSnapshot: string; generatedImageId: string; cacheHit?: boolean }
   | { type: "PHOTO_GENERATION_ERROR"; photoKey: string; error: string }
   | { type: "REMOVE_GENERATED_IMAGE"; photoKey: string };
 

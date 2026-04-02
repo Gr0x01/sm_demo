@@ -17,6 +17,7 @@ interface StepPhotoGridProps {
   getPhotoVisualSelections: (step: StepConfig, photo: StepPhoto | null, selections: Record<string, string>) => Record<string, string>;
   selections: Record<string, string>;
   renderOverlay?: () => React.ReactNode;
+  lastCacheHitPhotos?: Record<string, boolean | undefined>;
 }
 
 function DefaultGeneratingOverlay() {
@@ -47,6 +48,7 @@ export function StepPhotoGrid({
   getPhotoVisualSelections,
   selections,
   renderOverlay,
+  lastCacheHitPhotos,
 }: StepPhotoGridProps) {
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxPhotoId, setLightboxPhotoId] = useState<string | null>(null);
@@ -101,6 +103,7 @@ export function StepPhotoGrid({
             onZoom={(src) => { setLightboxSrc(src); setLightboxPhotoId(activePhoto.id); }}
             hasSelections={hasSelections}
             renderOverlay={renderOverlay}
+            lastCacheHit={lastCacheHitPhotos?.[activePhoto.id]}
           />
         )}
 
@@ -174,6 +177,7 @@ interface PhotoCardProps {
   onZoom: (src: string) => void;
   hasSelections?: boolean;
   renderOverlay?: () => React.ReactNode;
+  lastCacheHit?: boolean;
 }
 
 function PhotoViewerCard({
@@ -187,6 +191,7 @@ function PhotoViewerCard({
   onZoom,
   hasSelections = true,
   renderOverlay,
+  lastCacheHit,
 }: PhotoCardProps) {
   // Layer-based crossfade: keeps old generated image visible while new fades in
   const [layers, setLayers] = useState<{ src: string; key: number }[]>(
@@ -207,6 +212,33 @@ function PhotoViewerCard({
   const handleLayerEnd = useCallback((finishedKey: number) => {
     setLayers((prev) => prev.length > 1 ? prev.filter((l) => l.key === finishedKey) : prev);
   }, []);
+
+  // Speed badge — auto-dismiss after 5s
+  const [showSpeedBadge, setShowSpeedBadge] = useState(false);
+  const [speedBadgeVisible, setSpeedBadgeVisible] = useState(false);
+  const speedBadgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (speedBadgeTimerRef.current) clearTimeout(speedBadgeTimerRef.current);
+
+    if (generatedUrl && !isGenerating && lastCacheHit !== undefined) {
+      speedBadgeTimerRef.current = setTimeout(() => {
+        setShowSpeedBadge(true);
+        requestAnimationFrame(() => setSpeedBadgeVisible(true));
+        speedBadgeTimerRef.current = setTimeout(() => {
+          setSpeedBadgeVisible(false);
+          speedBadgeTimerRef.current = setTimeout(() => setShowSpeedBadge(false), 400);
+        }, 5000);
+      }, 400);
+    } else {
+      setShowSpeedBadge(false);
+      setSpeedBadgeVisible(false);
+    }
+
+    return () => {
+      if (speedBadgeTimerRef.current) clearTimeout(speedBadgeTimerRef.current);
+    };
+  }, [generatedUrl, isGenerating, lastCacheHit]);
 
   const hasGenerated = !!generatedUrl;
 
@@ -246,6 +278,16 @@ function PhotoViewerCard({
       {isStale && hasGenerated && !isGenerating && (
         <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 z-10">
           OUTDATED
+        </div>
+      )}
+
+      {/* Speed badge — cache hit / saved for next buyer */}
+      {showSpeedBadge && !isStale && !isGenerating && (
+        <div
+          className="absolute top-2 left-2 px-1.5 py-0.5 bg-white/90 border border-slate-200 text-[10px] uppercase tracking-[0.12em] text-slate-700 z-10 transition-opacity duration-400"
+          style={{ opacity: speedBadgeVisible ? 1 : 0 }}
+        >
+          {lastCacheHit ? "Instant — cached" : "Saved for the next buyer"}
         </div>
       )}
 

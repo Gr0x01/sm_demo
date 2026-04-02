@@ -260,6 +260,7 @@ export function UpgradePicker({
           hasEverGenerated: true,
           generatedWithSelections: { ...state.generatedWithSelections, [action.photoKey]: action.selectionsSnapshot },
           generatedImageIds: { ...state.generatedImageIds, [action.photoKey]: action.generatedImageId },
+          lastCacheHitPhotos: { ...state.lastCacheHitPhotos, [action.photoKey]: action.cacheHit },
         };
       }
       case "PHOTO_GENERATION_ERROR": {
@@ -290,6 +291,7 @@ export function UpgradePicker({
     generatedWithSelections: {},
     generatedImageIds: {},
     errors: {},
+    lastCacheHitPhotos: {},
   }));
 
   // Notify parent when selections go from empty → non-empty or vice versa
@@ -385,8 +387,9 @@ export function UpgradePicker({
               imageUrl: checkData.imageUrl,
               selectionsSnapshot,
               generatedImageId: checkData.generatedImageId,
+              cacheHit: false,
             });
-            track("generation_completed", { stepName, cacheHit: true, joinedInProgress: true });
+            track("generation_completed", { stepName, cacheHit: false, joinedInProgress: true });
             return;
           }
           if (checkData.status === "not_found") {
@@ -764,6 +767,7 @@ export function UpgradePicker({
         imageUrl: data.imageUrl,
         selectionsSnapshot,
         generatedImageId: data.generatedImageId,
+        cacheHit: !!data.cacheHit,
       });
 
       track("generation_completed", { stepName: step.name, cacheHit: !!data.cacheHit });
@@ -966,6 +970,7 @@ export function UpgradePicker({
                 generatedWithSelections={state.generatedWithSelections}
                 getPhotoVisualSelections={getPhotoVisualSelections}
                 selections={state.selections}
+                lastCacheHitPhotos={state.lastCacheHitPhotos}
                 hideWizardControls={hideWizardControls}
                 sidebarFooter={sidebarFooter}
                 renderOverlay={renderOverlay}
@@ -1003,6 +1008,7 @@ export function UpgradePicker({
                       generatedWithSelections={state.generatedWithSelections}
                       getPhotoVisualSelections={getPhotoVisualSelections}
                       selections={state.selections}
+                      lastCacheHitPhotos={state.lastCacheHitPhotos}
                     />
                   </div>
                 )}

@@ -61,6 +61,7 @@ interface SidebarPanelProps {
   sidebarFooter?: ReactNode;
   /** Custom generating overlay for demo pages */
   renderOverlay?: () => ReactNode;
+  lastCacheHitPhotos?: Record<string, boolean | undefined>;
 }
 
 export function SidebarPanel({
@@ -83,6 +84,7 @@ export function SidebarPanel({
   hideWizardControls = false,
   sidebarFooter,
   renderOverlay,
+  lastCacheHitPhotos,
 }: SidebarPanelProps) {
   const [activeSectionTitle, setActiveSectionTitle] = useState<string>(
     step.sections[0]?.title ?? ""
@@ -185,6 +187,7 @@ export function SidebarPanel({
             getPhotoVisualSelections={getPhotoVisualSelections}
             selections={selections}
             renderOverlay={renderOverlay}
+            lastCacheHitPhotos={lastCacheHitPhotos}
           />
         </>
       ) : showImage ? (

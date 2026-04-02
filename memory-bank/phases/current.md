@@ -252,6 +252,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - `cacheHit` prop threaded from DemoClient → DemoViewer. Three code paths set it: check-endpoint cache hit, generate-endpoint 200 cache hit, cold gen poll completion.
 - Recalled history entries show no badge (`lastCacheHit` reset to `undefined`).
 - PostHog: check-endpoint cache hits now tracked (`demo_generation_completed` with `cacheHit: true`) — was previously untracked.
+- **Also shipped on `/for/` + buyer pages**: Same badge via `StepPhotoGrid` → `PhotoViewerCard`. `lastCacheHitPhotos` tracked in UpgradePicker reducer (`Record<string, boolean | undefined>`), threaded through SidebarPanel. `PHOTO_GENERATION_COMPLETE` action carries `cacheHit` from API response. Same 400ms delay → 5s hold → fade out. Mutually exclusive with OUTDATED badge.
 
 ### 3. Multi-Pass Generation Pipeline (Active — 2026-03-30)
 
