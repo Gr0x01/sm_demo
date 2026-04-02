@@ -299,7 +299,18 @@ hero → Structural (1.5, cabs/counter/floor/paint, ~38s)
 3. Intermediate pass cache → skip unchanged passes (new, `pass_cache` table)
 4. Full cold generation → all passes from hero (fallback)
 
-**Currently enabled on:** SM kitchen-close step photo only (`useMultiPass: true` in policy)
+**Currently enabled on:** All 17 SM step photos (`useMultiPass: true` on all policies)
+
+**Full SM rollout (2026-04-02):**
+- Enabled multi-pass on all 17 SM photos (9 Lenox, 8 Kinkade). Each photo audited individually: hero reviewed, photo baseline rewritten, spatial hints verified, generation policy rules added, test combos run and reviewed.
+- **Bug fixed**: `buildGeminiSpecialtyPrompt` wasn't receiving `invariantRulesAlways` from policy overrides — Flash backsplash passes never got constraints like fridge alcove rules. Fixed by passing `resolvedPolicy.promptOverrides` through.
+- **Cache version bumped** v45→v46 to invalidate old images generated without proper spatial hints/rules.
+- **Key lesson — photo baselines must describe what ISN'T there**: "No cabinets on the left wall", "No dishwasher", "No second vanity" etc. Without negative constraints the model fills gaps with hallucinated elements.
+- **Key lesson — step-level spatial hints are shared across photos**: The backsplash hint "both sides of pantry doors" was correct for Kitchen & Dining angle but wrong for Kitchen (close) angle. Made hints generic, used photo-level constraints for angle-specific rules.
+- **Key lesson — lighting hints must not suggest fixtures**: "light fixtures (chandelier, pendants)" caused the model to ADD pendants. Changed to "apply ONLY to fixtures already visible."
+- **Key lesson — dev server must restart to pick up DB changes**: `unstable_cache` and in-memory caching means spatial hint / photo baseline changes in DB aren't reflected until the Next.js dev server restarts.
+- **Hardest photos**: Lenox Kitchen (close) needed 3 iterations — left-wall cabinets, sink position, fridge alcove tiling. Kinkade Great Room (22 subcats) — chandelier/fan merge, kitchen zone expansion. Lenox Kitchen & Dining — dishwasher position, window loss, room composition.
+- **Test scripts**: `scripts/test-lenox-kitchen-multipass.ts`, `scripts/test-lenox-secondary-bath-multipass.ts`, `scripts/test-kinkade-bath-closet-multipass.ts`, `scripts/test-lenox-primary-bath-multipass.ts`, `scripts/test-kinkade-vanity-multipass.ts`, `scripts/test-kinkade-shower-multipass.ts`, `scripts/test-bedrooms-multipass.ts`, `scripts/test-remaining-rooms-multipass.ts`
 
 **Architecture doc:** `memory-bank/project/multi-pass-pipeline-architecture.md`
 
