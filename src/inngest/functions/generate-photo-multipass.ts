@@ -171,10 +171,13 @@ function buildGeminiSpecialtyPrompt(
   selections: Record<string, string>,
   optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
   swatchResults: Array<{ buffer: Buffer; mediaType: string } | null>,
+  policyOverrides?: { invariantRulesAlways?: string[] },
 ): { prompt: string; swatches: Array<{ buffer: Buffer; mediaType: string }> } {
   const swatches: Array<{ buffer: Buffer; mediaType: string }> = [];
   const lines: string[] = [];
   const rules: string[] = [];
+  // Include policy-level invariant rules (e.g. fridge alcove constraints)
+  for (const rule of policyOverrides?.invariantRulesAlways ?? []) rules.push(rule);
   let swIdx = 1;
 
   for (let i = 0; i < entries.length; i++) {
@@ -464,6 +467,7 @@ export const generatePhotoMultipass = inngest.createFunction(
             );
             const { prompt, swatches } = buildGeminiSpecialtyPrompt(
               entries, passHints, pass.subcategoryIds, scopedSelections, optionLookup, swatchResults,
+              resolvedPolicy.promptOverrides,
             );
             if (swatches.length === 0) {
               return { path: currentPath, durationMs: 0, skipped: true };

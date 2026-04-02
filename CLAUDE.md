@@ -12,12 +12,16 @@ memory-bank/
 ├── VISION.md              → business plan, pricing, GTM, competitive landscape
 ├── decisions.md           → key choices and rationale ("why")
 ├── seo-strategy.md        → SEO keyword research, content strategy
-├── generation-reliability-playbook.md → prompt/cache troubleshooting
+├── crm-system.md          → Notion CRM, Instantly, Apollo, outreach workflow
 ├── v1-product.md          → (historical) original V1 spec
-├── research/              → builder prospect lists + outreach playbooks
-└── phases/
-    ├── current.md         → what to work on RIGHT NOW
-    └── completed.md       → finished workstreams archive
+├── phases/
+│   ├── current.md         → what to work on RIGHT NOW
+│   └── completed.md       → finished workstreams archive
+├── generation/            → image gen R&D (reliability, backsplash, speed)
+├── project/               → active feature architecture docs
+├── outreach/              → sales playbooks, campaigns, prospect demo ops
+├── prospects/             → individual builder research briefs
+└── research/              → market research, prospect lists, competitive intel
 ```
 
 ### Startup Procedure
@@ -84,6 +88,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 - **growth-hacker**: Customer acquisition, builder outreach, demo optimization
 - **lead-researcher**: Lead search, enrichment, qualification, builder research, and cold email drafting
 - **cold-email-writer**: Fully custom founder-led cold emails for builder outreach. No templates. Every email unique.
+- **crm-auditor**: Batch CRM pipeline hygiene. Scans all companies/contacts, propagates company verdicts to contacts, researches unresearched companies. Modes: scan, fix, research, report.
 - **legal-compliance-checker**: Privacy, ToS, AI disclosure, regulatory compliance
 
 **Demo Operations:**
@@ -102,6 +107,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 10. **lead-researcher**: Use for qualifying Apollo exports, researching builders, cross-referencing Notion pipeline, and drafting cold emails
 11. **cold-email-writer**: Use for writing fully custom cold outreach emails. Takes research notes, produces ready-to-send emails in Rashaad's voice. Use AFTER lead-researcher has done the research.
 12. **prospect-demo-builder**: Use to spin up a new `/for/` prospect demo page. Give it a builder name + kitchen/exterior photo paths. Can run multiple in parallel for different builders.
+13. **crm-auditor**: Use for batch CRM cleanup — propagating company verdicts to contacts, auditing pipeline hygiene, researching unresearched companies. Run modes: `scan` → `fix` → `research` → `report`.
 
 ## SKILLS
 

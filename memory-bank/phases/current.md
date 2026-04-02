@@ -55,6 +55,11 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - **Remaining from C1**: Holland, Stylecraft (Doug already sent one-off)
 - **Next**: Find work emails for skipped leads. Monitor C1 and C2 for replies/bounces. Ramp daily volume.
 
+**LinkedIn content (started 2026-04-02):**
+- Week 1 (Apr 2): POSTED — "39% wish they spent more" stat + Dennis Webb/Fulton Homes quote from Builder Marketing Podcast. Tagged @Greg Bray (1st connection, podcast host). No pitch, no Finch mention.
+- Week 2 (Apr 7-9): PLANNED — Houzz buyer quotes ("I am becoming depressed and all the excitement is gone"). Real buyer words, minimal framing.
+- Full content calendar + backlog: `memory-bank/outreach/linkedin-post-ideas-april-2026.md`
+
 **Active LinkedIn prospects:**
 - [ ] **Doug French** (Stylecraft Homes, CEO) — 1st connection, no reply to Thursday message. Demo page live at `withfin.ch/for/stylecraft`. Send before/after kitchen screenshot + link as follow-up DM.
 - [ ] **Steve Snoddy** (Davidson Homes, Director of Sales & Marketing, Arizona) — Demo page live at `withfin.ch/for/davidson` (Hidden Hills kitchen, waterfall island). Uses NoviHome (buyer CRM app) but no visualization. DM drafted, ready to send.
@@ -219,7 +224,29 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - AVIF photo support: generate-photo.ts now converts non-standard formats (AVIF, etc.) to PNG via sharp before sending to OpenAI
 - Davidson Homes prospect demo page built: `withfin.ch/for/davidson` (Hidden Hills kitchen, waterfall island, exterior cover)
 
-### 2. Multi-Pass Generation Pipeline (Active — 2026-03-30)
+### 2. /try Demo Cache Pre-Seeding (2026-04-02)
+
+**Problem**: PostHog replays showed visitors bouncing during the 60s generation wait on /try. Sample kitchen is a known photo — we can pre-cache results.
+
+**Solution**: Pre-generate 200 selection combos for the sample kitchen. Visitors get instant cache hits or ~30s scoped edits instead of 60s cold generations.
+
+**Implementation:**
+- **Sample kitchen pre-processed** to 1536x1024 (184KB, was 2752x1536 / 1MB). Original saved as `sample-kitchen-original.jpg`.
+- **Deterministic photo hashing**: `loadSamplePhoto` in `DemoUploader.tsx` now reads raw file bytes via `FileReader` instead of canvas re-encoding. Hash `a6aeb46b36635226` is identical across all browsers and server-side scripts. User-uploaded photos still go through canvas `resizeImage`.
+- **Seed script**: `scripts/seed-demo-cache.ts` — generates combos, calls OpenAI directly (not through API route), persists to Supabase with leave-one-out hashes. Flags: `--dry-run`, `--concurrency N`, `--layer 1|2`, `--start N`.
+- **200 combos seeded** (0 failures, ~8 min at concurrency 20):
+  - Layer 1 (125): All 5 cabinets × 5 islands × 5 countertops × default backsplash (Blanc Subway)
+  - Layer 2 (75): 5 popular cab/island pairs (Pearl/Pearl, Pearl/Deep, Timber/Timber, Ink/Ink, Mist/Mist) × 5 countertops × 3 specialty backsplashes (Graphite, Herringbone, Hex)
+- **Coverage**: Any visitor keeping default backsplash gets an instant cache hit. Any 1-selection change from a cached combo gets a scoped edit (~30s). Only cold gens: 2+ selections different from all 200 cached combos, or user-uploaded photos.
+- **Verified**: Incognito browser test confirmed hash match, exact cache hits, and scoped edit (depth 1) for uncached combos.
+
+**Gotcha — sessionStorage caching**: `DemoClient.tsx` stores photo data (including hash) in sessionStorage. Existing sessions from before the pre-sized image change will have the old canvas-encoded hash → cache miss. Clears when tab closes. New sessions get the deterministic hash automatically.
+
+**Gotcha — browser cache**: The old `sample-kitchen.jpg` (1MB) may be disk-cached in browsers. Hard refresh or new incognito session needed after deploy.
+
+**Cost**: ~$20 one-time. Re-run script if `DEMO_GENERATION_CACHE_VERSION` bumps.
+
+### 3. Multi-Pass Generation Pipeline (Active — 2026-03-30)
 
 **Problem**: 1.5 degrades with 12+ swatches in a single pass. Built compensatory post-passes (Flash for backsplash, Pro for cabinet stain) but each adds 22-40s latency. Worst case ~115s. Architecture was reactive, not proactive.
 

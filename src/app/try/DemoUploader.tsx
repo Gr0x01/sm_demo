@@ -66,7 +66,9 @@ async function hashDataUrl(dataUrl: string): Promise<string> {
   return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("").slice(0, 16);
 }
 
-/** Load the sample kitchen photo and return the processed photo object */
+/** Load the sample kitchen photo and return the processed photo object.
+ *  The sample image is pre-sized to 1536x1024 so we skip canvas re-encoding
+ *  and hash the raw file bytes — deterministic across browsers and server. */
 export async function loadSamplePhoto(): Promise<{
   dataUrl: string;
   hash: string;
@@ -74,8 +76,14 @@ export async function loadSamplePhoto(): Promise<{
 }> {
   const res = await fetch("/sample-kitchen.jpg");
   const blob = await res.blob();
-  const file = new File([blob], "sample-kitchen.jpg", { type: "image/jpeg" });
-  const { dataUrl } = await resizeImage(file);
+
+  // Read raw file bytes as data URL (no canvas re-encoding → deterministic hash)
+  const dataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
   const hash = await hashDataUrl(dataUrl);
   return {
     dataUrl,
