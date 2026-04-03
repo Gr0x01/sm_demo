@@ -970,7 +970,7 @@ export function UpgradePicker({
                 generatedWithSelections={state.generatedWithSelections}
                 getPhotoVisualSelections={getPhotoVisualSelections}
                 selections={state.selections}
-                lastCacheHitPhotos={state.lastCacheHitPhotos}
+                lastCacheHitPhotos={hideWizardControls ? state.lastCacheHitPhotos : undefined}
                 hideWizardControls={hideWizardControls}
                 sidebarFooter={sidebarFooter}
                 renderOverlay={renderOverlay}
@@ -1008,7 +1008,7 @@ export function UpgradePicker({
                       generatedWithSelections={state.generatedWithSelections}
                       getPhotoVisualSelections={getPhotoVisualSelections}
                       selections={state.selections}
-                      lastCacheHitPhotos={state.lastCacheHitPhotos}
+                      lastCacheHitPhotos={hideWizardControls ? state.lastCacheHitPhotos : undefined}
                     />
                   </div>
                 )}
