@@ -73,7 +73,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.2";
+export const GENERATION_CACHE_VERSION = "v2.3";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -504,6 +504,11 @@ function collectInvariantRules(
   promptPolicyOverrides?: PromptPolicyOverrides,
 ): Set<string> {
   const selectedSubIds = new Set(Object.keys(allSelections));
+  // Treat -none options as "not selected" for policy override purposes
+  const noneSubIds = new Set<string>();
+  for (const [subId, optId] of Object.entries(allSelections)) {
+    if (optId.endsWith("-none")) noneSubIds.add(subId);
+  }
   const rules = new Set<string>();
 
   for (const [subId, optId] of Object.entries(allSelections)) {
@@ -522,7 +527,7 @@ function collectInvariantRules(
     if (!subCategoryById.has(subCategory.id)) subCategoryById.set(subCategory.id, subCategory);
   }
   for (const subId of scopedSubcategoryIds) {
-    if (selectedSubIds.has(subId)) continue;
+    if (selectedSubIds.has(subId) && !noneSubIds.has(subId)) continue;
     const sub = subCategoryById.get(subId);
     if (sub?.generationRulesWhenNotSelected?.length) {
       for (const rule of sub.generationRulesWhenNotSelected) rules.add(rule);
@@ -531,11 +536,11 @@ function collectInvariantRules(
 
   for (const rule of promptPolicyOverrides?.invariantRulesAlways ?? []) rules.add(rule);
   for (const [subId, rs] of Object.entries(promptPolicyOverrides?.invariantRulesWhenSelected ?? {})) {
-    if (!selectedSubIds.has(subId)) continue;
+    if (!selectedSubIds.has(subId) || noneSubIds.has(subId)) continue;
     for (const rule of rs) rules.add(rule);
   }
   for (const [subId, rs] of Object.entries(promptPolicyOverrides?.invariantRulesWhenNotSelected ?? {})) {
-    if (selectedSubIds.has(subId)) continue;
+    if (selectedSubIds.has(subId) && !noneSubIds.has(subId)) continue;
     for (const rule of rs) rules.add(rule);
   }
 
@@ -622,22 +627,24 @@ export async function buildBflEditPrompt(
     : "";
 
   const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
+  let tail = rulesBlock;
+  if (sceneBlock) tail += `\n${sceneBlock.trimEnd()}`;
 
-  const prompt = `${sceneBlock}Edit this room photo. Apply each swatch to its specified surface only.
+  const prompt = `Edit this room photo. Apply each finish to its specified surface only.
 
 ${listLines.join("\n")}
 
-Image 1 is the room photo. Images 2..${imageIndex - 1} are reference swatches in the order listed above.
-Each surface is a separate zone — do NOT bleed one finish onto adjacent surfaces.
-Preserve cabinet door style, countertop edges, and structural details.
-Keep camera angle, perspective, lighting, and room layout.
-Photorealistic result with accurate shadows and reflections.${rulesBlock}`;
+Image 1 is the base photo. Images 2..${imageIndex - 1} are reference swatches in listed order.
+Each finish stays strictly within its own surface boundary.
+Preserve cabinet door style, countertop edges, and structural geometry.
+Keep camera angle, perspective, and lighting. Photorealistic, natural lighting.${tail}`;
 
   return { prompt, swatches };
 }
 
 /**
- * BFL scoped-edit prompt. Single swatch, single target, strong preserve list.
+ * BFL scoped-edit prompt. Klein preserves unchanged surfaces by default,
+ * so we keep this minimal: target surface + swatch reference + location.
  * Same signature as buildScopedEditPrompt — drop-in replacement for BFL pipeline.
  */
 export async function buildBflScopedEditPrompt(
@@ -678,19 +685,7 @@ export async function buildBflScopedEditPrompt(
 
   const hint = spatialHints[changedSubcategoryId];
   const locationPart = hint ? ` → ${hint}` : "";
-  const dimPart = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
-
-  // Preserve list
-  const preserveLines: string[] = [];
-  for (const [subId, optId] of Object.entries(allSelections).sort(([a], [b]) => a.localeCompare(b))) {
-    if (subId === changedSubcategoryId) continue;
-    const found = optionLookup.get(`${subId}:${optId}`);
-    if (!found) continue;
-    const loc = spatialHints[subId];
-    preserveLines.push(loc
-      ? `- ${found.subCategory.name} (${loc})`
-      : `- ${found.subCategory.name}`);
-  }
+  const dimPart = option.dimensions?.trim() ? ` (${option.dimensions.trim()})` : "";
 
   const invariantRules = collectInvariantRules(allSelections, optionLookup, scopedSubcategoryIds, promptPolicyOverrides);
   const rulesBlock = invariantRules.size > 0
@@ -698,17 +693,11 @@ export async function buildBflScopedEditPrompt(
     : "";
 
   const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
+  let tail = rulesBlock;
+  if (sceneBlock) tail += `\n${sceneBlock.trimEnd()}`;
 
-  const prompt = `${sceneBlock}Change ONLY the ${subCategory.name} in this image.
-${subCategory.name}${locationPart}${dimPart} — ${swatchRef}
-
-DO NOT MODIFY:
-${preserveLines.join("\n")}
-- All appliances, fixtures, hardware, lighting
-- Room layout, camera angle, and perspective
-
-Apply the swatch ONLY to the named surface. Every other surface must remain pixel-identical to the input.
-Photorealistic result with accurate shadows and reflections.${rulesBlock}`;
+  const prompt = `Change the ${subCategory.name}${locationPart}${dimPart} to match image 2. ${swatchRef}
+Keep all other surfaces, fixtures, and layout unchanged. Photorealistic, natural lighting.${tail}`;
 
   return { prompt, swatches };
 }

@@ -316,7 +316,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - `src/inngest/functions/generate-demo.ts` — /try demo pipeline (same models)
 - `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-klein-4b"`
 
-**Cache versioning**: `GENERATION_CACHE_VERSION` = v2.1. Bump minor for prompt/rule changes, major for model swaps.
+**Cache versioning**: `GENERATION_CACHE_VERSION` = v2.3. Bump minor for prompt/rule changes, major for model swaps.
 
 **Prompt tuning findings (2026-04-04–05):**
 - Flux 2 Max responds best to minimal prompts with scene context. Verbose generation rules (SM-style) hurt quality — color shifts, confused spatial application.
@@ -333,16 +333,26 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - Two-tone spatial separation (Onyx island vs Sahara perimeter) still unreliable — needs more prompt tuning
 - Stain under-application on perimeter cabinets (white → wood) when 5+ structural swatches present
 
-**NEXT — BFL prompt rewrite (2026-04-05):**
-- Our prompts are fundamentally wrong for Flux 2. Written for OpenAI's API, not BFL's.
-- **Full guide**: `memory-bank/generation/bfl-prompting-guide.md`
-- Key issues: 20+ "Do NOT" rules (Flux doesn't support negative prompts), 300+ words (30-80 ideal), scene context leads instead of edits (word order matters), no camera references, verbose swatch descriptions.
-- **`buildBflEditPrompt`**: Lead with edits, brief scene context after, camera ref, hex on finishes only (not metals), NO negative rules. Target 50-120 words.
-- **`buildBflScopedEditPrompt`**: "Change [surface] to match image 2" + location. Target 20-40 words. Klein preserves everything else by default.
-- **Two-pass word ordering**: Pass 1 leads with cabinets (highest impact). Pass 2 leads with range (structural change).
+**BFL prompt rewrite — SHIPPED (2026-04-05):**
+- Rewrote all prompts to follow BFL Flux 2 guidelines. Full guide: `memory-bank/generation/bfl-prompting-guide.md`.
+- **Code changes** (`src/lib/generate.ts`):
+  - `buildBflEditPrompt`: Scene context moved to END (BFL word order: edits first). Removed "do NOT bleed" → positive "each finish stays within its surface boundary." Added "natural lighting" camera hint. ~40% shorter surrounding text.
+  - `buildBflScopedEditPrompt`: Stripped entire preservation list (Klein preserves by default). Removed "DO NOT MODIFY" block. Prompt is now ~20 words + rules, down from ~100+.
+  - `collectInvariantRules`: Added `-none` handling — options ending in `-none` now treated as "not selected" for policy overrides (was already done in old `buildEditPrompt` but missing from this shared helper).
+  - Trailing whitespace fix: scene block conditionally appended with `.trimEnd()`.
+- **DB changes** (SM + Demo orgs):
+  - 14 subcategory `generation_rules` rewritten (accent-color, backsplash, common-wall-paint, dishwasher, fireplace-hearth, fireplace-mantel-accent, fireplace-tile-surround, kitchen-cabinet-color, kitchen-cabinet-hardware, kitchen-faucet, kitchen-island-cabinet-color, kitchen-sink, range, refrigerator, wainscoting)
+  - 4 subcategory `generation_rules_when_not_selected` rewritten (backsplash, crown-options, fireplace-mantel-accent, wainscoting)
+  - 21 option `generation_rules` rewritten (18 stain options, 2 painted brick hearth, 1 wainscoting-none)
+  - 18 step photo generation policies rewritten (all SM + Demo kitchen/living room policies, including secondPass oven correction prompts)
+  - 10 spatial hints rewritten (lighting fixture hints, backsplash boundary, faucet orientation, floor tile zoning, refrigerator alcove, wainscoting placement)
+- **Zero "Do NOT" / "do not" remaining** in any DB rules, policies, spatial hints, or option rules.
+- **Cache version**: v2.2 → v2.3.
+- **Lighting issue found**: Spatial hints for lighting on "Set Your Style" steps had "Do NOT add new light fixtures" going directly into prompt. Fixed to "Preserve existing fixture count and positions."
 
-**Other remaining:**
+**Remaining:**
 - [ ] Test non-kitchen SM rooms (bedrooms, bathrooms — single Max pass)
+- [ ] Test lighting package application with cleaned-up hints
 - [ ] Re-seed `/try` demo cache for Flux 2
 - [ ] Update `/try` demo pipeline (`generate-demo.ts`) swatch resize
 
