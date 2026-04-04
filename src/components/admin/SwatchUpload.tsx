@@ -4,6 +4,28 @@ import { useState, useCallback, useRef } from "react";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import { Upload, X, Loader2 } from "lucide-react";
 
+/** Resize an image file to fit within maxDim × maxDim, output as JPEG blob. */
+async function resizeSwatchFile(file: File, maxDim: number): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = bitmap;
+  if (width <= maxDim && height <= maxDim) {
+    // Already small enough — just convert to JPEG
+    const canvas = new OffscreenCanvas(width, height);
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+    return canvas.convertToBlob({ type: "image/jpeg", quality: 0.85 });
+  }
+  const scale = maxDim / Math.max(width, height);
+  const w = Math.round(width * scale);
+  const h = Math.round(height * scale);
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext("2d")!;
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close();
+  return canvas.convertToBlob({ type: "image/jpeg", quality: 0.85 });
+}
+
 interface SwatchUploadProps {
   orgId: string;
   optionId: string;
@@ -23,12 +45,14 @@ export function SwatchUpload({ orgId, optionId, currentUrl, onUploaded, onRemove
     setUploading(true);
     try {
       const supabase = createSupabaseBrowser();
-      const ext = file.name.split(".").pop() || "jpg";
-      const path = `${orgId}/swatches/${optionId}.${ext}`;
+      const path = `${orgId}/swatches/${optionId}.jpg`;
+
+      // Resize to 512px max dimension before uploading — keeps BFL payloads small
+      const resized = await resizeSwatchFile(file, 512);
 
       const { error: uploadError } = await supabase.storage
         .from("swatches")
-        .upload(path, file, { upsert: true });
+        .upload(path, resized, { upsert: true, contentType: "image/jpeg" });
 
       if (uploadError) throw uploadError;
 

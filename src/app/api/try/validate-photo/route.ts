@@ -55,7 +55,7 @@ export async function POST(request: Request) {
           "Where countertops are visible. Example: 'on the island and along the back wall' or 'along the L-shaped perimeter'. Empty string if not a kitchen."
         ),
         cabinetLocation: z.string().describe(
-          "Where cabinets are visible. Example: 'wall cabinets on the back wall and island base cabinets in the foreground' or 'perimeter cabinets along two walls'. Empty string if not a kitchen."
+          "Where ALL perimeter/wall cabinets are visible — include every zone: back wall, side walls, flanking the refrigerator, flanking the oven, wrapping around corners. Example: 'upper and lower cabinets along the back wall, plus cabinets flanking the refrigerator on the right side' or 'perimeter cabinets along three walls including beside the fridge alcove'. Empty string if not a kitchen."
         ),
         backsplashVisible: z.boolean().describe("True when a backsplash surface is visibly present and editable in the photo."),
         countertopVisible: z.boolean().describe("True when countertops are visibly present and editable in the photo."),

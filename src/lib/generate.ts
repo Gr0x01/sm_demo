@@ -145,7 +145,29 @@ export async function buildEditPrompt(
     a.localeCompare(b)
   );
 
-  for (const [subId, optId] of sortedSelections) {
+  // First pass: collect metadata + resolve swatches (cached — no I/O).
+  // Defer hex extraction to a parallel batch after the loop.
+  interface PendingSwatch {
+    index: number; // position in sortedSelections for stable ordering
+    label: string;
+    buffer: Buffer;
+    mediaType: string;
+    subcategoryId: string;
+  }
+  const pendingSwatches: PendingSwatch[] = [];
+  const selectionEntries: {
+    subId: string;
+    optId: string;
+    option: Option;
+    subCategory: SubCategory;
+    swatchBackedLabel: string;
+    fallbackLabel: string;
+    hasSwatch: boolean;
+    pendingSwatchIdx: number; // index into pendingSwatches, or -1
+  }[] = [];
+
+  for (let i = 0; i < sortedSelections.length; i++) {
+    const [subId, optId] = sortedSelections[i];
     const found = optionLookup.get(`${subId}:${optId}`);
     if (!found) continue;
 
@@ -155,7 +177,6 @@ export async function buildEditPrompt(
     const { option, subCategory } = found;
     if (subCategory.isAppliance && !optId.endsWith("-none")) hasApplianceSelection = true;
 
-    // Collect DB-driven generation rules from subcategory and option
     if (subCategory.generationRules) {
       for (const rule of subCategory.generationRules) dynamicInvariantRules.add(rule);
     }
@@ -172,15 +193,9 @@ export async function buildEditPrompt(
     const applianceLabel = hint
       ? `${subCategory.name}: ${option.name}${descriptorSuffix} → apply to ${hint}`
       : `${subCategory.name}: ${option.name}${descriptorSuffix}`;
-    // Swatch-backed edits are swatch-authoritative for appearance, including appliances.
-    // Dimensions supplement the swatch with scale info (swatch photos can't convey size).
     const dimSuffix = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
     const swatchBackedLabel = `${targetLabel}${dimSuffix}`;
 
-    // Build fallback label when no swatch image is available.
-    // Appliances: keep name + descriptor (AI needs model identification).
-    // Finishes: use hex as sole color authority — never expose name/descriptor for color.
-    // No swatch + no hex: include option name so "No Wainscoting" etc. are visible to the AI.
     const buildFallbackLabel = () => {
       if (subCategory.isAppliance) {
         return `${applianceLabel} (no swatch image available; follow text exactly)`;
@@ -192,26 +207,42 @@ export async function buildEditPrompt(
       return `${targetLabel}: ${option.name}${descriptorSuffix} (no swatch image available)`;
     };
 
+    let pendingSwatchIdx = -1;
     if (option.swatchUrl && resolveSwatchBuffer) {
       try {
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
-          const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
-          swatches.push({ label: swatchBackedLabel, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined, subcategoryId: subId });
-          const anchorSuffix = anchorHex ? `; swatch-derived color anchor ${anchorHex}` : "";
-          listLines.push(`${listIndex}. ${swatchBackedLabel} (use swatch #${swatchIndex}${anchorSuffix})`);
-          swatchIndex += 1;
-          listIndex += 1;
-        } else {
-          listLines.push(`${listIndex}. ${buildFallbackLabel()}`);
-          listIndex += 1;
+          pendingSwatchIdx = pendingSwatches.length;
+          pendingSwatches.push({ index: i, label: swatchBackedLabel, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: subId });
         }
-      } catch {
-        listLines.push(`${listIndex}. ${buildFallbackLabel()}`);
-        listIndex += 1;
-      }
+      } catch { /* fallback */ }
+    }
+
+    selectionEntries.push({
+      subId, optId, option, subCategory, swatchBackedLabel,
+      fallbackLabel: buildFallbackLabel(),
+      hasSwatch: pendingSwatchIdx >= 0,
+      pendingSwatchIdx,
+    });
+  }
+
+  // Parallel hex extraction for all swatches at once
+  const hexResults = await Promise.all(
+    pendingSwatches.map(ps => extractSwatchAnchorHex(ps.buffer).catch(() => null)),
+  );
+
+  // Second pass: build prompt lines + swatch array in deterministic order
+  for (const entry of selectionEntries) {
+    if (entry.hasSwatch && entry.pendingSwatchIdx >= 0) {
+      const ps = pendingSwatches[entry.pendingSwatchIdx];
+      const anchorHex = hexResults[entry.pendingSwatchIdx] ?? undefined;
+      swatches.push({ label: ps.label, buffer: ps.buffer, mediaType: ps.mediaType, anchorHex, subcategoryId: ps.subcategoryId });
+      const anchorSuffix = anchorHex ? `; swatch-derived color anchor ${anchorHex}` : "";
+      listLines.push(`${listIndex}. ${entry.swatchBackedLabel} (use swatch #${swatchIndex}${anchorSuffix})`);
+      swatchIndex += 1;
+      listIndex += 1;
     } else {
-      listLines.push(`${listIndex}. ${buildFallbackLabel()}`);
+      listLines.push(`${listIndex}. ${entry.fallbackLabel}`);
       listIndex += 1;
     }
   }
@@ -534,12 +565,18 @@ export async function buildBflEditPrompt(
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const listLines: string[] = [];
   const swatches: SwatchImage[] = [];
-  let swatchIndex = 1;
+  // BFL numbering: input_image = image 1 (base photo), input_image_2 = image 2, etc.
+  let imageIndex = 2;
   let listIndex = 1;
 
-  const sortedSelections = Object.entries(visualSelections).sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
+  // Sort selections: alphabetical, but push island subcategories after their
+  // perimeter counterparts so the dominant surface gets an earlier swatch slot.
+  const sortedSelections = Object.entries(visualSelections).sort(([a], [b]) => {
+    const aIsIsland = a.startsWith("island");
+    const bIsIsland = b.startsWith("island");
+    if (aIsIsland !== bIsIsland) return aIsIsland ? 1 : -1;
+    return a.localeCompare(b);
+  });
 
   for (const [subId, optId] of sortedSelections) {
     const found = optionLookup.get(`${subId}:${optId}`);
@@ -554,18 +591,16 @@ export async function buildBflEditPrompt(
       try {
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
-          const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
-          swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined, subcategoryId: subId });
-          const anchorSuffix = anchorHex ? `, anchor ${anchorHex}` : "";
-          listLines.push(`${listIndex}. ${target} (swatch #${swatchIndex}${anchorSuffix})`);
-          swatchIndex++;
+          swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: subId });
+          listLines.push(`${listIndex}. ${target} (use image ${imageIndex})`);
+          imageIndex++;
           listIndex++;
           continue;
         }
       } catch { /* fallback below */ }
     }
 
-    // Fallback: hex color or name
+    // Fallback (no swatch image): hex color for paint, name for everything else
     const hex = option.swatchColor?.trim();
     if (hex) {
       listLines.push(`${listIndex}. ${target} (color ${hex})`);
@@ -592,7 +627,7 @@ export async function buildBflEditPrompt(
 
 ${listLines.join("\n")}
 
-Swatch mapping: swatches are attached in order #1..#${swatches.length} after the room photo.
+Image 1 is the room photo. Images 2..${imageIndex - 1} are reference swatches in the order listed above.
 Each surface is a separate zone — do NOT bleed one finish onto adjacent surfaces.
 Preserve cabinet door style, countertop edges, and structural details.
 Keep camera angle, perspective, lighting, and room layout.
@@ -631,10 +666,8 @@ export async function buildBflScopedEditPrompt(
     try {
       const resolved = await resolveSwatchBuffer(option.swatchUrl);
       if (resolved) {
-        const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
-        swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined, subcategoryId: changedSubcategoryId });
-        const anchorSuffix = anchorHex ? `, anchor ${anchorHex}` : "";
-        swatchRef = `Match swatch #1 exactly${anchorSuffix}.`;
+        swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: changedSubcategoryId });
+        swatchRef = "Match image 2 exactly.";
       }
     } catch { /* fallback below */ }
   }

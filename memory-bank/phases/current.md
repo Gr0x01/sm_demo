@@ -295,9 +295,20 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - `ISOLATION_IMAGE_MODEL`, `REFINEMENT_IMAGE_MODEL` constants
 
 **Two-pass split for >7 swatches:**
-- BFL Max accepts hero + 7 reference swatch images. SM photos have up to 20 swatch-bearing subcategories.
-- When >7 swatches: structural surfaces (cabinets, countertop, backsplash, flooring, paint) go in pass 1, fixtures (hardware, sink, faucet, lighting, appliances) go in pass 2. Each pass gets 55s poll timeout.
+- BFL Max accepts hero + 7 reference swatch images. SM kitchen photos have 12+ swatch-bearing subcategories.
+- When >7 swatches: structural surfaces (cabinets, countertop, backsplash, flooring, paint) go in pass 1, fixtures (hardware, sink, faucet, lighting, appliances) go in pass 2.
+- Both passes run in the same Inngest step (no redundant setup). `maxDuration = 300` on Inngest route (Vercel Pro + Fluid Compute).
 - Most photos stay single-pass. Only complex multi-zone photos trigger the split.
+
+**Swatch payload optimization (2026-04-05):**
+- SM cabinet PNGs were 1.6–6.3MB each. 7 swatches = ~13MB base64 payload to BFL. Caused 60-84s per BFL call.
+- **Migration**: All 330 oversized swatches resized to 512px max, converted to JPEG. 149.8MB saved. Script: `scripts/resize-swatches.ts`.
+- **Upload guard**: `SwatchUpload.tsx` now resizes to 512px client-side before uploading (canvas → JPEG 85%).
+- **Runtime safety net**: `preWarmSwatchCache` in Inngest function downsizes any swatch >512px (catches legacy uploads). Parallel sharp, not sequential.
+- Expected BFL payload: ~200KB (was ~13MB).
+
+**`-none` policy guard (2026-04-05):**
+- Options ending in `-none` (e.g. `refrigerator-none`) are now treated as "not selected" for `invariantRulesWhenSelected`/`WhenNotSelected` policy rules. Previously `refrigerator-none` triggered "Place the refrigerator in the alcove" — contradicting the "No Refrigerator" selection text.
 
 **Key files:**
 - `src/lib/bfl.ts` — BFL API client (submit → poll → download, async pattern)
@@ -305,7 +316,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - `src/inngest/functions/generate-demo.ts` — /try demo pipeline (same models)
 - `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-klein-4b"`
 
-**Cache versioning**: Switched from `v47`/`v9` (integer) to `v2.x` (semantic). Bump minor for prompt/rule changes, major for model swaps.
+**Cache versioning**: `GENERATION_CACHE_VERSION` = v2.1. Bump minor for prompt/rule changes, major for model swaps.
 
 **Prompt tuning findings (2026-04-04–05):**
 - Flux 2 Max responds best to minimal prompts with scene context. Verbose generation rules (SM-style) hurt quality — color shifts, confused spatial application.
@@ -314,12 +325,20 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - Backsplash `dimensions` field must describe installed appearance ("4x16 subway tiles, staggered layout") not just raw measurements ("4x16").
 - `buildScopedEditPrompt` preserve lines now include spatial locations: `- Backsplash (wall between upper cabinets and countertop)` instead of just `- Backsplash`.
 
+**SM kitchen test results (2026-04-05):**
+- Herringbone tile patterns render correctly in single Max pass (eliminates Flash isolation)
+- Fridge placement in empty alcove works
+- Oven correction second pass (slide-in range) works
+- Layout preservation good for subtle changes, drifts on dramatic stain changes
+- Two-tone spatial separation (Onyx island vs Sahara perimeter) still unreliable — needs more prompt tuning
+- Stain under-application on perimeter cabinets (white → wood) when 5+ structural swatches present
+
 **Remaining tuning:**
-- [ ] Test SM photos with Flux 2 (all 17 step photos across both floorplans)
-- [ ] Test non-kitchen rooms (bedrooms, bathrooms — single Max pass)
-- [ ] Verify Klein 4B scoped edits on SM photos with tuned spatial hints
-- [ ] Update SM photo baselines and spatial hints for Flux 2 prompt style if needed
-- [ ] Re-seed `/try` demo cache (seed script still uses OpenAI — migrate or run separately)
+- [ ] Test non-kitchen SM rooms (bedrooms, bathrooms — single Max pass)
+- [ ] Verify Klein 4B scoped edits on SM photos
+- [ ] Tune prompts for stain application and two-tone separation
+- [ ] Re-seed `/try` demo cache for Flux 2
+- [ ] Update `/try` demo pipeline (`generate-demo.ts`) swatch resize
 
 ### 4. Multi-Pass Generation Pipeline (SUPERSEDED by Flux 2 — 2026-03-30)
 

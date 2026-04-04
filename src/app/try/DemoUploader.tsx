@@ -94,7 +94,12 @@ export async function loadSamplePhoto(): Promise<{
       kitchenType: "l-shape",
       cameraAngle: "straight-on",
       visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
-      spatialHints: { layout: "Island runs horizontally in the foreground. Upper and lower cabinets span the back wall with a range hood centered. Countertops wrap from left wall along the back. Hardwood flooring throughout." },
+      spatialHints: {
+        backsplash: "wall strip between upper and lower cabinets along the back wall, plus the taller section behind the range hood",
+        "counter-top": "horizontal stone slab on top of the island and along the back wall perimeter cabinets",
+        "kitchen-cabinet-color": "all perimeter cabinet doors and drawer fronts — back wall uppers and lowers, plus cabinets flanking the refrigerator on the right side and wrapping to the left wall",
+        "island-cabinet-color": "flat smooth front panel of the island base in the foreground, below the countertop overhang",
+      },
     },
   };
 }

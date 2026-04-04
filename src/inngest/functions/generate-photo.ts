@@ -5,7 +5,7 @@ import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getOptionLookup, findSingleSurfaceDiffMatch } from "@/lib/db-queries";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
-import { SCOPED_EDIT_MODEL } from "@/lib/models";
+import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
 import { generateImage } from "@/lib/bfl";
 import type { BflModel } from "@/lib/bfl";
 import type { Option, SubCategory } from "@/types";
@@ -45,9 +45,13 @@ function createSwatchResolver(supabase: ReturnType<typeof getServiceClient>): Sw
   };
 }
 
+/** Max swatch dimension for BFL reference images. Full-res PNGs can be 6MB+ —
+ *  BFL only needs color/pattern info, so 512px JPEG is plenty. */
+const SWATCH_MAX_DIM = 512;
+
 /**
- * Pre-download all swatch images in parallel and return a cached resolver.
- * The returned resolver serves from memory — no network I/O.
+ * Pre-download all swatch images in parallel, downscale oversized ones,
+ * and return a cached resolver. The returned resolver serves from memory.
  */
 async function preWarmSwatchCache(
   selections: Record<string, string>,
@@ -62,7 +66,20 @@ async function preWarmSwatchCache(
 
   const urlList = [...urls];
   const results = await Promise.all(
-    urlList.map(url => resolver(url).catch(() => null)),
+    urlList.map(async url => {
+      const resolved = await resolver(url).catch(() => null);
+      if (!resolved) return null;
+      // Downscale large swatches to keep BFL payload small
+      const meta = await sharp(resolved.buffer).metadata();
+      if ((meta.width && meta.width > SWATCH_MAX_DIM) || (meta.height && meta.height > SWATCH_MAX_DIM)) {
+        const resized = await sharp(resolved.buffer)
+          .resize(SWATCH_MAX_DIM, SWATCH_MAX_DIM, { fit: "inside" })
+          .jpeg({ quality: 85 })
+          .toBuffer();
+        return { buffer: resized, mediaType: "image/jpeg" };
+      }
+      return resolved;
+    }),
   );
 
   const cache = new Map<string, { buffer: Buffer; mediaType: string } | null>();
@@ -266,9 +283,9 @@ export const generatePhoto = inngest.createFunction(
           console.log(`[generate/photo] Single pass complete for ${stepPhotoId} in ${durationMs}ms`);
           return { type: "generated" as const, prompt, durationMs, lastPath: mainPassPath, passes: 1 };
         } else {
-          // --- Two-pass split: structural surfaces first ---
-          // Only run pass 1 here. Pass 2 (fixtures) runs in a separate Inngest step
-          // so each pass gets its own 120s Vercel function invocation.
+          // --- Two-pass split: structural then fixtures in same step ---
+          // Both passes share the already-loaded optionLookup, swatches, and hero.
+          // Vercel Pro + Fluid Compute gives us 300s per step — plenty for 2 BFL calls.
           const structuralSelections: Record<string, string> = {};
           const fixtureSelections: Record<string, string> = {};
           for (const [subId, optId] of Object.entries(scopedSelections)) {
@@ -280,6 +297,11 @@ export const generatePhoto = inngest.createFunction(
             structuralSelections, optionLookup, spatialHints, scopedSubcategoryIds,
             sceneDescription, photoSpatialHint, cachedResolver, resolvedPolicy.promptOverrides,
           );
+          const { prompt: fixturePrompt, swatches: fixtureSwatches } = await buildBflEditPrompt(
+            fixtureSelections, optionLookup, spatialHints, scopedSubcategoryIds,
+            sceneDescription, photoSpatialHint, cachedResolver, resolvedPolicy.promptOverrides,
+          );
+          lap("prompts-built");
 
           const pass1Result = await generateImage({
             model: modelName as BflModel,
@@ -287,11 +309,20 @@ export const generatePhoto = inngest.createFunction(
             inputImage: imageBuffer,
             referenceImages: structuralSwatches.map(s => s.buffer),
           });
-          await uploadIntermediate(supabase, pass1Result.imageBuffer, pass1Path);
+          lap("pass1-done");
 
+          const pass2Result = await generateImage({
+            model: modelName as BflModel,
+            prompt: fixturePrompt,
+            inputImage: pass1Result.imageBuffer,
+            referenceImages: fixtureSwatches.map(s => s.buffer),
+          });
+          lap("pass2-done");
+
+          await uploadIntermediate(supabase, pass2Result.imageBuffer, mainPassPath);
           const durationMs = Math.round(performance.now() - genStart);
-          console.log(`[generate/photo] Structural pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { type: "needs-fixture-pass" as const, structuralPrompt, durationMs, pass1Path };
+          console.log(`[generate/photo] Two-pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          return { type: "generated" as const, prompt: `${structuralPrompt}\n\nPASS_2 (fixtures):\n${fixturePrompt}`, durationMs, lastPath: mainPassPath, passes: 2 };
         }
       } catch (err) {
         const durationMs = Math.round(performance.now() - genStart);
@@ -309,65 +340,11 @@ export const generatePhoto = inngest.createFunction(
       }
     });
 
-    // --- Step 1b: Fixture pass (separate step so each pass gets its own 120s window) ---
-    let fixturePassResult: { prompt: string; durationMs: number } | null = null;
-    if (generateResult.type === "needs-fixture-pass") {
-      fixturePassResult = await step.run("generate-fixtures", async () => {
-        const supabase = getServiceClient();
-        const baseResolver = createSwatchResolver(supabase);
-
-        const FIXTURE_PATTERNS = ["hardware", "faucet", "sink", "lighting", "fan", "refrigerator", "range", "dishwasher"];
-        const isFixture = (subId: string) => FIXTURE_PATTERNS.some(p => subId.includes(p));
-        const fixtureSelections: Record<string, string> = {};
-        for (const [subId, optId] of Object.entries(scopedSelections)) {
-          if (isFixture(subId)) fixtureSelections[subId] = optId;
-        }
-
-        // Parallel: option lookup + swatch pre-warm chain, pass1 download
-        const optionLookupP = getOptionLookup(orgId);
-        const [optionLookup, cachedResolver, pass1Buffer] = await Promise.all([
-          optionLookupP,
-          optionLookupP.then(ol => preWarmSwatchCache(fixtureSelections, ol, baseResolver)),
-          downloadIntermediate(supabase, generateResult.pass1Path),
-        ]);
-
-        const { prompt: fixturePrompt, swatches: fixtureSwatches } = await buildBflEditPrompt(
-          fixtureSelections, optionLookup, spatialHints, scopedSubcategoryIds,
-          sceneDescription, photoSpatialHint, cachedResolver, resolvedPolicy.promptOverrides,
-        );
-
-        const genStart = performance.now();
-        try {
-          const pass2Result = await generateImage({
-            model: modelName as BflModel,
-            prompt: fixturePrompt,
-            inputImage: pass1Buffer,
-            referenceImages: fixtureSwatches.map(s => s.buffer),
-          });
-
-          await uploadIntermediate(supabase, pass2Result.imageBuffer, mainPassPath);
-          const durationMs = Math.round(performance.now() - genStart);
-          console.log(`[generate/photo] Fixture pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { prompt: fixturePrompt, durationMs };
-        } catch (err) {
-          const durationMs = Math.round(performance.now() - genStart);
-          await captureAiError(sessionId, {
-            provider: "bfl",
-            model: modelName,
-            route: "/api/generate/photo",
-            duration_ms: durationMs,
-            error: err,
-            orgId, orgSlug, floorplanSlug,
-          });
-          throw err;
-        }
-      });
-    }
-
     // --- Tracking vars ---
     let isScopedEdit = false;
     let scopedEditDepth = 0;
     let scopedEditSurface: string | undefined;
+    let scopedEditModelUsed: string = SCOPED_EDIT_MODEL;
     let finalPrompt: string;
     let totalDurationMs: number;
     let currentPath: string;
@@ -407,12 +384,16 @@ export const generatePhoto = inngest.createFunction(
           resolvedPolicy.promptOverrides,
         );
 
-        console.log(`[generate/photo] Scoped edit for ${stepPhotoId}: changing ${changedSubcategoryId} (depth ${depth} → ${depth + 1})`);
+        // Range/oven swaps are structural geometry changes — use Max instead of Klein 4B
+        const isRangeOven = changedSubcategoryId.includes("range") || changedSubcategoryId.includes("oven");
+        const scopedModel = isRangeOven ? IMAGE_MODEL : SCOPED_EDIT_MODEL;
+
+        console.log(`[generate/photo] Scoped edit for ${stepPhotoId}: changing ${changedSubcategoryId} with ${scopedModel} (depth ${depth} → ${depth + 1})`);
 
         const genStart = performance.now();
         try {
           const result = await generateImage({
-            model: SCOPED_EDIT_MODEL,
+            model: scopedModel as BflModel,
             prompt,
             inputImage: baseBuffer,
             referenceImages: swatches.map(s => s.buffer),
@@ -422,12 +403,12 @@ export const generatePhoto = inngest.createFunction(
           const durationMs = Math.round(performance.now() - genStart);
 
           console.log(`[generate/photo] Scoped edit complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { prompt, durationMs };
+          return { prompt, durationMs, model: scopedModel };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
           await captureAiError(sessionId, {
             provider: "bfl",
-            model: SCOPED_EDIT_MODEL,
+            model: scopedModel,
             route: "/api/generate/photo",
             duration_ms: durationMs,
             error: err,
@@ -440,21 +421,13 @@ export const generatePhoto = inngest.createFunction(
       currentPath = scopedEditPath;
       finalPrompt = scopedResult.prompt;
       totalDurationMs = scopedResult.durationMs;
-    } else if (generateResult.type === "needs-fixture-pass" && fixturePassResult) {
-      // --- Two-pass split completed ---
-      finalPrompt = `${generateResult.structuralPrompt}\n\nPASS_2 (fixtures):\n${fixturePassResult.prompt}`;
-      totalDurationMs = generateResult.durationMs + fixturePassResult.durationMs;
-      currentPath = mainPassPath;
-      totalPasses = 2;
-    } else if (generateResult.type === "generated") {
-      // --- Full pipeline: single pass completed ---
+      scopedEditModelUsed = scopedResult.model;
+    } else {
+      // --- Full pipeline: single or two-pass completed ---
       finalPrompt = generateResult.prompt;
       totalDurationMs = generateResult.durationMs;
       currentPath = generateResult.lastPath;
       totalPasses = generateResult.passes;
-    } else {
-      // needs-fixture-pass without fixturePassResult — should never happen
-      throw new Error("Unexpected state: needs-fixture-pass without fixture result");
     }
 
     // --- Step 2: Oven correction / second pass (conditional) ---
@@ -524,15 +497,13 @@ export const generatePhoto = inngest.createFunction(
         console.error("[generate/photo] DB upsert failed:", upsertError);
       }
 
-      const scopedEditModel = isScopedEdit ? SCOPED_EDIT_MODEL : undefined;
-
       await captureAiEvent(sessionId, {
         provider: "bfl",
-        model: isScopedEdit ? SCOPED_EDIT_MODEL : modelName,
+        model: isScopedEdit ? scopedEditModelUsed : modelName,
         route: "/api/generate/photo",
         duration_ms: totalDurationMs,
         cost_usd: isScopedEdit
-          ? estimateBflCost(SCOPED_EDIT_MODEL)
+          ? estimateBflCost(scopedEditModelUsed)
           : estimateBflCost(modelName, totalPasses),
         orgId,
         orgSlug,
