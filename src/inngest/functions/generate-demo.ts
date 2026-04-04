@@ -1,26 +1,25 @@
-import OpenAI, { toFile } from "openai";
 import { readFile } from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
-import { buildEditPrompt, buildScopedEditPrompt, identifyChangedSubcategory } from "@/lib/generate";
+import { buildBflEditPrompt, buildBflScopedEditPrompt, identifyChangedSubcategory } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { DEMO_SUBCATEGORIES } from "@/lib/demo-options";
 import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
 import { findDemoDiffMatch } from "@/lib/db-queries";
 import { getServiceClient } from "@/lib/supabase";
-import { captureAiEvent, captureAiError, estimateOpenAICost } from "@/lib/posthog-server";
-import { IMAGE_MODEL } from "@/lib/models";
+import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
+import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
+import { generateImage } from "@/lib/bfl";
+import type { BflModel } from "@/lib/bfl";
 import type { Option, SubCategory } from "@/types";
-
-const openai = new OpenAI();
 
 /** Fallback spatial hints when Gemini doesn't provide them */
 const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
-  backsplash: "tile backsplash between upper cabinets and countertop on the walls",
-  "counter-top": "all visible countertop surfaces",
-  "kitchen-cabinet-color": "all visible perimeter/wall cabinet faces (NOT the island)",
-  "island-cabinet-color": "island base cabinet faces only (NOT the perimeter/wall cabinets)",
+  backsplash: "wall between upper cabinets and countertop, including the taller section behind the range hood",
+  "counter-top": "horizontal stone slab on top of island and on top of perimeter cabinets only",
+  "kitchen-cabinet-color": "perimeter shaker cabinet doors and drawer fronts, not the island",
+  "island-cabinet-color": "flat front panel of island base only, painted finish",
 };
 
 /** Build option lookup from hardcoded demo subcategories */
@@ -93,29 +92,15 @@ export const generateDemo = inngest.createFunction(
       // No scoped edit — full generation
       const supabase = getServiceClient();
 
-      // Download user photo from demo-uploads
-      const { data: photoData, error: downloadErr } = await supabase.storage
-        .from("demo-uploads")
-        .download(`${photoHash}.jpg`);
-
-      if (downloadErr || !photoData) {
-        throw new Error(`Failed to load demo photo: ${downloadErr?.message}`);
-      }
-
-      const photoBuffer = Buffer.from(await photoData.arrayBuffer());
-
-      // Build option lookup from hardcoded demo options
+      // Build option lookup + spatial hints + scene description (all sync/CPU)
       const optionLookup = buildDemoOptionLookup();
 
-      // Merge Gemini spatial hints with defaults
       const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
       if (sceneAnalysis?.spatialHints) {
         for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
           if (hint && hint.trim()) spatialHints[key] = hint;
         }
       }
-
-      // Separate perimeter from island when island detected
       if (sceneAnalysis?.hasIsland) {
         if (spatialHints["kitchen-cabinet-color"] === DEFAULT_SPATIAL_HINTS["kitchen-cabinet-color"]) {
           spatialHints["kitchen-cabinet-color"] = "perimeter/wall cabinet faces only (NOT the island base cabinets)";
@@ -125,13 +110,8 @@ export const generateDemo = inngest.createFunction(
         }
       }
 
-      // All demo subcategory IDs are in scope (not just selected ones).
-      // This allows negative-guard rules to fire for unselected subcategories.
       const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
 
-      // Scene description: combine Gemini's free-text description with structured metadata.
-      // buildEditPrompt only accepts sceneDescription (text) and photoSpatialHint,
-      // so we fold kitchenType/cameraAngle/visibleSurfaces into the description string.
       const sceneLines: string[] = [];
       if (sceneAnalysis?.sceneDescription?.trim()) {
         sceneLines.push(sceneAnalysis.sceneDescription.trim());
@@ -152,72 +132,47 @@ export const generateDemo = inngest.createFunction(
       }
       const sceneDescription = sceneLines.length > 0 ? sceneLines.join(". ") : null;
 
-      // Build prompt using the real pipeline's prompt builder
-      const { prompt, swatches } = await buildEditPrompt(
-        effectiveSelections,
-        optionLookup,
-        spatialHints,
-        scopedSubcategoryIds,
-        sceneDescription,
-        null, // photoSpatialHint — not applicable for user-uploaded photos
-        resolveLocalSwatch,
-      );
-
-      // Filter unsupported swatch formats
-      const supportedSwatches = swatches.filter((s) => {
-        const supported = ["image/jpeg", "image/png", "image/webp"];
-        return supported.includes(s.mediaType);
-      });
-
-      // Assemble images: user photo + swatches
-      const inputImages = [
-        await toFile(photoBuffer, "kitchen.jpg", { type: "image/jpeg" }),
-        ...await Promise.all(
-          supportedSwatches.map((s) => {
-            const ext = s.mediaType.split("/")[1] || "png";
-            const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-            return toFile(s.buffer, filename, { type: s.mediaType });
-          })
+      // Parallel: download user photo + build prompt (resolves local swatches)
+      const [photoResult, promptResult] = await Promise.all([
+        supabase.storage.from("demo-uploads").download(`${photoHash}.jpg`),
+        buildBflEditPrompt(
+          effectiveSelections, optionLookup, spatialHints, scopedSubcategoryIds,
+          sceneDescription, null, resolveLocalSwatch,
         ),
-      ];
+      ]);
 
-      console.log(`[demo/generate] Sending ${inputImages.length} images (1 photo + ${supportedSwatches.length} swatches) to ${IMAGE_MODEL}`);
+      const { data: photoData, error: downloadErr } = photoResult;
+      if (downloadErr || !photoData) {
+        throw new Error(`Failed to load demo photo: ${downloadErr?.message}`);
+      }
+      const photoBuffer = Buffer.from(await photoData.arrayBuffer());
+      const { prompt, swatches } = promptResult;
+
+      console.log(`[demo/generate] Sending ${swatches.length} swatches to ${IMAGE_MODEL}`);
 
       const genStart = performance.now();
       try {
-        const genResult = await openai.images.edit({
-          model: IMAGE_MODEL,
-          image: inputImages,
+        const result = await generateImage({
+          model: IMAGE_MODEL as BflModel,
           prompt,
-          quality: "medium",
-          size: "1536x1024",
-          input_fidelity: "high",
+          inputImage: photoBuffer,
+          referenceImages: swatches.map(s => s.buffer),
         });
 
-        const imageData = genResult.data?.[0];
-        if (!imageData?.b64_json) {
-          throw new Error("No image was generated");
-        }
-
-        const durationMs = Math.round(performance.now() - genStart);
-
-        // Convert PNG → JPEG and upload within this step — don't return b64 through Inngest
-        const jpegBuffer = await sharp(Buffer.from(imageData.b64_json, "base64"))
-          .jpeg({ quality: 90 })
-          .toBuffer();
-
+        // Upload to storage within this step
         const { error: uploadError } = await supabase.storage
           .from("demo-generated")
-          .upload(outputPath, jpegBuffer, { contentType: "image/jpeg", upsert: true });
+          .upload(outputPath, result.imageBuffer, { contentType: "image/jpeg", upsert: true });
         if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
+        const durationMs = Math.round(performance.now() - genStart);
         console.log(`[demo/generate] Generation complete in ${durationMs}ms`);
 
         return { type: "generated" as const, prompt, durationMs };
       } catch (err) {
         const durationMs = Math.round(performance.now() - genStart);
         await captureAiError("anonymous", {
-          provider: "openai",
+          provider: "bfl",
           model: IMAGE_MODEL,
           route: "/api/try/generate",
           duration_ms: durationMs,
@@ -253,7 +208,7 @@ export const generateDemo = inngest.createFunction(
 
         const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
 
-        const { prompt, swatches } = await buildScopedEditPrompt(
+        const { prompt, swatches } = await buildBflScopedEditPrompt(
           changedSubcategoryId,
           changedNewOptionId,
           effectiveSelections,
@@ -265,55 +220,30 @@ export const generateDemo = inngest.createFunction(
           resolveLocalSwatch,
         );
 
-        const supportedSwatches = swatches.filter(s =>
-          ["image/jpeg", "image/png", "image/webp"].includes(s.mediaType),
-        );
-
-        const inputImages = [
-          await toFile(baseBuffer, "base.jpg", { type: "image/jpeg" }),
-          ...await Promise.all(
-            supportedSwatches.map(s => {
-              const ext = s.mediaType.split("/")[1] || "png";
-              const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-              return toFile(s.buffer, filename, { type: s.mediaType });
-            }),
-          ),
-        ];
-
         console.log(`[demo/generate] Scoped edit: changing ${changedSubcategoryId} (depth ${depth} → ${depth + 1})`);
 
         const genStart = performance.now();
         try {
-          const result = await openai.images.edit({
-            model: IMAGE_MODEL,
-            image: inputImages,
+          const result = await generateImage({
+            model: SCOPED_EDIT_MODEL,
             prompt,
-            quality: "medium",
-            size: "1536x1024",
-            input_fidelity: "high",
+            inputImage: baseBuffer,
+            referenceImages: swatches.map(s => s.buffer),
           });
-
-          const generatedData = result.data?.[0];
-          if (!generatedData?.b64_json) throw new Error("No image from scoped edit");
-
-          const durationMs = Math.round(performance.now() - genStart);
-
-          const jpegBuffer = await sharp(Buffer.from(generatedData.b64_json, "base64"))
-            .jpeg({ quality: 90 })
-            .toBuffer();
 
           const { error: uploadError } = await supabase.storage
             .from("demo-generated")
-            .upload(outputPath, jpegBuffer, { contentType: "image/jpeg", upsert: true });
+            .upload(outputPath, result.imageBuffer, { contentType: "image/jpeg", upsert: true });
           if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
+          const durationMs = Math.round(performance.now() - genStart);
           console.log(`[demo/generate] Scoped edit complete in ${durationMs}ms`);
           return { prompt, durationMs };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
           await captureAiError("anonymous", {
-            provider: "openai",
-            model: IMAGE_MODEL,
+            provider: "bfl",
+            model: SCOPED_EDIT_MODEL,
             route: "/api/try/generate",
             duration_ms: durationMs,
             error: err,
@@ -338,7 +268,7 @@ export const generateDemo = inngest.createFunction(
           image_path: outputPath,
           prompt: scopedResult.prompt,
           step_id: null,
-          model: IMAGE_MODEL,
+          model: SCOPED_EDIT_MODEL,
           org_id: DEMO_ORG_ID,
           scoped_edit_depth: depth + 1,
           leave_one_out_hashes: leaveOneOutHashes,
@@ -347,13 +277,12 @@ export const generateDemo = inngest.createFunction(
         if (upsertError) console.error("[demo/generate] DB upsert failed:", upsertError);
 
         await captureAiEvent("anonymous", {
-          provider: "openai",
-          model: IMAGE_MODEL,
+          provider: "bfl",
+          model: SCOPED_EDIT_MODEL,
           route: "/api/try/generate",
           duration_ms: scopedResult.durationMs,
-          cost_usd: estimateOpenAICost(IMAGE_MODEL, 1),
+          cost_usd: estimateBflCost(SCOPED_EDIT_MODEL),
           image_size: "1536x1024",
-          image_quality: "medium",
           scoped_edit: true,
           scoped_edit_depth: depth + 1,
           scoped_edit_surface: changedSubcategoryId,
@@ -370,7 +299,6 @@ export const generateDemo = inngest.createFunction(
     await step.run("persist", async () => {
       const supabase = getServiceClient();
 
-      // Cache the result (upsert replaces __pending__ placeholder)
       const { error: upsertError } = await supabase.from("generated_images").upsert({
         selections_hash: combinedHash,
         selections_json: {
@@ -394,14 +322,12 @@ export const generateDemo = inngest.createFunction(
       }
 
       await captureAiEvent("anonymous", {
-        provider: "openai",
+        provider: "bfl",
         model: IMAGE_MODEL,
         route: "/api/try/generate",
         duration_ms: result.durationMs,
-        cost_usd: estimateOpenAICost(IMAGE_MODEL, 1),
+        cost_usd: estimateBflCost(IMAGE_MODEL),
         image_size: "1536x1024",
-        image_quality: "medium",
-        second_pass: false,
       });
 
       console.log(`[demo/generate] Cached: ${combinedHash} → ${outputPath}`);

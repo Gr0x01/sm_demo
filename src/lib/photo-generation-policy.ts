@@ -1,8 +1,6 @@
 import type { PromptPolicyOverrides } from "@/lib/generate";
 import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
 
-type InputFidelity = "low" | "high";
-
 export interface ResolvePhotoGenerationPolicyInput {
   orgSlug: string;
   floorplanSlug: string;
@@ -15,37 +13,16 @@ export interface ResolvePhotoGenerationPolicyInput {
 
 export interface ResolvedPhotoGenerationPolicy {
   policyKey: string;
-  useMultiPass?: boolean;
   promptOverrides?: PromptPolicyOverrides;
-  flashPostPass?: {
-    reason: string;
-    model: string;
-    isolateSubcategories: string[];
-  };
-  /** Pro refinement post-pass for cabinets (+ optionally backsplash).
-   *  Unlike flashPostPass, these subcategories stay IN the main pass for geometry. */
-  proPostPass?: {
-    reason: string;
-    model: string;
-    subcategories: string[];
-  };
   secondPass?: {
     reason: string;
     prompt: string;
-    inputFidelity: InputFidelity;
   };
-}
-
-interface FlashPostPassPolicyConfig {
-  reason: string;
-  model: string;
-  isolateSubcategories: string[];
 }
 
 interface SecondPassPolicyConfig {
   reason: string;
   prompt: string;
-  inputFidelity?: InputFidelity;
   models?: string[];
   whenSelected?: {
     subId: string;
@@ -66,26 +43,18 @@ function resolveDbBackedPolicy(
 ): ResolvedPhotoGenerationPolicy | null {
   if (!dbPolicy?.isActive) return null;
 
-  const useMultiPass = dbPolicy.policyJson.useMultiPass === true ? true : undefined;
   const promptOverrides = parsePromptOverrides(dbPolicy.policyJson.promptOverrides);
-  const flashPostPassConfig = parseFlashPostPassConfig(dbPolicy.policyJson.flashPostPass);
-  const flashPostPass = flashPostPassConfig && shouldRunFlashPostPass(input, flashPostPassConfig)
-    ? flashPostPassConfig
-    : undefined;
   const secondPassConfig = parseSecondPassConfig(dbPolicy.policyJson.secondPass);
   const secondPass = secondPassConfig && shouldRunSecondPassConfig(input, secondPassConfig)
     ? {
         reason: secondPassConfig.reason,
         prompt: secondPassConfig.prompt,
-        inputFidelity: secondPassConfig.inputFidelity ?? "low",
       }
     : undefined;
 
   return {
     policyKey: dbPolicy.policyKey || "db",
-    useMultiPass,
     promptOverrides,
-    flashPostPass,
     secondPass,
   };
 }
@@ -110,26 +79,6 @@ function parsePromptOverrides(value: unknown): PromptPolicyOverrides | undefined
   return overrides;
 }
 
-function parseFlashPostPassConfig(value: unknown): FlashPostPassPolicyConfig | null {
-  if (!value || typeof value !== "object") return null;
-  const obj = value as Record<string, unknown>;
-
-  const reason = typeof obj.reason === "string" ? obj.reason.trim() : "";
-  const model = typeof obj.model === "string" ? obj.model.trim() : "";
-  const isolateSubcategories = toStringArray(obj.isolateSubcategories);
-
-  if (!reason || !model || !isolateSubcategories || isolateSubcategories.length === 0) return null;
-  return { reason, model, isolateSubcategories };
-}
-
-function shouldRunFlashPostPass(
-  input: ResolvePhotoGenerationPolicyInput,
-  config: FlashPostPassPolicyConfig,
-): boolean {
-  // Only run if at least one isolated subcategory is actually selected
-  return config.isolateSubcategories.some((subId) => subId in input.selections);
-}
-
 function parseSecondPassConfig(value: unknown): SecondPassPolicyConfig | null {
   if (!value || typeof value !== "object") return null;
   const obj = value as Record<string, unknown>;
@@ -138,7 +87,6 @@ function parseSecondPassConfig(value: unknown): SecondPassPolicyConfig | null {
   const prompt = typeof obj.prompt === "string" ? obj.prompt.trim() : "";
   if (!reason || !prompt) return null;
 
-  const inputFidelity = obj.inputFidelity === "high" ? "high" : obj.inputFidelity === "low" ? "low" : undefined;
   const models = toStringArray(obj.models);
 
   let whenSelected: SecondPassPolicyConfig["whenSelected"];
@@ -152,7 +100,7 @@ function parseSecondPassConfig(value: unknown): SecondPassPolicyConfig | null {
     }
   }
 
-  return { reason, prompt, inputFidelity, models, whenSelected };
+  return { reason, prompt, models, whenSelected };
 }
 
 function shouldRunSecondPassConfig(

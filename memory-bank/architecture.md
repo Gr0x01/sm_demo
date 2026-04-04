@@ -45,12 +45,13 @@ Server (Next.js API routes + Inngest background functions)
   └── Inngest background functions (src/inngest/functions/):
         ├── generate-photo — partial cache fast path OR full pipeline:
         │     Diff cache check is merged into the generate step (saves a step transition).
-        │     Fast path: generate (diff check → scoped-edit-needed) → scoped-edit → persist-scoped (~32s)
+        │     Fast path: generate (diff check → scoped-edit-needed) → scoped-edit → persist-scoped (~7-11s)
         │       Leave-one-out hash overlap query (GIN-indexed) finds cached image
-        │       differing by 1 subcategory. 1.5 scoped edit changes only that surface.
+        │       differing by 1 subcategory. Klein 4B scoped edit changes only that surface.
         │       Depth capped at 3 to bound quality degradation.
-        │     Full pipeline: generate (diff check miss → OpenAI) → refine → flash-post-pass → persist (~60-80s)
-        │       OpenAI gpt-image-1.5 via images.edit endpoint. Hero photo + swatches.
+        │     Full pipeline: generate (diff check miss → BFL Max) → refine (conditional) → persist (~35-46s)
+        │       BFL Flux 2 Max via async polling API. Hero photo + up to 7 swatch references.
+        │       Two-pass split when >7 swatches: structural surfaces first, fixtures second.
         │       heroImagePath passed via event payload (no re-fetch inside step).
         │     Each step gets its own 120s Vercel function invocation.
         │     Steps pass images via Supabase Storage (not b64 in step output —
@@ -141,14 +142,12 @@ Supabase
 2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
 3. Cache hit → returns 200 with URL + `cacheHit: true`
 4. Cache miss → claim `__pending__` slot (DB dedup, 5 min stale TTL) → dispatch `photo/generate.requested` to Inngest → return **202** with `selectionsHash`
-5. **Inngest function** (`generate-photo`): up to 5 steps, each gets its own 120s Vercel invocation:
-   - `generate` — parallel fetch aiConfig + optionLookup + hero photo + swatches (pre-warmed cache), build prompt via `buildEditPrompt`, call OpenAI `images.edit` (gpt-image-1.5, quality: medium, 1536x1024, input_fidelity: high), convert PNG→JPEG q90, upload to Storage
-   - `refine` — conditional policy second pass (e.g., slide-in range correction), only when policy requires it
-   - `pro-post-pass` — conditional Gemini Pro (`gemini-3-pro-image-preview`) refinement for cabinet stain colors + optionally backsplash tile isolation. Triggered by "wood STAIN" marker in option `generation_rules`. Resolves linked options (e.g. "Match to Main" → merge zones). Suppresses Flash when active (Pro handles both). Parallel I/O.
-   - `flash-post-pass` — conditional Gemini Flash isolation pass for `needs_isolation` options (e.g., herringbone tile). Suppressed when Pro post-pass is active. Parallel fetch optionLookup + intermediate download + all swatches.
-   - `persist` — upsert cache row replacing `__pending__`, PostHog event (image already in Storage from prior step)
-   - **Scoped edit path** (partial cache): `check-diff-cache` → `scoped-edit` → `persist-scoped`, skips full pipeline. Skipped for appliance add/remove (`-none` option transitions) and specialty surfaces (backsplash) — appliances need full pipeline for spatial placement, specialty surfaces fall through to Layer 3 pass cache so Flash handles them instead of 1.5.
-   - Steps pass images via Supabase Storage as JPEG between invocations (~300KB vs ~3-4MB PNG). Inngest step output size limit prevents b64 transfer.
+5. **Inngest function** (`generate-photo`): up to 3 steps, each gets its own 120s Vercel invocation:
+   - `generate` — parallel fetch optionLookup + hero photo + swatches (pre-warmed cache), build prompt via `buildEditPrompt`, call BFL Flux 2 Max (async: submit → poll → download). Partitions selections into structural/fixture groups; if >7 total swatches, runs two sequential Max passes (structural first, fixtures second, 55s poll timeout each). Upload JPEG to Storage.
+   - `refine` — conditional policy second pass (e.g., slide-in range correction via Max), only when policy requires it
+   - `persist` — upsert cache row replacing `__pending__`, PostHog event
+   - **Scoped edit path** (partial cache): `generate` (diff check → scoped-edit-needed) → `scoped-edit` (Klein 4B, ~7-11s) → `persist`. Skipped for appliance add/remove (`-none` option transitions). Scoped edit preserve list includes spatial hints for each preserved surface so Klein 4B knows surface boundaries.
+   - Steps pass images via Supabase Storage as JPEG between invocations. Inngest step output size limit prevents b64 transfer.
    - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
 6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.
 7. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs

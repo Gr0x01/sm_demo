@@ -5,8 +5,7 @@ import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
-import { IMAGE_MODEL, ISOLATION_IMAGE_MODEL, REFINEMENT_IMAGE_MODEL } from "@/lib/models";
-import type { PassDefinition } from "@/lib/pass-definitions";
+import { IMAGE_MODEL } from "@/lib/models";
 
 /**
  * Resolve linked options (e.g. "Match to Main Kitchen Cabinet Color").
@@ -67,12 +66,14 @@ export interface SwatchImage {
   buffer: Buffer;
   mediaType: string;
   anchorHex?: string;
+  /** Subcategory ID this swatch belongs to (for pass splitting). */
+  subcategoryId: string;
 }
 
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v47";
+export const GENERATION_CACHE_VERSION = "v2.2";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -133,6 +134,7 @@ export async function buildEditPrompt(
   const listLines: string[] = [];
   const swatches: SwatchImage[] = [];
   const selectedSubIds = new Set<string>();
+  const noneSubIds = new Set<string>();
   const dynamicInvariantRules = new Set<string>();
   let hasApplianceSelection = false;
   let listIndex = 1;
@@ -148,9 +150,10 @@ export async function buildEditPrompt(
     if (!found) continue;
 
     selectedSubIds.add(subId);
+    if (optId.endsWith("-none")) noneSubIds.add(subId);
 
     const { option, subCategory } = found;
-    if (subCategory.isAppliance) hasApplianceSelection = true;
+    if (subCategory.isAppliance && !optId.endsWith("-none")) hasApplianceSelection = true;
 
     // Collect DB-driven generation rules from subcategory and option
     if (subCategory.generationRules) {
@@ -194,7 +197,7 @@ export async function buildEditPrompt(
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
           const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
-          swatches.push({ label: swatchBackedLabel, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined });
+          swatches.push({ label: swatchBackedLabel, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined, subcategoryId: subId });
           const anchorSuffix = anchorHex ? `; swatch-derived color anchor ${anchorHex}` : "";
           listLines.push(`${listIndex}. ${swatchBackedLabel} (use swatch #${swatchIndex}${anchorSuffix})`);
           swatchIndex += 1;
@@ -243,11 +246,11 @@ export async function buildEditPrompt(
     invariantRules.add(rule);
   }
   for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenSelected ?? {})) {
-    if (!selectedSubIds.has(subId)) continue;
+    if (!selectedSubIds.has(subId) || noneSubIds.has(subId)) continue;
     for (const rule of rules) invariantRules.add(rule);
   }
   for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenNotSelected ?? {})) {
-    if (selectedSubIds.has(subId)) continue;
+    if (selectedSubIds.has(subId) && !noneSubIds.has(subId)) continue;
     for (const rule of rules) invariantRules.add(rule);
   }
   const invariantBlock =
@@ -340,7 +343,7 @@ export async function buildScopedEditPrompt(
       const resolved = await resolveSwatchBuffer(option.swatchUrl);
       if (resolved) {
         const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
-        swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined });
+        swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined, subcategoryId: changedSubcategoryId });
         const anchorSuffix = anchorHex ? ` (swatch-derived color anchor ${anchorHex})` : "";
         swatchLine = `Match attached swatch #1 exactly for color, pattern, and texture${anchorSuffix}.`;
       }
@@ -359,13 +362,16 @@ export async function buildScopedEditPrompt(
   const hint = spatialHints[changedSubcategoryId];
   const locationLine = hint ? `\nLocation: ${hint}` : "";
 
-  // Build preserve list from other selections
+  // Build preserve list from other selections, with spatial locations
   const preserveLines: string[] = [];
   for (const [subId, optId] of Object.entries(allSelections).sort(([a], [b]) => a.localeCompare(b))) {
     if (subId === changedSubcategoryId) continue;
     const found = optionLookup.get(`${subId}:${optId}`);
     if (!found) continue;
-    preserveLines.push(`- ${found.subCategory.name}`);
+    const location = spatialHints[subId];
+    preserveLines.push(location
+      ? `- ${found.subCategory.name} (${location})`
+      : `- ${found.subCategory.name}`);
   }
   // Build catch-all preserve line, excluding the type being changed
   const changedName = subCategory.name.toLowerCase();
@@ -378,6 +384,9 @@ export async function buildScopedEditPrompt(
 
   // Collect generation rules from policy system (same logic as buildEditPrompt)
   const selectedSubIds = new Set(Object.keys(allSelections));
+  const noneSubIds = new Set(
+    Object.entries(allSelections).filter(([, optId]) => optId.endsWith("-none")).map(([subId]) => subId),
+  );
   const dynamicInvariantRules = new Set<string>();
 
   for (const [subId, optId] of Object.entries(allSelections)) {
@@ -404,15 +413,15 @@ export async function buildScopedEditPrompt(
     }
   }
 
-  // Policy overrides
+  // Policy overrides — treat -none options as "not selected" for policy purposes
   const invariantRules = new Set<string>(dynamicInvariantRules);
   for (const rule of promptPolicyOverrides?.invariantRulesAlways ?? []) invariantRules.add(rule);
   for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenSelected ?? {})) {
-    if (!selectedSubIds.has(subId)) continue;
+    if (!selectedSubIds.has(subId) || noneSubIds.has(subId)) continue;
     for (const rule of rules) invariantRules.add(rule);
   }
   for (const [subId, rules] of Object.entries(promptPolicyOverrides?.invariantRulesWhenNotSelected ?? {})) {
-    if (selectedSubIds.has(subId)) continue;
+    if (selectedSubIds.has(subId) && !noneSubIds.has(subId)) continue;
     for (const rule of rules) invariantRules.add(rule);
   }
 
@@ -435,6 +444,237 @@ ${swatchLine}
 DO NOT MODIFY (these must remain exactly as they currently appear):
 ${preserveLines.join("\n")}
 
+RULES:
+- Apply the swatch ONLY to the surface named above. Treat it as a single mask — do NOT bleed the finish onto adjacent surfaces.
+- Every surface listed under "DO NOT MODIFY" must remain pixel-identical to the input image. If the backsplash is herringbone tile, it stays herringbone tile. If cabinets are blue, they stay blue.
+- Do NOT invent new cabinet seams/panels, remove panel grooves, or simplify existing door geometry.
+- Preserve all structural details: cabinet door panel style (shaker, beadboard, etc.), countertop edges, trim profiles.
+- If the edit is difficult, under-edit the finish rather than changing layout, geometry, or object position.
+- Keep the exact camera angle, perspective, lighting, and room layout.
+- Photorealistic result with accurate shadows and reflections.${rulesBlock}`;
+
+  return { prompt, swatches };
+}
+
+// ---------------------------------------------------------------------------
+// BFL Flux 2 prompt builders — concise prompts for diffusion models.
+// BFL models choke on verbose LLM-style instructions. These keep the signal
+// (swatch mapping, surface assignments, spatial hints) and drop the noise.
+// ---------------------------------------------------------------------------
+
+/**
+ * Collect DB-driven generation rules + negative-guard + policy overrides.
+ * Shared by both BFL prompt builders.
+ */
+function collectInvariantRules(
+  allSelections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  scopedSubcategoryIds: string[],
+  promptPolicyOverrides?: PromptPolicyOverrides,
+): Set<string> {
+  const selectedSubIds = new Set(Object.keys(allSelections));
+  const rules = new Set<string>();
+
+  for (const [subId, optId] of Object.entries(allSelections)) {
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+    if (found.subCategory.generationRules) {
+      for (const rule of found.subCategory.generationRules) rules.add(rule);
+    }
+    if (found.option.generationRules) {
+      for (const rule of found.option.generationRules) rules.add(rule);
+    }
+  }
+
+  const subCategoryById = new Map<string, SubCategory>();
+  for (const [, { subCategory }] of optionLookup) {
+    if (!subCategoryById.has(subCategory.id)) subCategoryById.set(subCategory.id, subCategory);
+  }
+  for (const subId of scopedSubcategoryIds) {
+    if (selectedSubIds.has(subId)) continue;
+    const sub = subCategoryById.get(subId);
+    if (sub?.generationRulesWhenNotSelected?.length) {
+      for (const rule of sub.generationRulesWhenNotSelected) rules.add(rule);
+    }
+  }
+
+  for (const rule of promptPolicyOverrides?.invariantRulesAlways ?? []) rules.add(rule);
+  for (const [subId, rs] of Object.entries(promptPolicyOverrides?.invariantRulesWhenSelected ?? {})) {
+    if (!selectedSubIds.has(subId)) continue;
+    for (const rule of rs) rules.add(rule);
+  }
+  for (const [subId, rs] of Object.entries(promptPolicyOverrides?.invariantRulesWhenNotSelected ?? {})) {
+    if (selectedSubIds.has(subId)) continue;
+    for (const rule of rs) rules.add(rule);
+  }
+
+  return rules;
+}
+
+function buildBflSceneBlock(sceneDescription?: string | null, photoSpatialHint?: string | null): string {
+  const lines: string[] = [];
+  if (sceneDescription?.trim()) lines.push(`SCENE: ${sceneDescription.trim()}`);
+  if (photoSpatialHint?.trim()) lines.push(`PHOTO_LAYOUT: ${photoSpatialHint.trim()}`);
+  return lines.length > 0 ? `${lines.join("\n")}\n\n` : "";
+}
+
+/**
+ * BFL full-generation prompt. Concise surface assignments + minimal rules.
+ * Same signature as buildEditPrompt — drop-in replacement for BFL pipeline.
+ */
+export async function buildBflEditPrompt(
+  visualSelections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  spatialHints: Record<string, string>,
+  scopedSubcategoryIds: string[],
+  sceneDescription?: string | null,
+  photoSpatialHint?: string | null,
+  resolveSwatchBuffer?: SwatchBufferResolver,
+  promptPolicyOverrides?: PromptPolicyOverrides,
+): Promise<{ prompt: string; swatches: SwatchImage[] }> {
+  const listLines: string[] = [];
+  const swatches: SwatchImage[] = [];
+  let swatchIndex = 1;
+  let listIndex = 1;
+
+  const sortedSelections = Object.entries(visualSelections).sort(([a], [b]) =>
+    a.localeCompare(b)
+  );
+
+  for (const [subId, optId] of sortedSelections) {
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+
+    const { option, subCategory } = found;
+    const hint = spatialHints[subId];
+    const dimSuffix = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
+    const target = hint ? `${subCategory.name} → ${hint}${dimSuffix}` : `${subCategory.name}${dimSuffix}`;
+
+    if (option.swatchUrl && resolveSwatchBuffer) {
+      try {
+        const resolved = await resolveSwatchBuffer(option.swatchUrl);
+        if (resolved) {
+          const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
+          swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined, subcategoryId: subId });
+          const anchorSuffix = anchorHex ? `, anchor ${anchorHex}` : "";
+          listLines.push(`${listIndex}. ${target} (swatch #${swatchIndex}${anchorSuffix})`);
+          swatchIndex++;
+          listIndex++;
+          continue;
+        }
+      } catch { /* fallback below */ }
+    }
+
+    // Fallback: hex color or name
+    const hex = option.swatchColor?.trim();
+    if (hex) {
+      listLines.push(`${listIndex}. ${target} (color ${hex})`);
+    } else {
+      const descriptor = option.promptDescriptor?.trim();
+      const desc = descriptor ? ` (${descriptor})` : "";
+      listLines.push(`${listIndex}. ${target}: ${option.name}${desc}`);
+    }
+    listIndex++;
+  }
+
+  if (listLines.length === 0) {
+    return { prompt: "Return this image unchanged.", swatches: [] };
+  }
+
+  const invariantRules = collectInvariantRules(visualSelections, optionLookup, scopedSubcategoryIds, promptPolicyOverrides);
+  const rulesBlock = invariantRules.size > 0
+    ? `\n${Array.from(invariantRules).map(r => `- ${r}`).join("\n")}`
+    : "";
+
+  const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
+
+  const prompt = `${sceneBlock}Edit this room photo. Apply each swatch to its specified surface only.
+
+${listLines.join("\n")}
+
+Swatch mapping: swatches are attached in order #1..#${swatches.length} after the room photo.
+Each surface is a separate zone — do NOT bleed one finish onto adjacent surfaces.
+Preserve cabinet door style, countertop edges, and structural details.
+Keep camera angle, perspective, lighting, and room layout.
+Photorealistic result with accurate shadows and reflections.${rulesBlock}`;
+
+  return { prompt, swatches };
+}
+
+/**
+ * BFL scoped-edit prompt. Single swatch, single target, strong preserve list.
+ * Same signature as buildScopedEditPrompt — drop-in replacement for BFL pipeline.
+ */
+export async function buildBflScopedEditPrompt(
+  changedSubcategoryId: string,
+  changedOptionId: string,
+  allSelections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  spatialHints: Record<string, string>,
+  scopedSubcategoryIds: string[],
+  sceneDescription?: string | null,
+  photoSpatialHint?: string | null,
+  resolveSwatchBuffer?: SwatchBufferResolver,
+  promptPolicyOverrides?: PromptPolicyOverrides,
+): Promise<{ prompt: string; swatches: SwatchImage[] }> {
+  const swatches: SwatchImage[] = [];
+  const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
+  if (!changed) {
+    return { prompt: "Return this image unchanged.", swatches: [] };
+  }
+
+  const { option, subCategory } = changed;
+
+  // Resolve swatch
+  let swatchRef = "";
+  if (option.swatchUrl && resolveSwatchBuffer) {
+    try {
+      const resolved = await resolveSwatchBuffer(option.swatchUrl);
+      if (resolved) {
+        const anchorHex = await extractSwatchAnchorHex(resolved.buffer);
+        swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, anchorHex: anchorHex ?? undefined, subcategoryId: changedSubcategoryId });
+        const anchorSuffix = anchorHex ? `, anchor ${anchorHex}` : "";
+        swatchRef = `Match swatch #1 exactly${anchorSuffix}.`;
+      }
+    } catch { /* fallback below */ }
+  }
+  if (!swatchRef) {
+    const hex = option.swatchColor?.trim();
+    swatchRef = hex ? `Apply color ${hex}.` : `Apply: ${option.name}.`;
+  }
+
+  const hint = spatialHints[changedSubcategoryId];
+  const locationPart = hint ? ` → ${hint}` : "";
+  const dimPart = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
+
+  // Preserve list
+  const preserveLines: string[] = [];
+  for (const [subId, optId] of Object.entries(allSelections).sort(([a], [b]) => a.localeCompare(b))) {
+    if (subId === changedSubcategoryId) continue;
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+    const loc = spatialHints[subId];
+    preserveLines.push(loc
+      ? `- ${found.subCategory.name} (${loc})`
+      : `- ${found.subCategory.name}`);
+  }
+
+  const invariantRules = collectInvariantRules(allSelections, optionLookup, scopedSubcategoryIds, promptPolicyOverrides);
+  const rulesBlock = invariantRules.size > 0
+    ? `\n${Array.from(invariantRules).map(r => `- ${r}`).join("\n")}`
+    : "";
+
+  const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
+
+  const prompt = `${sceneBlock}Change ONLY the ${subCategory.name} in this image.
+${subCategory.name}${locationPart}${dimPart} — ${swatchRef}
+
+DO NOT MODIFY:
+${preserveLines.join("\n")}
+- All appliances, fixtures, hardware, lighting
+- Room layout, camera angle, and perspective
+
+Apply the swatch ONLY to the named surface. Every other surface must remain pixel-identical to the input.
 Photorealistic result with accurate shadows and reflections.${rulesBlock}`;
 
   return { prompt, swatches };
@@ -597,7 +837,7 @@ export function deriveGenerationContext(
     },
   }, scopedSelections, optionLookup, scopedSubcategoryIds);
 
-  let resolvedPolicy = resolvePhotoGenerationPolicy({
+  const resolvedPolicy = resolvePhotoGenerationPolicy({
     orgSlug: policyContext.orgSlug,
     floorplanSlug: policyContext.floorplanSlug,
     stepSlug: aiConfig.stepSlug,
@@ -606,68 +846,6 @@ export function deriveGenerationContext(
     modelName,
     selections: scopedSelections,
   }, dbPolicy);
-
-  // Option-driven flash isolation: scan selected options for needs_isolation flag
-  const optionIsolatedSubs = new Set<string>();
-  for (const [subId, optId] of Object.entries(scopedSelections)) {
-    const found = optionLookup.get(`${subId}:${optId}`);
-    if (found?.option.needsIsolation) {
-      optionIsolatedSubs.add(subId);
-    }
-  }
-  if (optionIsolatedSubs.size > 0) {
-    const existingSubs = new Set(resolvedPolicy.flashPostPass?.isolateSubcategories ?? []);
-    for (const sub of optionIsolatedSubs) existingSubs.add(sub);
-    resolvedPolicy = {
-      ...resolvedPolicy,
-      flashPostPass: {
-        reason: resolvedPolicy.flashPostPass?.reason ?? "option-level isolation",
-        model: resolvedPolicy.flashPostPass?.model ?? ISOLATION_IMAGE_MODEL,
-        isolateSubcategories: [...existingSubs],
-      },
-    };
-  }
-
-  // Option-driven Pro refinement: scan for stain cabinet options that need a post-pass
-  const STAIN_MARKER = "wood STAIN";
-  const cabinetPostPassSubs = new Set<string>();
-  for (const [subId, optId] of Object.entries(scopedSelections)) {
-    const found = optionLookup.get(`${subId}:${optId}`);
-    if (!found) continue;
-    const rules = found.option.generationRules ?? [];
-    if (rules.some(r => r.includes(STAIN_MARKER))) {
-      cabinetPostPassSubs.add(subId);
-    }
-  }
-  // Also include subcategories whose selected option links TO a detected stain subcategory
-  // (e.g. "Match to Main" island links to kitchen-cabinet-color)
-  for (const [subId, optId] of Object.entries(scopedSelections)) {
-    if (cabinetPostPassSubs.has(subId)) continue;
-    const found = optionLookup.get(`${subId}:${optId}`);
-    if (found?.option.linkedToSubcategory && cabinetPostPassSubs.has(found.option.linkedToSubcategory)) {
-      cabinetPostPassSubs.add(subId);
-    }
-  }
-  if (cabinetPostPassSubs.size > 0) {
-    // If backsplash also needs isolation, include it in the Pro post-pass (Pro handles both)
-    // and remove it from Flash (so Flash doesn't also run)
-    const proSubs = new Set(cabinetPostPassSubs);
-    if (resolvedPolicy.flashPostPass) {
-      for (const sub of resolvedPolicy.flashPostPass.isolateSubcategories) {
-        proSubs.add(sub);
-      }
-      // Suppress Flash — Pro handles everything
-      resolvedPolicy = { ...resolvedPolicy, flashPostPass: undefined };
-    }
-    resolvedPolicy = {
-      ...resolvedPolicy,
-      proPostPass: {
-        reason: "cabinet stain refinement",
-        model: REFINEMENT_IMAGE_MODEL,
-        subcategories: [...proSubs],
-      },
-    };
-  }
 
   const hashInputs: Record<string, string> = {
     ...scopedSelections,
@@ -762,82 +940,3 @@ export function hashSelections(selections: Record<string, string>): string {
   return createHash("sha256").update(sorted).digest("hex").slice(0, 16);
 }
 
-// ---------- Multi-pass pipeline hash helpers ----------
-
-export interface PassHashEntry {
-  passName: string;
-  passHash: string;
-  upstreamHash: string;
-}
-
-/**
- * Compute per-pass hashes and upstream chain hashes.
- *
- * Each pass hash includes:
- *   - That pass's selections only
- *   - Generation rules for those subcategories (per-pass rules signature)
- *   - cache_version
- *
- * The upstream_hash ensures chain integrity — a cached fixtures intermediate
- * is only valid if the structural pass that produced its input hasn't changed.
- */
-export function computePassHashes(
-  passes: PassDefinition[],
-  scopedSelections: Record<string, string>,
-  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
-  cacheVersion: string,
-  heroPhotoId: string,
-): PassHashEntry[] {
-  const entries: PassHashEntry[] = [];
-
-  for (let i = 0; i < passes.length; i++) {
-    const pass = passes[i];
-
-    // Build hash inputs for this pass's selections + rules
-    const passSelections: Record<string, string> = {};
-    for (const subId of pass.subcategoryIds) {
-      if (subId in scopedSelections) passSelections[subId] = scopedSelections[subId];
-    }
-
-    // Per-pass rules signature: generation rules for this pass's subcategories only
-    const ruleParts: string[] = [];
-    for (const [subId, optId] of Object.entries(passSelections).sort(([a], [b]) => a.localeCompare(b))) {
-      const found = optionLookup.get(`${subId}:${optId}`);
-      if (!found) continue;
-      if (found.subCategory.generationRules?.length) {
-        ruleParts.push(`s:${subId}:${found.subCategory.generationRules.join(";")}`);
-      }
-      if (found.option.generationRules?.length) {
-        ruleParts.push(`o:${optId}:${found.option.generationRules.join(";")}`);
-      }
-      if (found.option.dimensions?.trim()) {
-        ruleParts.push(`d:${optId}:${found.option.dimensions.trim()}`);
-      }
-    }
-
-    const passHashInputs: Record<string, string> = {
-      ...passSelections,
-      _passRules: ruleParts.join("|"),
-      _cacheVersion: cacheVersion,
-      _model: pass.model,
-    };
-    const passHash = hashSelections(passHashInputs);
-
-    // Upstream hash: structural has no upstream (uses hero photo ID),
-    // each subsequent pass chains from both the previous upstream AND pass hash
-    // so a change in ANY earlier pass invalidates all downstream cache entries.
-    let upstreamHash: string;
-    if (i === 0) {
-      upstreamHash = hashSelections({ _heroPhotoId: heroPhotoId, _cacheVersion: cacheVersion });
-    } else {
-      upstreamHash = hashSelections({
-        _prevUpstream: entries[i - 1].upstreamHash,
-        _prevPass: entries[i - 1].passHash,
-      });
-    }
-
-    entries.push({ passName: pass.name, passHash, upstreamHash });
-  }
-
-  return entries;
-}

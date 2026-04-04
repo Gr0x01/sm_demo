@@ -12,22 +12,21 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 
 **Strategy shift (2026-03-23):** Moved from inquisitive outreach (asking about their process) to provocation-first. Lead with visualization lift data (every builder doing viz sees 20-40% more in option sales), not Toll/Pulte SEC comparisons (dismissable as luxury). Practitioner voice, not tinkerer. Demo pages are a follow-up asset built after engagement, not pre-outreach. LinkedIn connection requests have no links (platform blocks them) — links go in the first DM after they accept.
 
-**Campaign 3 — REBUILDING (original killed 2026-04-02, rebuilding from raw export):**
-- **What happened**: A bad CRM audit session deleted 50 leads from Instantly via the DELETE API, then tried to rebuild with unverified data. Campaign is currently empty in Instantly.
-- **Recovery**: Original data preserved in `/tmp/instantly-c3-raw1.json` + `/tmp/instantly-c3-raw2.json` (112 leads with full payloads). Rebuilt from original `c3-instantly-upload.csv`.
-- **Approach**: Permission-ask. One sentence asking to send a video of their kitchen with different finishes. If they reply yes, build demo + record Loom.
-- **Template**: "Hey {{firstName}}, I put together a short video of your {{floorplan}} kitchen with different finishes. Want me to send it over?" Bump Day 3: "Hey {{firstName}}, want me to send it over? Yes or no works."
-- **Clean leads**: 73 leads across 39 companies (original 104 minus 15 confirmed removals: 9 real viz tools + 6 non-ICP)
-- **CSVs**: `c3-batch1-10leads.csv` (10 leads, upload first) + `c3-batch2-remaining.csv` (63 leads, add after)
-- **`c3-rebuilt.csv` is DEAD** — do not use, marked with warning
+**Campaign 3 — LIVE (rebuilt 2026-04-02–03, uploaded 2026-04-03):**
+- **What happened**: Original C3 killed by bad CRM audit session (deleted 50 leads via Instantly API). Fully rebuilt from raw exports + new Apollo research + Playwright-verified kitchen photos.
+- **CSV**: `c3-full.csv` — **93 leads, 51 companies**. All kitchen photos Playwright-verified. Upload to Instantly.
+- **Approach**: Permission-ask. "I put together a short video of your {{floorplan}} kitchen with different finishes. Want me to send it over?"
 - **Sending from**: rashaad@heyfin.ch + anton@heyfin.ch (both warmed since mid-March)
 - **Daily limit**: 10/mailbox (20 total), weekdays 8am-5pm Central
 - **Settings**: Plain text, no tracking, no links, stop on reply
-- **Confirmed removals (real interior viz)**: Adams Homes (Anewgo), Allen Edwin (Envision), Landmark (Anewgo), Wayne (Anewgo), EdgeHomes (Contrado VIP), Ivory (Envision/Contrado), Fischer (Design Visualizer), Maronda (RenoWorks), Smith Douglas (Anewgo Interiors)
-- **Confirmed removals (non-ICP)**: Schumacher (BOYL), Dream Finders (public enterprise), Homes by Dickerson (custom), Stanley Martin (Daiwa subsidiary), Pacesetter (Qualico subsidiary), Craftmark (luxury/semi-custom — RE-EVALUATED 2026-04-02: actually has individual selections, ~300/yr, recovered as prospect)
-- **Wrongly removed pre-launch (recovered 2026-04-02)**: Highland TX (floor plan tool ≠ kitchen viz), Jagoe (Higharc ≠ interior viz), Lombardo (Anewgo CMS ≠ viz tool), Scott Felder (doesn't use Anewgo at all)
+- **Legacy CSVs**: `c3-batch1-10leads.csv`, `c3-batch2-remaining.csv`, `c3-new-leads.csv` — all merged into `c3-full.csv`. `c3-rebuilt.csv` is DEAD.
+- **Cut (real interior viz)**: Adams, Allen Edwin, Landmark, Wayne, EdgeHomes, Ivory, Fischer, Maronda, Smith Douglas
+- **Cut (non-ICP)**: Schumacher (BOYL), Dream Finders (public), Homes by Dickerson (custom), Stanley Martin (Daiwa), Pacesetter (Qualico)
+- **Cut (no kitchen photos / site down)**: Williams (no kitchens), DRB (plan not found), True Homes (plan not found), Miramonte (delisted), Mungo (site dead), KB Home (Cloudflare + enterprise), Hakes Brothers (site dead)
+- **Deferred to C4 (site access issues)**: Shaw (DNS broken), Highland FL (server down), Hayden (403), Van Daele (Cloudflare), Saratoga (weak photos)
+- **New leads added (Apollo-verified, 2026-04-03)**: Highland TX, Lombardo, Jagoe, Copper Builders, Craftmark, Ball, DSLD, Simmons, Newmark, Dragas, Main Street, Ideal, Tresidio, Berks, First America, Granville, GHO (replacement floorplan)
+- **Kitchen photo verification**: All 51 companies verified via Playwright browser automation. Community-level galleries are where photos live, not floorplan pages.
 - **Full CRM docs**: `memory-bank/crm-system.md`
-- **Pipeline script**: `scripts/campaign3-pipeline.sh` (Apollo search → reveal → CSV generation)
 
 **CRM audit cleanup (2026-04-02):**
 - Previous session ran CRM auditor agent across 256 companies. Agent hallucinated viz tools, misclassified exterior-only tools as interior viz, and fabricated pass reasons.
@@ -73,6 +72,14 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - Week 2 (Apr 7-9): PLANNED — Houzz buyer quotes ("I am becoming depressed and all the excitement is gone"). Real buyer words, minimal framing.
 - Full content calendar + backlog: `memory-bank/outreach/linkedin-post-ideas-april-2026.md`
 
+**LinkedIn engagement automation (built 2026-04-03):**
+- **Script**: `scripts/linkedin-post-finder.ts` — ScrapingDog Google Search → LinkedIn Post API pipeline. 15 keyword searches targeting residential homebuilding (design centers, upgrades, builder tech, NAHB, competitors). Noise filtering, dedup, seen-posts tracking (`.linkedin-seen.json`).
+- **Cowork task**: "linkedin-digest" — runs hourly. Calls the script (`--period day --fetch --json --top 10`), drafts comments in Rashaad's voice (subscription Claude, no API cost), posts digest to Slack via webhook.
+- **Slack channel**: Receives digest with post links + draft comments. Rashaad reviews, tweaks, posts.
+- **Cost**: ~125 ScrapingDog credits/run (~3K/day, well under 1M/mo plan). Comment drafting is free (Cowork subscription).
+- **Cowork prompt**: `memory-bank/outreach/cowork-linkedin-digest.md`
+- **First day results (2026-04-03)**: Commented on 8 posts — Jason Shuman (a16z/LightTable construction tech), John Burns (design trends), Doug French x2, Myers Barnes x2 (HomebuilderAI native AI + sales process), Lance Lambert (Lennar incentives), Evan Shoemaker (ResVR gamification), Builder's Affordability Battles podcast.
+
 **Active LinkedIn prospects:**
 - [ ] **Doug French** (Stylecraft Homes, CEO) — 1st connection, no reply to Thursday message. Demo page live at `withfin.ch/for/stylecraft`. Send before/after kitchen screenshot + link as follow-up DM.
 - [ ] **Steve Snoddy** (Davidson Homes, Director of Sales & Marketing, Arizona) — Demo page live at `withfin.ch/for/davidson` (Hidden Hills kitchen, waterfall island). Uses NoviHome (buyer CRM app) but no visualization. DM drafted, ready to send.
@@ -80,6 +87,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - [ ] **Mary Mead** (McKinley Homes, VP Sales & Marketing) — **Engaged 2026-03-25**: someone at McKinley visited demo page on desktop + mobile, hit Visualize but left before it finished (~30s gen time). Generation completed successfully. Sent LinkedIn DM with attached generated kitchen image + note about load time. First real engagement from a prospect demo page. Demo at `withfin.ch/for/mckinley`. Previous: two LinkedIn DMs sent 2026-03-10 ignored.
 - [ ] **Matt Sims** (Viera Builders, Area Sales Manager, Melbourne FL) — 1st connection accepted 2026-03-25. Demo page live at `withfin.ch/for/viera` (Granada II kitchen, Reeling Park courtyard homes, exterior cover). Viera already has "Express Yourself" virtual kitchen/bath configurators (static template, not real rooms). Matt posts about consumer behavior and lifestyle selling. DM drafted, not yet sent. Hook: quartz-to-Cambria upgrade decision, where it happens in the buyer journey.
 - [ ] **Dee Crescini** (Homes By WestBay, VP of Design + Division Manager South) — InMail sent 2026-03-26 with attached Key Largo II kitchen image. Asked about visualizations in their Design Studio Wishlist portal. Demo page live at `withfin.ch/for/westbay`. WestBay is Tampa Bay's largest private builder (~1,200 homes/yr, $564M). No visualization tech — wishlist is selections/pricing only.
+- [ ] **Myers Barnes** (HomebuilderAI, Sales Strategist/Author) — NOT a builder or software vendor. Legendary new home sales trainer (25+ years, 7 books, billions in sales revenue for clients). "HomebuilderAI" is his book/content brand (homebuilderai.ai), not a software product. Huge influencer in builder sales world. He reached out first — InMail + connection request 2026-04-03 after Rashaad commented on his "built vs bolted on" and "sales process is obsolete" posts. Called Rashaad an "Operator...with a message" and "spot on." Also commented "Absolute truth!" on Rashaad's PDF/design center rant post. Connection accepted. Email sent 2026-04-03 from rashaad@heyfin.ch to mbai@myersbarbes.com — talked about built vs bolted on applying broadly (builder digital presence is a checklist, not buyer-designed), asked about his upcoming whitepaper on native AI in homebuilding, said he'd check out John Lee/Anewgo. No Finch pitch, no demo link. He promotes Anewgo/John Lee (CEO) as "native AI" — we disagree (Anewgo is legacy platform bolting on AI). Don't challenge that yet — he has a relationship with John Lee. He's building a whitepaper: "how homebuilding actually works in the AI era" (coming soon). **Strategic value**: distribution/amplification. One endorsement from Myers > 100 cold emails. Play the long game — peer to peer, not founder pitching influencer.
 
 **Playbooks (updated 2026-03-23):**
 - Cold email campaign architecture (`project/cold-email-campaign.md`) — 2-email sequence, multi-channel, no links before reply
@@ -267,7 +275,55 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - PostHog: check-endpoint cache hits now tracked (`demo_generation_completed` with `cacheHit: true`) — was previously untracked.
 - **Also shipped on `/for/` + buyer pages**: Same badge via `StepPhotoGrid` → `PhotoViewerCard`. `lastCacheHitPhotos` tracked in UpgradePicker reducer (`Record<string, boolean | undefined>`), threaded through SidebarPanel. `PHOTO_GENERATION_COMPLETE` action carries `cacheHit` from API response. Same 400ms delay → 5s hold → fade out. Mutually exclusive with OUTDATED badge.
 
-### 3. Multi-Pass Generation Pipeline (Active — 2026-03-30)
+### 3. Flux 2 Migration — SHIPPED (2026-04-04, tuning in progress)
+
+**Decision**: Replaced entire OpenAI 1.5 + Gemini Flash pipeline with BFL Flux 2.
+
+**Architecture:**
+
+| Use case | Model | Time | Cost |
+|----------|-------|------|------|
+| Full generation (≤7 swatches) | Flux 2 Max | ~35-46s | ~$0.09 |
+| Full generation (>7 swatches) | Flux 2 Max × 2 passes | ~70-90s | ~$0.18 |
+| Scoped edit (1 surface) | Flux 2 Klein 4B | ~7-11s | $0.017 |
+| Oven correction | Flux 2 Max post-pass | ~30-39s | ~$0.09 |
+
+**What was eliminated:**
+- Flash isolation pass (Max handles herringbone/tile natively)
+- Pro cabinet post-pass (Max handles stain natively)
+- Multi-pass pipeline (`generate-photo-multipass.ts`, `pass-definitions.ts`, `pass_cache` table) — deleted entirely
+- `ISOLATION_IMAGE_MODEL`, `REFINEMENT_IMAGE_MODEL` constants
+
+**Two-pass split for >7 swatches:**
+- BFL Max accepts hero + 7 reference swatch images. SM photos have up to 20 swatch-bearing subcategories.
+- When >7 swatches: structural surfaces (cabinets, countertop, backsplash, flooring, paint) go in pass 1, fixtures (hardware, sink, faucet, lighting, appliances) go in pass 2. Each pass gets 55s poll timeout.
+- Most photos stay single-pass. Only complex multi-zone photos trigger the split.
+
+**Key files:**
+- `src/lib/bfl.ts` — BFL API client (submit → poll → download, async pattern)
+- `src/inngest/functions/generate-photo.ts` — main pipeline (Max full gen + Klein 4B scoped edits)
+- `src/inngest/functions/generate-demo.ts` — /try demo pipeline (same models)
+- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-klein-4b"`
+
+**Cache versioning**: Switched from `v47`/`v9` (integer) to `v2.x` (semantic). Bump minor for prompt/rule changes, major for model swaps.
+
+**Prompt tuning findings (2026-04-04–05):**
+- Flux 2 Max responds best to minimal prompts with scene context. Verbose generation rules (SM-style) hurt quality — color shifts, confused spatial application.
+- SCENE + PHOTO_LAYOUT blocks give Max the spatial understanding. Per-surface instructions should be one line each.
+- For scoped edits (Klein 4B): preserve list must include spatial hints for each preserved surface so 4B knows WHERE the boundaries are. Without this, countertop granite bleeds onto adjacent island face and backsplash.
+- Backsplash `dimensions` field must describe installed appearance ("4x16 subway tiles, staggered layout") not just raw measurements ("4x16").
+- `buildScopedEditPrompt` preserve lines now include spatial locations: `- Backsplash (wall between upper cabinets and countertop)` instead of just `- Backsplash`.
+
+**Remaining tuning:**
+- [ ] Test SM photos with Flux 2 (all 17 step photos across both floorplans)
+- [ ] Test non-kitchen rooms (bedrooms, bathrooms — single Max pass)
+- [ ] Verify Klein 4B scoped edits on SM photos with tuned spatial hints
+- [ ] Update SM photo baselines and spatial hints for Flux 2 prompt style if needed
+- [ ] Re-seed `/try` demo cache (seed script still uses OpenAI — migrate or run separately)
+
+### 4. Multi-Pass Generation Pipeline (SUPERSEDED by Flux 2 — 2026-03-30)
+
+**Status**: Will be replaced by Flux 2 single-pass architecture. Keeping the implementation live until Flux 2 migration is complete — rollback = flip `useMultiPass` flag off in DB.
 
 **Problem**: 1.5 degrades with 12+ swatches in a single pass. Built compensatory post-passes (Flash for backsplash, Pro for cabinet stain) but each adds 22-40s latency. Worst case ~115s. Architecture was reactive, not proactive.
 

@@ -594,3 +594,18 @@ All 5 v3 tests produced correct 3:2 landscape output at consistent quality. Full
 **Context (2026-03-28)**: D90 split the prompt into APPLY/PRESERVE/SURFACE & PLACEMENT RULES. Testing showed cabinet colors (driftwood) not being applied correctly with the split structure. Reverted to v26's single `RULES:` block with "Edit this room photo to match the selected finishes." Same content, single section.
 **Decision**: Keep single RULES block. The split structure may have diluted swatch mapping attention. Backsplash-specific generation_rules are still included via the DB-driven rules system.
 **Trade-off**: Less structured prompt, but proven to work for swatch accuracy.
+
+## D96: Switch from OpenAI 1.5 + Gemini Flash to BFL Flux 2
+**Context (2026-04-04)**: Current pipeline uses OpenAI gpt-image-1.5 for generation + Gemini Flash for backsplash isolation + Gemini Pro for cabinet stain post-pass. Multi-pass architecture (D88) adds 105-115s latency for kitchens. Tested all 6 BFL Flux 2 models as replacements.
+**Decision**: Replace entire pipeline with Flux 2. Full generation = Max (single pass, 35-46s). Scoped edits = Klein 4B (7-11s, $0.017). Oven correction = Max post-pass. Eliminate Flash isolation, Pro cabinet post-pass, and multi-pass orchestration complexity.
+**Key findings**:
+- Max image quality is visibly better than 1.5 — richer textures, more natural lighting
+- Max handles herringbone tile in single pass (needed dedicated Flash isolation with 1.5)
+- Max handles stain in single pass (needed Pro post-pass with 1.5)
+- Klein 4B for scoped edits: 7-11s at $0.017 vs 1.5 at 30s/$0.07 — 4x faster, 4x cheaper
+- Klein 4B has better spatial precision than Pro for single-surface edits (6/7 stress tests)
+- Klein 4B is self-hostable (4B params, ~8GB fp16) on RB's 4080 — future $0/edit option
+- Slide-in range swap still needs dedicated post-pass (structural geometry change, no model handles it)
+- Spatial exclusion ("NOT the island") needs prompt tuning — scene description + photo baseline context from DB fixes it
+**Trade-off**: BFL is a smaller company than OpenAI. API could have reliability/availability issues. No mask-based inpainting on Flux 2 (instruction-only editing). Spatial exclusion requires more verbose prompts with scene context. But the quality + speed + cost improvements are too large to ignore.
+**Full R&D**: `generation/flux2-rd-results.md`

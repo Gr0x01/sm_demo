@@ -37,7 +37,7 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 | Service | Purpose |
 |---------|---------|
 | **Next.js 16** | App framework |
-| **OpenAI gpt-image-1.5** | Image generation (via `images.edit`) |
+| **BFL Flux 2 Max / Klein 4B** | Image generation (Max for full gen, Klein 4B for scoped edits) |
 | **Supabase** | Database (multi-tenant, RLS) + Storage (swatches, generated images) + Auth (admin) |
 | **Inngest** | Background job execution (generation pipeline) |
 | **Tailwind CSS v4** | Styling |
@@ -53,13 +53,15 @@ npm test             # run test suite (176 tests, <1s)
 npm run test:watch   # watch mode
 npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a new builder org
 npx tsx scripts/indexnow.ts            # submit marketing URLs to IndexNow (Bing/Yandex)
+npx tsx scripts/linkedin-post-finder.ts [--period day|week] [--fetch] [--json] [--top N]  # find LinkedIn posts to engage with
 ```
 
 ## Environment Variables
 
 ```
-OPENAI_API_KEY=              # Image generation (gpt-image-1.5)
+BFL_API_KEY=                 # BFL Flux 2 image generation (Max + Klein 4B)
 GOOGLE_GENERATIVE_AI_API_KEY= # Gemini (quality check, spatial hints, AI descriptors)
+OPENAI_API_KEY=              # OpenAI (seed scripts only, not used in production pipeline)
 NEXT_PUBLIC_SUPABASE_URL=    # Supabase project URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY=  # Supabase anon key
 SUPABASE_SERVICE_ROLE_KEY=   # Supabase service role (server-side only)

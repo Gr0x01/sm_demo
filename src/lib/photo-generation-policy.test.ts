@@ -144,40 +144,7 @@ describe("resolvePhotoGenerationPolicy", () => {
     expect(result.secondPass).toBeDefined();
   });
 
-  it("defaults inputFidelity to 'low'", () => {
-    const policy: StepPhotoGenerationPolicyRecord = {
-      policyKey: "kitchen-hero",
-      isActive: true,
-      policyJson: {
-        secondPass: {
-          reason: "Refinement",
-          prompt: "Refine",
-        },
-      },
-    };
-    const result = resolvePhotoGenerationPolicy(baseInput, policy);
-    expect(result.secondPass!.inputFidelity).toBe("low");
-  });
-
-  it("respects inputFidelity 'high' when set", () => {
-    const policy: StepPhotoGenerationPolicyRecord = {
-      policyKey: "kitchen-hero",
-      isActive: true,
-      policyJson: {
-        secondPass: {
-          reason: "Refinement",
-          prompt: "Refine",
-          inputFidelity: "high",
-        },
-      },
-    };
-    const result = resolvePhotoGenerationPolicy(baseInput, policy);
-    expect(result.secondPass!.inputFidelity).toBe("high");
-  });
-
-  // --- flashPostPass tests ---
-
-  it("returns flashPostPass when isolated subcategory is in selections", () => {
+  it("ignores legacy flashPostPass config in DB policy", () => {
     const policy: StepPhotoGenerationPolicyRecord = {
       policyKey: "kitchen-hero",
       isActive: true,
@@ -191,82 +158,8 @@ describe("resolvePhotoGenerationPolicy", () => {
     };
     const input = { ...baseInput, selections: { ...baseInput.selections, backsplash: "bs-picket-taupe" } };
     const result = resolvePhotoGenerationPolicy(input, policy);
-    expect(result.flashPostPass).toBeDefined();
-    expect(result.flashPostPass!.reason).toBe("Backsplash tile pattern needs isolation");
-    expect(result.flashPostPass!.model).toBe("gemini-3.1-flash-image-preview");
-    expect(result.flashPostPass!.isolateSubcategories).toEqual(["backsplash"]);
-  });
-
-  it("skips flashPostPass when isolated subcategory is not in selections", () => {
-    const policy: StepPhotoGenerationPolicyRecord = {
-      policyKey: "kitchen-hero",
-      isActive: true,
-      policyJson: {
-        flashPostPass: {
-          reason: "Backsplash isolation",
-          model: "gemini-3.1-flash-image-preview",
-          isolateSubcategories: ["backsplash"],
-        },
-      },
-    };
-    // baseInput has no backsplash selection
-    const result = resolvePhotoGenerationPolicy(baseInput, policy);
-    expect(result.flashPostPass).toBeUndefined();
-  });
-
-  it("fires flashPostPass when any isolated subcategory is selected", () => {
-    const policy: StepPhotoGenerationPolicyRecord = {
-      policyKey: "kitchen-hero",
-      isActive: true,
-      policyJson: {
-        flashPostPass: {
-          reason: "Surface isolation",
-          model: "gemini-3.1-flash-image-preview",
-          isolateSubcategories: ["backsplash", "range"],
-        },
-      },
-    };
-    // baseInput has range selected but not backsplash
-    const result = resolvePhotoGenerationPolicy(baseInput, policy);
-    expect(result.flashPostPass).toBeDefined();
-  });
-
-  it("skips flashPostPass when missing required fields", () => {
-    const policy: StepPhotoGenerationPolicyRecord = {
-      policyKey: "kitchen-hero",
-      isActive: true,
-      policyJson: {
-        flashPostPass: {
-          reason: "Missing model and subs",
-        },
-      },
-    };
-    const input = { ...baseInput, selections: { ...baseInput.selections, backsplash: "bs-picket" } };
-    const result = resolvePhotoGenerationPolicy(input, policy);
-    expect(result.flashPostPass).toBeUndefined();
-  });
-
-  it("supports flashPostPass and secondPass together", () => {
-    const policy: StepPhotoGenerationPolicyRecord = {
-      policyKey: "kitchen-hero",
-      isActive: true,
-      policyJson: {
-        flashPostPass: {
-          reason: "Backsplash isolation",
-          model: "gemini-3.1-flash-image-preview",
-          isolateSubcategories: ["backsplash"],
-        },
-        secondPass: {
-          reason: "Range refinement",
-          prompt: "Refine the range",
-          whenSelected: { subId: "range" },
-        },
-      },
-    };
-    const input = { ...baseInput, selections: { ...baseInput.selections, backsplash: "bs-picket" } };
-    const result = resolvePhotoGenerationPolicy(input, policy);
-    expect(result.flashPostPass).toBeDefined();
-    expect(result.secondPass).toBeDefined();
+    // flashPostPass is no longer part of the resolved policy (Flux 2 handles tile patterns natively)
+    expect((result as any).flashPostPass).toBeUndefined();
   });
 
   it("uses DB policyKey value", () => {

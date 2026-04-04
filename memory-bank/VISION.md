@@ -372,13 +372,14 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 
 ### Cost Structure
 
-**Self-hosted generation is not viable** (see D64). No open-source model can handle our pipeline (10-15 simultaneous swatch references, precise multi-surface editing, layout preservation). Gemini was tested and reverted (D77) — faster/cheaper but hallucinated unpredictably. gpt-image-1.5 is the only model that works reliably. All cost math is API-based.
+**Self-hosted generation is becoming viable.** Klein 4B (4B params) runs on consumer GPU (~8GB VRAM). RB's 4080 could serve scoped edits at $0/edit via homelab after the Montgomery move. Full generation (Max) stays API-based for now.
 
-**Pre-generation is non-negotiable.** Each image takes ~60 seconds to generate. Buyers won't wait — the tool must feel instant. Pre-cache common combos; long-tail generates on-demand.
+**Pre-generation is non-negotiable.** Each full generation takes ~35-46s. Scoped edits (single surface change) take ~7-11s. Pre-cache common combos; long-tail generates on-demand.
 
-**Generation costs (gpt-image-1.5, medium quality — D80):**
-- ~$0.05/image (standard API, medium quality, real-time) — used for on-demand buyer sessions
-- Batch API available (Tier 5) at ~50% discount, async (24hr turnaround) — use for all pre-generation
+**Generation costs (BFL Flux 2 — D96):**
+- Full gen (Max): ~$0.09/image, ~35-46s
+- Scoped edit (Klein 4B): ~$0.017/image, ~7-11s
+- Two-pass split (>7 swatches): ~$0.18/image, ~70-90s
 
 **Pre-cache math (per floorplan, 10 photos):**
 
@@ -391,11 +392,11 @@ Not every combo needs pre-caching. Full combinatorial is absurd (e.g. 12 cabinet
 
 Typical builders have fewer options than SM (6-8 per category vs 12-17), so numbers skew toward the low end.
 
-| Pre-cache depth | Images/plan | Standard ($0.05) | Batch (~$0.025) |
-|---|---|---|---|
-| Conservative (sweeps only) | ~500 | $25 | ~$13 |
-| Moderate (sweeps + top combos) | ~1,000 | $50 | ~$25 |
-| Aggressive (deep combo coverage) | ~2,000 | $100 | ~$50 |
+| Pre-cache depth | Images/plan | Flux 2 Max ($0.09) |
+|---|---|---|
+| Conservative (sweeps only) | ~500 | $45 |
+| Moderate (sweeps + top combos) | ~1,000 | $90 |
+| Aggressive (deep combo coverage) | ~2,000 | $180 |
 
 **Hard costs per builder onboarding (3 plans, moderate pre-cache):**
 
@@ -419,7 +420,7 @@ No setup fee means these are absorbed as customer acquisition cost. At $1,500/mo
 ### Already Built (Stone Martin Demo)
 - Next.js 16 web app with step-based wizard UI
 - 5-step upgrade flow covering all categories from real pricing PDF
-- AI image generation pipeline (OpenAI gpt-image-1.5 via images.edit endpoint)
+- AI image generation pipeline (BFL Flux 2 Max + Klein 4B via async polling API)
 - Supabase image cache (hash-based dedup, CDN-served)
 - 166 scraped swatch images
 - Real pricing data from Kinkade plan PDF

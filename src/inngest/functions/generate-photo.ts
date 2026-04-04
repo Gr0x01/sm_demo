@@ -1,15 +1,17 @@
-import OpenAI, { toFile } from "openai";
 import sharp from "sharp";
-import { GoogleGenAI } from "@google/genai";
 import { inngest } from "@/inngest/client";
-import { buildEditPrompt, buildScopedEditPrompt, identifyChangedSubcategory, resolveLinkedOptions } from "@/lib/generate";
+import { buildBflEditPrompt, buildBflScopedEditPrompt, identifyChangedSubcategory, resolveLinkedOptions } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getOptionLookup, findSingleSurfaceDiffMatch } from "@/lib/db-queries";
-import { captureAiEvent, captureAiError, estimateOpenAICost, estimateGeminiImageCost } from "@/lib/posthog-server";
+import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
+import { SCOPED_EDIT_MODEL } from "@/lib/models";
+import { generateImage } from "@/lib/bfl";
+import type { BflModel } from "@/lib/bfl";
 import type { Option, SubCategory } from "@/types";
 
-const openai = new OpenAI();
+/** Max reference swatch images BFL Max accepts (input_image_2..8) */
+const MAX_SWATCHES = 7;
 
 /**
  * Build a swatch resolver that downloads from Supabase Storage.
@@ -87,14 +89,6 @@ async function uploadIntermediate(
 }
 
 /**
- * Convert a raw PNG buffer (from OpenAI b64) to JPEG for smaller storage/transfer.
- * Quality 90 is visually indistinguishable for AI-generated room photos.
- */
-async function toJpeg(pngBuffer: Buffer): Promise<Buffer> {
-  return sharp(pngBuffer).jpeg({ quality: 90 }).toBuffer();
-}
-
-/**
  * Download an image from generated-images storage.
  */
 async function downloadIntermediate(
@@ -116,9 +110,6 @@ export const generatePhoto = inngest.createFunction(
   },
   { event: "photo/generate.requested" },
   async ({ event, step }) => {
-    // Skip if multi-pass pipeline is handling this event
-    if (event.data.passDefinitions?.length) return;
-
     const {
       selectionsHash,
       selectionsFingerprint,
@@ -142,18 +133,18 @@ export const generatePhoto = inngest.createFunction(
 
     const MAX_SCOPED_EDIT_DEPTH = 3;
     const outputPath = `${orgId}/${selectionsHash}.jpg`;
-    // Intermediate paths per step — lets us inspect each step's output for debugging
     const mainPassPath = `${orgId}/${selectionsHash}_main.jpg`;
+    const pass1Path = `${orgId}/${selectionsHash}_pass1.jpg`;
     const scopedEditPath = `${orgId}/${selectionsHash}_scoped.jpg`;
     const refinePath = `${orgId}/${selectionsHash}_refine.jpg`;
-    const flashPath = `${orgId}/${selectionsHash}_flash.jpg`;
-    const proPath = `${orgId}/${selectionsHash}_pro.jpg`;
 
-    // --- Step 1: Diff cache check + main pass generation (merged to save a step transition) ---
-    // Returns either a scoped-edit signal or full generation result.
+    // --- Step 1: Diff cache check + structural pass (or single pass) ---
     const generateResult = await step.run("generate", async () => {
-      // Quick diff cache check (~100ms DB query, saves a full Inngest step transition)
+      const t0 = performance.now();
+      const lap = (label: string) => console.log(`[generate/photo][timing] ${label}: ${Math.round(performance.now() - t0)}ms`);
+
       const diffMatch = await findSingleSurfaceDiffMatch(stepPhotoId, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH);
+      lap("diff-check");
       if (diffMatch) {
         const changedSub = identifyChangedSubcategory(diffMatch.selectionsJson, scopedSelections);
         const isApplianceAddRemove = changedSub && (
@@ -175,33 +166,18 @@ export const generatePhoto = inngest.createFunction(
 
       // No scoped edit — full generation
       const supabase = getServiceClient();
-
-      // If flashPostPass is configured, exclude its subcategories from main pass.
-      let mainSelections = scopedSelections;
-      if (resolvedPolicy.flashPostPass) {
-        const isolatedSubs = new Set(resolvedPolicy.flashPostPass.isolateSubcategories);
-        mainSelections = {};
-        for (const [subId, optId] of Object.entries(scopedSelections)) {
-          if (!isolatedSubs.has(subId)) mainSelections[subId] = optId;
-        }
-      }
-
       const baseResolver = createSwatchResolver(supabase);
 
       // Parallel — hero download runs alongside optionLookup → swatch pre-warm chain
       const optionLookupP = getOptionLookup(orgId).then(ol => {
         // Strip exclusion rules for merged linked subcategories.
-        // resolveLinkedOptions in the route handler removed linked subs from selections
-        // and merged spatial hints, but this fresh optionLookup still has the original
-        // exclusion rules (e.g. "Do NOT apply it to island"). Detect merges by finding
-        // scoped subcategories absent from selections whose options link to a selected one.
         for (const subId of scopedSubcategoryIds) {
-          if (subId in mainSelections || subId in scopedSelections) continue;
+          if (subId in scopedSelections) continue;
           for (const [key, entry] of ol) {
             if (!key.startsWith(`${subId}:`)) continue;
             const linkedSub = entry.option.linkedToSubcategory;
-            if (!linkedSub || linkedSub in mainSelections === false) continue;
-            const sourceKey = `${linkedSub}:${mainSelections[linkedSub]}`;
+            if (!linkedSub || linkedSub in scopedSelections === false) continue;
+            const sourceKey = `${linkedSub}:${scopedSelections[linkedSub]}`;
             const sourceEntry = ol.get(sourceKey);
             if (sourceEntry?.subCategory.generationRules?.length) {
               sourceEntry.subCategory = {
@@ -219,8 +195,9 @@ export const generatePhoto = inngest.createFunction(
       const [heroResult, optionLookup, cachedResolver] = await Promise.all([
         supabase.storage.from("rooms").download(heroImagePath),
         optionLookupP,
-        optionLookupP.then(ol => preWarmSwatchCache(mainSelections, ol, baseResolver)),
+        optionLookupP.then(ol => preWarmSwatchCache(scopedSelections, ol, baseResolver)),
       ]);
+      lap("parallel-setup");
 
       const { data: imageData, error: downloadErr } = heroResult;
       if (downloadErr || !imageData) {
@@ -233,67 +210,93 @@ export const generatePhoto = inngest.createFunction(
       const imageBuffer = needsConversion
         ? await sharp(rawImageBuffer).png().toBuffer()
         : rawImageBuffer;
-      const heroMime = needsConversion ? "image/png" : (heroExt === "jpg" ? "image/jpeg" : `image/${heroExt}`);
-      const heroFilename = needsConversion
-        ? (heroImagePath.split("/").pop()?.replace(/\.[^.]+$/, ".png") || "room.png")
-        : (heroImagePath.split("/").pop() || "room.webp");
 
-      const { prompt, swatches } = await buildEditPrompt(
-        mainSelections,
-        optionLookup,
-        spatialHints,
-        scopedSubcategoryIds,
-        sceneDescription,
-        photoSpatialHint,
-        cachedResolver,
-        resolvedPolicy.promptOverrides,
-      );
+      // --- Determine if we need a two-pass split ---
+      // Count swatches cheaply by checking which selections have swatch URLs.
+      // This avoids building prompts (expensive: downloads + sharp hex extraction)
+      // until we know the path.
+      const FIXTURE_PATTERNS = ["hardware", "faucet", "sink", "lighting", "fan", "refrigerator", "range", "dishwasher"];
+      const isFixture = (subId: string) => FIXTURE_PATTERNS.some(p => subId.includes(p));
 
-      const supportedSwatches = swatches.filter((s) => {
-        const supported = ["image/jpeg", "image/png", "image/webp"];
-        return supported.includes(s.mediaType);
-      });
+      let structuralSwatchCount = 0;
+      let fixtureSwatchCount = 0;
+      for (const [subId, optId] of Object.entries(scopedSelections)) {
+        const entry = optionLookup.get(`${subId}:${optId}`);
+        if (!entry?.option.swatchUrl) continue;
+        if (isFixture(subId)) fixtureSwatchCount++;
+        else structuralSwatchCount++;
+      }
+      const totalSwatchEstimate = structuralSwatchCount + fixtureSwatchCount;
 
-      const inputImages = [
-        await toFile(imageBuffer, heroFilename, { type: heroMime }),
-        ...await Promise.all(
-          supportedSwatches.map((s) => {
-            const ext = s.mediaType.split("/")[1] || "png";
-            const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-            return toFile(s.buffer, filename, { type: s.mediaType });
-          })
-        ),
-      ];
+      // Split into structural + fixture passes when total exceeds 7 AND both
+      // groups have swatches. If all swatches are structural (no fixtures),
+      // we can't split meaningfully — send all in one pass and let BFL truncate
+      // the reference images (prompt text + hex anchors cover the overflow).
+      const needsSplit = totalSwatchEstimate > MAX_SWATCHES
+        && fixtureSwatchCount > 0
+        && structuralSwatchCount > 0;
 
-      console.log(`[generate/photo] Sending ${inputImages.length} images to ${modelName} for photo ${stepPhotoId}`);
+      console.log(`[generate/photo] ~${totalSwatchEstimate} swatches for photo ${stepPhotoId} (${structuralSwatchCount} structural, ${fixtureSwatchCount} fixture)${needsSplit ? " — splitting" : ""}`);
+      lap("pre-prompt");
 
       const genStart = performance.now();
       try {
-        const result = await openai.images.edit({
-          model: modelName,
-          image: inputImages,
-          prompt,
-          quality: "medium",
-          size: "1536x1024",
-          input_fidelity: "high",
-        });
+        if (!needsSplit) {
+          // --- Single pass: all swatches fit (or can't split meaningfully) ---
+          const { prompt, swatches } = await buildBflEditPrompt(
+            scopedSelections,
+            optionLookup,
+            spatialHints,
+            scopedSubcategoryIds,
+            sceneDescription,
+            photoSpatialHint,
+            cachedResolver,
+            resolvedPolicy.promptOverrides,
+          );
 
-        const generatedData = result.data?.[0];
-        if (!generatedData?.b64_json) {
-          throw new Error("No image was generated");
+          const result = await generateImage({
+            model: modelName as BflModel,
+            prompt,
+            inputImage: imageBuffer,
+            referenceImages: swatches.map(s => s.buffer),
+          });
+
+          await uploadIntermediate(supabase, result.imageBuffer, mainPassPath);
+          const durationMs = Math.round(performance.now() - genStart);
+          console.log(`[generate/photo] Single pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          return { type: "generated" as const, prompt, durationMs, lastPath: mainPassPath, passes: 1 };
+        } else {
+          // --- Two-pass split: structural surfaces first ---
+          // Only run pass 1 here. Pass 2 (fixtures) runs in a separate Inngest step
+          // so each pass gets its own 120s Vercel function invocation.
+          const structuralSelections: Record<string, string> = {};
+          const fixtureSelections: Record<string, string> = {};
+          for (const [subId, optId] of Object.entries(scopedSelections)) {
+            if (isFixture(subId)) fixtureSelections[subId] = optId;
+            else structuralSelections[subId] = optId;
+          }
+
+          const { prompt: structuralPrompt, swatches: structuralSwatches } = await buildBflEditPrompt(
+            structuralSelections, optionLookup, spatialHints, scopedSubcategoryIds,
+            sceneDescription, photoSpatialHint, cachedResolver, resolvedPolicy.promptOverrides,
+          );
+
+          const pass1Result = await generateImage({
+            model: modelName as BflModel,
+            prompt: structuralPrompt,
+            inputImage: imageBuffer,
+            referenceImages: structuralSwatches.map(s => s.buffer),
+          });
+          await uploadIntermediate(supabase, pass1Result.imageBuffer, pass1Path);
+
+          const durationMs = Math.round(performance.now() - genStart);
+          console.log(`[generate/photo] Structural pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          return { type: "needs-fixture-pass" as const, structuralPrompt, durationMs, pass1Path };
         }
-
-        const durationMs = Math.round(performance.now() - genStart);
-
-        // Convert PNG → JPEG (10x smaller) and upload — don't return b64 through Inngest
-        await uploadIntermediate(supabase, await toJpeg(Buffer.from(generatedData.b64_json, "base64")), mainPassPath);
-
-        console.log(`[generate/photo] Main pass complete for ${stepPhotoId} in ${durationMs}ms`);
-        return { type: "generated" as const, prompt, durationMs, lastPath: mainPassPath };
       } catch (err) {
         const durationMs = Math.round(performance.now() - genStart);
         await captureAiError(sessionId, {
-          provider: "openai",
+          provider: "bfl",
           model: modelName,
           route: "/api/generate/photo",
           duration_ms: durationMs,
@@ -306,14 +309,69 @@ export const generatePhoto = inngest.createFunction(
       }
     });
 
-    // --- Tracking vars shared across scoped-edit and full-pipeline paths ---
+    // --- Step 1b: Fixture pass (separate step so each pass gets its own 120s window) ---
+    let fixturePassResult: { prompt: string; durationMs: number } | null = null;
+    if (generateResult.type === "needs-fixture-pass") {
+      fixturePassResult = await step.run("generate-fixtures", async () => {
+        const supabase = getServiceClient();
+        const baseResolver = createSwatchResolver(supabase);
+
+        const FIXTURE_PATTERNS = ["hardware", "faucet", "sink", "lighting", "fan", "refrigerator", "range", "dishwasher"];
+        const isFixture = (subId: string) => FIXTURE_PATTERNS.some(p => subId.includes(p));
+        const fixtureSelections: Record<string, string> = {};
+        for (const [subId, optId] of Object.entries(scopedSelections)) {
+          if (isFixture(subId)) fixtureSelections[subId] = optId;
+        }
+
+        // Parallel: option lookup + swatch pre-warm chain, pass1 download
+        const optionLookupP = getOptionLookup(orgId);
+        const [optionLookup, cachedResolver, pass1Buffer] = await Promise.all([
+          optionLookupP,
+          optionLookupP.then(ol => preWarmSwatchCache(fixtureSelections, ol, baseResolver)),
+          downloadIntermediate(supabase, generateResult.pass1Path),
+        ]);
+
+        const { prompt: fixturePrompt, swatches: fixtureSwatches } = await buildBflEditPrompt(
+          fixtureSelections, optionLookup, spatialHints, scopedSubcategoryIds,
+          sceneDescription, photoSpatialHint, cachedResolver, resolvedPolicy.promptOverrides,
+        );
+
+        const genStart = performance.now();
+        try {
+          const pass2Result = await generateImage({
+            model: modelName as BflModel,
+            prompt: fixturePrompt,
+            inputImage: pass1Buffer,
+            referenceImages: fixtureSwatches.map(s => s.buffer),
+          });
+
+          await uploadIntermediate(supabase, pass2Result.imageBuffer, mainPassPath);
+          const durationMs = Math.round(performance.now() - genStart);
+          console.log(`[generate/photo] Fixture pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          return { prompt: fixturePrompt, durationMs };
+        } catch (err) {
+          const durationMs = Math.round(performance.now() - genStart);
+          await captureAiError(sessionId, {
+            provider: "bfl",
+            model: modelName,
+            route: "/api/generate/photo",
+            duration_ms: durationMs,
+            error: err,
+            orgId, orgSlug, floorplanSlug,
+          });
+          throw err;
+        }
+      });
+    }
+
+    // --- Tracking vars ---
     let isScopedEdit = false;
     let scopedEditDepth = 0;
     let scopedEditSurface: string | undefined;
     let finalPrompt: string;
-    let openaiPasses = 1;
     let totalDurationMs: number;
     let currentPath: string;
+    let totalPasses: number;
 
     // --- Scoped edit path (diff cache hit) ---
     if (generateResult.type === "scoped-edit-needed") {
@@ -321,11 +379,11 @@ export const generatePhoto = inngest.createFunction(
       isScopedEdit = true;
       scopedEditDepth = depth + 1;
       scopedEditSurface = changedSubcategoryId;
+      totalPasses = 1;
 
       const scopedResult = await step.run("scoped-edit", async () => {
         const supabase = getServiceClient();
 
-        // Parallel: option lookup + base image download
         const [optionLookup, baseImageResult] = await Promise.all([
           getOptionLookup(orgId),
           supabase.storage.from("generated-images").download(baseImagePath),
@@ -336,7 +394,7 @@ export const generatePhoto = inngest.createFunction(
         const baseBuffer = Buffer.from(await baseImageData.arrayBuffer());
         const resolveSwatchBuffer = createSwatchResolver(supabase);
 
-        const { prompt, swatches } = await buildScopedEditPrompt(
+        const { prompt, swatches } = await buildBflScopedEditPrompt(
           changedSubcategoryId,
           changedNewOptionId,
           scopedSelections,
@@ -349,49 +407,27 @@ export const generatePhoto = inngest.createFunction(
           resolvedPolicy.promptOverrides,
         );
 
-        const supportedSwatches = swatches.filter(s =>
-          ["image/jpeg", "image/png", "image/webp"].includes(s.mediaType),
-        );
-
-        const inputImages = [
-          await toFile(baseBuffer, "base.jpg", { type: "image/jpeg" }),
-          ...await Promise.all(
-            supportedSwatches.map(s => {
-              const ext = s.mediaType.split("/")[1] || "png";
-              const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-              return toFile(s.buffer, filename, { type: s.mediaType });
-            }),
-          ),
-        ];
-
         console.log(`[generate/photo] Scoped edit for ${stepPhotoId}: changing ${changedSubcategoryId} (depth ${depth} → ${depth + 1})`);
 
         const genStart = performance.now();
         try {
-          const result = await openai.images.edit({
-            model: modelName,
-            image: inputImages,
+          const result = await generateImage({
+            model: SCOPED_EDIT_MODEL,
             prompt,
-            quality: "medium",
-            size: "1536x1024",
-            input_fidelity: "high",
+            inputImage: baseBuffer,
+            referenceImages: swatches.map(s => s.buffer),
           });
 
-          const generatedData = result.data?.[0];
-          if (!generatedData?.b64_json) throw new Error("No image from scoped edit");
-
+          await uploadIntermediate(supabase, result.imageBuffer, scopedEditPath);
           const durationMs = Math.round(performance.now() - genStart);
-
-          // Upload to intermediate path — post-passes may follow
-          await uploadIntermediate(supabase, await toJpeg(Buffer.from(generatedData.b64_json, "base64")), scopedEditPath);
 
           console.log(`[generate/photo] Scoped edit complete for ${stepPhotoId} in ${durationMs}ms`);
           return { prompt, durationMs };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
           await captureAiError(sessionId, {
-            provider: "openai",
-            model: modelName,
+            provider: "bfl",
+            model: SCOPED_EDIT_MODEL,
             route: "/api/generate/photo",
             duration_ms: durationMs,
             error: err,
@@ -404,22 +440,28 @@ export const generatePhoto = inngest.createFunction(
       currentPath = scopedEditPath;
       finalPrompt = scopedResult.prompt;
       totalDurationMs = scopedResult.durationMs;
-    } else {
-      // --- Full pipeline: main pass completed ---
+    } else if (generateResult.type === "needs-fixture-pass" && fixturePassResult) {
+      // --- Two-pass split completed ---
+      finalPrompt = `${generateResult.structuralPrompt}\n\nPASS_2 (fixtures):\n${fixturePassResult.prompt}`;
+      totalDurationMs = generateResult.durationMs + fixturePassResult.durationMs;
+      currentPath = mainPassPath;
+      totalPasses = 2;
+    } else if (generateResult.type === "generated") {
+      // --- Full pipeline: single pass completed ---
       finalPrompt = generateResult.prompt;
       totalDurationMs = generateResult.durationMs;
       currentPath = generateResult.lastPath;
+      totalPasses = generateResult.passes;
+    } else {
+      // needs-fixture-pass without fixturePassResult — should never happen
+      throw new Error("Unexpected state: needs-fixture-pass without fixture result");
     }
 
-    // --- Step 2: Second pass / oven refinement (full pipeline only, gets its own 120s) ---
-
+    // --- Step 2: Oven correction / second pass (conditional) ---
     if (!isScopedEdit && resolvedPolicy.secondPass) {
       const secondPass = await step.run("refine", async () => {
         const supabase = getServiceClient();
         const prevBuffer = await downloadIntermediate(supabase, currentPath);
-        const secondPassInput = [
-          await toFile(prevBuffer, "first-pass.jpg", { type: "image/jpeg" }),
-        ];
 
         console.log(
           `[generate/photo] Running second pass (${resolvedPolicy.secondPass!.reason}) for photo ${stepPhotoId}`,
@@ -427,29 +469,19 @@ export const generatePhoto = inngest.createFunction(
 
         const genStart = performance.now();
         try {
-          const secondPassResult = await openai.images.edit({
-            model: modelName,
-            image: secondPassInput,
+          const result = await generateImage({
+            model: modelName as BflModel,
             prompt: resolvedPolicy.secondPass!.prompt,
-            quality: "medium",
-            size: "1536x1024",
-            input_fidelity: resolvedPolicy.secondPass!.inputFidelity,
+            inputImage: prevBuffer,
           });
 
-          const secondPassData = secondPassResult.data?.[0];
+          await uploadIntermediate(supabase, result.imageBuffer, refinePath);
           const durationMs = Math.round(performance.now() - genStart);
-
-          if (secondPassData?.b64_json) {
-            await uploadIntermediate(supabase, await toJpeg(Buffer.from(secondPassData.b64_json, "base64")), refinePath);
-            console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
-            return { durationMs, success: true as const, path: refinePath };
-          }
-
-          console.warn(`[generate/photo] Second pass produced no image for ${stepPhotoId}; keeping first-pass output.`);
-          return { durationMs, success: false as const };
+          console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
+          return { durationMs, success: true as const, path: refinePath };
         } catch (err) {
           const durationMs = Math.round(performance.now() - genStart);
-          console.warn(`[generate/photo] Second pass failed for ${stepPhotoId}; keeping first-pass output.`, err);
+          console.warn(`[generate/photo] Second pass failed for ${stepPhotoId}; keeping previous output.`, err);
           return { durationMs, success: false as const };
         }
       });
@@ -458,304 +490,17 @@ export const generatePhoto = inngest.createFunction(
       if (secondPass.success) {
         currentPath = secondPass.path;
         finalPrompt = `${finalPrompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
-        openaiPasses += 1;
+        totalPasses += 1;
       }
     }
 
-    // --- Step 3: Flash post-pass for isolated surfaces (conditional, gets its own 120s) ---
-    let flashPostPassResult: { prompt: string; durationMs: number; path: string } | null = null;
-
-    if (resolvedPolicy.flashPostPass) {
-      flashPostPassResult = await step.run("flash-post-pass", async () => {
-        const supabase = getServiceClient();
-        const isolatedSubs = new Set(resolvedPolicy.flashPostPass!.isolateSubcategories);
-        const baseResolver = createSwatchResolver(supabase);
-
-        // Phase 1: Parallel — option lookup + previous output download
-        const [optionLookup, prevOutputBuffer] = await Promise.all([
-          getOptionLookup(orgId),
-          downloadIntermediate(supabase, currentPath),
-        ]);
-
-        // Identify isolated entries
-        const entries: Array<{
-          subId: string; optId: string;
-          option: { swatchUrl?: string | null; swatchColor?: string | null; name: string; dimensions?: string | null; generationRules?: string[] | null };
-          subCategory: { name: string; generationRules?: string[] | null };
-        }> = [];
-        for (const [subId, optId] of Object.entries(scopedSelections)) {
-          if (!isolatedSubs.has(subId)) continue;
-          const entry = optionLookup.get(`${subId}:${optId}`);
-          if (!entry) continue;
-          entries.push({ subId, optId, option: entry.option, subCategory: entry.subCategory });
-        }
-
-        if (entries.length === 0) {
-          console.warn(`[generate/photo] Flash post-pass skipped for ${stepPhotoId}: no isolated selections resolved`);
-          return null;
-        }
-
-        // Phase 2: Parallel — download all swatches at once
-        const swatchResults = await Promise.all(
-          entries.map(e => e.option.swatchUrl ? baseResolver(e.option.swatchUrl).catch(() => null) : Promise.resolve(null)),
-        );
-
-        // Phase 3: Build prompt (CPU only, no I/O)
-        const swatches: Array<{ buffer: Buffer; mediaType: string }> = [];
-        const lines: string[] = [];
-        const rules: string[] = [];
-        let swatchIdx = 1;
-
-        for (let i = 0; i < entries.length; i++) {
-          const { option, subCategory, subId } = entries[i];
-          for (const r of subCategory.generationRules ?? []) rules.push(r);
-          for (const r of option.generationRules ?? []) rules.push(r);
-
-          const hint = spatialHints[subId];
-          const target = hint ? `${subCategory.name} → apply to ${hint}` : subCategory.name;
-          const dimSuffix = option.dimensions?.trim() ? `; dimensions: ${option.dimensions.trim()}` : "";
-
-          const resolved = swatchResults[i];
-          if (resolved) {
-            swatches.push(resolved);
-            lines.push(`${swatchIdx}. ${target}${dimSuffix} (use swatch #${swatchIdx})`);
-            swatchIdx += 1;
-          } else {
-            const hex = option.swatchColor?.trim();
-            if (hex) {
-              lines.push(`${swatchIdx}. ${target} (no swatch; target color ${hex})`);
-            } else {
-              lines.push(`${swatchIdx}. ${target}: ${option.name} (no swatch; follow text)`);
-            }
-            swatchIdx += 1;
-          }
-        }
-
-        const rulesBlock = rules.length > 0
-          ? `\n\nRULES:\n${rules.map(r => `- ${r}`).join("\n")}`
-          : "";
-
-        const prompt = `Edit this room photo. Change ONLY the surface(s) listed below. Every other pixel in the image must remain identical — do not add, remove, or alter any objects, appliances, fixtures, shelves, pantry contents, doorways, alcoves, or other surfaces.
-
-${lines.join("\n")}
-
-Swatch mapping: after the room photo, attached swatches are ordered #1..#${swatches.length}.
-Match each swatch's color, pattern, and texture EXACTLY on its specified surface.${rulesBlock}`;
-
-        const parts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [
-          { text: prompt },
-          { inlineData: { mimeType: "image/jpeg", data: prevOutputBuffer.toString("base64") } },
-        ];
-        for (const swatch of swatches) {
-          parts.push({ inlineData: { mimeType: swatch.mediaType, data: swatch.buffer.toString("base64") } });
-        }
-
-        const postPassModel = resolvedPolicy.flashPostPass!.model;
-        const googleApiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-        if (!googleApiKey) throw new Error("Missing GOOGLE_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY for flash post-pass");
-
-        const ai = new GoogleGenAI({ apiKey: googleApiKey });
-
-        console.log(
-          `[generate/photo] Flash post-pass: sending ${swatches.length + 1} images to ${postPassModel} for photo ${stepPhotoId} (isolated: ${lines.length} surface(s))`,
-        );
-
-        const genStart = performance.now();
-        try {
-          const response = await ai.models.generateContent({
-            model: postPassModel,
-            contents: [{ role: "user", parts }],
-            config: {
-              responseModalities: ["TEXT", "IMAGE"],
-              imageConfig: { aspectRatio: "3:2", imageSize: "2K" },
-            },
-          });
-          const durationMs = Math.round(performance.now() - genStart);
-
-          const candidate = response.candidates?.[0];
-          if (!candidate?.content?.parts) throw new Error("No response from flash post-pass model");
-
-          let imageB64: string | null = null;
-          for (const part of candidate.content.parts) {
-            if ((part as any).inlineData) {
-              imageB64 = (part as any).inlineData.data;
-              break;
-            }
-          }
-          if (!imageB64) throw new Error("Flash post-pass model returned no image");
-
-          // Resize to match OpenAI main pass output (1536x1024), JPEG for smaller transfer
-          const resized = await sharp(Buffer.from(imageB64, "base64"))
-            .resize(1536, 1024, { fit: "fill" })
-            .jpeg({ quality: 90 })
-            .toBuffer();
-
-          await uploadIntermediate(supabase, resized, flashPath);
-
-          console.log(`[generate/photo] Flash post-pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { prompt, durationMs, path: flashPath };
-        } catch (err) {
-          const durationMs = Math.round(performance.now() - genStart);
-          await captureAiError(sessionId, {
-            provider: "google",
-            model: postPassModel,
-            route: "/api/generate/photo",
-            duration_ms: durationMs,
-            error: err,
-            orgId,
-            orgSlug,
-            floorplanSlug,
-          });
-          // Fall back to previous output rather than killing the whole generation
-          console.warn(`[generate/photo] Flash post-pass failed for ${stepPhotoId}; keeping previous output.`, err);
-          return null;
-        }
-      });
-
-      if (flashPostPassResult) {
-        currentPath = flashPostPassResult.path;
-        totalDurationMs += flashPostPassResult.durationMs;
-      }
-    }
-
-    // --- Step 3b: Pro refinement post-pass for cabinets + optionally backsplash (conditional) ---
-    let proPostPassResult: { prompt: string; durationMs: number; path: string } | null = null;
-
-    if (resolvedPolicy.proPostPass) {
-      proPostPassResult = await step.run("pro-post-pass", async () => {
-        const supabase = getServiceClient();
-        const proSubs = new Set(resolvedPolicy.proPostPass!.subcategories);
-
-        // Phase 1: Parallel — option lookup + previous output download
-        const [optionLookup, prevOutputBuffer] = await Promise.all([
-          getOptionLookup(orgId),
-          downloadIntermediate(supabase, currentPath),
-        ]);
-
-        // Resolve linked options (e.g. "Match to Main" → merge into source when same swatch)
-        // Copy spatialHints so we don't mutate the event data
-        const postPassHints = { ...spatialHints };
-        resolveLinkedOptions(scopedSelections, optionLookup, postPassHints);
-
-        // Build selections for just the post-pass subcategories
-        const postPassSelections: Record<string, string> = {};
-        for (const [subId, optId] of Object.entries(scopedSelections)) {
-          if (proSubs.has(subId)) postPassSelections[subId] = optId;
-        }
-
-        const baseResolver = createSwatchResolver(supabase);
-        const cachedResolver = await preWarmSwatchCache(postPassSelections, optionLookup, baseResolver);
-
-        const { prompt, swatches } = await buildEditPrompt(
-          postPassSelections,
-          optionLookup,
-          postPassHints,
-          [...proSubs],
-          sceneDescription,
-          photoSpatialHint,
-          cachedResolver,
-          resolvedPolicy.promptOverrides,
-        );
-
-        const supportedSwatches = swatches.filter(s =>
-          ["image/jpeg", "image/png", "image/webp"].includes(s.mediaType),
-        );
-
-        if (supportedSwatches.length === 0) {
-          console.warn(`[generate/photo] Pro post-pass skipped for ${stepPhotoId}: no swatches resolved`);
-          return null;
-        }
-
-        // Build Gemini multimodal request
-        const parts: Array<{ inlineData: { mimeType: string; data: string } } | { text: string }> = [
-          { text: prompt },
-          { inlineData: { mimeType: "image/jpeg", data: prevOutputBuffer.toString("base64") } },
-        ];
-        for (const swatch of supportedSwatches) {
-          parts.push({ inlineData: { mimeType: swatch.mediaType, data: swatch.buffer.toString("base64") } });
-        }
-
-        const postPassModel = resolvedPolicy.proPostPass!.model;
-        const googleApiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-        if (!googleApiKey) throw new Error("Missing GOOGLE_API_KEY for Pro post-pass");
-
-        const ai = new GoogleGenAI({ apiKey: googleApiKey });
-
-        console.log(
-          `[generate/photo] Pro post-pass: sending ${supportedSwatches.length + 1} images to ${postPassModel} for photo ${stepPhotoId} (${[...proSubs].join(", ")})`,
-        );
-
-        const genStart = performance.now();
-        try {
-          const response = await ai.models.generateContent({
-            model: postPassModel,
-            contents: [{ role: "user", parts }],
-            config: {
-              responseModalities: ["TEXT", "IMAGE"],
-              imageConfig: { aspectRatio: "3:2", imageSize: "2K" },
-            },
-          });
-          const durationMs = Math.round(performance.now() - genStart);
-
-          const candidate = response.candidates?.[0];
-          if (!candidate?.content?.parts) throw new Error("No response from Pro post-pass model");
-
-          let imageB64: string | null = null;
-          for (const part of candidate.content.parts) {
-            if ((part as any).inlineData) {
-              imageB64 = (part as any).inlineData.data;
-              break;
-            }
-          }
-          if (!imageB64) throw new Error("Pro post-pass model returned no image");
-
-          const resized = await sharp(Buffer.from(imageB64, "base64"))
-            .resize(1536, 1024, { fit: "fill" })
-            .jpeg({ quality: 90 })
-            .toBuffer();
-
-          await uploadIntermediate(supabase, resized, proPath);
-
-          console.log(`[generate/photo] Pro post-pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { prompt, durationMs, path: proPath };
-        } catch (err) {
-          const durationMs = Math.round(performance.now() - genStart);
-          await captureAiError(sessionId, {
-            provider: "google",
-            model: postPassModel,
-            route: "/api/generate/photo",
-            duration_ms: durationMs,
-            error: err,
-            orgId, orgSlug, floorplanSlug,
-          });
-          console.warn(`[generate/photo] Pro post-pass failed for ${stepPhotoId}; keeping previous output.`, err);
-          return null;
-        }
-      });
-
-      if (proPostPassResult) {
-        currentPath = proPostPassResult.path;
-        totalDurationMs += proPostPassResult.durationMs;
-      }
-    }
-
-    // --- Step 4: Persist — copy final intermediate to canonical path + write DB ---
+    // --- Step 3: Persist — copy final intermediate to canonical path + write DB ---
     await step.run("persist", async () => {
       const supabase = getServiceClient();
 
-      // Copy the final intermediate image to the canonical output path
       if (currentPath !== outputPath) {
         const finalBuffer = await downloadIntermediate(supabase, currentPath);
         await uploadIntermediate(supabase, finalBuffer, outputPath);
-      }
-
-      // Build full prompt log
-      let promptLog = finalPrompt;
-      if (flashPostPassResult) {
-        promptLog = `${promptLog}\n\nFLASH_POST_PASS (${resolvedPolicy.flashPostPass!.reason}, ${resolvedPolicy.flashPostPass!.model}):\n${flashPostPassResult.prompt}`;
-      }
-      if (proPostPassResult) {
-        promptLog = `${promptLog}\n\nPRO_POST_PASS (${resolvedPolicy.proPostPass!.reason}, ${resolvedPolicy.proPostPass!.model}):\n${proPostPassResult.prompt}`;
       }
 
       const { error: upsertError } = await supabase
@@ -764,7 +509,7 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
           selections_hash: selectionsHash,
           selections_json: selectionsJsonForClaim,
           image_path: outputPath,
-          prompt: promptLog,
+          prompt: finalPrompt,
           step_id: stepId,
           step_photo_id: stepPhotoId,
           buyer_session_id: sessionId,
@@ -779,37 +524,28 @@ Match each swatch's color, pattern, and texture EXACTLY on its specified surface
         console.error("[generate/photo] DB upsert failed:", upsertError);
       }
 
-      const totalPasses = openaiPasses + (flashPostPassResult ? 1 : 0) + (proPostPassResult ? 1 : 0);
+      const scopedEditModel = isScopedEdit ? SCOPED_EDIT_MODEL : undefined;
 
       await captureAiEvent(sessionId, {
-        provider: "openai",
-        model: modelName,
+        provider: "bfl",
+        model: isScopedEdit ? SCOPED_EDIT_MODEL : modelName,
         route: "/api/generate/photo",
         duration_ms: totalDurationMs,
-        cost_usd: estimateOpenAICost(modelName, openaiPasses)
-          + (flashPostPassResult ? estimateGeminiImageCost(resolvedPolicy.flashPostPass!.model) : 0)
-          + (proPostPassResult ? estimateGeminiImageCost(resolvedPolicy.proPostPass!.model) : 0),
+        cost_usd: isScopedEdit
+          ? estimateBflCost(SCOPED_EDIT_MODEL)
+          : estimateBflCost(modelName, totalPasses),
         orgId,
         orgSlug,
         floorplanSlug,
         image_size: "1536x1024",
-        image_quality: "medium",
-        second_pass: openaiPasses > 1,
-        flash_post_pass: !!flashPostPassResult,
-        flash_post_pass_model: flashPostPassResult ? resolvedPolicy.flashPostPass!.model : undefined,
-        pro_post_pass: !!proPostPassResult,
-        pro_post_pass_model: proPostPassResult ? resolvedPolicy.proPostPass!.model : undefined,
         scoped_edit: isScopedEdit,
         scoped_edit_depth: isScopedEdit ? scopedEditDepth : undefined,
         scoped_edit_surface: scopedEditSurface,
+        second_pass: totalPasses > 1 && !isScopedEdit,
+        two_pass_split: totalPasses >= 2 && !isScopedEdit && !resolvedPolicy.secondPass,
       });
 
-      const passLabels = [
-        `${openaiPasses} OpenAI`,
-        flashPostPassResult ? "flash post-pass" : null,
-        proPostPassResult ? "pro post-pass" : null,
-      ].filter(Boolean).join(", ");
-      console.log(`[generate/photo] Completed for photo ${stepPhotoId} in ${totalDurationMs}ms (${totalPasses} passes: ${passLabels})`);
+      console.log(`[generate/photo] Completed for photo ${stepPhotoId} in ${totalDurationMs}ms (${totalPasses} pass${totalPasses > 1 ? "es" : ""}${isScopedEdit ? ", scoped edit" : ""})`);
     });
   },
 );

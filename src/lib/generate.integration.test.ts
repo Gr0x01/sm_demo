@@ -339,8 +339,8 @@ describe("deriveGenerationContext — negative-guard rules", () => {
   });
 });
 
-describe("deriveGenerationContext — option-driven flash isolation", () => {
-  it("auto-builds flashPostPass when selected option has needsIsolation", () => {
+describe("deriveGenerationContext — no longer builds flash/pro post-passes", () => {
+  it("needsIsolation option does not trigger flashPostPass (Flux 2 handles tile patterns)", () => {
     const result = deriveGenerationContext(
       kitchenAiConfig,
       { ...kitchenSelections, backsplash: "bs-picket-taupe" },
@@ -348,64 +348,26 @@ describe("deriveGenerationContext — option-driven flash isolation", () => {
       defaultPolicyContext,
       null,
     );
-    expect(result.resolvedPolicy.flashPostPass).toBeDefined();
-    expect(result.resolvedPolicy.flashPostPass!.isolateSubcategories).toContain("backsplash");
-    expect(result.resolvedPolicy.flashPostPass!.reason).toBe("option-level isolation");
+    expect((result.resolvedPolicy as any).flashPostPass).toBeUndefined();
+    expect((result.resolvedPolicy as any).proPostPass).toBeUndefined();
   });
 
-  it("does not build flashPostPass when selected option does not need isolation", () => {
-    const result = deriveGenerationContext(
+  it("produces different hash for different backsplash options", () => {
+    const withPicket = deriveGenerationContext(
+      kitchenAiConfig,
+      { ...kitchenSelections, backsplash: "bs-picket-taupe" },
+      optionLookup,
+      defaultPolicyContext,
+      null,
+    );
+    const withSubway = deriveGenerationContext(
       kitchenAiConfig,
       { ...kitchenSelections, backsplash: "bs-subway-white" },
       optionLookup,
       defaultPolicyContext,
       null,
     );
-    expect(result.resolvedPolicy.flashPostPass).toBeUndefined();
-  });
-
-  it("produces different hash for isolation vs non-isolation option", () => {
-    const withIsolation = deriveGenerationContext(
-      kitchenAiConfig,
-      { ...kitchenSelections, backsplash: "bs-picket-taupe" },
-      optionLookup,
-      defaultPolicyContext,
-      null,
-    );
-    const withoutIsolation = deriveGenerationContext(
-      kitchenAiConfig,
-      { ...kitchenSelections, backsplash: "bs-subway-white" },
-      optionLookup,
-      defaultPolicyContext,
-      null,
-    );
-    expect(withIsolation.selectionsHash).not.toBe(withoutIsolation.selectionsHash);
-  });
-
-  it("merges option-driven isolation with policy-level flashPostPass", () => {
-    const policy = {
-      policyKey: "kitchen-hero",
-      isActive: true,
-      policyJson: {
-        flashPostPass: {
-          reason: "policy-level override",
-          model: "custom-model",
-          isolateSubcategories: ["range"],
-        },
-      },
-    };
-    const result = deriveGenerationContext(
-      kitchenAiConfig,
-      { ...kitchenSelections, backsplash: "bs-picket-taupe" },
-      optionLookup,
-      defaultPolicyContext,
-      policy,
-    );
-    expect(result.resolvedPolicy.flashPostPass).toBeDefined();
-    expect(result.resolvedPolicy.flashPostPass!.isolateSubcategories).toContain("backsplash");
-    expect(result.resolvedPolicy.flashPostPass!.isolateSubcategories).toContain("range");
-    // Policy-level model takes precedence
-    expect(result.resolvedPolicy.flashPostPass!.model).toBe("custom-model");
+    expect(withPicket.selectionsHash).not.toBe(withSubway.selectionsHash);
   });
 });
 

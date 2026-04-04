@@ -35,8 +35,15 @@ const GEMINI_IMAGE_COST: Record<string, number> = {
 };
 const DEFAULT_GEMINI_IMAGE_COST = 0.04;
 
+// BFL (Black Forest Labs) Flux 2 — flat per-image cost
+const BFL_IMAGE_COST: Record<string, number> = {
+  "flux-2-max": 0.09,
+  "flux-2-klein-4b": 0.017,
+};
+const DEFAULT_BFL_IMAGE_COST = 0.09;
+
 interface BaseEvent {
-  provider: "openai" | "google";
+  provider: "openai" | "google" | "bfl";
   model: string;
   route: string;
   duration_ms: number;
@@ -71,7 +78,17 @@ interface GeminiEvent extends BaseEvent {
   second_pass?: boolean;
 }
 
-type AiEvent = OpenAIEvent | GeminiEvent;
+interface BflEvent extends BaseEvent {
+  provider: "bfl";
+  image_size?: string;
+  scoped_edit?: boolean;
+  scoped_edit_depth?: number;
+  scoped_edit_surface?: string;
+  second_pass?: boolean;
+  two_pass_split?: boolean;
+}
+
+type AiEvent = OpenAIEvent | GeminiEvent | BflEvent;
 
 /**
  * Capture an AI event using PostHog's $ai_generation schema so it appears
@@ -119,7 +136,7 @@ export async function captureAiEvent(distinctId: string, properties: AiEvent): P
 }
 
 interface AiErrorEvent {
-  provider: "openai" | "google";
+  provider: "openai" | "google" | "bfl";
   model: string;
   route: string;
   duration_ms: number;
@@ -182,6 +199,10 @@ export function estimateOpenAICost(model: string, passes: number): number {
 
 export function estimateGeminiImageCost(model: string): number {
   return GEMINI_IMAGE_COST[model] ?? DEFAULT_GEMINI_IMAGE_COST;
+}
+
+export function estimateBflCost(model: string, passes: number = 1): number {
+  return (BFL_IMAGE_COST[model] ?? DEFAULT_BFL_IMAGE_COST) * passes;
 }
 
 export function estimateGeminiCost(model: string, usage: { inputTokens?: number; outputTokens?: number }): number {

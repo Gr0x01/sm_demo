@@ -5,6 +5,5 @@
  * When changing models, also update the cost map in posthog-server.ts.
  */
 export const VISION_MODEL = "gemini-3-flash-preview";
-export const IMAGE_MODEL = "gpt-image-1.5";
-export const ISOLATION_IMAGE_MODEL = "gemini-3.1-flash-image-preview";
-export const REFINEMENT_IMAGE_MODEL = "gemini-3-pro-image-preview";
+export const IMAGE_MODEL = "flux-2-max";
+export const SCOPED_EDIT_MODEL = "flux-2-klein-4b";
