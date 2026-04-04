@@ -333,10 +333,16 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - Two-tone spatial separation (Onyx island vs Sahara perimeter) still unreliable — needs more prompt tuning
 - Stain under-application on perimeter cabinets (white → wood) when 5+ structural swatches present
 
-**Remaining tuning:**
+**NEXT — BFL prompt rewrite (2026-04-05):**
+- Our prompts are fundamentally wrong for Flux 2. Written for OpenAI's API, not BFL's.
+- **Full guide**: `memory-bank/generation/bfl-prompting-guide.md`
+- Key issues: 20+ "Do NOT" rules (Flux doesn't support negative prompts), 300+ words (30-80 ideal), scene context leads instead of edits (word order matters), no camera references, verbose swatch descriptions.
+- **`buildBflEditPrompt`**: Lead with edits, brief scene context after, camera ref, hex on finishes only (not metals), NO negative rules. Target 50-120 words.
+- **`buildBflScopedEditPrompt`**: "Change [surface] to match image 2" + location. Target 20-40 words. Klein preserves everything else by default.
+- **Two-pass word ordering**: Pass 1 leads with cabinets (highest impact). Pass 2 leads with range (structural change).
+
+**Other remaining:**
 - [ ] Test non-kitchen SM rooms (bedrooms, bathrooms — single Max pass)
-- [ ] Verify Klein 4B scoped edits on SM photos
-- [ ] Tune prompts for stain application and two-tone separation
 - [ ] Re-seed `/try` demo cache for Flux 2
 - [ ] Update `/try` demo pipeline (`generate-demo.ts`) swatch resize
 
