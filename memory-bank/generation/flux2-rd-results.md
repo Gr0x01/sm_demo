@@ -20,7 +20,7 @@ Tested all BFL Flux 2 models as replacements for OpenAI gpt-image-1.5 + Gemini F
 | Use case | Model | Time | Cost |
 |----------|-------|------|------|
 | Full generation (all surfaces) | **Max** | ~35-46s | ~$0.09 |
-| Scoped edit (1 surface change) | **Klein 4B** | ~7-11s | $0.017 |
+| Scoped edit (1 surface change) | **Klein 9B** | ~15s | $0.02 |
 | Post-pass (oven correction) | **Max** | ~30-39s | ~$0.09 |
 
 ### vs Current Pipeline

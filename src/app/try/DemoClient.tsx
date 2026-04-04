@@ -14,6 +14,16 @@ import { useTrack } from "@/hooks/useTrack";
 
 const CALENDLY_URL = "https://calendly.com/finch-rashaad/finch-demo";
 
+/** Preload an image so the browser has it cached before we swap src */
+function preloadImage(url: string): Promise<void> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve(); // Don't block on error
+    img.src = url;
+  });
+}
+
 type DemoPhase = "picking" | "generating" | "result";
 
 interface UploadedPhoto {
@@ -182,6 +192,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
       const checkData = await checkRes.json();
       if (checkData.status === "complete" && checkData.imageUrl) {
+        await preloadImage(checkData.imageUrl);
         setGeneratedImageUrl(checkData.imageUrl);
         sessionStorage.setItem(SS_GENERATED, checkData.imageUrl);
         setLastCacheHit(true);
@@ -207,6 +218,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
       // Cache hit — route returned 200 with imageUrl
       if (genRes.ok && genRes.status === 200 && genData.imageUrl) {
+        await preloadImage(genData.imageUrl);
         setGeneratedImageUrl(genData.imageUrl);
         sessionStorage.setItem(SS_GENERATED, genData.imageUrl);
         setLastCacheHit(true);
@@ -250,6 +262,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
           throw new Error("Generation timed out — please try again");
         }
 
+        await preloadImage(imageUrl);
         setGeneratedImageUrl(imageUrl);
         sessionStorage.setItem(SS_GENERATED, imageUrl);
         setLastCacheHit(false);

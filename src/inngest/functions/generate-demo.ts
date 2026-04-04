@@ -69,7 +69,7 @@ export const generateDemo = inngest.createFunction(
     // --- Step 1: Diff cache check + full generation (merged to save a step transition) ---
     const generateResult = await step.run("generate", async () => {
       // Quick diff cache check (~100ms DB query, saves a full Inngest step transition)
-      const diffMatch = await findDemoDiffMatch(photoHash, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH);
+      const diffMatch = await findDemoDiffMatch(photoHash, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH, DEMO_GENERATION_CACHE_VERSION);
       if (diffMatch) {
         const changedSub = identifyChangedSubcategory(diffMatch.selectionsJson, effectiveSelections);
         const isApplianceAddRemove = changedSub && (
@@ -148,6 +148,8 @@ export const generateDemo = inngest.createFunction(
       const { prompt, swatches } = promptResult;
 
       console.log(`[demo/generate] Sending ${swatches.length} swatches to ${IMAGE_MODEL}`);
+      console.log(`[demo/generate] Swatch order: ${swatches.map((s, i) => `image ${i + 2}=${s.subcategoryId}`).join(", ")}`);
+      console.log(`[demo/generate] Prompt:\n${prompt}`);
 
       const genStart = performance.now();
       try {
@@ -197,11 +199,18 @@ export const generateDemo = inngest.createFunction(
 
         const baseBuffer = Buffer.from(await baseImageData.arrayBuffer());
 
-        // Merge spatial hints
+        // Merge spatial hints (same logic as full gen path)
         const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
         if (sceneAnalysis?.spatialHints) {
           for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
-            if (hint && hint.trim()) spatialHints[key] = hint;
+            if (!hint?.trim()) continue;
+            if (key === "kitchen-cabinet-color") {
+              spatialHints[key] = `${hint.trim()}. The island is a SEPARATE selection — do not change it here`;
+            } else if (key === "island-cabinet-color") {
+              spatialHints[key] = `${hint.trim()}. Perimeter wall cabinets are a SEPARATE selection — do not change them here`;
+            } else {
+              spatialHints[key] = hint;
+            }
           }
         }
 
@@ -220,6 +229,8 @@ export const generateDemo = inngest.createFunction(
         );
 
         console.log(`[demo/generate] Scoped edit: changing ${changedSubcategoryId} (depth ${depth} → ${depth + 1})`);
+        console.log(`[demo/generate] Base image: ${baseImagePath}`);
+        console.log(`[demo/generate] Scoped prompt:\n${prompt}`);
 
         const genStart = performance.now();
         try {

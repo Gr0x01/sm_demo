@@ -37,7 +37,7 @@ Full working demo built on Stone Martin Builders' Kinkade plan. Real prices, 166
 | Service | Purpose |
 |---------|---------|
 | **Next.js 16** | App framework |
-| **BFL Flux 2 Max / Klein 4B** | Image generation (Max for full gen, Klein 4B for scoped edits) |
+| **BFL Flux 2 Max / Klein 9B** | Image generation (Max for full gen, Klein 9B for scoped edits) |
 | **Supabase** | Database (multi-tenant, RLS) + Storage (swatches, generated images) + Auth (admin) |
 | **Inngest** | Background job execution (generation pipeline) |
 | **Tailwind CSS v4** | Styling |

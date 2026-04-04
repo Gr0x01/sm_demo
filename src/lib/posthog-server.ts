@@ -39,6 +39,7 @@ const DEFAULT_GEMINI_IMAGE_COST = 0.04;
 const BFL_IMAGE_COST: Record<string, number> = {
   "flux-2-max": 0.09,
   "flux-2-klein-4b": 0.017,
+  "flux-2-klein-9b": 0.02,
 };
 const DEFAULT_BFL_IMAGE_COST = 0.09;
 

@@ -564,18 +564,25 @@ export async function findDemoDiffMatch(
   photoHash: string,
   leaveOneOutHashes: string[],
   maxDepth: number,
+  cacheVersion?: string,
 ): Promise<{ imagePath: string; depth: number; selectionsJson: Record<string, unknown> } | null> {
   if (leaveOneOutHashes.length === 0) return null;
 
   const supabase = getServiceClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("generated_images")
     .select("image_path, scoped_edit_depth, selections_json")
     .eq("selections_json->>_photo_hash", photoHash)
     .eq("selections_json->>_source", "demo")
     .lt("scoped_edit_depth", maxDepth)
     .neq("image_path", "__pending__")
-    .overlaps("leave_one_out_hashes", leaveOneOutHashes)
+    .overlaps("leave_one_out_hashes", leaveOneOutHashes);
+
+  if (cacheVersion) {
+    query = query.eq("selections_json->>_cacheVersion", cacheVersion);
+  }
+
+  const { data, error } = await query
     .order("scoped_edit_depth", { ascending: true })
     .limit(1)
     .maybeSingle();
