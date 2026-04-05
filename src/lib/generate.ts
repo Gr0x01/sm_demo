@@ -684,8 +684,20 @@ export async function buildBflScopedEditPrompt(
   }
 
   const hint = spatialHints[changedSubcategoryId];
-  const locationPart = hint ? ` → ${hint}` : "";
-  const dimPart = option.dimensions?.trim() ? ` (${option.dimensions.trim()})` : "";
+  const locationLine = hint ? `\nLocation: ${hint}` : "";
+  const dimLine = option.dimensions?.trim() ? `\nDimensions: ${option.dimensions.trim()}` : "";
+
+  // Build explicit preserve list so the model knows what NOT to touch
+  const preserveLines: string[] = [];
+  for (const [subId, optId] of Object.entries(allSelections).sort(([a], [b]) => a.localeCompare(b))) {
+    if (subId === changedSubcategoryId) continue;
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+    const loc = spatialHints[subId];
+    preserveLines.push(loc
+      ? `- ${found.subCategory.name} (${loc})`
+      : `- ${found.subCategory.name}`);
+  }
 
   const invariantRules = collectInvariantRules(allSelections, optionLookup, scopedSubcategoryIds, promptPolicyOverrides);
   const rulesBlock = invariantRules.size > 0
@@ -693,11 +705,14 @@ export async function buildBflScopedEditPrompt(
     : "";
 
   const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
-  let tail = rulesBlock;
-  if (sceneBlock) tail += `\n${sceneBlock.trimEnd()}`;
 
-  const prompt = `Change the ${subCategory.name}${locationPart}${dimPart} to match image 2. ${swatchRef}
-Keep all other surfaces, fixtures, and layout unchanged. Photorealistic, natural lighting.${tail}`;
+  const preserveBlock = preserveLines.length > 0
+    ? `\nDO NOT MODIFY:\n${preserveLines.join("\n")}`
+    : "";
+
+  const prompt = `${sceneBlock}Change ONLY the ${subCategory.name} in this image to match image 2. ${swatchRef}${locationLine}${dimLine}
+${preserveBlock}
+Photorealistic, natural lighting.${rulesBlock}`;
 
   return { prompt, swatches };
 }
