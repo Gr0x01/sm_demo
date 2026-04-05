@@ -16,10 +16,10 @@ import type { Option, SubCategory } from "@/types";
 
 /** Fallback spatial hints when Gemini doesn't provide them */
 const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
-  backsplash: "the wall strip between upper cabinets and countertop along the back wall, including the taller section behind the range hood",
-  "counter-top": "the horizontal slab on top of the island and on top of the perimeter cabinets — horizontal surface only, not vertical faces",
-  "kitchen-cabinet-color": "ALL perimeter/wall cabinet doors and drawer fronts — back wall uppers and lowers, side wall cabinets, and cabinets flanking the refrigerator and oven",
-  "island-cabinet-color": "the vertical front panel of the island base in the foreground, below the countertop overhang",
+  backsplash: "wall between upper cabinets and countertop",
+  "counter-top": "horizontal countertop surfaces on island and perimeter",
+  "kitchen-cabinet-color": "all upper and lower cabinet doors and drawers along the perimeter walls, including base cabinets below the countertop",
+  "island-cabinet-color": "island base cabinet panel in the foreground, separate from perimeter cabinets",
 };
 
 /** Build option lookup from hardcoded demo subcategories */
@@ -200,17 +200,11 @@ export const generateDemo = inngest.createFunction(
           }
         }
 
-        const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
-
         const { prompt, swatches } = await buildBflScopedEditPrompt(
           changedSubcategoryId,
           changedNewOptionId,
-          effectiveSelections,
           optionLookup,
           spatialHints,
-          scopedSubcategoryIds,
-          sceneAnalysis?.sceneDescription ?? null,
-          null, // photoSpatialHint
           resolveLocalSwatch,
         );
 

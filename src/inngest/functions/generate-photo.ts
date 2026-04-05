@@ -376,14 +376,9 @@ export const generatePhoto = inngest.createFunction(
         const { prompt, swatches } = await buildBflScopedEditPrompt(
           changedSubcategoryId,
           changedNewOptionId,
-          scopedSelections,
           optionLookup,
           spatialHints,
-          scopedSubcategoryIds,
-          sceneDescription,
-          photoSpatialHint,
           resolveSwatchBuffer,
-          resolvedPolicy.promptOverrides,
         );
 
         // Range/oven swaps are structural geometry changes — use Max instead of Klein 4B

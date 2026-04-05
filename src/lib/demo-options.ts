@@ -13,17 +13,17 @@ export const DEMO_SUBCATEGORIES: SubCategory[] = [
     categoryId: "demo",
     isVisual: true,
     generationRules: [
-      "Do NOT extend tile below the countertop or onto cabinet faces.",
+      "Tile stays within the backsplash zone only — between countertop and upper cabinets.",
     ],
     generationRulesWhenNotSelected: [
-      "Preserve the existing backsplash exactly as shown. Do not alter or remove it.",
+      "Keep the existing backsplash exactly as shown.",
     ],
     options: [
       { id: "bs-white-gloss-subway", name: "Blanc Subway", price: 0, swatchUrl: "/swatches/backsplash/demo-white-subway.jpg", swatchColor: "#F5F5F5", dimensions: "4x16 subway tiles, staggered layout" },
       { id: "bs-charcoal-subway", name: "Graphite Subway", price: 150, swatchUrl: "/swatches/backsplash/BACKSPLASH---BAKER-BLVD-4X16---CARBON---3RD-STAGGER-LAY.jpg", swatchColor: "#3D3D3D", dimensions: "4x16 subway tiles, staggered layout" },
       { id: "bs-taupe-subway", name: "Sandstone Subway", price: 350, swatchUrl: "/swatches/backsplash/BACKSPLASH---BAKER-BLVD-4X16---TAUPE---3RD-STAGGER-LAY.jpg", swatchColor: "#C4B8A8", dimensions: "4x16 subway tiles, staggered layout" },
-      { id: "bs-dark-herringbone", name: "Ember Herringbone", price: 425, swatchUrl: "/swatches/backsplash/demo-dark-herringbone.jpg", swatchColor: "#2A2A30", dimensions: "0.5x2 inch mosaic pieces, 11x12 inch sheet repeat" },
-      { id: "bs-carbon-hex", name: "Slate Hex", price: 375, swatchUrl: "/swatches/backsplash/demo-carbon-hex.jpg", swatchColor: "#3D3D3D", dimensions: "1-inch hexagon mosaic, 10x12 inch sheet repeat" },
+      { id: "bs-dark-herringbone", name: "Ember Herringbone", price: 425, swatchUrl: "/swatches/backsplash/demo-dark-herringbone.jpg", swatchColor: "#2A2A30", dimensions: "0.5x2 inch mosaic pieces in herringbone pattern" },
+      { id: "bs-carbon-hex", name: "Slate Hex", price: 375, swatchUrl: "/swatches/backsplash/demo-carbon-hex.jpg", swatchColor: "#3D3D3D", dimensions: "1-inch hexagon mosaic tiles" },
     ],
   },
   {
@@ -44,6 +44,9 @@ export const DEMO_SUBCATEGORIES: SubCategory[] = [
     name: "Wall & Floor Cabinets",
     categoryId: "demo",
     isVisual: true,
+    generationRulesWhenNotSelected: [
+      "Keep the perimeter wall and floor cabinets exactly as shown.",
+    ],
     options: [
       { id: "kitchen-cab-color-timber", name: "Timber Wash", price: 0, swatchUrl: "/swatches/cabinets/COLOR__0020_DRIFTWOOD_TSP.jpg", swatchColor: "#B09A7E", promptDescriptor: "stained wood finish — match swatch exactly" },
       { id: "kitchen-cab-color-pearl", name: "Dove", price: 250, swatchUrl: "/swatches/cabinets/KITCHEN-CABINET-COLOR---WHITE-PAINT-1.jpg", swatchColor: "#F5F5F2", promptDescriptor: "painted finish — match swatch exactly", nudge: "Most popular" },
@@ -57,6 +60,9 @@ export const DEMO_SUBCATEGORIES: SubCategory[] = [
     name: "Island Base",
     categoryId: "demo",
     isVisual: true,
+    generationRulesWhenNotSelected: [
+      "Keep the island base exactly as shown.",
+    ],
     options: [
       { id: "island-cab-color-timber", name: "Timber Wash", price: 0, swatchUrl: "/swatches/cabinets/COLOR__0020_DRIFTWOOD_TSP.jpg", swatchColor: "#B09A7E", promptDescriptor: "stained wood finish — match swatch exactly" },
       { id: "island-cab-color-pearl", name: "Dove", price: 250, swatchUrl: "/swatches/cabinets/KITCHEN-CABINET-COLOR---WHITE-PAINT-1.jpg", swatchColor: "#F5F5F2", promptDescriptor: "painted finish — match swatch exactly" },

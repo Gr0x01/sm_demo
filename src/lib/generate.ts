@@ -597,7 +597,8 @@ export async function buildBflEditPrompt(
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
           swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: subId });
-          listLines.push(`${listIndex}. ${target} (use image ${imageIndex})`);
+          const hexHint = option.swatchColor?.trim() ? `, color ${option.swatchColor.trim()}` : "";
+          listLines.push(`${listIndex}. ${target} (use image ${imageIndex}${hexHint})`);
           imageIndex++;
           listIndex++;
           continue;
@@ -622,23 +623,20 @@ export async function buildBflEditPrompt(
   }
 
   const invariantRules = collectInvariantRules(visualSelections, optionLookup, scopedSubcategoryIds, promptPolicyOverrides);
-  const rulesBlock = invariantRules.size > 0
-    ? `\n${Array.from(invariantRules).map(r => `- ${r}`).join("\n")}`
+  const rulesArr = Array.from(invariantRules);
+  const rulesBlock = rulesArr.length > 0
+    ? rulesArr.map(r => `- ${r}`).join("\n") + "\n"
     : "";
 
   const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
-  let tail = rulesBlock;
-  if (sceneBlock) tail += `\n${sceneBlock.trimEnd()}`;
 
-  const prompt = `Edit this room photo. Apply each finish to its specified surface only.
-
+  const prompt = `Edit this room photo. Change ONLY the listed surfaces.
+${rulesBlock}
 ${listLines.join("\n")}
 
 Image 1 is the base photo. Images 2..${imageIndex - 1} are reference swatches in listed order.
-Each finish stays strictly within its own surface boundary.
-Preserve room layout, cabinet door style, countertop edges, and structural geometry.
-Only objects visible in the source photo should appear — change finishes, not contents.
-Keep camera angle, perspective, and lighting. Photorealistic, natural lighting.${tail}`;
+Photorealistic, natural lighting. Preserve room layout and structural geometry.
+${sceneBlock}`;
 
   return { prompt, swatches };
 }
@@ -651,14 +649,9 @@ Keep camera angle, perspective, and lighting. Photorealistic, natural lighting.$
 export async function buildBflScopedEditPrompt(
   changedSubcategoryId: string,
   changedOptionId: string,
-  allSelections: Record<string, string>,
   optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
   spatialHints: Record<string, string>,
-  scopedSubcategoryIds: string[],
-  sceneDescription?: string | null,
-  photoSpatialHint?: string | null,
   resolveSwatchBuffer?: SwatchBufferResolver,
-  promptPolicyOverrides?: PromptPolicyOverrides,
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const swatches: SwatchImage[] = [];
   const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
@@ -675,7 +668,8 @@ export async function buildBflScopedEditPrompt(
       const resolved = await resolveSwatchBuffer(option.swatchUrl);
       if (resolved) {
         swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: changedSubcategoryId });
-        swatchRef = "Match image 2 exactly.";
+        const hexHint = option.swatchColor?.trim() ? ` Color ${option.swatchColor.trim()}.` : "";
+        swatchRef = `Match image 2 exactly.${hexHint}`;
       }
     } catch { /* fallback below */ }
   }
@@ -688,27 +682,19 @@ export async function buildBflScopedEditPrompt(
   const locationLine = hint ? `\nLocation: ${hint}` : "";
   const dimLine = option.dimensions?.trim() ? `\nDimensions: ${option.dimensions.trim()}` : "";
 
-  // Build preserve list — just surface names, no spatial hints (keeps it short for BFL)
-  const preserveNames: string[] = [];
-  for (const [subId, optId] of Object.entries(allSelections).sort(([a], [b]) => a.localeCompare(b))) {
-    if (subId === changedSubcategoryId) continue;
-    const found = optionLookup.get(`${subId}:${optId}`);
-    if (!found) continue;
-    preserveNames.push(found.subCategory.name);
+  // Only include rules that apply to the changed surface itself
+  const changedRules = new Set<string>();
+  if (subCategory.generationRules) {
+    for (const rule of subCategory.generationRules) changedRules.add(rule);
   }
-
-  const invariantRules = collectInvariantRules(allSelections, optionLookup, scopedSubcategoryIds, promptPolicyOverrides);
-  const rulesBlock = invariantRules.size > 0
-    ? `\n${Array.from(invariantRules).map(r => `- ${r}`).join("\n")}`
+  if (option.generationRules) {
+    for (const rule of option.generationRules) changedRules.add(rule);
+  }
+  const rulesBlock = changedRules.size > 0
+    ? `\n${Array.from(changedRules).map(r => `- ${r}`).join("\n")}`
     : "";
 
-  const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
-
-  const preserveLine = preserveNames.length > 0
-    ? `\nThe ${preserveNames.join(", ")} all remain exactly as they currently appear in image 1.`
-    : "";
-
-  const prompt = `${sceneBlock}Change ONLY the ${subCategory.name} in this image to match image 2. ${swatchRef}${locationLine}${dimLine}${preserveLine}
+  const prompt = `Change ONLY the ${subCategory.name} to match image 2. ${swatchRef}${locationLine}${dimLine}
 Photorealistic, natural lighting.${rulesBlock}`;
 
   return { prompt, swatches };
