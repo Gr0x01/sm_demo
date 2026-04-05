@@ -23,7 +23,7 @@ export const DEMO_SUBCATEGORIES: SubCategory[] = [
       { id: "bs-charcoal-subway", name: "Graphite Subway", price: 150, swatchUrl: "/swatches/backsplash/BACKSPLASH---BAKER-BLVD-4X16---CARBON---3RD-STAGGER-LAY.jpg", swatchColor: "#3D3D3D", dimensions: "4x16 subway tiles, staggered layout" },
       { id: "bs-taupe-subway", name: "Sandstone Subway", price: 350, swatchUrl: "/swatches/backsplash/BACKSPLASH---BAKER-BLVD-4X16---TAUPE---3RD-STAGGER-LAY.jpg", swatchColor: "#C4B8A8", dimensions: "4x16 subway tiles, staggered layout" },
       { id: "bs-dark-herringbone", name: "Ember Herringbone", price: 425, swatchUrl: "/swatches/backsplash/demo-dark-herringbone.jpg", swatchColor: "#2A2A30", dimensions: "small mosaic herringbone — dozens of tiny rectangular pieces visible across the backsplash" },
-      { id: "bs-carbon-hex", name: "Slate Hex", price: 375, swatchUrl: "/swatches/backsplash/demo-carbon-hex.jpg", swatchColor: "#3D3D3D", dimensions: "1-inch hexagon mosaic tiles" },
+      { id: "bs-carbon-hex", name: "Slate Hex", price: 375, swatchUrl: "/swatches/backsplash/demo-carbon-hex.jpg", swatchColor: "#3D3D3D", dimensions: "small hexagon mosaic — dozens of tiny hexagonal pieces visible across the backsplash" },
     ],
   },
   {

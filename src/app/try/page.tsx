@@ -4,7 +4,7 @@ import { DemoClient } from "./DemoClient";
 export const metadata: Metadata = {
   title: { absolute: "Try Finch — Interactive Upgrade Visualization Demo" },
   description:
-    "Pick finishes and see the room update instantly. This is what your buyers experience with Finch.",
+    "Pick kitchen finishes and see the room update instantly. This is what your buyers experience with Finch.",
   alternates: { canonical: "https://withfin.ch/try" },
   openGraph: {
     title: "Try Finch — Interactive Upgrade Visualization Demo",

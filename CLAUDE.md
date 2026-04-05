@@ -81,6 +81,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 - **ui-designer**: UI design for rapid, implementable interfaces
 - **backend-architect**: Backend system design and API architecture
 - **photo-architecture-specialist**: Image/photo pipeline specialist for scope backfills, spatial analysis, and data-driven prompt-rule migration
+- **bfl-prompt-engineer**: BFL Flux 2 prompt specialist — writes, reviews, and tunes generation_rules, spatial_hints, policies, and prompt builder code for Max and Klein 9B
 
 **Brand & Growth:**
 - **brand-guardian**: Visual identity, voice, and design consistency — all other agents defer to brand guardian
@@ -108,6 +109,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 11. **cold-email-writer**: Use for writing fully custom cold outreach emails. Takes research notes, produces ready-to-send emails in Rashaad's voice. Use AFTER lead-researcher has done the research.
 12. **prospect-demo-builder**: Use to spin up a new `/for/` prospect demo page. Give it a builder name + kitchen/exterior photo paths. Can run multiple in parallel for different builders.
 13. **crm-auditor**: Use for batch CRM cleanup — propagating company verdicts to contacts, auditing pipeline hygiene, researching unresearched companies. Run modes: `scan` → `fix` → `research` → `report`.
+14. **bfl-prompt-engineer**: Use for writing or tuning BFL Flux 2 prompts — generation_rules, spatial_hints, step photo policies, option rules, or prompt builder code. Knows the official BFL prompting guides and Finch's swatch-authority rules.
 
 ## SKILLS
 

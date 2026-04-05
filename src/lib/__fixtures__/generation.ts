@@ -30,6 +30,7 @@ export const kitchenAiConfig: StepPhotoAiConfig = {
   ],
   photo: {
     id: "photo-kitchen-001",
+    label: null,
     imagePath: "org-001/rooms/step-kitchen-001/kitchen-hero.webp",
     spatialHint: "Wide-angle shot of kitchen from dining area looking toward back wall",
     photoBaseline: "Modern kitchen with white shaker cabinets, gray granite counters, stainless appliances",
@@ -61,6 +62,7 @@ export const bedroomAiConfig: StepPhotoAiConfig = {
   ],
   photo: {
     id: "photo-bedroom-001",
+    label: null,
     imagePath: "org-001/rooms/step-style-001/primary-bedroom.webp",
     spatialHint: "View from doorway looking into bedroom toward windows",
     photoBaseline: "Primary bedroom with carpet flooring and neutral walls",
@@ -92,6 +94,7 @@ export const livingRoomAiConfig: StepPhotoAiConfig = {
   ],
   photo: {
     id: "photo-living-001",
+    label: null,
     imagePath: "org-001/rooms/step-style-001/living-room.webp",
     spatialHint: "View of great room from entryway with fireplace on right wall",
     photoBaseline: "Great room with hardwood floors, accent wall behind fireplace",

@@ -83,11 +83,27 @@ export const generateDemo = inngest.createFunction(
           return {
             type: "scoped-edit-needed" as const,
             imagePath: diffMatch.imagePath,
+            bucket: "demo-generated" as const,
             depth: diffMatch.depth,
             changedSubcategoryId: changedSub.subcategoryId,
             changedNewOptionId: changedSub.newOptionId,
           };
         }
+      }
+
+      // Single selection with no diff match — scoped edit directly on original photo
+      const selectionEntries = Object.entries(effectiveSelections);
+      if (selectionEntries.length === 1) {
+        const [subId, optId] = selectionEntries[0];
+        console.log(`[demo/generate] Single selection, scoped edit from original photo: ${subId} → ${optId}`);
+        return {
+          type: "scoped-edit-needed" as const,
+          imagePath: `${photoHash}.jpg`,
+          bucket: "demo-uploads" as const,
+          depth: 0,
+          changedSubcategoryId: subId,
+          changedNewOptionId: optId,
+        };
       }
 
       // No scoped edit — full generation
@@ -161,15 +177,15 @@ export const generateDemo = inngest.createFunction(
 
     // --- Scoped edit path (diff cache hit) ---
     if (generateResult.type === "scoped-edit-needed") {
-      const { imagePath: baseImagePath, depth, changedSubcategoryId, changedNewOptionId } = generateResult;
+      const { imagePath: baseImagePath, bucket: baseBucket, depth, changedSubcategoryId, changedNewOptionId } = generateResult;
 
       const scopedResult = await step.run("scoped-edit", async () => {
         const supabase = getServiceClient();
         const optionLookup = buildDemoOptionLookup();
 
-        // Download the base image (previously generated)
+        // Download the base image (original photo or previously generated)
         const { data: baseImageData, error: dlErr } = await supabase.storage
-          .from("demo-generated")
+          .from(baseBucket)
           .download(baseImagePath);
         if (dlErr || !baseImageData) throw new Error(`Failed to download base image: ${dlErr?.message}`);
 

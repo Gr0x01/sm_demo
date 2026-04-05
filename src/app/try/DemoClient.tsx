@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { DemoUploader, loadSamplePhoto } from "./DemoUploader";
+import { loadSamplePhoto } from "./DemoUploader";
 import { SiteNav } from "@/components/SiteNav";
 import { DemoPickerPanel } from "./DemoPickerPanel";
 import { DemoViewer } from "./DemoViewer";
@@ -54,7 +54,7 @@ const SS_SELECTIONS = "finch_demo_selections";
 const SS_GENERATED = "finch_demo_generated_url";
 const SS_HISTORY = "finch_demo_history";
 
-export function DemoClient({ bare = false, autoSample = false, headerContent }: { bare?: boolean; autoSample?: boolean; headerContent?: React.ReactNode }) {
+export function DemoClient({ bare = false, headerContent }: { bare?: boolean; headerContent?: React.ReactNode }) {
   const track = useTrack();
   const [phase, setPhase] = useState<DemoPhase>("picking");
   const [uploadedPhoto, setUploadedPhoto] = useState<UploadedPhoto | null>(null);
@@ -65,7 +65,6 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
   const [generationHistory, setGenerationHistory] = useState<GenerationEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [lastCacheHit, setLastCacheHit] = useState<boolean | undefined>(undefined);
-  const previewSectionRef = useRef<HTMLDivElement | null>(null);
   const selectionsRef = useRef(selections);
   selectionsRef.current = selections;
 
@@ -112,17 +111,16 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
     }
   }, []);
 
-  // Auto-load sample photo when autoSample is true and no existing session
+  // Auto-load sample kitchen on mount (no existing session)
   useEffect(() => {
-    if (!autoSample || uploadedPhoto) return;
-    // Check if session restore already loaded a photo
+    if (uploadedPhoto) return;
     if (sessionStorage.getItem(SS_PHOTO)) return;
     loadSamplePhoto().then((photo) => {
       handlePhotoAccepted(photo);
     }).catch(() => {
-      // Silently fail — they can still upload manually
+      // Silently fail
     });
-  }, [autoSample]);
+  }, []);
 
   const handlePhotoAccepted = useCallback((photo: UploadedPhoto) => {
     setUploadedPhoto(photo);
@@ -314,27 +312,9 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
     setError(null);
   }, [generationHistory]);
 
-  const handleReset = useCallback(() => {
-    setUploadedPhoto(null);
-    setSelections({});
-    setGeneratedImageUrl(null);
-    setGenerationHistory([]);
-    setLastCacheHit(undefined);
-    setPhase("picking");
-    setError(null);
-    sessionStorage.removeItem(SS_PHOTO);
-    sessionStorage.removeItem(SS_SELECTIONS);
-    sessionStorage.removeItem(SS_GENERATED);
-    sessionStorage.removeItem(SS_HISTORY);
-  }, []);
-
   const selectedCount = Object.keys(selections).length;
   const atCap = generationsUsed >= 5;
   const mobilePreviewImageUrl = generatedImageUrl ?? uploadedPhoto?.dataUrl ?? null;
-  const mobilePreviewLabel = generatedImageUrl ? "Current visualization" : "Uploaded photo";
-  const handleScrollToPreview = useCallback(() => {
-    previewSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   return (
     <div className={`${bare ? "" : "min-h-screen "}bg-slate-50 flex flex-col`} style={{ "--color-accent": "#0f172a", "--color-navy": "#0f172a" } as React.CSSProperties}>
@@ -355,7 +335,7 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
             <section className={`lg:sticky lg:top-[72px] lg:max-h-[calc(100vh-72px-1.5rem)] lg:self-start demo-enter demo-enter-delay-1 ${bare ? "lg:pr-5 pt-4 md:pt-6" : ""} ${headerContent ? "lg:overflow-y-auto" : "lg:overflow-hidden"}`}>
               {headerContent}
               <div className={`flex flex-col gap-4 ${bare ? "" : "h-full p-3 md:p-4 bg-white border border-slate-200"}`}>
-                <div ref={previewSectionRef} className="flex-1 min-h-0">
+                <div className="flex-1 min-h-0">
                   {uploadedPhoto ? (
                     <DemoViewer
                       uploadedPhotoUrl={uploadedPhoto?.dataUrl ?? null}
@@ -365,19 +345,13 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
                       cacheHit={lastCacheHit}
                     />
                   ) : (
-                    <div className="h-full min-h-[400px] sm:min-h-[480px] md:min-h-[560px] border border-slate-200 bg-slate-50 p-4 md:p-6">
-                      <div className="h-full min-h-[340px] sm:min-h-[400px] md:min-h-[500px] w-full flex items-center justify-center">
-                        <div className="w-full max-w-2xl">
-                          <div className="text-center mb-6">
-                            <h1 className="text-2xl md:text-3xl leading-tight tracking-[-0.02em] text-slate-900 mb-2">
-                              Start with your model home kitchen
-                            </h1>
-                            <p className="text-sm md:text-base text-slate-500">
-                              Upload a photo. Pick finishes. See the room change in seconds.
-                            </p>
-                          </div>
-                          <DemoUploader onPhotoAccepted={handlePhotoAccepted} />
-                        </div>
+                    <div className="h-full min-h-[400px] sm:min-h-[480px] md:min-h-[560px] border border-slate-200 bg-slate-50 flex items-center justify-center">
+                      <div className="flex items-center gap-2 text-sm text-slate-400">
+                        <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Loading kitchen...
                       </div>
                     </div>
                   )}
@@ -391,15 +365,8 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
                       </div>
                     )}
 
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <button
-                        onClick={handleReset}
-                        className="order-2 md:order-1 inline-flex w-full sm:w-auto items-center justify-center h-[52px] px-5 border border-slate-300 bg-white text-slate-700 text-sm font-semibold uppercase tracking-wider hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                      >
-                        Upload a different photo
-                      </button>
-
-                      <div className="order-1 md:order-2 flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
+                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-end">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full md:w-auto">
                         <GenerationCounter used={generationsUsed} max={5} onRecall={handleRecallGeneration} />
                         {atCap ? (
                           <a
@@ -511,19 +478,10 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
 
       {!bare && <SiteFooter />}
 
-      {uploadedPhoto ? (
+      {uploadedPhoto && (
         <MobileStickyFooter
           previewImageUrl={mobilePreviewImageUrl}
-          previewLabel={mobilePreviewLabel}
-          previewExtra={
-            <button
-              type="button"
-              onClick={handleReset}
-              className="text-xs font-semibold uppercase tracking-wider text-slate-600 hover:text-slate-900 transition-colors underline"
-            >
-              Upload new photo
-            </button>
-          }
+          previewLabel={generatedImageUrl ? "Current visualization" : "Sample kitchen"}
           statusContent={
             <GenerationCounter used={generationsUsed} max={5} onRecall={handleRecallGeneration} />
           }
@@ -537,21 +495,6 @@ export function DemoClient({ bare = false, autoSample = false, headerContent }: 
             disabled: selectedCount < 1 || isGenerating,
           }}
           error={error}
-        />
-      ) : (
-        <MobileStickyFooter
-          previewImageUrl={null}
-          statusContent={
-            <p className="text-xs text-slate-500">Upload a model home photo to start</p>
-          }
-          primaryAction={{
-            label: "Upload Photo",
-            onClick: handleScrollToPreview,
-          }}
-          secondaryAction={{
-            label: "Uploader",
-            onClick: handleScrollToPreview,
-          }}
         />
       )}
     </div>

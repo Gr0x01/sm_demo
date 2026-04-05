@@ -19,7 +19,7 @@ function getApiKey(): string {
 // Types
 // ---------------------------------------------------------------------------
 
-export type BflModel = "flux-2-max" | "flux-2-klein-4b" | "flux-2-klein-9b";
+export type BflModel = "flux-2-max" | "flux-2-pro" | "flux-2-klein-4b" | "flux-2-klein-9b";
 
 interface SubmitResponse {
   id: string;
@@ -76,6 +76,7 @@ export interface GenerateImageResult {
 
 const MAX_REFERENCES: Record<BflModel, number> = {
   "flux-2-max": 7,
+  "flux-2-pro": 7,
   "flux-2-klein-4b": 3,
   "flux-2-klein-9b": 3,
 };

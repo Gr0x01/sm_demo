@@ -705,7 +705,7 @@ export async function buildBflScopedEditPrompt(
 
   const hint = spatialHints[changedSubcategoryId];
   const surface = hint || subCategory.name;
-  const dimLine = option.dimensions?.trim() ? ` Dimensions: ${option.dimensions.trim()}.` : "";
+  const dimLine = option.dimensions?.trim() ? ` Match the scale and pattern from the swatch (${option.dimensions.trim()}).` : "";
 
   // Only include rules that apply to the changed surface itself
   const changedRules = new Set<string>();
@@ -719,7 +719,7 @@ export async function buildBflScopedEditPrompt(
     ? `\n${Array.from(changedRules).map(r => `- ${r}`).join("\n")}`
     : "";
 
-  const prompt = `Change ONLY the ${surface} to match image 2. ${swatchRef}${dimLine}
+  const prompt = `Change the ${surface} to match image 2.${dimLine} ${swatchRef}
 Photorealistic, natural lighting.${rulesBlock}`;
 
   return { prompt, swatches };
