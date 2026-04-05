@@ -82,3 +82,8 @@ export const DEMO_OPTION_IDS = new Set(
 export const DEMO_SUBCATEGORY_IDS = new Set(
   DEMO_SUBCATEGORIES.map((sub) => sub.id)
 );
+
+/** Default (included/$0) option ID for each subcategory */
+export const DEMO_DEFAULTS: Record<string, string> = Object.fromEntries(
+  DEMO_SUBCATEGORIES.map((sub) => [sub.id, sub.options[0].id])
+);
