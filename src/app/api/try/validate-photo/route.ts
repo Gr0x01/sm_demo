@@ -41,28 +41,34 @@ export async function POST(request: Request) {
           "other",
         ]).describe("Camera framing style for this kitchen photo."),
         sceneDescription: z.string().describe(
-          "If this is a kitchen, write a 1-2 sentence factual description of the photo layout. Mention: camera angle (straight-on, angled, wide), " +
-          "whether there is an island, where the cabinets are (perimeter/wall, island, both), where the countertops are visible, " +
-          "where the backsplash is visible, and any other notable features. Be specific about spatial layout. " +
-          "Example: 'Straight-on view of a kitchen. Island with dark wood cabinets in the foreground, white wall cabinets and countertops along the back wall, subway tile backsplash visible between upper and lower cabinets.' " +
+          "If this is a kitchen, write a 1-2 sentence description of the STRUCTURE and LAYOUT only. " +
+          "Do NOT mention colors, materials, or finishes (no 'white cabinets', 'granite countertops', 'subway tile'). " +
+          "Mention: camera angle, whether there is an island, where cabinets are (perimeter/wall, island, both), where countertops are, " +
+          "where the backsplash is, appliance positions, and lighting. " +
+          "Example: 'Straight-on view of a kitchen. Island in the foreground, wall cabinets (upper and lower) along the back wall, " +
+          "countertops along the back wall and on the island, backsplash visible between upper and lower cabinets. Range hood centered.' " +
           "If not a kitchen, return an empty string."
         ),
         hasIsland: z.boolean().describe("True if the kitchen has a visible island or peninsula"),
         backsplashLocation: z.string().describe(
-          "Where the backsplash is visible in the photo. Example: 'between upper cabinets and countertop on the back wall' or 'on the wall behind the range and sink'. Empty string if not a kitchen or backsplash is not visible."
+          "Where the backsplash is in the photo. Describe POSITION only, no colors or materials. " +
+          "Example: 'wall strip between upper and lower cabinets along the back wall, plus the taller section behind the range hood'. Empty string if not visible."
         ),
         countertopLocation: z.string().describe(
-          "Where countertops are visible. Example: 'on the island and along the back wall' or 'along the L-shaped perimeter'. Empty string if not a kitchen."
+          "Where countertops are in the photo. Describe POSITION only, no colors or materials. " +
+          "Example: 'horizontal slab on top of the island and along the back wall perimeter cabinets'. Empty string if not visible."
         ),
         cabinetLocation: z.string().describe(
-          "Where ALL perimeter/wall cabinets are visible — include every zone: back wall, side walls, flanking the refrigerator, flanking the oven, wrapping around corners. Example: 'upper and lower cabinets along the back wall, plus cabinets flanking the refrigerator on the right side' or 'perimeter cabinets along three walls including beside the fridge alcove'. Empty string if not a kitchen."
+          "Where ALL perimeter/wall cabinets are in the photo — include every zone. Describe POSITION only, no colors or materials. " +
+          "Example: 'upper and lower cabinets along the back wall, plus cabinets flanking the refrigerator on the right side and wrapping to the left wall'. Empty string if not a kitchen."
         ),
         backsplashVisible: z.boolean().describe("True when a backsplash surface is visibly present and editable in the photo."),
         countertopVisible: z.boolean().describe("True when countertops are visibly present and editable in the photo."),
         cabinetsVisible: z.boolean().describe("True when perimeter/wall cabinet faces are visibly present and editable in the photo."),
         islandCabinetsVisible: z.boolean().describe("True when island base cabinet faces are visibly present and editable in the photo. False if there is no island or the island cabinets are not visible."),
         islandCabinetLocation: z.string().describe(
-          "Where island cabinets are visible. Example: 'island base cabinets in the foreground' or 'large island with cabinet faces on the near side'. Empty string if no island or island cabinets are not visible."
+          "Where the island cabinet face is in the photo. Describe POSITION only, no colors or materials. " +
+          "Example: 'vertical front panel of the island base in the foreground, below the countertop overhang'. Empty string if no island."
         ),
       }),
       messages: [

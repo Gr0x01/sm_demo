@@ -89,16 +89,16 @@ export async function loadSamplePhoto(): Promise<{
     dataUrl,
     hash,
     sceneAnalysis: {
-      sceneDescription: "Modern model home kitchen with white shaker cabinets, light granite countertops, stainless steel appliances, hardwood flooring, and a large center island with pendant lights. Natural light from windows on the left.",
+      sceneDescription: "Model home kitchen. Shaker cabinets along the back wall (upper and lower) and flanking the refrigerator on the right. Center island in the foreground with countertop overhang. Range hood centered on back wall. Stainless steel appliances. Three pendant lights over the island. Natural light from windows on the left. Hardwood flooring.",
       hasIsland: true,
       kitchenType: "l-shape",
       cameraAngle: "straight-on",
       visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
       spatialHints: {
-        backsplash: "wall strip between upper and lower cabinets along the back wall, plus the taller section behind the range hood",
-        "counter-top": "horizontal stone slab on top of the island and along the back wall perimeter cabinets",
-        "kitchen-cabinet-color": "all perimeter cabinet doors and drawer fronts — back wall uppers and lowers, plus cabinets flanking the refrigerator on the right side and wrapping to the left wall",
-        "island-cabinet-color": "flat smooth front panel of the island base in the foreground, below the countertop overhang",
+        backsplash: "wall between upper cabinets and countertop",
+        "counter-top": "horizontal countertop surfaces on island and perimeter",
+        "kitchen-cabinet-color": "perimeter cabinet doors and drawers (not the island)",
+        "island-cabinet-color": "island base panel in the foreground",
       },
     },
   };
