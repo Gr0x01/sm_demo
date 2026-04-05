@@ -372,13 +372,13 @@ The ROI tables only capture upgrade revenue lift. The tool changes the entire se
 
 ### Cost Structure
 
-**Self-hosted generation is becoming viable.** Klein 4B (4B params) runs on consumer GPU (~8GB VRAM). RB's 4080 could serve scoped edits at $0/edit via homelab after the Montgomery move. Full generation (Max) stays API-based for now.
+**Self-hosted generation is becoming viable.** Klein 9B runs on consumer GPU. RB's 4080 could serve scoped edits at $0/edit via homelab after the Montgomery move. Full generation (Max) stays API-based for now.
 
 **Pre-generation is non-negotiable.** Each full generation takes ~35-46s. Scoped edits (single surface change) take ~7-11s. Pre-cache common combos; long-tail generates on-demand.
 
 **Generation costs (BFL Flux 2 — D96):**
 - Full gen (Max): ~$0.09/image, ~35-46s
-- Scoped edit (Klein 4B): ~$0.017/image, ~7-11s
+- Scoped edit (Klein 9B): ~$0.02/image, ~7-11s
 - Two-pass split (>7 swatches): ~$0.18/image, ~70-90s
 
 **Pre-cache math (per floorplan, 10 photos):**
@@ -420,7 +420,7 @@ No setup fee means these are absorbed as customer acquisition cost. At $1,500/mo
 ### Already Built (Stone Martin Demo)
 - Next.js 16 web app with step-based wizard UI
 - 5-step upgrade flow covering all categories from real pricing PDF
-- AI image generation pipeline (BFL Flux 2 Max + Klein 4B via async polling API)
+- AI image generation pipeline (BFL Flux 2 Max + Klein 9B via async polling API)
 - Supabase image cache (hash-based dedup, CDN-served)
 - 166 scraped swatch images
 - Real pricing data from Kinkade plan PDF

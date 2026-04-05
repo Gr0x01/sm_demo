@@ -59,7 +59,7 @@ npx tsx scripts/linkedin-post-finder.ts [--period day|week] [--fetch] [--json] [
 ## Environment Variables
 
 ```
-BFL_API_KEY=                 # BFL Flux 2 image generation (Max + Klein 4B)
+BFL_API_KEY=                 # BFL Flux 2 image generation (Max + Klein 9B)
 GOOGLE_GENERATIVE_AI_API_KEY= # Gemini (quality check, spatial hints, AI descriptors)
 OPENAI_API_KEY=              # OpenAI (seed scripts only, not used in production pipeline)
 NEXT_PUBLIC_SUPABASE_URL=    # Supabase project URL

@@ -47,7 +47,7 @@ Server (Next.js API routes + Inngest background functions)
         │     Diff cache check is merged into the generate step (saves a step transition).
         │     Fast path: generate (diff check → scoped-edit-needed) → scoped-edit → persist-scoped (~7-11s)
         │       Leave-one-out hash overlap query (GIN-indexed) finds cached image
-        │       differing by 1 subcategory. Klein 4B scoped edit changes only that surface.
+        │       differing by 1 subcategory. Klein 9B scoped edit changes only that surface.
         │       Depth capped at 3 to bound quality degradation.
         │     Full pipeline: generate (diff check miss → BFL Max) → refine (conditional) → persist (~35-46s)
         │       BFL Flux 2 Max via async polling API. Hero photo + up to 7 swatch references.
@@ -146,7 +146,7 @@ Supabase
    - `generate` — parallel fetch optionLookup + hero photo + swatches (pre-warmed cache), build prompt via `buildEditPrompt`, call BFL Flux 2 Max (async: submit → poll → download). Partitions selections into structural/fixture groups; if >7 total swatches, runs two sequential Max passes (structural first, fixtures second, 55s poll timeout each). Upload JPEG to Storage.
    - `refine` — conditional policy second pass (e.g., slide-in range correction via Max), only when policy requires it
    - `persist` — upsert cache row replacing `__pending__`, PostHog event
-   - **Scoped edit path** (partial cache): `generate` (diff check → scoped-edit-needed) → `scoped-edit` (Klein 4B, ~7-11s) → `persist`. Skipped for appliance add/remove (`-none` option transitions). Scoped edit preserve list includes spatial hints for each preserved surface so Klein 4B knows surface boundaries.
+   - **Scoped edit path** (partial cache): `generate` (diff check → scoped-edit-needed) → `scoped-edit` (Klein 9B, ~7-11s) → `persist`. Skipped for appliance add/remove (`-none` option transitions). Scoped edit preserve list includes spatial hints for each preserved surface so Klein 9B knows surface boundaries.
    - Steps pass images via Supabase Storage as JPEG between invocations. Inngest step output size limit prevents b64 transfer.
    - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
 6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.

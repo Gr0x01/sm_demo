@@ -285,7 +285,7 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 |----------|-------|------|------|
 | Full generation (≤7 swatches) | Flux 2 Max | ~35-46s | ~$0.09 |
 | Full generation (>7 swatches) | Flux 2 Max × 2 passes | ~70-90s | ~$0.18 |
-| Scoped edit (1 surface) | Flux 2 Klein 4B | ~7-11s | $0.017 |
+| Scoped edit (1 surface) | Flux 2 Klein 9B | ~7-11s | $0.02 |
 | Oven correction | Flux 2 Max post-pass | ~30-39s | ~$0.09 |
 
 **What was eliminated:**
@@ -312,16 +312,16 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 
 **Key files:**
 - `src/lib/bfl.ts` — BFL API client (submit → poll → download, async pattern)
-- `src/inngest/functions/generate-photo.ts` — main pipeline (Max full gen + Klein 4B scoped edits)
+- `src/inngest/functions/generate-photo.ts` — main pipeline (Max full gen + Klein 9B scoped edits)
 - `src/inngest/functions/generate-demo.ts` — /try demo pipeline (same models)
-- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-klein-4b"`
+- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-klein-9b"`
 
 **Cache versioning**: `GENERATION_CACHE_VERSION` = v2.3. Bump minor for prompt/rule changes, major for model swaps.
 
 **Prompt tuning findings (2026-04-04–05):**
 - Flux 2 Max responds best to minimal prompts with scene context. Verbose generation rules (SM-style) hurt quality — color shifts, confused spatial application.
 - SCENE + PHOTO_LAYOUT blocks give Max the spatial understanding. Per-surface instructions should be one line each.
-- For scoped edits (Klein 4B): preserve list must include spatial hints for each preserved surface so 4B knows WHERE the boundaries are. Without this, countertop granite bleeds onto adjacent island face and backsplash.
+- For scoped edits (Klein 9B): preserve list must include spatial hints for each preserved surface so Klein knows WHERE the boundaries are. Without this, countertop granite bleeds onto adjacent island face and backsplash.
 - Backsplash `dimensions` field must describe installed appearance ("4x16 subway tiles, staggered layout") not just raw measurements ("4x16").
 - `buildScopedEditPrompt` preserve lines now include spatial locations: `- Backsplash (wall between upper cabinets and countertop)` instead of just `- Backsplash`.
 
