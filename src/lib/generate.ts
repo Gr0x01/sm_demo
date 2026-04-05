@@ -567,6 +567,7 @@ export async function buildBflEditPrompt(
   photoSpatialHint?: string | null,
   resolveSwatchBuffer?: SwatchBufferResolver,
   promptPolicyOverrides?: PromptPolicyOverrides,
+  defaultSurfaceColors?: Record<string, string>,
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const listLines: string[] = [];
   const swatches: SwatchImage[] = [];
@@ -574,12 +575,21 @@ export async function buildBflEditPrompt(
   let imageIndex = 2;
   let listIndex = 1;
 
-  // Sort selections: alphabetical, but push island subcategories after their
-  // perimeter counterparts so the dominant surface gets an earlier swatch slot.
+  // Sort selections by visual impact priority so highest-impact surfaces
+  // get the earliest swatch slots (word order matters to diffusion models).
+  const SUBCATEGORY_PRIORITY: Record<string, number> = {
+    "kitchen-cabinet-color": 0,
+    "island-cabinet-color": 1,
+    "counter-top": 2,
+    "countertop": 2,
+    "backsplash": 3,
+    "flooring": 4,
+    "wall-paint": 5,
+  };
   const sortedSelections = Object.entries(visualSelections).sort(([a], [b]) => {
-    const aIsIsland = a.startsWith("island");
-    const bIsIsland = b.startsWith("island");
-    if (aIsIsland !== bIsIsland) return aIsIsland ? 1 : -1;
+    const pa = SUBCATEGORY_PRIORITY[a] ?? 99;
+    const pb = SUBCATEGORY_PRIORITY[b] ?? 99;
+    if (pa !== pb) return pa - pb;
     return a.localeCompare(b);
   });
 
@@ -597,8 +607,7 @@ export async function buildBflEditPrompt(
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
           swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: subId });
-          const hexHint = option.swatchColor?.trim() ? `, color ${option.swatchColor.trim()}` : "";
-          listLines.push(`${listIndex}. ${target} (use image ${imageIndex}${hexHint})`);
+          listLines.push(`${listIndex}. ${target} (use image ${imageIndex})`);
           imageIndex++;
           listIndex++;
           continue;
@@ -618,6 +627,23 @@ export async function buildBflEditPrompt(
     listIndex++;
   }
 
+  // Hex preservation for unselected surfaces with known photo colors (end of list = lowest attention)
+  if (defaultSurfaceColors) {
+    const subCategoryById = new Map<string, SubCategory>();
+    for (const [, { subCategory }] of optionLookup) {
+      if (!subCategoryById.has(subCategory.id)) subCategoryById.set(subCategory.id, subCategory);
+    }
+    for (const [subId, hex] of Object.entries(defaultSurfaceColors)) {
+      if (subId in visualSelections) continue;
+      const sub = subCategoryById.get(subId);
+      if (!sub) continue;
+      const hint = spatialHints[subId];
+      const target = hint ? `${sub.name} → ${hint}` : sub.name;
+      listLines.push(`${listIndex}. ${target} (keep at color ${hex})`);
+      listIndex++;
+    }
+  }
+
   if (listLines.length === 0) {
     return { prompt: "Return this image unchanged.", swatches: [] };
   }
@@ -630,7 +656,7 @@ export async function buildBflEditPrompt(
 
   const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
 
-  const prompt = `Edit this room photo. Change ONLY the listed surfaces.
+  const prompt = `Apply the following finish changes to this room photo:
 ${rulesBlock}
 ${listLines.join("\n")}
 
@@ -668,8 +694,7 @@ export async function buildBflScopedEditPrompt(
       const resolved = await resolveSwatchBuffer(option.swatchUrl);
       if (resolved) {
         swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: changedSubcategoryId });
-        const hexHint = option.swatchColor?.trim() ? ` Color ${option.swatchColor.trim()}.` : "";
-        swatchRef = `Match image 2 exactly.${hexHint}`;
+        swatchRef = "Match image 2 exactly.";
       }
     } catch { /* fallback below */ }
   }
@@ -679,8 +704,8 @@ export async function buildBflScopedEditPrompt(
   }
 
   const hint = spatialHints[changedSubcategoryId];
-  const locationLine = hint ? `\nLocation: ${hint}` : "";
-  const dimLine = option.dimensions?.trim() ? `\nDimensions: ${option.dimensions.trim()}` : "";
+  const surface = hint || subCategory.name;
+  const dimLine = option.dimensions?.trim() ? ` Dimensions: ${option.dimensions.trim()}.` : "";
 
   // Only include rules that apply to the changed surface itself
   const changedRules = new Set<string>();
@@ -694,7 +719,7 @@ export async function buildBflScopedEditPrompt(
     ? `\n${Array.from(changedRules).map(r => `- ${r}`).join("\n")}`
     : "";
 
-  const prompt = `Change ONLY the ${subCategory.name} to match image 2. ${swatchRef}${locationLine}${dimLine}
+  const prompt = `Change ONLY the ${surface} to match image 2. ${swatchRef}${dimLine}
 Photorealistic, natural lighting.${rulesBlock}`;
 
   return { prompt, swatches };

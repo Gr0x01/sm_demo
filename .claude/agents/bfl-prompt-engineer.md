@@ -18,7 +18,7 @@ Write prompts that produce photorealistic room visualizations where buyer-select
 Read these before doing any work:
 
 - `memory-bank/generation/bfl-prompting-guide.md` — Finch-specific application notes
-- `src/lib/generate.ts` — prompt builder functions (`buildEditPrompt`, `buildScopedEditPrompt`)
+- `src/lib/generate.ts` — prompt builder functions (`buildBflEditPrompt`, `buildBflScopedEditPrompt`)
 - `src/lib/bfl.ts` — BFL API client
 - `src/lib/models.ts` — model constants
 
@@ -46,10 +46,11 @@ Sources:
 5. **What you write is what you get.** No automatic prompt enhancement in editing mode. Be descriptive, not keyword-listy.
 
 **Prompt structure for room editing:**
-1. Edit instructions (what changes, listed first — highest priority)
-2. Reference image mapping ("apply image 2 to the countertops")
-3. Scene context (brief spatial grounding, 2-3 lines, at the END)
+1. Positive opening: "Apply the following finish changes to this room photo:" (never use "ONLY" — negative-adjacent framing steals first-position attention)
+2. Surface list sorted by **visual impact** (cabinets → island → countertop → backsplash → flooring → paint), NOT alphabetical. BFL weights early words most.
+3. Hex preservation for unselected surfaces at END of list: "N. Surface → hint (keep at color #HEX)"
 4. Style hint ("photorealistic, natural lighting")
+5. Scene context only when it helps and doesn't mention unselected surfaces. For /try demo: NO scene block (causes bleed).
 
 **Reference images (editing mode):**
 - Max accepts hero photo (image 1) + up to 7 reference swatch images (images 2-8)
@@ -61,11 +62,10 @@ Sources:
 - Separate elements into individual reference images rather than collages (better quality)
 
 **Hex color codes:**
-- Pair with specific objects: "the cabinet color is #8B4513"
+- **NEVER include hex alongside swatch images.** Hex describes flat color and overrides textured finishes — wood stain renders as flat paint, granite as solid color. Swatch image is the sole authority when present.
+- Hex is ONLY used in two cases: (1) fallback when no swatch image is available, (2) preservation lines for unselected surfaces ("keep at color #F5F5F2").
+- When used, pair with specific objects: "the cabinet color is #8B4513"
 - Use keywords "color" or "hex" before the code for best results
-- Vague references like "use #FF0000 somewhere" produce inconsistent results
-- Gradients supported: "gradient, starting with #02eb3c and finishing with #edfa3c"
-- CAUTION with metallic finishes: hex describes flat color. Hardware, faucets, sinks are metallic/reflective — swatch image is more authoritative than hex for these
 
 **Camera references for photorealism:**
 - "Shot on Canon 5D Mark IV, 24-70mm at 35mm, natural lighting"
@@ -201,7 +201,24 @@ FLUX models don't support negative prompts. The AI focuses on prohibited element
 ## Finch-Specific Rules
 
 ### Swatch Authority Rule (CRITICAL)
-Swatch images are the SOLE appearance authority. Never send option names or text descriptors alongside swatches — the AI treats text as higher authority and overrides the swatch. The `dimensions` field is the one exception: pure measurements (e.g. "4x16 subway tiles, staggered layout", "1-inch hexagon mosaic") that supplement the swatch for scale context. No color/material words in dimensions. Dimensions must describe **installed appearance**, not raw sheet measurements ("12+ rows on 18-inch backsplash" not "8 tiles on 11x12 sheet").
+Swatch images are the SOLE appearance authority. When a swatch image is present, send NOTHING else about appearance:
+- **No `promptDescriptor`** — text overrides the swatch
+- **No hex color codes** — hex describes flat color, overrides textures (wood stain → flat paint, granite → solid color)
+- **No option names** — "Timber Wash" primes BFL to render something generic
+
+The `dimensions` field is the one exception: describes tile scale/pattern using **relative terms**, not absolute measurements. BFL has no concept of inches. "0.5x2 inch mosaic" → BFL renders subway-sized tiles. Instead: "small mosaic herringbone — dozens of tiny rectangular pieces visible across the backsplash" or "4x16 subway tiles, staggered layout". The key is how many tiles are visible, not absolute size.
+
+### Spatial Hint Rules (CRITICAL)
+BFL interprets spatial hints literally. Follow these rules:
+1. **No negations.** "(not the island)" → ignored. Use purely positive descriptions.
+2. **Name every cabinet zone.** "Perimeter walls" misses cabinets above/flanking appliances. Use: "upper wall cabinets, lower base cabinets, and cabinets above and flanking appliances — every perimeter cabinet door and drawer."
+3. **Don't name unselected surfaces.** Countertop hint saying "on island and perimeter" activates the island. Use "perimeter and center workspace" instead.
+4. **Front-load the important part.** "upper and lower" buried at end gets least attention. Lead with what BFL tends to skip.
+5. **Separate adjacent zones distinctly.** Island: "island base cabinet panel in the foreground, separate from perimeter cabinets."
+
+### BFL Limitations (No Workarounds)
+1. **No mask support in Flux 2.** Editing mode has no `input_mask` parameter. FLUX.1 Fill has masks but doesn't support reference images.
+2. **Visual surface grouping.** BFL groups visually similar surfaces by appearance. All white painted panels = one class. Prompt mitigations (sort order, spatial hints, hex preservation) help but can't fully prevent bleed between adjacent same-material surfaces.
 
 ### Color Matching
 For exact color matching from swatches, disable `prompt_upsampling` — it enhances the prompt and can shift colors away from the reference image. Include a swatch reference image and describe the mapping explicitly.
@@ -234,20 +251,22 @@ Disable `prompt_upsampling` when using swatch reference images for color accurac
 
 When reviewing prompts or generation rules, check:
 
-1. **No negative language** — zero "do not", "never", "avoid", "without", "don't"
-2. **Word order** — most important changes come first, scene context at end
+1. **No negative language** — zero "do not", "never", "avoid", "without", "don't", "ONLY"
+2. **Visual-impact sort** — cabinets first, not alphabetical. Check `SUBCATEGORY_PRIORITY` in generate.ts
 3. **Prompt length** — Max: 50-120 words. Klein: 15-25 words. Flag anything over.
-4. **No swatch descriptions** — prompt should say WHERE to apply, not WHAT the swatch looks like
+4. **No text alongside swatches** — no `promptDescriptor`, no hex codes, no option names when swatch image is present
 5. **Reference image syntax** — "image 2", not "swatch #1" or "reference image 2"
-6. **Spatial clarity** — each surface has a clear location in the photo
-7. **Dimensions format** — installed appearance measurements only, no color/material words
-8. **Positive framing** — every rule describes a desired outcome, not an avoidance
-9. **generation_rules_when_not_selected** — present for hallucination-prone subcategories (wainscoting, fireplace accent, crown molding)
-10. **Linked option handling** — merged prompt lines when same swatch, separate when different
-11. **Lighting described photographically** — source type, quality, direction, temperature (not "good lighting")
-12. **Prose not keywords** — especially for Klein, flowing descriptions not comma-separated lists
-13. **Verb choice** — targeted verbs ("change the cabinet color") not broad ones ("transform the kitchen")
-14. **API limits respected** — Max: 8 refs, Klein: 4 refs, output multiples of 16, max 4MP
+6. **Spatial hints name every zone** — upper cabinets, lower cabinets, cabinets flanking appliances. Front-load what BFL tends to skip.
+7. **Spatial hints don't name unselected surfaces** — countertop hint must not say "island"
+8. **Dimensions use relative scale** — "dozens of tiny pieces" not "0.5x2 inch". No color/material words.
+9. **Positive framing** — every rule describes a desired outcome, not an avoidance
+10. **Klein uses spatial hint as surface ID** — not subcategory name ("Island Base" means nothing to BFL)
+11. **No scene block when it mentions unselected surfaces** — causes bleed
+12. **generation_rules_when_not_selected** — present for hallucination-prone subcategories (wainscoting, fireplace accent, crown molding)
+13. **Linked option handling** — merged prompt lines when same swatch, separate when different
+14. **Prose not keywords** — especially for Klein, flowing descriptions not comma-separated lists
+15. **Verb choice** — targeted verbs ("change the cabinet color") not broad ones ("transform the kitchen")
+16. **API limits respected** — Max: 8 refs, Klein: 4 refs, output multiples of 16, max 4MP. No mask support.
 
 ## Output Formats
 
@@ -280,8 +299,9 @@ Wood STAIN finish — preserve visible grain texture through the stain color. Ap
 ```
 
 ### When writing Klein scoped edit prompts (~20 words)
+Use the spatial hint as the surface identifier, not the subcategory name. BFL doesn't know what "Island Base" means.
 ```
-Change the countertop material to match image 2. Countertop spans the perimeter cabinets and island.
+Change ONLY the island base cabinet panel in the foreground to match image 2. Match image 2 exactly.
 ```
 
 ### When writing Max full generation prompts (50-120 words)

@@ -73,7 +73,7 @@ describe("POST /api/try/check", () => {
     const res = await POST(makeRequest({
       photoHash: "abc",
       selections: { "island-cabinet-color": "island-cab-color-pearl" },
-      sceneAnalysis: { visibleSurfaces: { island: false, cabinets: false } },
+      sceneAnalysis: { visibleSurfaces: { island: false } },
     }));
     const body = await res.json();
     expect(body.status).toBe("not_found");

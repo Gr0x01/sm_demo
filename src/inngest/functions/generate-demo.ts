@@ -17,8 +17,8 @@ import type { Option, SubCategory } from "@/types";
 /** Fallback spatial hints when Gemini doesn't provide them */
 const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
   backsplash: "wall between upper cabinets and countertop",
-  "counter-top": "horizontal countertop surfaces on island and perimeter",
-  "kitchen-cabinet-color": "all upper and lower cabinet doors and drawers along the perimeter walls, including base cabinets below the countertop",
+  "counter-top": "all horizontal countertop surfaces — perimeter and center workspace",
+  "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets above and flanking appliances — every perimeter cabinet door and drawer",
   "island-cabinet-color": "island base cabinet panel in the foreground, separate from perimeter cabinets",
 };
 
@@ -104,32 +104,15 @@ export const generateDemo = inngest.createFunction(
       }
       const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
 
-      const sceneLines: string[] = [];
-      if (sceneAnalysis?.sceneDescription?.trim()) {
-        sceneLines.push(sceneAnalysis.sceneDescription.trim());
-      }
-      if (sceneAnalysis?.kitchenType) {
-        sceneLines.push(`Kitchen type: ${sceneAnalysis.kitchenType}`);
-      }
-      if (sceneAnalysis?.cameraAngle) {
-        sceneLines.push(`Camera angle: ${sceneAnalysis.cameraAngle}`);
-      }
-      if (sceneAnalysis?.visibleSurfaces) {
-        const visible: string[] = [];
-        if (sceneAnalysis.visibleSurfaces.backsplash !== false) visible.push("backsplash");
-        if (sceneAnalysis.visibleSurfaces.countertop !== false) visible.push("countertop");
-        if (sceneAnalysis.visibleSurfaces.cabinets !== false) visible.push("cabinets");
-        if (sceneAnalysis.visibleSurfaces.island) visible.push("island");
-        if (visible.length > 0) sceneLines.push(`Visible surfaces: ${visible.join(", ")}`);
-      }
-      const sceneDescription = sceneLines.length > 0 ? sceneLines.join(". ") : null;
-
       // Parallel: download user photo + build prompt (resolves local swatches)
+      // No scene description — BFL sees the base photo directly, and scene text
+      // mentioning unselected surfaces (e.g. "island") draws unwanted attention.
       const [photoResult, promptResult] = await Promise.all([
         supabase.storage.from("demo-uploads").download(`${photoHash}.jpg`),
         buildBflEditPrompt(
           effectiveSelections, optionLookup, spatialHints, scopedSubcategoryIds,
-          sceneDescription, null, resolveLocalSwatch,
+          null, null, resolveLocalSwatch, undefined,
+          sceneAnalysis?.defaultSurfaceColors,
         ),
       ]);
 

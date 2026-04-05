@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS, DEMO_DEFAULTS } from "@/lib/demo-options";
+import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS } from "@/lib/demo-options";
 import { hashDemoSelections, computeDemoLeaveOneOutHashes, DEMO_ORG_ID } from "@/lib/demo-generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
@@ -53,14 +53,6 @@ export async function POST(request: Request) {
         { error: `Unknown option IDs: ${unknownOptions.join(", ")}` },
         { status: 400 }
       );
-    }
-
-    // When one cabinet group is selected but not the other, inject the default
-    // so BFL gets explicit swatch assignments for both (prevents color bleed)
-    if (selections["kitchen-cabinet-color"] && !selections["island-cabinet-color"]) {
-      selections["island-cabinet-color"] = DEMO_DEFAULTS["island-cabinet-color"];
-    } else if (selections["island-cabinet-color"] && !selections["kitchen-cabinet-color"]) {
-      selections["kitchen-cabinet-color"] = DEMO_DEFAULTS["kitchen-cabinet-color"];
     }
 
     // Drop selections for surfaces that are not visible in this photo.

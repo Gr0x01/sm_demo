@@ -26,6 +26,8 @@ export interface DemoSceneAnalysis {
   sceneDescription?: string;
   hasIsland?: boolean;
   spatialHints?: Record<string, string>;
+  /** Hex colors of each surface as it currently appears in the photo */
+  defaultSurfaceColors?: Record<string, string>;
   kitchenType?: DemoKitchenType;
   cameraAngle?: DemoCameraAngle;
   visibleSurfaces?: Partial<DemoVisibleSurfaces>;

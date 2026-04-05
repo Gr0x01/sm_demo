@@ -199,16 +199,19 @@ When the changed surface is adjacent to a preserved one, include spatial locatio
 ### Current Architecture (post-rewrite)
 
 **`buildBflEditPrompt` (Max — full generation):**
-- Leads with edit list (what changes), not scene context
-- Each edit: surface name + location + "apply image N" (one line)
-- Scene context as brief spatial grounding at the END (2-3 lines)
-- Camera reference for photorealism
+- Opens with "Apply the following finish changes to this room photo:" (positive, no "ONLY")
+- Surface list sorted by visual impact: cabinets → island → countertop → backsplash → flooring → paint
+- Each edit: surface name + spatial hint + "use image N" (no hex alongside swatches)
+- Unselected surfaces with known photo colors: hex preservation at END of list ("keep at color #HEX")
+- No scene block for demo pipeline (mentions of unselected surfaces cause bleed)
 - NO "Do NOT" rules — all converted to positive instructions
 - Target: 50-80 words for simple rooms, up to 120 for complex kitchens
 
-**`buildBflScopedEditPrompt` (Klein �� scoped edits):**
-- "Change ONLY the [surface] to match image 2. Match image 2 exactly. Color #HEX." + location + dimensions
+**`buildBflScopedEditPrompt` (Klein — scoped edits):**
+- "Change ONLY the [spatial hint] to match image 2. Match image 2 exactly." + dimensions
+- Uses spatial hint as surface identifier (not subcategory name — BFL doesn't know what "Island Base" means)
 - Only includes generation rules for the changed surface itself (no cross-surface rules)
+- No hex alongside swatches (overrides textures like wood stain)
 - No preserve list, no scene block (Klein preserves by default)
 - Target: 15-25 words
 
@@ -217,22 +220,51 @@ When the changed surface is adjacent to a preserved one, include spatial locatio
 - Pass 2 (fixtures): Range first (structural change), then hardware, faucet, sink, lighting
 
 ### Swatch Authority Rule
-Swatch images = SOLE appearance authority. Never send option names/descriptors (`promptDescriptor`) alongside swatches — BFL treats text as higher authority and overrides the swatch. `dimensions` is the one exception: pure measurements only, no color/material words. Dimensions must describe installed appearance ("12+ rows on 18-inch backsplash" not "8 tiles on 11x12 sheet").
+Swatch images = SOLE appearance authority. Never send text alongside swatches when a swatch image is present:
+- **No `promptDescriptor`** — BFL treats text as higher authority and overrides the swatch.
+- **No hex color codes alongside swatches** — hex describes flat color, which overrides textured finishes (wood stain rendered as flat paint, granite rendered as solid color). Hex is ONLY safe in fallback paths when no swatch image is available.
+- **`dimensions` is the one exception**: describes installed appearance using relative scale, not absolute measurements.
 
-**Hex color codes ARE safe alongside swatches.** Unlike text descriptors, hex codes reinforce the swatch rather than overriding it. Use `color #HEX` as a nudge for color consistency. Full gen: `(use image N, color #HEX)`. Klein: `Match image 2 exactly. Color #HEX.`
+**Dimensions must use relative scale, not absolute units.** BFL has no concept of inches. "0.5x2 inch mosaic" → BFL renders standard subway-sized tiles. Instead describe scale relative to the surface: "small mosaic herringbone — dozens of tiny rectangular pieces visible across the backsplash" or "4x16 subway tiles, staggered layout". The key is how many tiles are visible, not how big each tile is in inches.
+
+### Prompt Structure Rules (Learned 2026-04-05)
+
+**1. Visual-impact sort order.** BFL weights early words most. Sort the surface list by visual dominance, not alphabetically:
+```
+cabinets (0) → island (1) → countertop (2) → backsplash (3) → flooring (4) → paint (5)
+```
+Cabinets are the largest surface in most kitchen photos and must be listed first.
+
+**2. Positive-only opening.** Don't use "Change ONLY the listed surfaces" — the word "ONLY" is negative-adjacent and steals the first-position attention slot. Use: "Apply the following finish changes to this room photo:"
+
+**3. No scene block for demo pipeline.** The base photo IS the scene context. Scene descriptions that mention unselected surfaces (e.g., "island in the foreground") draw BFL's attention to those surfaces and cause bleed. Removed entirely from `/try` demo generation.
+
+**4. Hex preservation for unselected surfaces.** When a surface is NOT selected but its current color is known (from photo analysis), add it at the END of the list: `"N. Island Base → island panel in foreground (keep at color #F5F5F2)"`. End of list = lowest attention = appropriate for preservation. Requires `defaultSurfaceColors` in scene analysis.
 
 ### Spatial Hint Rules (Learned 2026-04-05)
 
-BFL interprets spatial hints literally. Three critical lessons:
+BFL interprets spatial hints literally. Critical lessons:
 
-1. **No negations in spatial hints.** `"perimeter cabinets (not the island)"` → BFL ignores the parenthetical negation and may apply to the island anyway. Use purely positive location descriptions.
+1. **No negations.** `"perimeter cabinets (not the island)"` → BFL ignores the parenthetical negation. Use purely positive location descriptions.
 
-2. **"Wall cabinets" ≠ all perimeter cabinets.** BFL reads "wall" literally as upper wall-mounted cabinets. Lower base cabinets get grouped with the island visually. Explicitly say "upper and lower cabinet doors and drawers along the perimeter walls, including base cabinets below the countertop."
+2. **BFL reads "wall" literally.** "Wall cabinets" = upper wall-mounted cabinets only. Lower base cabinets get skipped. Say "upper wall cabinets, lower base cabinets" explicitly.
 
-3. **Separate adjacent zones explicitly.** When two subcategories cover visually similar surfaces (e.g., perimeter cabinets vs island cabinets), each spatial hint must describe its zone positively AND distinctly. E.g., island: "island base cabinet panel in the foreground, separate from perimeter cabinets."
+3. **Name every zone.** Cabinets above/flanking appliances (fridge, oven) are NOT covered by "along the perimeter walls." Must explicitly say "cabinets above and flanking appliances." Current best hint: `"upper wall cabinets, lower base cabinets, and cabinets above and flanking appliances — every perimeter cabinet door and drawer"`.
+
+4. **Separate adjacent zones.** When two subcategories cover visually similar surfaces, each hint must describe its zone positively AND distinctly. Island: `"island base cabinet panel in the foreground, separate from perimeter cabinets"`.
+
+5. **Don't name surfaces you're NOT changing.** Countertop hint saying `"on island and perimeter"` activates the island in BFL's attention. Use `"all horizontal countertop surfaces — perimeter and center workspace"` instead.
+
+6. **Front-load the important part.** "upper and lower" at the end of a hint gets lowest attention. Lead with the part BFL tends to skip: `"upper wall cabinets, lower base cabinets..."` not `"cabinet doors along the perimeter walls, upper and lower"`.
+
+### BFL Limitations (Confirmed 2026-04-05)
+
+1. **No mask support in Flux 2.** Image editing mode is instruction-based only. `input_mask` is NOT a supported parameter. FLUX.1 Fill has masks but doesn't support reference images — unusable for swatch-based editing.
+
+2. **Visual surface grouping.** BFL groups visually similar surfaces by appearance, not architecture. All white painted panels (upper cabinets, lower cabinets, island) are one "class" to BFL. When instructed to change "cabinet color," it may change ALL instances of that visual class. Prompt-level mitigations (sort order, spatial hints, hex preservation) help significantly but can't fully prevent bleed between adjacent same-material surfaces.
 
 ### Open Questions
 
 - Should we try JSON structured prompts for the full generation case?
-- How much scene context does Max actually need? R&D showed it helps with spatial separation — but less may be more.
 - Klein 9B only supports 4 total images — this limits scoped edits to hero + 3 swatches. Currently we send hero + 1 changed swatch, but could we send hero + changed + 2 adjacent-surface swatches for bleed prevention?
+- Automated `defaultSurfaceColors` extraction: Gemini can identify surface colors during validate-photo. Currently only the sample kitchen has hardcoded colors. Uploaded photos fall back to `generationRulesWhenNotSelected` text rules.
