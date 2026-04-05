@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { hashDemoSelections } from "@/lib/demo-generate";
+import { DEMO_DEFAULTS } from "@/lib/demo-options";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
 
@@ -22,6 +23,13 @@ export async function POST(request: Request) {
 
     if (!photoHash || !selections || typeof selections !== "object") {
       return NextResponse.json({ status: "not_found", imageUrl: null });
+    }
+
+    // Match the default injection from the generate route
+    if (selections["kitchen-cabinet-color"] && !selections["island-cabinet-color"]) {
+      selections["island-cabinet-color"] = DEMO_DEFAULTS["island-cabinet-color"];
+    } else if (selections["island-cabinet-color"] && !selections["kitchen-cabinet-color"]) {
+      selections["kitchen-cabinet-color"] = DEMO_DEFAULTS["kitchen-cabinet-color"];
     }
 
     const { combinedHash, effectiveSelections } = hashDemoSelections(photoHash, selections, sceneAnalysis);
