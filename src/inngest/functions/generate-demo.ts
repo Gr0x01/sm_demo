@@ -17,9 +17,9 @@ import type { Option, SubCategory } from "@/types";
 /** Fallback spatial hints when Gemini doesn't provide them */
 const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
   backsplash: "the wall strip between upper cabinets and countertop along the back wall, including the taller section behind the range hood",
-  "counter-top": "the horizontal stone slab on top of the island and on top of the perimeter cabinets — horizontal surface only, not vertical faces",
-  "kitchen-cabinet-color": "ALL perimeter/wall cabinet doors and drawer fronts — back wall uppers and lowers, side wall cabinets, and cabinets flanking the refrigerator and oven. The island is a SEPARATE selection — do not change it here",
-  "island-cabinet-color": "the flat smooth vertical front panel of the island base (the freestanding structure in the foreground, below the countertop overhang). Apply as a smooth painted surface — no beadboard, no grooves, no vertical lines. Perimeter wall cabinets are a SEPARATE selection — do not change them here",
+  "counter-top": "the horizontal slab on top of the island and on top of the perimeter cabinets — horizontal surface only, not vertical faces",
+  "kitchen-cabinet-color": "ALL perimeter/wall cabinet doors and drawer fronts — back wall uppers and lowers, side wall cabinets, and cabinets flanking the refrigerator and oven",
+  "island-cabinet-color": "the vertical front panel of the island base in the foreground, below the countertop overhang",
 };
 
 /** Build option lookup from hardcoded demo subcategories */
@@ -63,6 +63,7 @@ export const generateDemo = inngest.createFunction(
   async ({ event, step }) => {
     const { combinedHash, photoHash, sessionId, effectiveSelections, sceneAnalysis, leaveOneOutHashes } = event.data;
 
+    console.log(`[generate/demo] Source: /try (session ${sessionId.slice(0, 8)})`);
     const MAX_SCOPED_EDIT_DEPTH = 3;
     const outputPath = `demo-${combinedHash}.jpg`;
 
@@ -98,15 +99,7 @@ export const generateDemo = inngest.createFunction(
       const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
       if (sceneAnalysis?.spatialHints) {
         for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
-          if (!hint?.trim()) continue;
-          if (key === "kitchen-cabinet-color") {
-            // Merge Gemini's cabinet locations with island separation rule
-            spatialHints[key] = `${hint.trim()}. The island is a SEPARATE selection — do not change it here`;
-          } else if (key === "island-cabinet-color") {
-            spatialHints[key] = `${hint.trim()}. Perimeter wall cabinets are a SEPARATE selection — do not change them here`;
-          } else {
-            spatialHints[key] = hint;
-          }
+          if (hint?.trim()) spatialHints[key] = hint;
         }
       }
       const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
@@ -199,18 +192,11 @@ export const generateDemo = inngest.createFunction(
 
         const baseBuffer = Buffer.from(await baseImageData.arrayBuffer());
 
-        // Merge spatial hints (same logic as full gen path)
+        // Merge spatial hints
         const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
         if (sceneAnalysis?.spatialHints) {
           for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
-            if (!hint?.trim()) continue;
-            if (key === "kitchen-cabinet-color") {
-              spatialHints[key] = `${hint.trim()}. The island is a SEPARATE selection — do not change it here`;
-            } else if (key === "island-cabinet-color") {
-              spatialHints[key] = `${hint.trim()}. Perimeter wall cabinets are a SEPARATE selection — do not change them here`;
-            } else {
-              spatialHints[key] = hint;
-            }
+            if (hint?.trim()) spatialHints[key] = hint;
           }
         }
 

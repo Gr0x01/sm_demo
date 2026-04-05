@@ -182,6 +182,7 @@ export async function POST(request: Request) {
       await inngest.send({
         name: "photo/generate.requested",
         data: {
+          source: `${orgSlug}/${floorplanSlug} — ${aiConfig.photo.label ?? stepPhotoId}`,
           selectionsHash,
           selectionsFingerprint,
           orgId: org.id,

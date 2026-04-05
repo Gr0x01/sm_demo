@@ -73,7 +73,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.3";
+export const GENERATION_CACHE_VERSION = "v2.5";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -636,7 +636,8 @@ ${listLines.join("\n")}
 
 Image 1 is the base photo. Images 2..${imageIndex - 1} are reference swatches in listed order.
 Each finish stays strictly within its own surface boundary.
-Preserve cabinet door style, countertop edges, and structural geometry.
+Preserve room layout, cabinet door style, countertop edges, and structural geometry.
+Only objects visible in the source photo should appear — change finishes, not contents.
 Keep camera angle, perspective, and lighting. Photorealistic, natural lighting.${tail}`;
 
   return { prompt, swatches };
@@ -687,16 +688,13 @@ export async function buildBflScopedEditPrompt(
   const locationLine = hint ? `\nLocation: ${hint}` : "";
   const dimLine = option.dimensions?.trim() ? `\nDimensions: ${option.dimensions.trim()}` : "";
 
-  // Build explicit preserve list so the model knows what NOT to touch
-  const preserveLines: string[] = [];
+  // Build preserve list — just surface names, no spatial hints (keeps it short for BFL)
+  const preserveNames: string[] = [];
   for (const [subId, optId] of Object.entries(allSelections).sort(([a], [b]) => a.localeCompare(b))) {
     if (subId === changedSubcategoryId) continue;
     const found = optionLookup.get(`${subId}:${optId}`);
     if (!found) continue;
-    const loc = spatialHints[subId];
-    preserveLines.push(loc
-      ? `- ${found.subCategory.name} (${loc})`
-      : `- ${found.subCategory.name}`);
+    preserveNames.push(found.subCategory.name);
   }
 
   const invariantRules = collectInvariantRules(allSelections, optionLookup, scopedSubcategoryIds, promptPolicyOverrides);
@@ -706,12 +704,11 @@ export async function buildBflScopedEditPrompt(
 
   const sceneBlock = buildBflSceneBlock(sceneDescription, photoSpatialHint);
 
-  const preserveBlock = preserveLines.length > 0
-    ? `\nDO NOT MODIFY:\n${preserveLines.join("\n")}`
+  const preserveLine = preserveNames.length > 0
+    ? `\nThe ${preserveNames.join(", ")} all remain exactly as they currently appear in image 1.`
     : "";
 
-  const prompt = `${sceneBlock}Change ONLY the ${subCategory.name} in this image to match image 2. ${swatchRef}${locationLine}${dimLine}
-${preserveBlock}
+  const prompt = `${sceneBlock}Change ONLY the ${subCategory.name} in this image to match image 2. ${swatchRef}${locationLine}${dimLine}${preserveLine}
 Photorealistic, natural lighting.${rulesBlock}`;
 
   return { prompt, swatches };

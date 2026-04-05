@@ -388,7 +388,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
 
   const { data: photo, error: photoErr } = await supabase
     .from("step_photos")
-    .select("id, step_id, spatial_hint, photo_baseline, image_path, subcategory_ids, remap_accent_as_wall_paint")
+    .select("id, label, step_id, spatial_hint, photo_baseline, image_path, subcategory_ids, remap_accent_as_wall_paint")
     .eq("id", stepPhotoId)
     .single();
 
@@ -414,6 +414,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
     sections: (step.sections as { title: string; subcategory_ids: string[]; sort_order: number }[]) ?? [],
     photo: {
       id: photo.id as string,
+      label: (photo.label as string | null) ?? null,
       imagePath: photo.image_path as string,
       spatialHint: photo.spatial_hint as string | null,
       photoBaseline: photo.photo_baseline as string | null,

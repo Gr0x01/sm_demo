@@ -146,8 +146,10 @@ export const generatePhoto = inngest.createFunction(
       selectionsJsonForClaim,
       leaveOneOutHashes,
       heroImagePath,
+      source,
     } = event.data;
 
+    console.log(`[generate/photo] Source: ${source}`);
     const MAX_SCOPED_EDIT_DEPTH = 3;
     const outputPath = `${orgId}/${selectionsHash}.jpg`;
     const mainPassPath = `${orgId}/${selectionsHash}_main.jpg`;

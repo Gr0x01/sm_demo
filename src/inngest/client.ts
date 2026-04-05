@@ -3,6 +3,8 @@ import type { ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-polic
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 
 export interface PhotoGenerateRequestedData {
+  /** Human-readable label for Inngest dev UI, e.g. "SM Kinkade / Kitchen" or "prospect:stylecraft / Kitchen" */
+  source: string;
   selectionsHash: string;
   selectionsFingerprint: string;
   orgId: string;
