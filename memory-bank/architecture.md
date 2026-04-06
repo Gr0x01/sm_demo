@@ -235,47 +235,52 @@ State shape:
 
 ## AI Image Generation Pipeline
 
-1. User clicks "Visualize" on a photo card (available on steps with `step_photos`)
-2. Client sends POST to `/api/generate/photo` with orgSlug, floorplanSlug, stepPhotoId, selections, sessionId
-3. Route validates ownership, scopes selections, resolves linked options, computes hash, claims `__pending__` slot
-4. Route dispatches `photo/generate.requested` event to Inngest, returns 202
-5. Inngest `generate-photo` function runs in background (up to 5 steps, each up to 120s):
-   a. **check-diff-cache** — partial cache lookup for single-surface scoped edits
-   b. **generate** — main 1.5 pass: downloads hero photo + swatches in parallel, builds prompt via `buildEditPrompt`, calls OpenAI `images.edit`
-   c. **refine** (conditional) — second 1.5 pass for slide-in range geometry correction
-   d. **pro-post-pass** (conditional) — Gemini Pro refinement for cabinet stain depth + backsplash tile patterns. Fires when stain cabinet options selected. Absorbs Flash backsplash isolation when both are needed.
-   e. **flash-post-pass** (conditional) — Gemini Flash for backsplash tile isolation only (when no stain cabinets). Suppressed when Pro handles backsplash.
-   f. **persist** — uploads final image, upserts cache row
-6. Client polls `/api/generate/photo/check` every 3s until result is ready
-7. Client displays in StepPhotoGrid (per-photo cards with retry via ImageLightbox)
+**Model**: BFL Flux 2. Max for full generation, Pro for scoped edits (default), per-option model override via `scoped_edit_model` column. Max for range/oven scoped edits.
 
-**Image approach**: OpenAI `gpt-image-1.5` via `images.edit` endpoint for main pass. Gemini Flash (`gemini-3.1-flash-image-preview`) for backsplash-only isolation (specialty pass). Sends base room photo + individually attached swatch images. Prompt lines explicitly map each item to `swatch #N` in deterministic order. Config: `quality: "medium"` (D80), `size: "1536x1024"`, `input_fidelity: "high"`.
+**Shared core**: `src/lib/flux-pipeline.ts` — `fluxGenerate` (full gen, single or two-pass) and `fluxScopedEdit` (single-surface edit). Stateless functions that take buffers in, return buffers out. Both Inngest functions delegate to these.
 
-**Multi-pass pipeline** (feature-flagged via `useMultiPass` on `step_photo_generation_policies`): Splits generation into purpose-built sequential passes instead of one monolithic pass. Each pass handles 3-6 swatches. Pass definitions derived from subcategory classification (slug patterns + `isAppliance` flag + `needsIsolation` option flag). Kitchen: structural (~38s) → fixtures (~37s) → oven (conditional, slide-in) → specialty/Flash (~30s). Intermediates cached in `pass_cache` table for re-entry. `-none` selections (e.g. refrigerator-none) excluded from pass definitions. Old single-pass pipeline (`generate-photo.ts`) still the default — multi-pass is opt-in per photo. Architecture doc: `memory-bank/project/multi-pass-pipeline-architecture.md`.
+**Main pipeline** (buyer pages, `/for/` prospect demos):
+1. Client POST → `/api/generate/photo` (validates ownership, scopes selections, resolves linked options, computes hash, claims slot)
+2. Inngest `generate-photo` function: diff-cache check → `fluxGenerate` → optional second pass (oven correction) → persist
+3. Client polls `/api/generate/photo/check` until ready
 
-**Legacy single-pass pipeline** (default): All swatches in one 1.5 call + conditional compensatory post-passes (Pro for stain cabinets, Flash for backsplash isolation, oven correction). Being replaced by multi-pass pipeline.
+**Demo pipeline** (`/try`):
+1. Client POST → `/api/try/generate` (session cap, upload user photo)
+2. Inngest `generate-demo` function: diff-cache check → `fluxGenerate` or `fluxScopedEdit` → persist
+3. Client polls `/api/try/check` until ready
+4. **Currently uses hardcoded options** (`demo-options.ts`) — TODO: migrate to Demo org DB options to unify with `/for/` demos
 
-**Linked option resolution**: Options with `linked_to_subcategory` (e.g. "Match to Main Kitchen Cabinet Color") are resolved before prompt building. When the resolved swatch matches the source, the two selections are merged into a single prompt line covering both zones, and conflicting exclusion rules are stripped. When they differ, both remain as separate swatch-backed selections with their exclusion rules intact.
+**Two-pass split**: When >7 swatches (BFL Max limit), `fluxGenerate` splits into structural (cabinets, counter, backsplash, floor, paint) → fixtures (hardware, sink, faucet, lighting, appliances) in the same Inngest step. `maxDuration=300` on Inngest route (Vercel Pro + Fluid Compute).
 
-**Prompt strategy**: "Surgical precision" pattern with object invariants — deterministic swatch mapping, subcategory + option-level fixed-geometry rules, and explicit in-place replacement allowances for selected appliances. Base rules are global; tenant/photo-specific constraints are layered via per-photo policy overrides (DB-backed, internal-only), including optional second-pass refinements.
+**Scoped edits**: Leave-one-out hash system finds cached images differing by one surface. `fluxScopedEdit` runs a targeted edit (~7-20s vs 35-55s full gen). Depth capped at 3. Model selection: `option.scoped_edit_model` override → range/oven gets Max → default Pro.
 
-**Generation rule layering** (from general to specific, all accumulate into a Set):
-1. `subcategory.generation_rules` — fires when subcategory is selected (e.g., "apply Common Wall Paint to all drywall zones"). Supports conditional cross-subcategory logic in natural language (e.g., "If Accent Color is also selected, apply only to non-accent zones").
-2. `subcategory.generation_rules_when_not_selected` — negative guards scoped to photo (e.g., "wainscoting OFF = don't add paneling"). Fires for any photo where the subcategory is in scope but not selected.
-3. `option.generation_rules` — option-specific rules (e.g., "stainless steel appliances — match existing finish").
-   - `option.dimensions` — physical measurements only (e.g., "4x16", "1-inch hexagon mosaic"). Appended to swatch-backed prompt labels as `; dimensions: X`. Swatch remains sole appearance authority; dimensions provide scale context that swatch photos can't convey. No color/material words — only measurements and shape geometry.
-4. `step_photo_generation_policies` — per-photo overrides (internal-only, not admin-editable). Prompt invariants + optional second-pass refinement.
+**Prompt structure** (Flux-native, ~55-80 words):
+```
+Apply image 2 to all perimeter cabinets — upper, lower, and appliance-adjacent.
+Apply image 3 to island base cabinet panel in the foreground.
+Apply image 4 to all countertop surfaces.
+Apply image 5 to backsplash wall between countertop and upper cabinets (4x16 subway tiles).
+Photorealistic, natural lighting.
+```
+No opening sentence, no rules block, no scene block. Each line is "Apply image N to [spatial hint]." Dimensions in parentheses. Swatch image is sole appearance authority.
 
-All rule fields are admin-editable via the OptionTree AI Rules UI. Conditional cross-subcategory interaction (e.g., wall paint vs accent color) is expressed as natural language in rule text — the AI model evaluates by reading the edit list, no code branches needed.
+**Scoped edit prompt** (~15-25 words): `Change [surface] to match image 2. Match image 2 exactly.`
 
-**Cache semantic versioning**: Generation hash includes `_cacheVersion` so prompt/pipeline changes do not serve stale outputs. Bump `GENERATION_CACHE_VERSION` whenever generation semantics change.
-Generation hash also includes policy and prompt context inputs (`_promptPolicy`, `_promptContext`) so changes to per-photo hint/baseline/scene/policy invalidate stale cache entries.
+**Linked option resolution**: Options with `linked_to_subcategory` (e.g. "Match to Main") are resolved before prompt building. Same swatch → merged into one line covering both zones. Different swatch → kept separate.
 
-**Reliability playbook**: See `generation/reliability-playbook.md` for the operational checklist and reusable tactics when onboarding new rooms/builders.
+**Per-option model selection**: `scoped_edit_model` text column on options. Nullable — defaults to Pro when not set. Set via admin UI dropdown (Pro/Klein 9B/Klein 4B/Max). Example: hex mosaic tiles get Klein 9B (better pattern fidelity than Pro at that scale).
 
-**Model history**: Started with gpt-image-1 (OpenAI) text-to-image → Gemini multimodal (base photo + swatches) → `gemini-3-pro-image-preview` (perspective issues, inconsistent output format) → **OpenAI `gpt-image-1.5`** via `images.edit` endpoint (good quality, expensive, slow) → Gemini `gemini-3-pro-image-preview` (faster/cheaper but unpredictable hallucinations — reverted D77) → **OpenAI `gpt-image-1.5`** (current main pass — reliable geometry, ~40s). `@google/genai` is a production dependency — used by Flash post-pass (backsplash isolation) and Pro post-pass (cabinet stain refinement + combined backsplash).
+**Cache versioning**: `GENERATION_CACHE_VERSION` (main) and `DEMO_GENERATION_CACHE_VERSION` (demo) in hash inputs. Bump when prompt semantics change.
 
-**Multi-model pipeline rationale**: 1.5 handles geometry and most surfaces well but under-applies dramatic color changes (white→wood stain) when competing with 11+ swatches. Pro excels at focused refinement (2-3 swatches) with better color/texture fidelity. Flash handles single-surface tile pattern isolation cheaply. Each model is used where it performs best.
+**Key files**:
+- `src/lib/flux-pipeline.ts` — shared Flux generation core
+- `src/lib/generate.ts` — prompt builders (`buildEditPrompt`, `buildScopedEditPrompt`), hash functions, context derivation
+- `src/lib/bfl.ts` — BFL API client (submit → poll → download)
+- `src/inngest/functions/generate-photo.ts` — main pipeline orchestrator
+- `src/inngest/functions/generate-demo.ts` — demo pipeline orchestrator
+- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-pro"`
+
+**Model history**: gpt-image-1 → Gemini → gpt-image-1.5 → gpt-image-1.5 + Gemini Flash/Pro post-passes → multi-pass pipeline → **Flux 2 Max/Pro** (current). OpenAI and Gemini pipelines fully removed.
 
 ## Swatch Images
 
