@@ -21,11 +21,11 @@
     { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
   ],
   "spatialHints": {
-    "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
-    "counter-top": "all countertop surfaces on perimeter and island",
-    "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
-    "kitchen-cabinet-color": "all perimeter cabinet doors and drawer fronts",
-    "main-area-flooring-color": "all visible floor area throughout the kitchen"
+    "backsplash": "the wall area between upper cabinets and countertop on the back wall, flanking the chimney range hood",
+    "counter-top": "all perimeter countertop surfaces along the back wall and wrapping both sides — U-shaped layout, continuous surface",
+    "common-wall-paint": "wall surfaces visible above the upper cabinets — limited visibility since the U-shaped cabinets fill most of the wall space",
+    "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets flanking the chimney hood, refrigerator, and oven — every perimeter cabinet door and drawer front across the U-shaped layout",
+    "main-area-flooring-color": "LVP plank flooring across the visible floor area in the center of the U-shape"
   },
   "insights": [
     { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },

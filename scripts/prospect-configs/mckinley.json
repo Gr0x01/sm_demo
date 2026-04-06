@@ -22,12 +22,12 @@
     { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
   ],
   "spatialHints": {
-    "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
-    "counter-top": "all countertop surfaces on perimeter and island",
-    "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
-    "kitchen-cabinet-color": "perimeter cabinet doors and drawer fronts on walls only, not the island",
-    "main-area-flooring-color": "all visible floor area throughout the kitchen",
-    "kitchen-island-cabinet-color": "island cabinet doors and drawer fronts only"
+    "backsplash": "subway tile on the right wall between upper and lower perimeter cabinets, running from the range area toward the camera",
+    "counter-top": "all countertop surfaces on the perimeter cabinets along the right wall and on the center island",
+    "common-wall-paint": "wall surfaces above the perimeter cabinets, around the pantry door, and the left-side wall area near the stairwell",
+    "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets flanking appliances along the right wall — every perimeter cabinet door and drawer front from the French-door fridge at the far end past the range to the near side",
+    "main-area-flooring-color": "LVP plank flooring visible between the island and perimeter cabinets",
+    "kitchen-island-cabinet-color": "the center island base cabinet doors and drawer fronts — the structure running left-to-right with the farmhouse apron sink"
   },
   "insights": [
     { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },

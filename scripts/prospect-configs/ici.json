@@ -22,12 +22,12 @@
     { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
   ],
   "spatialHints": {
-    "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
-    "counter-top": "all countertop surfaces on perimeter and island",
-    "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
-    "kitchen-cabinet-color": "perimeter cabinet doors and drawer fronts on walls only, not the island",
-    "main-area-flooring-color": "all visible floor area throughout the kitchen",
-    "kitchen-island-cabinet-color": "island cabinet doors and drawer fronts only"
+    "backsplash": "mosaic/herringbone tile on the back wall between upper cabinets and countertop, illuminated by under-cabinet LED strips",
+    "counter-top": "all countertop surfaces on perimeter cabinets and the center island — continuous slab on both",
+    "common-wall-paint": "wall surfaces visible above the tall right-side cabinets and on the vaulted ceiling area above the island",
+    "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and tall pantry-height cabinets on the right side — every perimeter cabinet door and drawer front on the back wall and right wall",
+    "main-area-flooring-color": "large format tile flooring across the entire visible floor area",
+    "kitchen-island-cabinet-color": "the center island base cabinet doors and drawer fronts — the freestanding structure with bar stools on the near side"
   },
   "insights": [
     { "label": "Upgrade attachment when buyers see selections in the room", "value": "+20–40%" },

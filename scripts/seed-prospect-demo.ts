@@ -183,19 +183,22 @@ async function main() {
     console.log("\n📝 Creating step...");
     // Build spatial hints from subcategory list
     const hasIsland = config.subcategoryIds.includes("kitchen-island-cabinet-color");
+    // BFL spatial hints: never name surfaces you're NOT changing.
+    // Use "cabinetry" (architectural noun) not "cabinets" (surface category).
+    // Use "cooking zone" not "between cabinets and countertop".
     const spatialHints: Record<string, string> = {
       "kitchen-cabinet-color": hasIsland
-        ? "perimeter cabinet doors and drawer fronts on walls only, not the island"
-        : "all cabinet doors and drawer fronts",
+        ? "upper wall cabinets, lower base cabinets, and cabinets flanking appliances — every perimeter cabinet door and drawer front"
+        : "upper wall cabinets, lower base cabinets, and cabinets flanking appliances — every cabinet door and drawer front",
       "counter-top": hasIsland
-        ? "all countertop surfaces on perimeter and island"
-        : "all countertop surfaces along the perimeter walls",
-      "backsplash": "the wall area between the countertop and upper cabinets on the back wall",
+        ? "all horizontal countertop surfaces — perimeter and center workspace"
+        : "all horizontal countertop surfaces along the perimeter",
+      "backsplash": "the narrow wall strip on the back wall in the cooking zone",
       "main-area-flooring-color": "all visible floor area throughout the kitchen",
-      "common-wall-paint": "all visible wall surfaces above the cabinets and around windows",
+      "common-wall-paint": "painted wall surfaces visible above the cabinetry and on surrounding walls",
     };
     if (hasIsland) {
-      spatialHints["kitchen-island-cabinet-color"] = "island cabinet doors and drawer fronts only";
+      spatialHints["kitchen-island-cabinet-color"] = "the center island base cabinet doors and drawer fronts — the freestanding structure in the foreground";
     }
     // Allow config to override any hint
     if (config.spatialHints) {

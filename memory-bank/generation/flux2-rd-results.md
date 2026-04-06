@@ -15,13 +15,19 @@ Tested all BFL Flux 2 models as replacements for OpenAI gpt-image-1.5 + Gemini F
 | **Klein 4B** | `flux-2-klein-4b` | 6s | **7-11s** | **$0.017/img** | Scoped edit champion. Better spatial precision than Pro on several tests. Full gen quality too low (blue carpet). 4B params = self-hostable on consumer GPU. |
 | **Kontext Max** | `flux-kontext-max` | — | 41s | $0.08 flat | Composited swatches as image strip instead of using them as references. Does NOT understand multi-reference editing. Out. |
 
-## Recommended Architecture
+## Recommended Architecture (Updated 2026-04-06)
 
-| Use case | Model | Time | Cost |
-|----------|-------|------|------|
-| Full generation (all surfaces) | **Max** | ~35-46s | ~$0.09 |
-| Scoped edit (1 surface change) | **Klein 9B** | ~15s | $0.02 |
-| Post-pass (oven correction) | **Max** | ~30-39s | ~$0.09 |
+| Use case | Model | Time | Cost | Notes |
+|----------|-------|------|------|-------|
+| Full generation (all surfaces) | **Max** | ~40-60s | ~$0.09 | Best quality, handles complex multi-swatch passes |
+| Scoped edit — simple (paint, solid counter) | **Klein 4B** | ~7-11s | $0.017 | Best for single simple surface swaps |
+| Scoped edit — moderate (2+ changes, textured) | **Klein 9B** | ~15s | $0.02 | Sometimes outperformed by 4B on single changes |
+| Scoped edit — major/complex | **Dev** | ~20s | ~$0.04 | Right in the middle — use when Klein isn't enough |
+| Post-pass (oven correction) | **Max** | ~30-39s | ~$0.09 | Structural geometry changes need Max |
+
+### Model Selection Guidance (2026-04-06)
+
+**Klein 4B** and **9B** perform surprisingly close — 9B can sometimes handle 2+ changes but is occasionally outperformed by 4B on single swaps. **Dev** (~20s) fills the gap between Klein and Max: use it when Klein can't handle the complexity but Max is overkill. For now the production default is **Pro** for scoped edits (safe middle ground). Model tiering per surface type is a future optimization once client volume justifies the complexity.
 
 ### vs Current Pipeline
 
@@ -80,14 +86,20 @@ Tested all BFL Flux 2 models as replacements for OpenAI gpt-image-1.5 + Gemini F
 - `scripts/test-flux2-stress-scoped.ts` — Klein 4B vs Pro stress test (7 surface types)
 - Outputs: `scripts/flux2-test-outputs/`
 
+## Shipped (2026-04-05)
+- [x] Spatial prompting overhaul — scene context, photo baseline, spatial hints in BFL prompt builder
+- [x] Swap `IMAGE_MODEL` to Flux 2 Max (BFL API)
+- [x] Swap scoped edit model (currently Pro — safe default)
+- [x] Remove Flash isolation pass (Max handles herringbone/tile in single pass)
+- [x] Remove Pro cabinet post-pass (Max handles stain in single pass)
+- [x] Keep oven correction pass (Max-to-Max post-pass)
+- [x] Update cost tracking in PostHog
+- [x] Bump cache version
+- [x] Update `/try` demo pipeline
+
 ## Next Steps
-- [ ] **Spatial prompting overhaul** — integrate scene description, photo baseline, photo spatial hint into Flux prompt builder. This is the main gap before integration.
-- [ ] Swap `IMAGE_MODEL` from `gpt-image-1.5` to Flux 2 Max (BFL API)
-- [ ] Swap scoped edit model to Klein 4B
-- [ ] Remove Flash isolation pass (Max handles herringbone/tile in single pass)
-- [ ] Remove Pro cabinet post-pass (Max handles stain in single pass)
-- [ ] Keep oven correction pass (Max-to-Max post-pass)
-- [ ] Update cost tracking in PostHog
-- [ ] Bump cache version (all cached images need regeneration)
-- [ ] Test on non-kitchen rooms (bedrooms, bathrooms — should be single Max pass)
-- [ ] Update `/try` demo pipeline
+- [ ] **Per-surface model selection** — route simple scoped edits to Klein 4B, moderate to 9B/Dev, complex to Pro/Max. Future optimization for client volume.
+- [ ] **Dev model integration** — add `flux-2-dev` to BflModel type, pricing, ref image limits. ~20s, fills gap between Klein and Max.
+- [ ] **Regenerate prospect demo presets** — all /for/ pages need new images on Flux 2 pipeline
+- [ ] **Test Klein 4B/9B on non-kitchen rooms** — bedrooms/bathrooms are simpler, Klein may handle full gen
+- [ ] Self-hosting Klein 4B on Proxmox homelab (post-Montgomery move)

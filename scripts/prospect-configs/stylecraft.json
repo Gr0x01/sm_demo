@@ -25,9 +25,9 @@
     "backsplash": "the vertical strip between the upper cabinets and the countertop on the back wall, extending from left corner to right side of the range area",
     "counter-top": "all countertop surfaces on perimeter counters and peninsula island top",
     "common-wall-paint": "all visible wall surfaces above the cabinets and on the right wall around the window",
-    "kitchen-cabinet-color": "perimeter cabinet doors and drawer fronts on walls only, not the island",
+    "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets flanking appliances along the back wall and wrapping left — every perimeter cabinet door and drawer front",
     "main-area-flooring-color": "all visible floor area throughout the open kitchen and living space",
-    "kitchen-island-cabinet-color": "island cabinet doors and drawer fronts only"
+    "kitchen-island-cabinet-color": "peninsula island base cabinet doors and drawer fronts in the foreground left"
   },
   "insights": [
     { "label": "Signature Homes saw this after adding visualization", "value": "+20% option sales" },
