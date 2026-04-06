@@ -4,7 +4,7 @@ import { getCategoriesWithOptions } from "@/lib/db-queries";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
 
-export const DEMO_GENERATION_CACHE_VERSION = "v3.0";
+export const DEMO_GENERATION_CACHE_VERSION = "v3.5";
 export const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
 
 /**

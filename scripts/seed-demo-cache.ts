@@ -50,10 +50,10 @@ const SAMPLE_SCENE_ANALYSIS: DemoSceneAnalysis = {
 
 /** Short spatial hints matching the shortened DB hints for the demo kitchen */
 const SPATIAL_HINTS: Record<string, string> = {
-  backsplash: "backsplash wall strip in the cooking zone",
-  "counter-top": "all countertop surfaces — perimeter and center workspace",
-  "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets flanking appliances — every perimeter cabinet door and drawer front",
-  "kitchen-island-cabinet-color": "island base cabinet doors and drawer fronts — freestanding island in foreground",
+  backsplash: "backsplash wall between the upper cabinets and the countertop",
+  "counter-top": "flat countertop work surface spanning the perimeter cabinets and the top of the island",
+  "kitchen-cabinet-color": "all perimeter cabinet doors and drawers — upper and lower along every wall, including cabinets flanking the refrigerator and range",
+  "kitchen-island-cabinet-color": "island base cabinet panel in the foreground, distinct from the perimeter cabinets",
 };
 
 // ---------- Option IDs (DB slugs from Demo org) ----------

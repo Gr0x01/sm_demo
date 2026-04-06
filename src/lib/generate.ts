@@ -46,6 +46,7 @@ export function resolveLinkedOptions(
       const stripExclusion = (h: string) => h
         .replace(/[.—–]\s*NOT\b.*$/i, "")          // legacy: ". NOT the island" / "— NOT the perimeter"
         .replace(/\.\s*(The island|Island|Perimeter wall cabinets|Perimeter)[^.]*separate[^.]*\.?$/i, "")  // BFL-style: "The island is a separate cabinet selection."
+        .replace(/,\s*(separate|distinct)\s+from\s+[^.]+$/i, "")  // ", distinct from the perimeter cabinets"
         .trim();
       spatialHints[linkedSub] = `${stripExclusion(spatialHints[linkedSub])} AND ${stripExclusion(spatialHints[subId])}`;
       delete spatialHints[subId];
@@ -112,7 +113,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.8";
+export const GENERATION_CACHE_VERSION = "v2.9";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];

@@ -1,5 +1,5 @@
 import { inngest } from "@/inngest/client";
-import { identifyChangedSubcategory } from "@/lib/generate";
+import { identifyChangedSubcategory, resolveLinkedOptions } from "@/lib/generate";
 import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
 import { findDemoDiffMatch, getOptionLookup } from "@/lib/db-queries";
 import { getServiceClient } from "@/lib/supabase";
@@ -9,10 +9,10 @@ import { fluxGenerate, fluxScopedEdit, createSwatchResolver } from "@/lib/flux-p
 
 /** Short fallback spatial hints when Gemini scene analysis doesn't provide them. */
 const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
-  backsplash: "backsplash wall between countertop and upper cabinets",
-  "counter-top": "horizontal countertop slabs — perimeter and island top surface only",
-  "kitchen-cabinet-color": "all perimeter cabinet doors and drawer fronts — upper and lower",
-  "kitchen-island-cabinet-color": "island base cabinet panel in the foreground",
+  backsplash: "backsplash wall between the upper cabinets and the countertop",
+  "counter-top": "flat countertop work surface spanning the perimeter cabinets and the top of the island",
+  "kitchen-cabinet-color": "all perimeter cabinet doors and drawers — upper and lower along every wall, including cabinets flanking the refrigerator and range",
+  "kitchen-island-cabinet-color": "island base cabinet panel in the foreground, distinct from the perimeter cabinets",
 };
 
 /** Merge Gemini-provided spatial hints with defaults */
@@ -92,15 +92,31 @@ export const generateDemo = inngest.createFunction(
         throw new Error(`Failed to load demo photo: ${downloadErr?.message}`);
       }
 
+      // Resolve linked options (e.g. "Match to Main" island → merge with perimeter cabinet)
+      const resolvedSelections = { ...effectiveSelections };
+      resolveLinkedOptions(resolvedSelections, optionLookup, spatialHints);
+
+      // Remove merged subcategories from defaultSurfaceColors so they don't
+      // get contradicting preservation lines (e.g. "island stays at #F5F5F2"
+      // while the merged cabinet line tells Flux to apply the swatch there)
+      let resolvedDefaultColors = sceneAnalysis?.defaultSurfaceColors;
+      if (resolvedDefaultColors) {
+        const merged = Object.keys(effectiveSelections).filter(k => !(k in resolvedSelections));
+        if (merged.length > 0) {
+          resolvedDefaultColors = { ...resolvedDefaultColors };
+          for (const k of merged) delete resolvedDefaultColors[k];
+        }
+      }
+
       const genStart = performance.now();
       try {
         const result = await fluxGenerate({
           heroBuffer: Buffer.from(await photoData.arrayBuffer()),
-          selections: effectiveSelections,
+          selections: resolvedSelections,
           optionLookup,
           spatialHints,
           swatchResolver: createSwatchResolver(supabase),
-          defaultSurfaceColors: sceneAnalysis?.defaultSurfaceColors,
+          defaultSurfaceColors: resolvedDefaultColors,
         });
 
         // Upload to storage within this step
