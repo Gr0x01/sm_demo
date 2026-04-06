@@ -13,10 +13,10 @@ export const DEMO_SUBCATEGORIES: SubCategory[] = [
     categoryId: "demo",
     isVisual: true,
     generationRules: [
-      "Tile occupies only the wall area directly above the countertop, stopping at the upper cabinet line.",
+      "Tile covers the wall area between the countertop surface and the underside of the upper cabinets.",
     ],
     generationRulesWhenNotSelected: [
-      "Keep the existing backsplash exactly as shown.",
+      "Backsplash tile pattern and finish remain as photographed.",
     ],
     options: [
       { id: "bs-white-gloss-subway", name: "Blanc Subway", price: 0, swatchUrl: "/swatches/backsplash/demo-white-subway.jpg", swatchColor: "#F5F5F5", dimensions: "4x16 subway tiles, staggered layout" },

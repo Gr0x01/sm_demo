@@ -1274,7 +1274,7 @@ function OptionEditorModal({
     promptDescriptor: option.prompt_descriptor ?? "",
     dimensions: option.dimensions ?? "",
     isDefault: option.is_default,
-    needsIsolation: option.needs_isolation ?? false,
+    scopedEditModel: option.scoped_edit_model ?? "",
     generationRulesText: rulesToText(option.generation_rules),
   });
   const [saving, setSaving] = useState(false);
@@ -1292,7 +1292,7 @@ function OptionEditorModal({
       promptDescriptor: option.prompt_descriptor ?? "",
       dimensions: option.dimensions ?? "",
       isDefault: option.is_default,
-      needsIsolation: option.needs_isolation ?? false,
+      scopedEditModel: option.scoped_edit_model ?? "",
       generationRulesText: rulesToText(option.generation_rules),
     });
   }, [
@@ -1306,7 +1306,7 @@ function OptionEditorModal({
     option.prompt_descriptor,
     option.dimensions,
     option.is_default,
-    option.needs_isolation,
+    option.scoped_edit_model,
     option.generation_rules,
   ]);
 
@@ -1332,7 +1332,8 @@ function OptionEditorModal({
     if (normalizedDimensions !== (option.dimensions ?? null)) updates.dimensions = normalizedDimensions;
     if (normalizedSwatchUrl !== (option.swatch_url ?? null)) updates.swatch_url = normalizedSwatchUrl;
     if (draft.isDefault !== option.is_default) updates.is_default = draft.isDefault;
-    if (draft.needsIsolation !== (option.needs_isolation ?? false)) updates.needs_isolation = draft.needsIsolation;
+    const normalizedScopedModel = draft.scopedEditModel.trim() || null;
+    if (normalizedScopedModel !== (option.scoped_edit_model ?? null)) updates.scoped_edit_model = normalizedScopedModel;
     const normalizedGenRules = parseRulesText(draft.generationRulesText);
     if (JSON.stringify(normalizedGenRules) !== JSON.stringify(option.generation_rules ?? null)) updates.generation_rules = normalizedGenRules;
 
@@ -1539,7 +1540,7 @@ function OptionDetailPanel({
     promptDescriptor: string;
     dimensions: string;
     isDefault: boolean;
-    needsIsolation: boolean;
+    scopedEditModel: string;
     generationRulesText: string;
   };
   setDraft: React.Dispatch<React.SetStateAction<{
@@ -1552,7 +1553,7 @@ function OptionDetailPanel({
     promptDescriptor: string;
     dimensions: string;
     isDefault: boolean;
-    needsIsolation: boolean;
+    scopedEditModel: string;
     generationRulesText: string;
   }>>;
   generating: boolean;
@@ -1698,14 +1699,18 @@ function OptionDetailPanel({
             />
             Default (included)
           </label>
-          <label className="flex items-center gap-2 text-slate-700 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={draft.needsIsolation}
-              onChange={(e) => setDraft((prev) => ({ ...prev, needsIsolation: e.target.checked }))}
-              className="accent-amber-600"
-            />
-            Needs isolation pass
+          <label className="flex items-center gap-2 text-slate-700">
+            <span className="text-xs whitespace-nowrap">Scoped edit model:</span>
+            <select
+              value={draft.scopedEditModel}
+              onChange={(e) => setDraft((prev) => ({ ...prev, scopedEditModel: e.target.value }))}
+              className="text-xs border border-slate-300 px-1.5 py-0.5 bg-white text-slate-800"
+            >
+              <option value="">Default (Pro)</option>
+              <option value="flux-2-klein-9b">Klein 9B</option>
+              <option value="flux-2-klein-4b">Klein 4B</option>
+              <option value="flux-2-max">Max</option>
+            </select>
           </label>
         </div>
         <div className="text-slate-500 text-xs">

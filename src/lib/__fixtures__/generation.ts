@@ -148,7 +148,7 @@ export function buildOptionLookup(): OptionLookupMap {
   const backsplashSub = makeSub("backsplash", "Backsplash");
   const backsplashOpt = makeOpt("bs-subway-white", "White Subway Tile", { swatchUrl: "https://storage/swatch-sub.jpg", price: 0, dimensions: "4x16" });
   map.set("backsplash:bs-subway-white", { option: backsplashOpt, subCategory: backsplashSub });
-  const backsplashPicketOpt = makeOpt("bs-picket-taupe", "Picket Gloss Taupe", { swatchUrl: "https://storage/swatch-picket.jpg", price: 375, needsIsolation: true });
+  const backsplashPicketOpt = makeOpt("bs-picket-taupe", "Picket Gloss Taupe", { swatchUrl: "https://storage/swatch-picket.jpg", price: 375, scopedEditModel: "flux-2-klein-9b" });
   map.set("backsplash:bs-picket-taupe", { option: backsplashPicketOpt, subCategory: backsplashSub });
 
   const rangeSub = makeSub("range", "Range", {

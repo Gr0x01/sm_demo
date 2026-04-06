@@ -15,7 +15,7 @@ const createSchema = z.object({
   swatch_color: z.string().nullable().optional(),
   nudge: z.string().nullable().optional(),
   is_default: z.boolean().optional(),
-  needs_isolation: z.boolean().optional(),
+  scoped_edit_model: z.string().nullable().optional(),
   sort_order: z.number().int().optional(),
 });
 

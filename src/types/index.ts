@@ -9,7 +9,7 @@ export interface Option {
   nudge?: string;
   generationRules?: string[];
   isDefault?: boolean;
-  needsIsolation?: boolean;
+  scopedEditModel?: string;
   linkedToSubcategory?: string;
 }
 
@@ -72,7 +72,7 @@ export interface AdminOption {
   floorplan_ids: string[];
   generation_rules: string[] | null;
   dimensions: string | null;
-  needs_isolation: boolean;
+  scoped_edit_model: string | null;
 }
 
 export interface AdminSubcategory {

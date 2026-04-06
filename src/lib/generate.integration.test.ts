@@ -340,7 +340,7 @@ describe("deriveGenerationContext — negative-guard rules", () => {
 });
 
 describe("deriveGenerationContext — no longer builds flash/pro post-passes", () => {
-  it("needsIsolation option does not trigger flashPostPass (Flux 2 handles tile patterns)", () => {
+  it("scopedEditModel option does not trigger flashPostPass (Flux 2 handles tile patterns)", () => {
     const result = deriveGenerationContext(
       kitchenAiConfig,
       { ...kitchenSelections, backsplash: "bs-picket-taupe" },

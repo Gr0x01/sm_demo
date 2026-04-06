@@ -2,7 +2,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
-import { buildBflEditPrompt, buildBflScopedEditPrompt, identifyChangedSubcategory } from "@/lib/generate";
+import { identifyChangedSubcategory } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
 import { DEMO_SUBCATEGORIES } from "@/lib/demo-options";
 import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
@@ -10,8 +10,7 @@ import { findDemoDiffMatch } from "@/lib/db-queries";
 import { getServiceClient } from "@/lib/supabase";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
 import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
-import { generateImage } from "@/lib/bfl";
-import type { BflModel } from "@/lib/bfl";
+import { fluxGenerate, fluxScopedEdit } from "@/lib/flux-pipeline";
 import type { Option, SubCategory } from "@/types";
 
 /** Fallback spatial hints when Gemini doesn't provide them */
@@ -31,6 +30,17 @@ function buildDemoOptionLookup(): Map<string, { option: Option; subCategory: Sub
     }
   }
   return map;
+}
+
+/** Merge Gemini-provided spatial hints with defaults */
+function mergeSpatialHints(sceneAnalysis: { spatialHints?: Record<string, string> } | null): Record<string, string> {
+  const hints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
+  if (sceneAnalysis?.spatialHints) {
+    for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
+      if (hint?.trim()) hints[key] = hint;
+    }
+  }
+  return hints;
 }
 
 /** Swatch resolver that reads from local public/ directory (works on Vercel — public/ is bundled) */
@@ -56,6 +66,7 @@ const resolveLocalSwatch: SwatchBufferResolver = async (swatchUrl: string) => {
 export const generateDemo = inngest.createFunction(
   {
     id: "generate-demo",
+    name: "Generate Demo (/try)",
     retries: 2,
     concurrency: { limit: 3 },
   },
@@ -67,9 +78,8 @@ export const generateDemo = inngest.createFunction(
     const MAX_SCOPED_EDIT_DEPTH = 3;
     const outputPath = `demo-${combinedHash}.jpg`;
 
-    // --- Step 1: Diff cache check + full generation (merged to save a step transition) ---
+    // --- Step 1: Diff cache check + full generation ---
     const generateResult = await step.run("generate", async () => {
-      // Quick diff cache check (~100ms DB query, saves a full Inngest step transition)
       const diffMatch = await findDemoDiffMatch(photoHash, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH, DEMO_GENERATION_CACHE_VERSION);
       if (diffMatch) {
         const changedSub = identifyChangedSubcategory(diffMatch.selectionsJson, effectiveSelections);
@@ -77,7 +87,7 @@ export const generateDemo = inngest.createFunction(
           changedSub.oldOptionId.endsWith("-none") || changedSub.newOptionId.endsWith("-none")
         );
         if (isApplianceAddRemove) {
-          console.log(`[demo/generate] Skipping scoped edit: appliance add/remove (${changedSub!.subcategoryId} ${changedSub!.oldOptionId} → ${changedSub!.newOptionId})`);
+          console.log(`[generate/demo] Skipping scoped edit: appliance add/remove (${changedSub!.subcategoryId} ${changedSub!.oldOptionId} → ${changedSub!.newOptionId})`);
         }
         if (changedSub && !isApplianceAddRemove) {
           return {
@@ -95,7 +105,7 @@ export const generateDemo = inngest.createFunction(
       const selectionEntries = Object.entries(effectiveSelections);
       if (selectionEntries.length === 1) {
         const [subId, optId] = selectionEntries[0];
-        console.log(`[demo/generate] Single selection, scoped edit from original photo: ${subId} → ${optId}`);
+        console.log(`[generate/demo] Single selection, scoped edit from original photo: ${subId} → ${optId}`);
         return {
           type: "scoped-edit-needed" as const,
           imagePath: `${photoHash}.jpg`,
@@ -106,50 +116,26 @@ export const generateDemo = inngest.createFunction(
         };
       }
 
-      // No scoped edit — full generation
+      // No scoped edit — full generation via shared Flux pipeline
       const supabase = getServiceClient();
+      const spatialHints = mergeSpatialHints(sceneAnalysis);
 
-      // Build option lookup + spatial hints + scene description (all sync/CPU)
-      const optionLookup = buildDemoOptionLookup();
-
-      const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
-      if (sceneAnalysis?.spatialHints) {
-        for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
-          if (hint?.trim()) spatialHints[key] = hint;
-        }
-      }
-      const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map(s => s.id);
-
-      // Parallel: download user photo + build prompt (resolves local swatches)
-      // No scene description — BFL sees the base photo directly, and scene text
-      // mentioning unselected surfaces (e.g. "island") draws unwanted attention.
-      const [photoResult, promptResult] = await Promise.all([
-        supabase.storage.from("demo-uploads").download(`${photoHash}.jpg`),
-        buildBflEditPrompt(
-          effectiveSelections, optionLookup, spatialHints, scopedSubcategoryIds,
-          null, null, resolveLocalSwatch, undefined,
-          sceneAnalysis?.defaultSurfaceColors,
-        ),
-      ]);
-
-      const { data: photoData, error: downloadErr } = photoResult;
+      const { data: photoData, error: downloadErr } = await supabase.storage
+        .from("demo-uploads")
+        .download(`${photoHash}.jpg`);
       if (downloadErr || !photoData) {
         throw new Error(`Failed to load demo photo: ${downloadErr?.message}`);
       }
-      const photoBuffer = Buffer.from(await photoData.arrayBuffer());
-      const { prompt, swatches } = promptResult;
-
-      console.log(`[demo/generate] Sending ${swatches.length} swatches to ${IMAGE_MODEL}`);
-      console.log(`[demo/generate] Swatch order: ${swatches.map((s, i) => `image ${i + 2}=${s.subcategoryId}`).join(", ")}`);
-      console.log(`[demo/generate] Prompt:\n${prompt}`);
 
       const genStart = performance.now();
       try {
-        const result = await generateImage({
-          model: IMAGE_MODEL as BflModel,
-          prompt,
-          inputImage: photoBuffer,
-          referenceImages: swatches.map(s => s.buffer),
+        const result = await fluxGenerate({
+          heroBuffer: Buffer.from(await photoData.arrayBuffer()),
+          selections: effectiveSelections,
+          optionLookup: buildDemoOptionLookup(),
+          spatialHints,
+          swatchResolver: resolveLocalSwatch,
+          defaultSurfaceColors: sceneAnalysis?.defaultSurfaceColors,
         });
 
         // Upload to storage within this step
@@ -158,66 +144,43 @@ export const generateDemo = inngest.createFunction(
           .upload(outputPath, result.imageBuffer, { contentType: "image/jpeg", upsert: true });
         if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
-        const durationMs = Math.round(performance.now() - genStart);
-        console.log(`[demo/generate] Generation complete in ${durationMs}ms`);
-
-        return { type: "generated" as const, prompt, durationMs };
+        console.log(`[generate/demo] Generation complete in ${result.durationMs}ms (${result.passes} pass${result.passes > 1 ? "es" : ""})`);
+        return { type: "generated" as const, prompt: result.prompt, durationMs: result.durationMs };
       } catch (err) {
-        const durationMs = Math.round(performance.now() - genStart);
         await captureAiError("anonymous", {
           provider: "bfl",
           model: IMAGE_MODEL,
           route: "/api/try/generate",
-          duration_ms: durationMs,
+          duration_ms: Math.round(performance.now() - genStart),
           error: err,
         });
         throw err;
       }
     });
 
-    // --- Scoped edit path (diff cache hit) ---
+    // --- Scoped edit path ---
     if (generateResult.type === "scoped-edit-needed") {
       const { imagePath: baseImagePath, bucket: baseBucket, depth, changedSubcategoryId, changedNewOptionId } = generateResult;
 
       const scopedResult = await step.run("scoped-edit", async () => {
         const supabase = getServiceClient();
-        const optionLookup = buildDemoOptionLookup();
 
-        // Download the base image (original photo or previously generated)
         const { data: baseImageData, error: dlErr } = await supabase.storage
           .from(baseBucket)
           .download(baseImagePath);
         if (dlErr || !baseImageData) throw new Error(`Failed to download base image: ${dlErr?.message}`);
 
-        const baseBuffer = Buffer.from(await baseImageData.arrayBuffer());
-
-        // Merge spatial hints
-        const spatialHints: Record<string, string> = { ...DEFAULT_SPATIAL_HINTS };
-        if (sceneAnalysis?.spatialHints) {
-          for (const [key, hint] of Object.entries(sceneAnalysis.spatialHints)) {
-            if (hint?.trim()) spatialHints[key] = hint;
-          }
-        }
-
-        const { prompt, swatches } = await buildBflScopedEditPrompt(
-          changedSubcategoryId,
-          changedNewOptionId,
-          optionLookup,
-          spatialHints,
-          resolveLocalSwatch,
-        );
-
-        console.log(`[demo/generate] Scoped edit: changing ${changedSubcategoryId} (depth ${depth} → ${depth + 1})`);
-        console.log(`[demo/generate] Base image: ${baseImagePath}`);
-        console.log(`[demo/generate] Scoped prompt:\n${prompt}`);
+        const spatialHints = mergeSpatialHints(sceneAnalysis);
 
         const genStart = performance.now();
         try {
-          const result = await generateImage({
-            model: SCOPED_EDIT_MODEL,
-            prompt,
-            inputImage: baseBuffer,
-            referenceImages: swatches.map(s => s.buffer),
+          const result = await fluxScopedEdit({
+            baseImageBuffer: Buffer.from(await baseImageData.arrayBuffer()),
+            changedSubcategoryId,
+            changedOptionId: changedNewOptionId,
+            optionLookup: buildDemoOptionLookup(),
+            spatialHints,
+            swatchResolver: resolveLocalSwatch,
           });
 
           const { error: uploadError } = await supabase.storage
@@ -225,23 +188,21 @@ export const generateDemo = inngest.createFunction(
             .upload(outputPath, result.imageBuffer, { contentType: "image/jpeg", upsert: true });
           if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
-          const durationMs = Math.round(performance.now() - genStart);
-          console.log(`[demo/generate] Scoped edit complete in ${durationMs}ms`);
-          return { prompt, durationMs };
+          console.log(`[generate/demo] Scoped edit complete: ${changedSubcategoryId} (depth ${depth} → ${depth + 1}) in ${result.durationMs}ms`);
+          return { prompt: result.prompt, durationMs: result.durationMs, model: result.model };
         } catch (err) {
-          const durationMs = Math.round(performance.now() - genStart);
           await captureAiError("anonymous", {
             provider: "bfl",
             model: SCOPED_EDIT_MODEL,
             route: "/api/try/generate",
-            duration_ms: durationMs,
+            duration_ms: Math.round(performance.now() - genStart),
             error: err,
           });
           throw err;
         }
       });
 
-      // --- Persist scoped edit ---
+      // Persist scoped edit
       await step.run("persist-scoped", async () => {
         const supabase = getServiceClient();
 
@@ -257,33 +218,31 @@ export const generateDemo = inngest.createFunction(
           image_path: outputPath,
           prompt: scopedResult.prompt,
           step_id: null,
-          model: SCOPED_EDIT_MODEL,
+          model: scopedResult.model,
           org_id: DEMO_ORG_ID,
           scoped_edit_depth: depth + 1,
           leave_one_out_hashes: leaveOneOutHashes,
         }, { onConflict: "selections_hash" });
 
-        if (upsertError) console.error("[demo/generate] DB upsert failed:", upsertError);
+        if (upsertError) console.error("[generate/demo] DB upsert failed:", upsertError);
 
         await captureAiEvent("anonymous", {
           provider: "bfl",
-          model: SCOPED_EDIT_MODEL,
+          model: scopedResult.model,
           route: "/api/try/generate",
           duration_ms: scopedResult.durationMs,
-          cost_usd: estimateBflCost(SCOPED_EDIT_MODEL),
+          cost_usd: estimateBflCost(scopedResult.model),
           image_size: "1536x1024",
           scoped_edit: true,
           scoped_edit_depth: depth + 1,
           scoped_edit_surface: changedSubcategoryId,
         });
-
-        console.log(`[demo/generate] Scoped edit persisted (depth ${depth + 1})`);
       });
 
-      return; // Done — skip full pipeline
+      return;
     }
 
-    // --- Step 2: Persist to DB (image already in storage from step 1) ---
+    // --- Persist full generation ---
     const result = generateResult;
     await step.run("persist", async () => {
       const supabase = getServiceClient();
@@ -306,9 +265,7 @@ export const generateDemo = inngest.createFunction(
         leave_one_out_hashes: leaveOneOutHashes,
       }, { onConflict: "selections_hash" });
 
-      if (upsertError) {
-        console.error("[demo/generate] DB upsert failed:", upsertError);
-      }
+      if (upsertError) console.error("[generate/demo] DB upsert failed:", upsertError);
 
       await captureAiEvent("anonymous", {
         provider: "bfl",
@@ -319,7 +276,7 @@ export const generateDemo = inngest.createFunction(
         image_size: "1536x1024",
       });
 
-      console.log(`[demo/generate] Cached: ${combinedHash} → ${outputPath}`);
+      console.log(`[generate/demo] Cached: ${combinedHash} → ${outputPath}`);
     });
   },
 );
