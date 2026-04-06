@@ -57,11 +57,11 @@ describe("hashDemoSelections", () => {
     };
     const { effectiveSelections } = hashDemoSelections("photo123", {
       ...baseSelections,
-      "island-cabinet-color": "island-cab-color-pearl",
+      "kitchen-island-cabinet-color": "island-color-white",
     }, scene);
 
     expect(effectiveSelections).not.toHaveProperty("backsplash");
-    expect(effectiveSelections).not.toHaveProperty("island-cabinet-color");
+    expect(effectiveSelections).not.toHaveProperty("kitchen-island-cabinet-color");
     expect(effectiveSelections).toHaveProperty("counter-top");
     expect(effectiveSelections).toHaveProperty("kitchen-cabinet-color");
   });

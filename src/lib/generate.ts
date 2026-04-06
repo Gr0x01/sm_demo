@@ -63,6 +63,44 @@ export function resolveLinkedOptions(
   }
 }
 
+/**
+ * Strip exclusion rules from a freshly-fetched optionLookup for linked subcategories
+ * that were already merged by resolveLinkedOptions in the route handler.
+ *
+ * The route handler removes linked subs from selections and merges spatial hints,
+ * but the Inngest function re-fetches optionLookup from DB — losing the rule stripping.
+ * This function re-applies just the rule stripping by detecting merged linked subs:
+ * subcategories that are scoped but not in selections, with a linkedToSubcategory
+ * pointing to a selected subcategory.
+ *
+ * Mutates optionLookup in place.
+ */
+export function stripExclusionRulesForMergedLinks(
+  scopedSubcategoryIds: string[],
+  selections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+): void {
+  for (const subId of scopedSubcategoryIds) {
+    if (subId in selections) continue;
+    for (const [key, entry] of optionLookup) {
+      if (!key.startsWith(`${subId}:`)) continue;
+      const linkedSub = entry.option.linkedToSubcategory;
+      if (!linkedSub || !(linkedSub in selections)) continue;
+      const sourceKey = `${linkedSub}:${selections[linkedSub]}`;
+      const sourceEntry = optionLookup.get(sourceKey);
+      if (sourceEntry?.subCategory.generationRules?.length) {
+        sourceEntry.subCategory = {
+          ...sourceEntry.subCategory,
+          generationRules: sourceEntry.subCategory.generationRules.filter(
+            r => !r.toLowerCase().includes("do not apply it to"),
+          ),
+        };
+      }
+      break;
+    }
+  }
+}
+
 export interface SwatchImage {
   label: string;
   buffer: Buffer;
@@ -74,7 +112,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.7";
+export const GENERATION_CACHE_VERSION = "v2.8";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];

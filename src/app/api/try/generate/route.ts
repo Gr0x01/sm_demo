@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { DEMO_SUBCATEGORY_IDS, DEMO_OPTION_IDS } from "@/lib/demo-options";
 import { hashDemoSelections, computeDemoLeaveOneOutHashes, DEMO_ORG_ID } from "@/lib/demo-generate";
+import { getDemoValidIds } from "@/lib/demo-generate";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { getServiceClient } from "@/lib/supabase";
 import { inngest } from "@/inngest/client";
@@ -37,8 +37,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid selections" }, { status: 400 });
     }
 
-    // Validate selection keys are demo subcategories
-    const unknownKeys = Object.keys(selections).filter((k) => !DEMO_SUBCATEGORY_IDS.has(k));
+    // Validate selection keys and option IDs against DB
+    const { subCategoryIds: validSubIds, optionIds: validOptIds } = await getDemoValidIds();
+
+    const unknownKeys = Object.keys(selections).filter((k) => !validSubIds.has(k));
     if (unknownKeys.length > 0) {
       return NextResponse.json(
         { error: `Unknown selection keys: ${unknownKeys.join(", ")}` },
@@ -46,8 +48,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Validate option IDs
-    const unknownOptions = Object.values(selections).filter((v) => !DEMO_OPTION_IDS.has(v as string));
+    const unknownOptions = Object.values(selections).filter((v) => !validOptIds.has(v as string));
     if (unknownOptions.length > 0) {
       return NextResponse.json(
         { error: `Unknown option IDs: ${unknownOptions.join(", ")}` },

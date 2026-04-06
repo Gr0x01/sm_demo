@@ -59,6 +59,25 @@ vi.mock("@/inngest/client", () => ({
 vi.mock("next/headers", () => ({
   cookies: () => Promise.resolve({ get: mockCookieGet }),
 }));
+vi.mock("@/lib/demo-generate", async (importOriginal) => {
+  const actual = await importOriginal() as Record<string, unknown>;
+  return {
+    ...actual,
+    getDemoValidIds: vi.fn().mockResolvedValue({
+      subCategoryIds: new Set(["backsplash", "counter-top", "kitchen-cabinet-color", "kitchen-island-cabinet-color"]),
+      optionIds: new Set([
+        "bs-baker-4x16-white-gloss", "bs-baker-4x16-taupe", "bs-baker-4x16-carbon",
+        "bs-baker-herringbone-white", "bs-naive-white",
+        "ct-granite-steel-grey", "ct-granite-dallas-white", "ct-quartz-lace-white",
+        "ct-quartz-calacatta-duolina", "ct-quartz-calacatta-venice",
+        "kitchen-cab-color-driftwood", "kitchen-cab-color-white", "kitchen-cab-color-fog",
+        "kitchen-cab-color-onyx", "kitchen-cab-color-admiral-blue",
+        "island-color-match", "island-color-driftwood", "island-color-white",
+        "island-color-admiral-blue", "island-color-onyx",
+      ]),
+    }),
+  };
+});
 
 import { POST } from "./route";
 
@@ -73,9 +92,9 @@ function makeRequest(body: Record<string, unknown>) {
 }
 
 const validSelections = {
-  backsplash: "bs-white-gloss-subway",
-  "counter-top": "ct-dark-granite",
-  "kitchen-cabinet-color": "kitchen-cab-color-timber",
+  backsplash: "bs-baker-4x16-white-gloss",
+  "counter-top": "ct-granite-steel-grey",
+  "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
 };
 
 const validBody = {
@@ -215,7 +234,7 @@ describe("POST /api/try/generate", () => {
     setupSession();
     const res = await POST(makeRequest({
       ...validBody,
-      selections: { "island-cabinet-color": "island-cab-color-pearl" },
+      selections: { "kitchen-island-cabinet-color": "island-color-white" },
       sceneAnalysis: {
         visibleSurfaces: { backsplash: false, countertop: false, cabinets: false, island: false },
       },

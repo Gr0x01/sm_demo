@@ -1,10 +1,33 @@
 import { createHash } from "crypto";
 import { hashSelections } from "@/lib/generate";
+import { getCategoriesWithOptions } from "@/lib/db-queries";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
 
-export const DEMO_GENERATION_CACHE_VERSION = "v2.29";
+export const DEMO_GENERATION_CACHE_VERSION = "v3.0";
 export const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
+
+/**
+ * Get valid subcategory and option IDs from the Demo org DB.
+ * Cached via unstable_cache inside getCategoriesWithOptions.
+ */
+export async function getDemoValidIds(): Promise<{
+  subCategoryIds: Set<string>;
+  optionIds: Set<string>;
+}> {
+  const categories = await getCategoriesWithOptions(DEMO_ORG_ID);
+  const subCategoryIds = new Set<string>();
+  const optionIds = new Set<string>();
+  for (const cat of categories) {
+    for (const sub of cat.subCategories) {
+      subCategoryIds.add(sub.id);
+      for (const opt of sub.options) {
+        optionIds.add(opt.id);
+      }
+    }
+  }
+  return { subCategoryIds, optionIds };
+}
 
 export function hashDemoSelections(
   photoHash: string,

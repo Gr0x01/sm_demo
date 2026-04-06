@@ -133,7 +133,7 @@ export async function POST(request: Request) {
           backsplash: object.backsplashLocation,
           "counter-top": object.countertopLocation,
           "kitchen-cabinet-color": object.cabinetLocation,
-          "island-cabinet-color": object.islandCabinetLocation,
+          "kitchen-island-cabinet-color": object.islandCabinetLocation,
         },
       }),
     });

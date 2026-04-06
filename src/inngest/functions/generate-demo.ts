@@ -1,36 +1,19 @@
-import { readFile } from "fs/promises";
-import path from "path";
-import sharp from "sharp";
 import { inngest } from "@/inngest/client";
 import { identifyChangedSubcategory } from "@/lib/generate";
-import type { SwatchBufferResolver } from "@/lib/generate";
-import { DEMO_SUBCATEGORIES } from "@/lib/demo-options";
 import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
-import { findDemoDiffMatch } from "@/lib/db-queries";
+import { findDemoDiffMatch, getOptionLookup } from "@/lib/db-queries";
 import { getServiceClient } from "@/lib/supabase";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
 import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
-import { fluxGenerate, fluxScopedEdit } from "@/lib/flux-pipeline";
-import type { Option, SubCategory } from "@/types";
+import { fluxGenerate, fluxScopedEdit, createSwatchResolver } from "@/lib/flux-pipeline";
 
-/** Fallback spatial hints when Gemini doesn't provide them */
+/** Short fallback spatial hints when Gemini scene analysis doesn't provide them. */
 const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
-  backsplash: "wall between upper cabinets and countertop",
-  "counter-top": "all horizontal countertop surfaces — perimeter and center workspace",
-  "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets above and flanking appliances — every perimeter cabinet door and drawer",
-  "island-cabinet-color": "island base cabinet panel in the foreground, separate from perimeter cabinets",
+  backsplash: "backsplash wall between countertop and upper cabinets",
+  "counter-top": "horizontal countertop slabs — perimeter and island top surface only",
+  "kitchen-cabinet-color": "all perimeter cabinet doors and drawer fronts — upper and lower",
+  "kitchen-island-cabinet-color": "island base cabinet panel in the foreground",
 };
-
-/** Build option lookup from hardcoded demo subcategories */
-function buildDemoOptionLookup(): Map<string, { option: Option; subCategory: SubCategory }> {
-  const map = new Map<string, { option: Option; subCategory: SubCategory }>();
-  for (const sub of DEMO_SUBCATEGORIES) {
-    for (const opt of sub.options) {
-      map.set(`${sub.id}:${opt.id}`, { option: opt, subCategory: sub });
-    }
-  }
-  return map;
-}
 
 /** Merge Gemini-provided spatial hints with defaults */
 function mergeSpatialHints(sceneAnalysis: { spatialHints?: Record<string, string> } | null): Record<string, string> {
@@ -42,26 +25,6 @@ function mergeSpatialHints(sceneAnalysis: { spatialHints?: Record<string, string
   }
   return hints;
 }
-
-/** Swatch resolver that reads from local public/ directory (works on Vercel — public/ is bundled) */
-const resolveLocalSwatch: SwatchBufferResolver = async (swatchUrl: string) => {
-  const swatchPath = path.join(process.cwd(), "public", swatchUrl);
-  const ext = path.extname(swatchUrl).slice(1).toLowerCase();
-
-  try {
-    const rawBuffer = await readFile(swatchPath);
-
-    if (ext === "svg" || ext === "svgz") {
-      const pngBuffer = await sharp(rawBuffer).png().toBuffer();
-      return { buffer: pngBuffer, mediaType: "image/png" };
-    }
-
-    const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-    return { buffer: rawBuffer, mediaType };
-  } catch {
-    return null;
-  }
-};
 
 export const generateDemo = inngest.createFunction(
   {
@@ -120,9 +83,11 @@ export const generateDemo = inngest.createFunction(
       const supabase = getServiceClient();
       const spatialHints = mergeSpatialHints(sceneAnalysis);
 
-      const { data: photoData, error: downloadErr } = await supabase.storage
-        .from("demo-uploads")
-        .download(`${photoHash}.jpg`);
+      const [photoResult, optionLookup] = await Promise.all([
+        supabase.storage.from("demo-uploads").download(`${photoHash}.jpg`),
+        getOptionLookup(DEMO_ORG_ID),
+      ]);
+      const { data: photoData, error: downloadErr } = photoResult;
       if (downloadErr || !photoData) {
         throw new Error(`Failed to load demo photo: ${downloadErr?.message}`);
       }
@@ -132,9 +97,9 @@ export const generateDemo = inngest.createFunction(
         const result = await fluxGenerate({
           heroBuffer: Buffer.from(await photoData.arrayBuffer()),
           selections: effectiveSelections,
-          optionLookup: buildDemoOptionLookup(),
+          optionLookup,
           spatialHints,
-          swatchResolver: resolveLocalSwatch,
+          swatchResolver: createSwatchResolver(supabase),
           defaultSurfaceColors: sceneAnalysis?.defaultSurfaceColors,
         });
 
@@ -165,9 +130,11 @@ export const generateDemo = inngest.createFunction(
       const scopedResult = await step.run("scoped-edit", async () => {
         const supabase = getServiceClient();
 
-        const { data: baseImageData, error: dlErr } = await supabase.storage
-          .from(baseBucket)
-          .download(baseImagePath);
+        const [baseImageResult, optionLookup] = await Promise.all([
+          supabase.storage.from(baseBucket).download(baseImagePath),
+          getOptionLookup(DEMO_ORG_ID),
+        ]);
+        const { data: baseImageData, error: dlErr } = baseImageResult;
         if (dlErr || !baseImageData) throw new Error(`Failed to download base image: ${dlErr?.message}`);
 
         const spatialHints = mergeSpatialHints(sceneAnalysis);
@@ -178,9 +145,9 @@ export const generateDemo = inngest.createFunction(
             baseImageBuffer: Buffer.from(await baseImageData.arrayBuffer()),
             changedSubcategoryId,
             changedOptionId: changedNewOptionId,
-            optionLookup: buildDemoOptionLookup(),
+            optionLookup,
             spatialHints,
-            swatchResolver: resolveLocalSwatch,
+            swatchResolver: createSwatchResolver(supabase),
           });
 
           const { error: uploadError } = await supabase.storage

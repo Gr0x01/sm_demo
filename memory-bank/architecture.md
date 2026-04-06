@@ -248,7 +248,7 @@ State shape:
 1. Client POST → `/api/try/generate` (session cap, upload user photo)
 2. Inngest `generate-demo` function: diff-cache check → `fluxGenerate` or `fluxScopedEdit` → persist
 3. Client polls `/api/try/check` until ready
-4. **Currently uses hardcoded options** (`demo-options.ts`) — TODO: migrate to Demo org DB options to unify with `/for/` demos
+4. DB-driven options via `getOptionLookup(DEMO_ORG_ID)` + `createSwatchResolver` — unified with `/for/` prospect demos. `demo-options.ts` deleted.
 
 **Two-pass split**: When >7 swatches (BFL Max limit), `fluxGenerate` splits into structural (cabinets, counter, backsplash, floor, paint) → fixtures (hardware, sink, faucet, lighting, appliances) in the same Inngest step. `maxDuration=300` on Inngest route (Vercel Pro + Fluid Compute).
 

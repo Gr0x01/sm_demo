@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
-import { identifyChangedSubcategory } from "@/lib/generate";
+import { identifyChangedSubcategory, stripExclusionRulesForMergedLinks } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getOptionLookup, findSingleSurfaceDiffMatch } from "@/lib/db-queries";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
@@ -104,26 +104,7 @@ export const generatePhoto = inngest.createFunction(
 
       // Parallel — hero download runs alongside optionLookup setup
       const optionLookupP = getOptionLookup(orgId).then(ol => {
-        // Strip exclusion rules for merged linked subcategories
-        for (const subId of scopedSubcategoryIds) {
-          if (subId in scopedSelections) continue;
-          for (const [key, entry] of ol) {
-            if (!key.startsWith(`${subId}:`)) continue;
-            const linkedSub = entry.option.linkedToSubcategory;
-            if (!linkedSub || linkedSub in scopedSelections === false) continue;
-            const sourceKey = `${linkedSub}:${scopedSelections[linkedSub]}`;
-            const sourceEntry = ol.get(sourceKey);
-            if (sourceEntry?.subCategory.generationRules?.length) {
-              sourceEntry.subCategory = {
-                ...sourceEntry.subCategory,
-                generationRules: sourceEntry.subCategory.generationRules.filter(
-                  r => !r.toLowerCase().includes("do not apply it to"),
-                ),
-              };
-            }
-            break;
-          }
-        }
+        stripExclusionRulesForMergedLinks(scopedSubcategoryIds, scopedSelections, ol);
         return ol;
       });
       const [heroResult, optionLookup] = await Promise.all([

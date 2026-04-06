@@ -2,12 +2,14 @@
  * Pre-seed the /try demo cache with 200 selection combos for the sample kitchen.
  * Each cached image enables instant cache hits or ~30s scoped edits instead of 60s cold gens.
  *
+ * Uses Flux 2 Max via the shared flux-pipeline.ts and Demo org DB options via Supabase.
+ *
  * Usage:
  *   npx tsx scripts/seed-demo-cache.ts [--dry-run] [--concurrency 20] [--layer 1]
  *
  * Flags:
  *   --dry-run       Print combos without generating
- *   --concurrency   Max parallel OpenAI calls (default: 20)
+ *   --concurrency   Max parallel BFL calls (default: 5)
  *   --layer         Only run layer 1 (125) or layer 2 (75)
  *   --start         Start from combo index N (for resuming)
  */
@@ -18,12 +20,7 @@ dotenv.config({ path: ".env.local" });
 import { readFile } from "fs/promises";
 import path from "path";
 import { createHash } from "crypto";
-import sharp from "sharp";
-import OpenAI, { toFile } from "openai";
 import { createClient } from "@supabase/supabase-js";
-import { buildEditPrompt } from "@/lib/generate";
-import type { SwatchBufferResolver } from "@/lib/generate";
-import { DEMO_SUBCATEGORIES } from "@/lib/demo-options";
 import {
   hashDemoSelections,
   computeDemoLeaveOneOutHashes,
@@ -31,7 +28,8 @@ import {
   DEMO_GENERATION_CACHE_VERSION,
 } from "@/lib/demo-generate";
 import { IMAGE_MODEL } from "@/lib/models";
-import type { Option, SubCategory } from "@/types";
+import { fluxGenerate, createSwatchResolver } from "@/lib/flux-pipeline";
+import { getOptionLookup } from "@/lib/db-queries";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 
 // ---------- Config ----------
@@ -48,68 +46,65 @@ const SAMPLE_SCENE_ANALYSIS: DemoSceneAnalysis = {
   kitchenType: "l-shape",
   cameraAngle: "straight-on",
   visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
-  spatialHints: {
-    layout:
-      "Island runs horizontally in the foreground. Upper and lower cabinets span the back wall with a range hood centered. Countertops wrap from left wall along the back. Hardwood flooring throughout.",
-  },
 };
 
-const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
-  backsplash: "tile backsplash between upper cabinets and countertop on the walls",
-  "counter-top": "all visible countertop surfaces",
-  "kitchen-cabinet-color": "perimeter/wall cabinet faces only (NOT the island base cabinets)",
-  "island-cabinet-color": "island base cabinet faces only (NOT the perimeter/wall cabinets)",
+/** Short spatial hints matching the shortened DB hints for the demo kitchen */
+const SPATIAL_HINTS: Record<string, string> = {
+  backsplash: "backsplash wall strip in the cooking zone",
+  "counter-top": "all countertop surfaces — perimeter and center workspace",
+  "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets flanking appliances — every perimeter cabinet door and drawer front",
+  "kitchen-island-cabinet-color": "island base cabinet doors and drawer fronts — freestanding island in foreground",
 };
 
-// ---------- Option IDs ----------
+// ---------- Option IDs (DB slugs from Demo org) ----------
 
 const CABINETS = [
-  "kitchen-cab-color-timber",
-  "kitchen-cab-color-pearl",
-  "kitchen-cab-color-mist",
-  "kitchen-cab-color-depths",
-  "kitchen-cab-color-ink",
+  "kitchen-cab-color-driftwood",
+  "kitchen-cab-color-white",
+  "kitchen-cab-color-fog",
+  "kitchen-cab-color-onyx",
+  "kitchen-cab-color-admiral-blue",
 ];
 
 const ISLANDS = [
-  "island-cab-color-timber",
-  "island-cab-color-pearl",
-  "island-cab-color-mist",
-  "island-cab-color-depths",
-  "island-cab-color-ink",
+  "island-color-driftwood",
+  "island-color-white",
+  "island-color-admiral-blue",
+  "island-color-onyx",
+  // "island-color-match" excluded — linked option, no swatch
 ];
 
 const COUNTERTOPS = [
-  "ct-dark-granite",
-  "ct-cream-granite",
-  "ct-speckled-granite",
-  "ct-white-quartz",
-  "ct-marble-quartz",
+  "ct-granite-steel-grey",
+  "ct-granite-dallas-white",
+  "ct-quartz-lace-white",
+  "ct-quartz-calacatta-duolina",
+  "ct-quartz-calacatta-venice",
 ];
 
 const BACKSPLASHES = [
-  "bs-white-gloss-subway",  // default
-  "bs-charcoal-subway",
-  "bs-taupe-subway",
-  "bs-dark-herringbone",
-  "bs-carbon-hex",
+  "bs-baker-4x16-white-gloss",  // default
+  "bs-baker-4x16-taupe",
+  "bs-baker-4x16-carbon",
+  "bs-baker-herringbone-white",
+  "bs-naive-white",
 ];
 
-const DEFAULT_BACKSPLASH = "bs-white-gloss-subway";
+const DEFAULT_BACKSPLASH = "bs-baker-4x16-white-gloss";
 
 // Layer 2: 5 popular cab/island pairs × 5 counters × 3 non-default backsplashes
 const LAYER2_CAB_ISLAND_PAIRS: [string, string][] = [
-  ["kitchen-cab-color-pearl", "island-cab-color-pearl"],
-  ["kitchen-cab-color-pearl", "island-cab-color-depths"],
-  ["kitchen-cab-color-timber", "island-cab-color-timber"],
-  ["kitchen-cab-color-ink", "island-cab-color-ink"],
-  ["kitchen-cab-color-mist", "island-cab-color-mist"],
+  ["kitchen-cab-color-white", "island-color-white"],
+  ["kitchen-cab-color-white", "island-color-admiral-blue"],
+  ["kitchen-cab-color-driftwood", "island-color-driftwood"],
+  ["kitchen-cab-color-onyx", "island-color-onyx"],
+  ["kitchen-cab-color-fog", "island-color-white"],
 ];
 
 const LAYER2_BACKSPLASHES = [
-  "bs-charcoal-subway",
-  "bs-dark-herringbone",
-  "bs-carbon-hex",
+  "bs-baker-4x16-carbon",
+  "bs-baker-herringbone-white",
+  "bs-naive-white",
 ];
 
 // ---------- Combo generation ----------
@@ -123,19 +118,19 @@ interface SelectionCombo {
 function generateCombos(): SelectionCombo[] {
   const combos: SelectionCombo[] = [];
 
-  // Layer 1: all cab × all island × all counter × default backsplash
+  // Layer 1: all cab × all island × all counter × default backsplash (4×5×5 = 100)
   for (const cab of CABINETS) {
     for (const island of ISLANDS) {
       for (const counter of COUNTERTOPS) {
         const cabName = cab.replace("kitchen-cab-color-", "");
-        const islandName = island.replace("island-cab-color-", "");
-        const counterName = counter.replace("ct-", "");
+        const islandName = island.replace("island-color-", "");
+        const counterName = counter.replace(/^ct-(granite-|quartz-)/, "");
         combos.push({
           layer: 1,
           label: `L1 ${cabName}/${islandName}/${counterName}/default-bs`,
           selections: {
             "kitchen-cabinet-color": cab,
-            "island-cabinet-color": island,
+            "kitchen-island-cabinet-color": island,
             "counter-top": counter,
             backsplash: DEFAULT_BACKSPLASH,
           },
@@ -144,20 +139,20 @@ function generateCombos(): SelectionCombo[] {
     }
   }
 
-  // Layer 2: popular pairs × all counters × non-default backsplashes
+  // Layer 2: popular pairs × all counters × non-default backsplashes (5×5×3 = 75)
   for (const [cab, island] of LAYER2_CAB_ISLAND_PAIRS) {
     for (const counter of COUNTERTOPS) {
       for (const bs of LAYER2_BACKSPLASHES) {
         const cabName = cab.replace("kitchen-cab-color-", "");
-        const islandName = island.replace("island-cab-color-", "");
-        const counterName = counter.replace("ct-", "");
-        const bsName = bs.replace("bs-", "");
+        const islandName = island.replace("island-color-", "");
+        const counterName = counter.replace(/^ct-(granite-|quartz-)/, "");
+        const bsName = bs.replace("bs-baker-", "").replace("bs-", "");
         combos.push({
           layer: 2,
           label: `L2 ${cabName}/${islandName}/${counterName}/${bsName}`,
           selections: {
             "kitchen-cabinet-color": cab,
-            "island-cabinet-color": island,
+            "kitchen-island-cabinet-color": island,
             "counter-top": counter,
             backsplash: bs,
           },
@@ -169,58 +164,13 @@ function generateCombos(): SelectionCombo[] {
   return combos;
 }
 
-// ---------- Helpers ----------
-
-function buildOptionLookup(): Map<string, { option: Option; subCategory: SubCategory }> {
-  const map = new Map<string, { option: Option; subCategory: SubCategory }>();
-  for (const sub of DEMO_SUBCATEGORIES) {
-    for (const opt of sub.options) {
-      map.set(`${sub.id}:${opt.id}`, { option: opt, subCategory: sub });
-    }
-  }
-  return map;
-}
-
-const resolveLocalSwatch: SwatchBufferResolver = async (swatchUrl: string) => {
-  const swatchPath = path.join(process.cwd(), "public", swatchUrl);
-  const ext = path.extname(swatchUrl).slice(1).toLowerCase();
-  try {
-    const rawBuffer = await readFile(swatchPath);
-    if (ext === "svg" || ext === "svgz") {
-      const pngBuffer = await sharp(rawBuffer).png().toBuffer();
-      return { buffer: pngBuffer, mediaType: "image/png" };
-    }
-    const mediaType = ext === "jpg" ? "image/jpeg" : `image/${ext}`;
-    return { buffer: rawBuffer, mediaType };
-  } catch {
-    return null;
-  }
-};
-
-function buildSceneDescription(): string {
-  const lines: string[] = [];
-  if (SAMPLE_SCENE_ANALYSIS.sceneDescription) lines.push(SAMPLE_SCENE_ANALYSIS.sceneDescription);
-  if (SAMPLE_SCENE_ANALYSIS.kitchenType) lines.push(`Kitchen type: ${SAMPLE_SCENE_ANALYSIS.kitchenType}`);
-  if (SAMPLE_SCENE_ANALYSIS.cameraAngle) lines.push(`Camera angle: ${SAMPLE_SCENE_ANALYSIS.cameraAngle}`);
-  const vs = SAMPLE_SCENE_ANALYSIS.visibleSurfaces;
-  if (vs) {
-    const visible: string[] = [];
-    if (vs.backsplash !== false) visible.push("backsplash");
-    if (vs.countertop !== false) visible.push("countertop");
-    if (vs.cabinets !== false) visible.push("cabinets");
-    if (vs.island) visible.push("island");
-    if (visible.length > 0) lines.push(`Visible surfaces: ${visible.join(", ")}`);
-  }
-  return lines.join(". ");
-}
-
 // ---------- Main ----------
 
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
   const concurrencyIdx = args.indexOf("--concurrency");
-  const concurrency = concurrencyIdx !== -1 ? parseInt(args[concurrencyIdx + 1], 10) : 20;
+  const concurrency = concurrencyIdx !== -1 ? parseInt(args[concurrencyIdx + 1], 10) : 5;
   const layerIdx = args.indexOf("--layer");
   const layerFilter = layerIdx !== -1 ? parseInt(args[layerIdx + 1], 10) : null;
   const startIdx = args.indexOf("--start");
@@ -237,6 +187,8 @@ async function main() {
   console.log(`Photo hash: ${photoHash}`);
   console.log(`Total combos: ${combos.length} (concurrency: ${concurrency})`);
   console.log(`Layer 1: ${combos.filter((c) => c.layer === 1).length}, Layer 2: ${combos.filter((c) => c.layer === 2).length}`);
+  console.log(`Cache version: ${DEMO_GENERATION_CACHE_VERSION}`);
+  console.log(`Model: ${IMAGE_MODEL} (Flux 2)`);
 
   if (dryRun) {
     for (const [i, combo] of combos.entries()) {
@@ -248,14 +200,14 @@ async function main() {
   }
 
   // Validate env
-  if (!process.env.OPENAI_API_KEY) throw new Error("Missing OPENAI_API_KEY");
+  if (!process.env.BFL_API_KEY) throw new Error("Missing BFL_API_KEY");
   if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) throw new Error("Missing Supabase env vars");
 
-  const openai = new OpenAI();
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  const optionLookup = buildOptionLookup();
-  const scopedSubcategoryIds = DEMO_SUBCATEGORIES.map((s) => s.id);
-  const sceneDescription = buildSceneDescription();
+  const optionLookup = await getOptionLookup(DEMO_ORG_ID);
+  const swatchResolver = createSwatchResolver({
+    storage: supabase.storage,
+  } as ReturnType<typeof import("@/lib/supabase").getServiceClient>);
 
   // Upload sample photo to demo-uploads (once)
   const { error: uploadErr } = await supabase.storage
@@ -263,18 +215,6 @@ async function main() {
     .upload(`${photoHash}.jpg`, photoBytes, { contentType: "image/jpeg", upsert: true });
   if (uploadErr) console.warn(`Photo upload warning: ${uploadErr.message}`);
   else console.log(`Photo uploaded to demo-uploads/${photoHash}.jpg`);
-
-  // Pre-warm swatch cache: build prompt for first combo to trigger all swatch reads
-  console.log("Pre-warming swatch cache...");
-  await buildEditPrompt(
-    combos[0].selections,
-    optionLookup,
-    DEFAULT_SPATIAL_HINTS,
-    scopedSubcategoryIds,
-    sceneDescription,
-    null,
-    resolveLocalSwatch,
-  );
 
   // Stats
   let completed = 0;
@@ -305,58 +245,24 @@ async function main() {
       return;
     }
 
-    // Build prompt
-    const { prompt, swatches } = await buildEditPrompt(
-      effectiveSelections,
-      optionLookup,
-      DEFAULT_SPATIAL_HINTS,
-      scopedSubcategoryIds,
-      sceneDescription,
-      null,
-      resolveLocalSwatch,
-    );
-
-    const supportedSwatches = swatches.filter((s) =>
-      ["image/jpeg", "image/png", "image/webp"].includes(s.mediaType),
-    );
-
-    // Assemble images: photo + swatches
-    const inputImages = [
-      await toFile(photoBytes, "kitchen.jpg", { type: "image/jpeg" }),
-      ...(await Promise.all(
-        supportedSwatches.map((s) => {
-          const ext = s.mediaType.split("/")[1] || "png";
-          const filename = `${s.label.replace(/[^a-zA-Z0-9]/g, "_")}.${ext}`;
-          return toFile(s.buffer, filename, { type: s.mediaType });
-        }),
-      )),
-    ];
-
-    // Call OpenAI
+    // Generate via Flux 2 shared pipeline
     const genStart = performance.now();
     try {
-      const result = await openai.images.edit({
-        model: IMAGE_MODEL,
-        image: inputImages,
-        prompt,
-        quality: "medium",
-        size: "1536x1024",
-        input_fidelity: "high",
+      const result = await fluxGenerate({
+        heroBuffer: photoBytes,
+        selections: effectiveSelections,
+        optionLookup,
+        spatialHints: SPATIAL_HINTS,
+        swatchResolver,
+        defaultSurfaceColors: SAMPLE_SCENE_ANALYSIS.defaultSurfaceColors,
       });
-
-      const imageData = result.data?.[0];
-      if (!imageData?.b64_json) throw new Error("No image generated");
 
       const durationMs = Math.round(performance.now() - genStart);
 
-      // Convert to JPEG and upload
-      const jpegBuffer = await sharp(Buffer.from(imageData.b64_json, "base64"))
-        .jpeg({ quality: 90 })
-        .toBuffer();
-
+      // Upload to storage
       const { error: storageErr } = await supabase.storage
         .from("demo-generated")
-        .upload(outputPath, jpegBuffer, { contentType: "image/jpeg", upsert: true });
+        .upload(outputPath, result.imageBuffer, { contentType: "image/jpeg", upsert: true });
       if (storageErr) throw new Error(`Storage upload failed: ${storageErr.message}`);
 
       // Persist to DB with leave-one-out hashes
@@ -371,7 +277,7 @@ async function main() {
             ...effectiveSelections,
           },
           image_path: outputPath,
-          prompt,
+          prompt: result.prompt,
           step_id: null,
           model: IMAGE_MODEL,
           org_id: DEMO_ORG_ID,
@@ -386,7 +292,7 @@ async function main() {
       const elapsed = Math.round((Date.now() - startTime) / 1000);
       const rate = completed / (elapsed / 60);
       console.log(
-        `[${index}] OK ${combo.label} (${durationMs}ms) — ${completed}/${combos.length} done, ${skipped} skipped, ${Math.round(rate)}/min`,
+        `[${index}] OK ${combo.label} (${durationMs}ms, ${result.passes} pass) — ${completed}/${combos.length} done, ${skipped} skipped, ${Math.round(rate)}/min`,
       );
     } catch (err: unknown) {
       failed++;
@@ -408,7 +314,8 @@ async function main() {
   await Promise.all(workers);
 
   const totalTime = Math.round((Date.now() - startTime) / 1000);
-  console.log(`\nDone in ${totalTime}s — ${completed} generated, ${skipped} skipped, ${failed} failed`);
+  const estCost = (completed * 0.09).toFixed(2);
+  console.log(`\nDone in ${totalTime}s — ${completed} generated (~$${estCost}), ${skipped} skipped, ${failed} failed`);
 }
 
 main().catch((err) => {

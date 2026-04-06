@@ -37,7 +37,7 @@ const SUBCATEGORY_TO_SURFACE_KEY = {
   backsplash: "backsplash",
   "counter-top": "countertop",
   "kitchen-cabinet-color": "cabinets",
-  "island-cabinet-color": "island",
+  "kitchen-island-cabinet-color": "island",
 } as const;
 
 export function isDemoSubCategoryVisible(

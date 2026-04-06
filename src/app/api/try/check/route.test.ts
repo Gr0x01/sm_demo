@@ -72,7 +72,7 @@ describe("POST /api/try/check", () => {
     setupCompletedRow();
     const res = await POST(makeRequest({
       photoHash: "abc",
-      selections: { "island-cabinet-color": "island-cab-color-pearl" },
+      selections: { "kitchen-island-cabinet-color": "island-color-white" },
       sceneAnalysis: { visibleSurfaces: { island: false } },
     }));
     const body = await res.json();

@@ -8,6 +8,7 @@ import { DemoViewer } from "./DemoViewer";
 import { GenerationCounter } from "./GenerationCounter";
 import { MobileStickyFooter } from "@/components/MobileStickyFooter";
 import { SiteFooter } from "@/components/SiteFooter";
+import type { SubCategory } from "@/types";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
 import { useTrack } from "@/hooks/useTrack";
@@ -54,7 +55,13 @@ const SS_SELECTIONS = "finch_demo_selections";
 const SS_GENERATED = "finch_demo_generated_url";
 const SS_HISTORY = "finch_demo_history";
 
-export function DemoClient({ bare = false, headerContent }: { bare?: boolean; headerContent?: React.ReactNode }) {
+export function DemoClient({ bare = false, headerContent, subCategories, validSubCategoryIds, validOptionIds }: {
+  bare?: boolean;
+  headerContent?: React.ReactNode;
+  subCategories?: SubCategory[];
+  validSubCategoryIds?: string[];
+  validOptionIds?: string[];
+}) {
   const track = useTrack();
   const [phase, setPhase] = useState<DemoPhase>("picking");
   const [uploadedPhoto, setUploadedPhoto] = useState<UploadedPhoto | null>(null);
@@ -436,11 +443,14 @@ export function DemoClient({ bare = false, headerContent }: { bare?: boolean; he
                 </div>
               )}
 
-              <DemoPickerPanel
-                selections={selections}
-                sceneAnalysis={uploadedPhoto?.sceneAnalysis}
-                onSelect={handleSelectionChange}
-              />
+              {subCategories && (
+                <DemoPickerPanel
+                  subCategories={subCategories}
+                  selections={selections}
+                  sceneAnalysis={uploadedPhoto?.sceneAnalysis}
+                  onSelect={handleSelectionChange}
+                />
+              )}
 
               {/* Post-result banner — below picker, only before cap */}
               {!bare && phase === "result" && !atCap && (

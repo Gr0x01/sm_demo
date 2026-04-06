@@ -96,15 +96,15 @@ export async function loadSamplePhoto(): Promise<{
       visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
       spatialHints: {
         backsplash: "wall between upper cabinets and countertop",
-        "counter-top": "all horizontal countertop surfaces — perimeter and center workspace",
+        "counter-top": "horizontal countertop slabs — perimeter and island top surface only",
         "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets above and flanking appliances — every perimeter cabinet door and drawer",
-        "island-cabinet-color": "island base cabinet panel in the foreground, separate from perimeter cabinets",
+        "kitchen-island-cabinet-color": "island base cabinet panel in the foreground, separate from perimeter cabinets",
       },
       defaultSurfaceColors: {
         backsplash: "#F0EDE8",
         "counter-top": "#C4C0BC",
         "kitchen-cabinet-color": "#F5F5F2",
-        "island-cabinet-color": "#F5F5F2",
+        "kitchen-island-cabinet-color": "#F5F5F2",
       },
     },
   };

@@ -1,5 +1,16 @@
 import type { Metadata } from "next";
+import { getCategoriesWithOptions } from "@/lib/db-queries";
+import { DEMO_ORG_ID } from "@/lib/demo-generate";
 import { DemoClient } from "./DemoClient";
+import type { SubCategory } from "@/types";
+
+/** Subcategory slugs shown on the /try kitchen demo. */
+const TRY_SUBCATEGORY_SLUGS = new Set([
+  "backsplash",
+  "counter-top",
+  "kitchen-cabinet-color",
+  "kitchen-island-cabinet-color",
+]);
 
 export const metadata: Metadata = {
   title: { absolute: "Try Finch — Interactive Upgrade Visualization Demo" },
@@ -22,6 +33,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DemoPage() {
-  return <DemoClient />;
+export default async function DemoPage() {
+  const allCategories = await getCategoriesWithOptions(DEMO_ORG_ID);
+
+  // Filter to the 4 kitchen subcategories, flattened across categories
+  const demoSubCategories: SubCategory[] = allCategories
+    .flatMap((cat) => cat.subCategories)
+    .filter((sub) => TRY_SUBCATEGORY_SLUGS.has(sub.id));
+
+  // Build valid ID sets for client-side validation
+  const validSubCategoryIds = demoSubCategories.map((s) => s.id);
+  const validOptionIds = demoSubCategories.flatMap((s) => s.options.map((o) => o.id));
+
+  return (
+    <DemoClient
+      subCategories={demoSubCategories}
+      validSubCategoryIds={validSubCategoryIds}
+      validOptionIds={validOptionIds}
+    />
+  );
 }

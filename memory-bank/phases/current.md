@@ -275,86 +275,64 @@ Now focused on: builder outreach (provocation-first strategy) and SEO content ex
 - PostHog: check-endpoint cache hits now tracked (`demo_generation_completed` with `cacheHit: true`) — was previously untracked.
 - **Also shipped on `/for/` + buyer pages**: Same badge via `StepPhotoGrid` → `PhotoViewerCard`. `lastCacheHitPhotos` tracked in UpgradePicker reducer (`Record<string, boolean | undefined>`), threaded through SidebarPanel. `PHOTO_GENERATION_COMPLETE` action carries `cacheHit` from API response. Same 400ms delay → 5s hold → fade out. Mutually exclusive with OUTDATED badge.
 
-### 3. Flux 2 Migration — SHIPPED (2026-04-04, tuning in progress)
+### 3. Flux 2 Migration — SHIPPED + Pipeline Refactor (2026-04-06)
 
-**Decision**: Replaced entire OpenAI 1.5 + Gemini Flash pipeline with BFL Flux 2.
+**Decision**: Replaced entire OpenAI 1.5 + Gemini Flash pipeline with BFL Flux 2. Then refactored the pipeline architecture to be Flux-native instead of retrofitted.
 
-**Architecture:**
+**Architecture (current):**
 
 | Use case | Model | Time | Cost |
 |----------|-------|------|------|
 | Full generation (≤7 swatches) | Flux 2 Max | ~35-46s | ~$0.09 |
 | Full generation (>7 swatches) | Flux 2 Max × 2 passes | ~70-90s | ~$0.18 |
-| Scoped edit (1 surface) | Flux 2 Klein 9B | ~7-11s | $0.02 |
+| Scoped edit (default) | Flux 2 Pro | ~15-25s | ~$0.03 |
+| Scoped edit (per-option override) | Flux 2 Klein 9B | ~7-11s | ~$0.02 |
 | Oven correction | Flux 2 Max post-pass | ~30-39s | ~$0.09 |
 
-**What was eliminated:**
-- Flash isolation pass (Max handles herringbone/tile natively)
-- Pro cabinet post-pass (Max handles stain natively)
-- Multi-pass pipeline (`generate-photo-multipass.ts`, `pass-definitions.ts`, `pass_cache` table) — deleted entirely
-- `ISOLATION_IMAGE_MODEL`, `REFINEMENT_IMAGE_MODEL` constants
+**Pipeline refactor (2026-04-06):**
+- Extracted shared `flux-pipeline.ts` with `fluxGenerate` (single/two-pass) and `fluxScopedEdit` (per-option model selection). Both Inngest functions are thin orchestrators delegating to these stateless functions.
+- Deleted ~500 lines of dead OpenAI-era code: old `buildEditPrompt`, `buildScopedEditPrompt`, `collectInvariantRules`, `buildSceneBlock`, 10 multipass test scripts.
+- Renamed `buildBflEditPrompt` → `buildEditPrompt`, `buildBflScopedEditPrompt` → `buildScopedEditPrompt`.
+- Replaced `needs_isolation` boolean with `scoped_edit_model` text column — per-option model override. Admin UI dropdown (Pro/Klein 9B/Klein 4B/Max). 12 SM backsplash options migrated to Klein 9B.
+- Added Inngest function display names: "Generate Photo (buyer/prospect)", "Generate Demo (/try)".
 
-**Two-pass split for >7 swatches:**
-- BFL Max accepts hero + 7 reference swatch images. SM kitchen photos have 12+ swatch-bearing subcategories.
-- When >7 swatches: structural surfaces (cabinets, countertop, backsplash, flooring, paint) go in pass 1, fixtures (hardware, sink, faucet, lighting, appliances) go in pass 2.
-- Both passes run in the same Inngest step (no redundant setup). `maxDuration = 300` on Inngest route (Vercel Pro + Fluid Compute).
-- Most photos stay single-pass. Only complex multi-zone photos trigger the split.
+**Flux-native prompt rewrite (2026-04-06):**
+Rewrote `buildEditPrompt` from LLM-style (numbered list + rules block + scene block, ~120 words) to Flux-native (self-contained surface assignments, ~55-80 words):
+```
+Apply image 2 to all perimeter cabinets — upper, lower, and appliance-adjacent.
+Apply image 3 to island base cabinet panel in the foreground.
+Apply image 4 to all countertop surfaces.
+Apply image 5 to backsplash wall (4x16 subway tiles).
+Photorealistic, natural lighting.
+```
+**Removed**: opening sentence, category names, `collectInvariantRules` rules block, scene/photo layout blocks, `generationRulesWhenNotSelected` from prompt, image reference legend. Swatch image is sole authority — no text descriptors alongside swatches.
+**Scoped edit prompt**: `Change [surface] to match image 2. Match image 2 exactly.` (~15-25 words). No rules block, no "Photorealistic" line.
 
-**Swatch payload optimization (2026-04-05):**
-- SM cabinet PNGs were 1.6–6.3MB each. 7 swatches = ~13MB base64 payload to BFL. Caused 60-84s per BFL call.
-- **Migration**: All 330 oversized swatches resized to 512px max, converted to JPEG. 149.8MB saved. Script: `scripts/resize-swatches.ts`.
-- **Upload guard**: `SwatchUpload.tsx` now resizes to 512px client-side before uploading (canvas → JPEG 85%).
-- **Runtime safety net**: `preWarmSwatchCache` in Inngest function downsizes any swatch >512px (catches legacy uploads). Parallel sharp, not sequential.
-- Expected BFL payload: ~200KB (was ~13MB).
+**Key findings from model comparison (2026-04-06):**
+- **Hex mosaic tiles**: Klein 9B > Pro > Max. Swatch density matters more than prompt text — zoomed-out swatch with more hexagons = better scale. Max over-processes, Pro is middle ground, Klein 9B is most faithful to reference.
+- **Herringbone tiles**: Pro >> 9B > 4B. Pro has sharpest grout lines and pattern definition.
+- **Conclusion**: Model selection is material-dependent, not image-dependent. Per-option `scoped_edit_model` is the right abstraction.
+- **Swatch quality insight**: The swatch image is the primary scale signal for Flux. A swatch showing 5 tiles across = Flux renders 5 tiles across on the backsplash. A swatch showing 10 across = correct 1" scale. Dimensions text is secondary.
 
-**`-none` policy guard (2026-04-05):**
-- Options ending in `-none` (e.g. `refrigerator-none`) are now treated as "not selected" for `invariantRulesWhenSelected`/`WhenNotSelected` policy rules. Previously `refrigerator-none` triggered "Place the refrigerator in the alcove" — contradicting the "No Refrigerator" selection text.
+**DB rule updates (2026-04-06):**
+- Backsplash `generation_rules`: "stopping at the upper cabinet line" → "covers the wall area between the countertop surface and the underside of the upper cabinets" (both SM + Demo orgs)
+- Backsplash `generation_rules_when_not_selected`: "Preserve the existing..." → "Backsplash tile pattern, color, and layout remain as photographed." (both orgs)
 
-**Key files:**
-- `src/lib/bfl.ts` — BFL API client (submit → poll → download, async pattern)
-- `src/inngest/functions/generate-photo.ts` — main pipeline (Max full gen + Klein 9B scoped edits)
-- `src/inngest/functions/generate-demo.ts` — /try demo pipeline (same models)
-- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-klein-9b"`
+**What was eliminated (cumulative):**
+- Flash isolation pass, Pro cabinet post-pass, multi-pass pipeline, `pass_cache` table
+- `collectInvariantRules`, `buildSceneBlock`, scene/photo layout in prompts
+- `needs_isolation` boolean column (replaced by `scoped_edit_model`)
+- All OpenAI and Gemini image generation code and imports
+- 10 multipass test scripts
 
-**Cache versioning**: `GENERATION_CACHE_VERSION` = v2.3. Bump minor for prompt/rule changes, major for model swaps.
-
-**Prompt tuning findings (2026-04-04–05):**
-- Flux 2 Max responds best to minimal prompts with scene context. Verbose generation rules (SM-style) hurt quality — color shifts, confused spatial application.
-- SCENE + PHOTO_LAYOUT blocks give Max the spatial understanding. Per-surface instructions should be one line each.
-- For scoped edits (Klein 9B): preserve list must include spatial hints for each preserved surface so Klein knows WHERE the boundaries are. Without this, countertop granite bleeds onto adjacent island face and backsplash.
-- Backsplash `dimensions` field must describe installed appearance ("4x16 subway tiles, staggered layout") not just raw measurements ("4x16").
-- `buildScopedEditPrompt` preserve lines now include spatial locations: `- Backsplash (wall between upper cabinets and countertop)` instead of just `- Backsplash`.
-
-**SM kitchen test results (2026-04-05):**
-- Herringbone tile patterns render correctly in single Max pass (eliminates Flash isolation)
-- Fridge placement in empty alcove works
-- Oven correction second pass (slide-in range) works
-- Layout preservation good for subtle changes, drifts on dramatic stain changes
-- Two-tone spatial separation (Onyx island vs Sahara perimeter) still unreliable — needs more prompt tuning
-- Stain under-application on perimeter cabinets (white → wood) when 5+ structural swatches present
-
-**BFL prompt rewrite — SHIPPED (2026-04-05):**
-- Rewrote all prompts to follow BFL Flux 2 guidelines. Full guide: `memory-bank/generation/bfl-prompting-guide.md`.
-- **Code changes** (`src/lib/generate.ts`):
-  - `buildBflEditPrompt`: Scene context moved to END (BFL word order: edits first). Removed "do NOT bleed" → positive "each finish stays within its surface boundary." Added "natural lighting" camera hint. ~40% shorter surrounding text.
-  - `buildBflScopedEditPrompt`: Stripped entire preservation list (Klein preserves by default). Removed "DO NOT MODIFY" block. Prompt is now ~20 words + rules, down from ~100+.
-  - `collectInvariantRules`: Added `-none` handling — options ending in `-none` now treated as "not selected" for policy overrides (was already done in old `buildEditPrompt` but missing from this shared helper).
-  - Trailing whitespace fix: scene block conditionally appended with `.trimEnd()`.
-- **DB changes** (SM + Demo orgs):
-  - 14 subcategory `generation_rules` rewritten (accent-color, backsplash, common-wall-paint, dishwasher, fireplace-hearth, fireplace-mantel-accent, fireplace-tile-surround, kitchen-cabinet-color, kitchen-cabinet-hardware, kitchen-faucet, kitchen-island-cabinet-color, kitchen-sink, range, refrigerator, wainscoting)
-  - 4 subcategory `generation_rules_when_not_selected` rewritten (backsplash, crown-options, fireplace-mantel-accent, wainscoting)
-  - 21 option `generation_rules` rewritten (18 stain options, 2 painted brick hearth, 1 wainscoting-none)
-  - 18 step photo generation policies rewritten (all SM + Demo kitchen/living room policies, including secondPass oven correction prompts)
-  - 10 spatial hints rewritten (lighting fixture hints, backsplash boundary, faucet orientation, floor tile zoning, refrigerator alcove, wainscoting placement)
-- **Zero "Do NOT" / "do not" remaining** in any DB rules, policies, spatial hints, or option rules.
-- **Cache version**: v2.2 → v2.3.
-- **Lighting issue found**: Spatial hints for lighting on "Set Your Style" steps had "Do NOT add new light fixtures" going directly into prompt. Fixed to "Preserve existing fixture count and positions."
-
-**Remaining:**
-- [ ] Test non-kitchen SM rooms (bedrooms, bathrooms — single Max pass)
-- [ ] Test lighting package application with cleaned-up hints
-- [ ] Re-seed `/try` demo cache for Flux 2
-- [ ] Update `/try` demo pipeline (`generate-demo.ts`) swatch resize
+**Remaining TODO:**
+- [x] **Migrate `/try` to DB-driven options** — `demo-options.ts` deleted. Server-fetches Demo org categories, validates against DB, Inngest uses `getOptionLookup(DEMO_ORG_ID)` + `createSwatchResolver`. Subcategory slug changed: `island-cabinet-color` → `kitchen-island-cabinet-color`.
+- [x] Fix duplicated exclusion-rule stripping — extracted `stripExclusionRulesForMergedLinks()` helper in `generate.ts`, called from `generate-photo.ts`
+- [x] Shorten verbose spatial hints in DB — 24 steps updated (Demo + SM), hints cut from 30-80 to 5-20 words. Countertop hint: "horizontal countertop slabs — perimeter and island top surface only" (fixes bleed onto island front panel).
+- [x] Align `/try` backsplash with Demo org — keeping all 5 DB options (3 subway + herringbone + naive)
+- [x] Update `seed-demo-cache.ts` for Flux 2 — DB options + `fluxGenerate` + `createSwatchResolver`. 175 combos (4 islands × 5 cabs × 5 counters + 75 layer 2). Ready to run (~$16).
+- [ ] Re-seed `/try` demo cache — run `npx tsx scripts/seed-demo-cache.ts` after deploy
+- [ ] Test non-kitchen SM rooms (bedrooms, bathrooms)
 
 ### 4. Multi-Pass Generation Pipeline (SUPERSEDED by Flux 2 — 2026-03-30)
 

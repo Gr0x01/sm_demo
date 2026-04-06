@@ -27,7 +27,7 @@ describe("isDemoSubCategoryVisible", () => {
     expect(isDemoSubCategoryVisible("backsplash", scene)).toBe(true);
     expect(isDemoSubCategoryVisible("counter-top", scene)).toBe(true);
     expect(isDemoSubCategoryVisible("kitchen-cabinet-color", scene)).toBe(true);
-    expect(isDemoSubCategoryVisible("island-cabinet-color", scene)).toBe(true);
+    expect(isDemoSubCategoryVisible("kitchen-island-cabinet-color", scene)).toBe(true);
   });
 
   it("returns false when surface flag is false", () => {
@@ -35,7 +35,7 @@ describe("isDemoSubCategoryVisible", () => {
     expect(isDemoSubCategoryVisible("backsplash", scene)).toBe(false);
     expect(isDemoSubCategoryVisible("counter-top", scene)).toBe(false);
     expect(isDemoSubCategoryVisible("kitchen-cabinet-color", scene)).toBe(false);
-    expect(isDemoSubCategoryVisible("island-cabinet-color", scene)).toBe(false);
+    expect(isDemoSubCategoryVisible("kitchen-island-cabinet-color", scene)).toBe(false);
   });
 
   it("defaults to visible when surface flag is undefined (partial visibleSurfaces)", () => {
@@ -50,7 +50,7 @@ describe("filterDemoSelectionsByVisibility", () => {
     backsplash: "bs-white-gloss-subway",
     "counter-top": "ct-dark-granite",
     "kitchen-cabinet-color": "kitchen-cab-color-timber",
-    "island-cabinet-color": "island-cab-color-pearl",
+    "kitchen-island-cabinet-color": "island-cab-color-pearl",
   };
 
   it("returns all selections when no sceneAnalysis", () => {
@@ -92,7 +92,7 @@ describe("getHiddenDemoSubCategoryIds", () => {
     };
     const hidden = getHiddenDemoSubCategoryIds(scene);
     expect(hidden).toContain("backsplash");
-    expect(hidden).toContain("island-cabinet-color");
+    expect(hidden).toContain("kitchen-island-cabinet-color");
     expect(hidden).not.toContain("counter-top");
     expect(hidden).not.toContain("kitchen-cabinet-color");
   });
