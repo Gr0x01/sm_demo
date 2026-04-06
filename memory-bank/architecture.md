@@ -248,7 +248,7 @@ State shape:
 1. Client POST → `/api/try/generate` (session cap, upload user photo)
 2. Inngest `generate-demo` function: diff-cache check → `fluxGenerate` or `fluxScopedEdit` → persist
 3. Client polls `/api/try/check` until ready
-4. DB-driven options via `getOptionLookup(DEMO_ORG_ID)` + `createSwatchResolver` — unified with `/for/` prospect demos. `demo-options.ts` deleted.
+4. DB-driven options via `getOptionLookup(DEMO_ORG_ID)` + `createSwatchResolver` — unified with `/for/` prospect demos. `demo-options.ts` deleted. `resolveLinkedOptions` called for "Match to Main" island merge. Subcategory slug: `kitchen-island-cabinet-color` (was `island-cabinet-color` in hardcoded era).
 
 **Two-pass split**: When >7 swatches (BFL Max limit), `fluxGenerate` splits into structural (cabinets, counter, backsplash, floor, paint) → fixtures (hardware, sink, faucet, lighting, appliances) in the same Inngest step. `maxDuration=300` on Inngest route (Vercel Pro + Fluid Compute).
 

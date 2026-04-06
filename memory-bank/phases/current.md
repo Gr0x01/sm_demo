@@ -328,9 +328,12 @@ Photorealistic, natural lighting.
 **Remaining TODO:**
 - [x] **Migrate `/try` to DB-driven options** — `demo-options.ts` deleted. Server-fetches Demo org categories, validates against DB, Inngest uses `getOptionLookup(DEMO_ORG_ID)` + `createSwatchResolver`. Subcategory slug changed: `island-cabinet-color` → `kitchen-island-cabinet-color`.
 - [x] Fix duplicated exclusion-rule stripping — extracted `stripExclusionRulesForMergedLinks()` helper in `generate.ts`, called from `generate-photo.ts`
-- [x] Shorten verbose spatial hints in DB — 24 steps updated (Demo + SM), hints cut from 30-80 to 5-20 words. Countertop hint: "horizontal countertop slabs — perimeter and island top surface only" (fixes bleed onto island front panel).
+- [x] Shorten verbose spatial hints in DB — 24 steps updated (Demo + SM), hints cut from 30-80 to 5-20 words. Multiple iterations on countertop hint to prevent scoped edit bleed onto island face. Current: `"horizontal slab surfaces resting on top of the base cabinets"`.
 - [x] Align `/try` backsplash with Demo org — keeping all 5 DB options (3 subway + herringbone + naive)
 - [x] Update `seed-demo-cache.ts` for Flux 2 — DB options + `fluxGenerate` + `createSwatchResolver`. 175 combos (4 islands × 5 cabs × 5 counters + 75 layer 2). Ready to run (~$16).
+- [x] `resolveLinkedOptions` added to demo pipeline — "Match to Main" island now merges with perimeter cabinet swatch. `defaultSurfaceColors` cleaned of merged subcategories to prevent contradicting preservation lines.
+- [ ] **Countertop scoped edit still bleeds onto island face** — tried 3 hint iterations. "Spanning the top of the island" draws Pro's attention to island zone. Current hint avoids "island" but still bleeds on some combos. May need adjacency preservation clause in `buildScopedEditPrompt` or Klein 9B for countertop edits.
+- [ ] **Inconsistent cabinet rendering between full gen runs** — same fog paint swatch produces visibly different results across runs. Likely Flux Max non-determinism with 3-4 swatches, not a code bug. Needs investigation.
 - [ ] Re-seed `/try` demo cache — run `npx tsx scripts/seed-demo-cache.ts` after deploy
 - [ ] Test non-kitchen SM rooms (bedrooms, bathrooms)
 
