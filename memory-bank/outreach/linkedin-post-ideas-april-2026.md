@@ -88,6 +88,16 @@ The accessibility gap. Toll has VR headsets. A 300-closing builder in Georgia ha
 
 ---
 
+## Swipe File (Stats / Data Points)
+
+- **71% of builders** rank digital sales & marketing tools as top innovation focus (Roland Berger Q1 2026, sourced from ProBuilder 2025 Top 200 Survey)
+- **42% focused on digital design tools** (BIM, VR, AR, etc.) (same source)
+- **$35.6B** estimated global digital twin market in construction by 2034, 31.5% CAGR 2025-2034 (Innowise / Roland Berger)
+- **"Nice to have → standard"** framing for builder digital tools (Roland Berger Q1 2026 headline)
+- Digital tools "driven especially by the younger generation of builders" (Roland Berger)
+
+---
+
 ## Sources
 
 - Real Estate Witch 2022 survey (1,000 buyers): realestatewitch.com/buying-new-construction-home-2022-data/
