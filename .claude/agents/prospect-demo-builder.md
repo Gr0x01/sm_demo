@@ -46,27 +46,11 @@ Write a research brief to `memory-bank/prospects/{slug}.md` with:
 
 ### 3. Look at the kitchen photo
 
-Use the Read tool on the photo file to view it. You are multimodal. Then write:
+Use the Read tool on the photo file to view it. You are multimodal.
 
-**Photo baseline** — exhaustive description of everything visible:
-- Every cabinet (style, color, hardware)
-- Every countertop surface
-- Backsplash material and coverage
-- All appliances (brand if visible, type, location)
-- Flooring material and color
-- Wall color
-- Ceiling (flat, tray, beams, lights)
-- Island details (if present)
-- Any fixtures (faucets, sinks, pendants)
-- Windows, doorways, other rooms visible
+**DO NOT write photo baselines, spatial hints, or any prompt text yourself.** You are not a prompt engineer. Delegate ALL prompt work to the bfl-prompt-engineer agent (via the parent conversation). Your job is to provide the photo path and subcategory list — the bfl-prompt-engineer writes the hints.
 
-**Spatial hint** — where everything is relative to the camera:
-- Camera position (e.g. "in the living area looking toward the perimeter wall")
-- What's on the left, center, right
-- What's in the foreground vs background
-- Island orientation relative to camera
-
-Both are plain text, not JSON.
+For the config file, leave `photoBaseline`, `spatialHint`, and `spatialHints` empty or with placeholder text and note that the bfl-prompt-engineer needs to fill them in.
 
 ### 4. Decide on subcategories
 
@@ -101,34 +85,14 @@ If a kitchen has an unusual layout (e.g. backsplash wraps two walls, or countert
 
 Only override what's different from the defaults. The seed script merges overrides on top of the auto-generated hints.
 
-### 5. Write the headline
+### 5. Headline and hero body — DELEGATE
 
-Read the positioning rules in `prospect-demos.md`. The headline must be:
-- Short — one line, fits in a glance
-- Reference something specific to the builder where possible (their Design Studio name, their existing tool, their process)
-- Extend the design center, NEVER replace it
-- Never say "before the appointment," "already knowing," "instead of," or "does the same thing"
+**DO NOT write headline or body copy yourself.** Delegate to the copywriter and growth-hacker agents (via the parent conversation). Provide them with:
+- The builder research brief
+- The target contact's name and role
+- The positioning rules from `prospect-demos.md`
 
-### 5b. Write the hero body
-
-The hero body is NOT a template. Every builder gets unique copy. Follow these rules:
-
-1. **Don't repeat the floorplan name** — it's already a label on the page. Restating it is filler.
-2. **Don't claim selections are "from their catalog"** — they're sample/demo selections. Be honest: "sample selections," "mocked this up," etc.
-3. **Reference something specific to THIS builder** that can't be swapped to another. A recent event, their design center name, their process language, a new community opening. The research step should surface this.
-4. **Frame the demo as a proof of concept** — what it would look like with their real selections plugged in. "Your real catalog and pricing drop in directly" or "Your [Design Studio] options plug right in."
-5. **Create an impulse to scroll and interact** — "swap a surface," "pick a countertop," "watch the room change."
-6. **2-3 sentences max.** The demo speaks for itself.
-7. **Never say "AI."**
-
-**Good examples:**
-- "You just opened your second Design Gallery. This is what a digital one looks like. The selections below are samples — your real catalog and pricing drop in directly."
-- "We mocked this up with sample selections to show you how it works. Swap a few surfaces below and watch the room follow. Your Design Studio options drop right in."
-
-**Bad examples (DO NOT USE):**
-- "This is your [Floorplan] kitchen at [Community] with real upgrade selections wired up. Buyers pick finishes and see them in the room." — generic template, repeats floorplan name, claims selections are real when they're samples
-- "Real selections from your catalog" — dishonest, they're demo selections
-- Anything that could work for any builder by swapping the company name
+Leave `heroHeadline` and `heroBody` in the config as placeholders and note that the copywriter needs to write them.
 
 ### 6. Write the sidebar insights
 
@@ -149,17 +113,25 @@ The math: `closings × avg_upgrades × 0.10 = annual lift`. That's the closing l
 
 ### 7. Build presets
 
-Three presets using option slugs from the Demo org (see README.md for the full list):
+Three presets using option slugs from the Demo org.
 
-**Standard** — all base/default options (driftwood cabinets, dallas white granite, white gloss backsplash, toasted taupe floors, delicate white paint)
+**CRITICAL: Query the DB for actual option slugs. NEVER guess.**
 
-**Mid-Range** — upgrade the cabinets and countertops but keep floors/paint moderate:
-- White cabinets, lace white quartz, taupe backsplash, wild dunes floors, fog paint
-- If island cabinets: admiral blue (two-tone moment)
+```sql
+SELECT sc.slug as subcategory, o.name, o.slug, o.is_default
+FROM options o
+JOIN subcategories sc ON o.subcategory_id = sc.id
+JOIN categories c ON sc.category_id = c.id
+WHERE c.org_id = (SELECT id FROM organizations WHERE slug = 'demo')
+AND sc.slug IN ('kitchen-cabinet-color', 'kitchen-island-cabinet-color', 'counter-top', 'backsplash', 'main-area-flooring-color', 'common-wall-paint')
+ORDER BY sc.slug, o.sort_order;
+```
 
-**Premium** — full upgrade look:
-- Fog or onyx cabinets, calacatta venice quartz, herringbone backsplash, lowtide floors, whiskers or hurricane haze paint
-- If island cabinets: contrasting color (onyx or white depending on perimeter)
+Use the EXACT slugs from the query results. Do not infer, abbreviate, or construct slugs from option names.
+
+**Standard** — default/base options (check `is_default` column)
+**Mid-Range** — upgrade cabinets + countertops, two-tone if island present
+**Premium** — full upgrade look with dramatic contrast
 
 ### 8. Write the config
 
@@ -186,9 +158,21 @@ Add the new demo to the Live Demos table in `memory-bank/outreach/prospect-demos
 - **photo_baseline is text**, not JSON
 - **No pricing ($500/mo) in hero copy**
 - **Single-pass generation only** for prospect kitchens (no generation policies). Two-pass doubles wait time.
-- **Preset selections use option slugs** from the Demo org's shared set
+- **Preset selections use option slugs** from the Demo org's shared set — QUERY THE DB, never guess
 - **Spatial hints are critical.** The seed script auto-generates them, but without them backsplash and other subtle surfaces won't change in generated images. If you override via config, only override what's different from defaults.
 - **Verify all research claims.** Do not fabricate closings/yr, revenue, or other stats. If you can't verify, say "estimated" and explain your reasoning.
+
+## Delegation Rules (MANDATORY)
+
+You are an orchestrator, not a specialist. You MUST delegate:
+
+| Domain | Delegate to | What you provide |
+|--------|------------|-----------------|
+| Spatial hints, photo baselines, generation rules | **bfl-prompt-engineer** | Photo path, subcategory list, known issues |
+| Headline, hero body, all copy | **copywriter + growth-hacker** | Research brief, contact name/role, positioning rules |
+| Option slugs for presets | **DB query** | SQL against the Demo org |
+
+**NEVER write prompt text or copy yourself.** Note what needs to be delegated in your output so the parent conversation can dispatch to the right agents.
 
 ## Output
 

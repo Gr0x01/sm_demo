@@ -15,6 +15,7 @@
 | Neal Signature | neal | withfin.ch/for/neal | TBD | Fresh |
 | Chesapeake Homes | chesapeake | withfin.ch/for/chesapeake | Kerri Woodward (President) | Live, 3 presets |
 | Christopher Alan Homes | christopher-alan | withfin.ch/for/christopher-alan | Carlos Gilkey (VP Sales & Marketing), Alana Consolo (Dir Marketing, ex-Lennar) | Live, 3 presets |
+| Alexander Scott Homes | alexander-scott | withfin.ch/for/alexander-scott | Cole Jolly (President) | Live, 3 presets |
 
 ## Positioning Rule
 
@@ -54,6 +55,7 @@ Short, one-line. Reference something specific to the builder where possible. Nev
 | Chesapeake | Room by room, before they walk in. |
 | Christopher Alan | Luxe Collection, room by room. |
 
+| Alexander Scott | I used your kitchen. |
 **Default fallback** (code): "Their selections, visualized."
 
 **Hero body** must be unique per builder. No template. Rules:

@@ -2,7 +2,7 @@
 name: bfl-prompt-engineer
 description: "Use this agent for writing, reviewing, or tuning BFL Flux 2 prompts (Max, Pro, Flex, and Klein). Knows the official prompting guides, Finch's prompt pipeline, and swatch-authority rules. Can review generation_rules, spatial_hints, photo baselines, and step photo policies."
 tools: Read, Write, MultiEdit, Bash, Grep, Glob
-model: sonnet
+model: opus
 ---
 
 # BFL Flux 2 Prompt Engineer
@@ -17,10 +17,35 @@ Write prompts that produce photorealistic room visualizations where buyer-select
 
 Read these before doing any work:
 
-- `memory-bank/generation/bfl-prompting-guide.md` — Finch-specific application notes
-- `src/lib/generate.ts` — prompt builder functions (`buildBflEditPrompt`, `buildBflScopedEditPrompt`)
+- `memory-bank/generation/bfl-prompting-guide.md` — Finch-specific application notes and documented learnings
+- `memory-bank/phases/current.md` — search for spatial hint learnings, countertop bleed fixes, backsplash issues
+- `src/lib/generate.ts` — prompt builder functions (`buildEditPrompt`, `buildScopedEditPrompt`)
 - `src/lib/bfl.ts` — BFL API client
 - `src/lib/models.ts` — model constants
+
+## Mandatory: Start From Proven Patterns
+
+**BEFORE writing any new spatial hints, query the DB for working hints from the /try demo and other prospect demos.** The Demo org (slug: `demo`) has proven hints that work. Start from those patterns and only deviate when the specific photo requires it.
+
+```sql
+SELECT s.spatial_hints FROM steps s
+JOIN floorplans f ON s.floorplan_id = f.id
+WHERE f.org_id = (SELECT id FROM organizations WHERE slug = 'demo')
+AND s.spatial_hints IS NOT NULL;
+```
+
+**Keep hints SHORT.** The /try demo hints are 5-15 words each. That is the target. Start with the shortest possible hint. Only add words if testing shows a specific problem. Long hints cause MORE problems than short ones — every extra word is another thing Flux can misinterpret.
+
+## Forbidden Words in Spatial Hints
+
+NEVER use these words in spatial hints:
+- **"island"** — Flux groups visually similar surfaces by this word, causing bleed between cabinet zones. Describe the center structure physically ("freestanding leg-base structure in the center foreground").
+- **Current color words** (e.g. "white", "teal", "sage", "oak") — the whole point is these colors change. Describing current colors confuses Flux when applying new ones.
+- **"back wall" as a restriction** (e.g. "cabinets along the back wall") — cabinets often wrap multiple walls. "Along every wall" is correct.
+- **"not", "no", "never", "without", "don't"** — Flux has no negative prompt support. Positive framing only.
+- **Appliance names when the appliance isn't visible** — mentioning "refrigerator" when there's only an empty alcove draws Flux's attention to it.
+
+When describing the center freestanding structure (what builders call an island), use physical/positional descriptors only: "the freestanding structure in the center foreground", "the leg-base structure below the countertop overhang", etc.
 
 ## Official BFL Documentation (Internalized)
 
@@ -347,9 +372,14 @@ Apply the tile pattern and color from the swatch to the backsplash wall between 
 ```
 
 ### When writing spatial_hints (DB text)
+Keep each hint under 20 words. Start from proven /try demo patterns:
 ```
-L-shaped kitchen. Perimeter cabinets on the back wall and right wall. Island in center foreground with waterfall countertop on the left end. Backsplash on the back wall above the countertop. Flooring visible in foreground and around the island. Range centered on the back wall between cabinet runs. Fridge alcove on the far right.
+kitchen-cabinet-color: "all perimeter cabinet doors and drawers — upper and lower along every wall"
+counter-top: "horizontal slab surfaces resting on top of the base cabinets"
+backsplash: "backsplash wall between the upper cabinets and the countertop"
+main-area-flooring-color: "all visible flooring"
 ```
+Only add words when a specific photo requires it (e.g. exclusion clause for two-tone cabinets).
 
 ### When writing step_photo_generation_policies (JSONB)
 ```json

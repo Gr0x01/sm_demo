@@ -248,7 +248,7 @@ export async function buildEditPrompt(
   }
 
   const prompt = `${lines.join("\n")}
-Photorealistic, neutral white balance, natural lighting.`.trimEnd();
+Photorealistic, neutral white balance, natural sunlight.`.trimEnd();
 
   return { prompt, swatches };
 }
@@ -298,8 +298,8 @@ export async function buildScopedEditPrompt(
   const article = /^(all|the|every)\b/i.test(surface) ? "" : "the ";
 
   const prompt = dims
-    ? `Change ${article}${surface} to ${dims}, matching image 2. ${swatchRef}`
-    : `Change ${article}${surface} to match image 2. ${swatchRef}`;
+    ? `Change ${article}${surface} to ${dims}, matching image 2. ${swatchRef} Preserve natural sunlight.`
+    : `Change ${article}${surface} to match image 2. ${swatchRef} Preserve natural sunlight.`;
 
   return { prompt, swatches };
 }

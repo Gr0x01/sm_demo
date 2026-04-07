@@ -1,0 +1,67 @@
+{
+  "slug": "alexander-scott",
+  "name": "Alexander Scott Homes — Langston",
+  "heroHeadline": "I used your kitchen.",
+  "heroBody": "This is the Langston at Swann's Bridge with sample upgrade selections wired up. Pick a finish and the room follows. Your real catalog and pricing drop in directly.",
+  "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/ASH/ash-sb-07.jpg",
+  "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/ASH/photo-swanns-bridge.jpg",
+  "photoBaseline": "Open-concept kitchen viewed from the living area. Teal/sage island with table-style legs and white quartz top in center foreground. White shaker upper and lower cabinets on perimeter back wall. Stainless chimney hood centered on back wall, gas cooktop below. No backsplash tile — bare light-gray painted wall between countertop and upper cabinets. Warm oak hardwood floors throughout.",
+  "spatialHint": "Wide-angle view from living area toward back wall. Teal/sage island center-foreground with table legs. White shaker perimeter cabinets on back wall, chimney hood centered. Bare painted wall in cooking zone where backsplash would be. Oak hardwood floors throughout.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] }
+  ],
+  "spatialHints": {
+    "kitchen-cabinet-color": "all perimeter cabinet doors and drawers — upper and lower along every wall, distinct from the freestanding leg-base structure in the center foreground",
+    "kitchen-island-cabinet-color": "the freestanding leg-base structure in the center foreground — side panels and four vertical legs, distinct from the perimeter wall cabinets",
+    "counter-top": "horizontal slab surfaces resting on top of the base cabinets",
+    "backsplash": "backsplash wall between the upper cabinets and the countertop, continuing behind and above the range hood",
+    "main-area-flooring-color": "all visible flooring"
+  },
+  "insights": [
+    { "label": "Lots in pipeline", "value": "~1,500" },
+    { "label": "Avg. upgrades per home (est.)", "value": "~$10K" },
+    { "label": "Even a 10% lift", "value": "+$1,000 per home" }
+  ],
+  "closingLine": "At 100 closings a year, that is $100K in upgrade revenue from something that takes a week to set up.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-white",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x12-bev-white",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-admiral-blue",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-glacier",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-fog",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide"
+      }
+    }
+  ]
+}
