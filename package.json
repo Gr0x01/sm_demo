@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint src/",
-    "seed:photo-policies": "npx tsx scripts/seed-photo-policies.ts",
     "seed:new-tenant": "npx tsx scripts/seed-new-tenant.ts",
     "test": "vitest run",
     "test:watch": "vitest"
