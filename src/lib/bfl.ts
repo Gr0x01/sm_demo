@@ -116,6 +116,13 @@ async function submitImageEdit(
     output_format: "jpeg",
   };
 
+  // Disable prompt upsampling when swatch references are present — BFL's
+  // enhancement rewrites the prompt and can shift colors away from swatches.
+  // Not available on Klein models (they ignore it).
+  if (referenceImages.length > 0 && !model.includes("klein")) {
+    body.prompt_upsampling = false;
+  }
+
   // Flex-only parameters
   if (steps !== undefined) body.steps = steps;
   if (guidance !== undefined) body.guidance = guidance;

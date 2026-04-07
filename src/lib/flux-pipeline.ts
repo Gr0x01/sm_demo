@@ -242,7 +242,7 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
     swatchResolver,
   );
 
-  // Model selection: option-level override → range/oven gets Max → global default (Pro)
+  // Model selection: option-level override → range/oven gets Max → global default (Flex)
   const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
   const isRangeOven = changedSubcategoryId.includes("range") || changedSubcategoryId.includes("oven");
   const model = changed?.option.scopedEditModel

@@ -6,4 +6,4 @@
  */
 export const VISION_MODEL = "gemini-3-flash-preview";
 export const IMAGE_MODEL = "flux-2-max";
-export const SCOPED_EDIT_MODEL = "flux-2-max";
+export const SCOPED_EDIT_MODEL = "flux-2-flex";
