@@ -19,7 +19,7 @@ function getApiKey(): string {
 // Types
 // ---------------------------------------------------------------------------
 
-export type BflModel = "flux-2-max" | "flux-2-pro" | "flux-2-klein-4b" | "flux-2-klein-9b";
+export type BflModel = "flux-2-max" | "flux-2-pro" | "flux-2-flex" | "flux-2-klein-4b" | "flux-2-klein-9b";
 
 interface SubmitResponse {
   id: string;
@@ -57,12 +57,16 @@ export interface GenerateImageParams {
   model: BflModel;
   prompt: string;
   inputImage: Buffer;
-  /** Reference swatch images. Max supports up to 7, Klein 4B up to 3. */
+  /** Reference swatch images. Max supports up to 7, Flex up to 9, Klein 4B up to 3. */
   referenceImages?: Buffer[];
   width?: number;
   height?: number;
   /** Override max poll wait (default 90s). Use shorter values in two-pass splits. */
   maxWaitMs?: number;
+  /** Inference steps (Flex only). More steps = higher quality, slower. */
+  steps?: number;
+  /** Guidance scale (Flex only). Higher = stricter prompt following. */
+  guidance?: number;
 }
 
 export interface GenerateImageResult {
@@ -77,6 +81,7 @@ export interface GenerateImageResult {
 const MAX_REFERENCES: Record<BflModel, number> = {
   "flux-2-max": 7,
   "flux-2-pro": 7,
+  "flux-2-flex": 9,
   "flux-2-klein-4b": 3,
   "flux-2-klein-9b": 3,
 };
@@ -92,6 +97,8 @@ async function submitImageEdit(
   referenceImages: Buffer[] = [],
   width = 1536,
   height = 1024,
+  steps?: number,
+  guidance?: number,
 ): Promise<{ taskId: string; pollingUrl: string; cost?: number }> {
   const limit = MAX_REFERENCES[model];
   if (referenceImages.length > limit) {
@@ -108,6 +115,10 @@ async function submitImageEdit(
     height,
     output_format: "jpeg",
   };
+
+  // Flex-only parameters
+  if (steps !== undefined) body.steps = steps;
+  if (guidance !== undefined) body.guidance = guidance;
 
   for (let i = 0; i < referenceImages.length; i++) {
     body[`input_image_${i + 2}`] = referenceImages[i].toString("base64");
@@ -221,6 +232,8 @@ export async function generateImage(
     params.referenceImages,
     params.width,
     params.height,
+    params.steps,
+    params.guidance,
   );
 
   console.log(`[bfl] Submitted ${params.model} task ${taskId}, polling...`);

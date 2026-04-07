@@ -249,11 +249,13 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
     ?? (isRangeOven ? IMAGE_MODEL : SCOPED_EDIT_MODEL);
 
   const genStart = performance.now();
+  const isFlex = model === "flux-2-flex";
   const result = await generateImage({
     model: model as BflModel,
     prompt,
     inputImage: baseImageBuffer,
     referenceImages: swatches.map(s => s.buffer),
+    ...(isFlex && { steps: 25 }),
   });
 
   return {

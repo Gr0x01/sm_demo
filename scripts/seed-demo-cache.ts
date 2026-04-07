@@ -48,12 +48,12 @@ const SAMPLE_SCENE_ANALYSIS: DemoSceneAnalysis = {
   visibleSurfaces: { cabinets: true, countertop: true, backsplash: true, island: true },
 };
 
-/** Short spatial hints matching the shortened DB hints for the demo kitchen */
+/** Spatial hints for the demo kitchen — must match DEFAULT_SPATIAL_HINTS in generate-demo.ts */
 const SPATIAL_HINTS: Record<string, string> = {
-  backsplash: "backsplash wall between the upper cabinets and the countertop",
-  "counter-top": "flat countertop work surface spanning the perimeter cabinets and the top of the island",
-  "kitchen-cabinet-color": "all perimeter cabinet doors and drawers — upper and lower along every wall, including cabinets flanking the refrigerator and range",
-  "kitchen-island-cabinet-color": "island base cabinet panel in the foreground, distinct from the perimeter cabinets",
+  backsplash: "backsplash tile surface behind the countertop, bounded by the underside of upper cabinets above and the countertop below",
+  "counter-top": "all horizontal countertop surfaces — perimeter and center workspace",
+  "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets above and flanking appliances — every perimeter cabinet door and drawer",
+  "kitchen-island-cabinet-color": "island base cabinet panel below the countertop overhang in the foreground",
 };
 
 // ---------- Option IDs (DB slugs from Demo org) ----------
@@ -69,9 +69,9 @@ const CABINETS = [
 const ISLANDS = [
   "island-color-driftwood",
   "island-color-white",
-  "island-color-admiral-blue",
+  "island-color-fog",
   "island-color-onyx",
-  // "island-color-match" excluded — linked option, no swatch
+  "island-color-admiral-blue",
 ];
 
 const COUNTERTOPS = [
@@ -83,14 +83,14 @@ const COUNTERTOPS = [
 ];
 
 const BACKSPLASHES = [
-  "bs-baker-4x16-white-gloss",  // default
-  "bs-baker-4x16-taupe",
+  "bs-baker-4x12-bev-white",
+  "bs-baker-4x16-glacier",
   "bs-baker-4x16-carbon",
-  "bs-baker-herringbone-white",
-  "bs-naive-white",
+  "bs-herringbone-white",
+  "bs-herringbone-carbon",
 ];
 
-const DEFAULT_BACKSPLASH = "bs-baker-4x16-white-gloss";
+const DEFAULT_BACKSPLASH = "bs-baker-4x12-bev-white";
 
 // Layer 2: 5 popular cab/island pairs × 5 counters × 3 non-default backsplashes
 const LAYER2_CAB_ISLAND_PAIRS: [string, string][] = [
@@ -98,13 +98,13 @@ const LAYER2_CAB_ISLAND_PAIRS: [string, string][] = [
   ["kitchen-cab-color-white", "island-color-admiral-blue"],
   ["kitchen-cab-color-driftwood", "island-color-driftwood"],
   ["kitchen-cab-color-onyx", "island-color-onyx"],
-  ["kitchen-cab-color-fog", "island-color-white"],
+  ["kitchen-cab-color-fog", "island-color-fog"],
 ];
 
 const LAYER2_BACKSPLASHES = [
   "bs-baker-4x16-carbon",
-  "bs-baker-herringbone-white",
-  "bs-naive-white",
+  "bs-herringbone-white",
+  "bs-herringbone-carbon",
 ];
 
 // ---------- Combo generation ----------

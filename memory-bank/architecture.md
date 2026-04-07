@@ -235,7 +235,7 @@ State shape:
 
 ## AI Image Generation Pipeline
 
-**Model**: BFL Flux 2. Max for full generation, Pro for scoped edits (default), per-option model override via `scoped_edit_model` column. Max for range/oven scoped edits.
+**Model**: BFL Flux 2. Max for full generation and default scoped edits. Per-option model override via `scoped_edit_model` column (e.g. Flex for backsplash scoped edits, Klein 9B for hex mosaic). Flex supported with `steps` and `guidance` params but not suitable for full gen (warm color cast, poor two-tone cabinet discrimination).
 
 **Shared core**: `src/lib/flux-pipeline.ts` — `fluxGenerate` (full gen, single or two-pass) and `fluxScopedEdit` (single-surface edit). Stateless functions that take buffers in, return buffers out. Both Inngest functions delegate to these.
 
@@ -252,7 +252,7 @@ State shape:
 
 **Two-pass split**: When >7 swatches (BFL Max limit), `fluxGenerate` splits into structural (cabinets, counter, backsplash, floor, paint) → fixtures (hardware, sink, faucet, lighting, appliances) in the same Inngest step. `maxDuration=300` on Inngest route (Vercel Pro + Fluid Compute).
 
-**Scoped edits**: Leave-one-out hash system finds cached images differing by one surface. `fluxScopedEdit` runs a targeted edit (~7-20s vs 35-55s full gen). Depth capped at 3. Model selection: `option.scoped_edit_model` override → range/oven gets Max → default Pro.
+**Scoped edits**: Leave-one-out hash system finds cached images differing by one surface. `fluxScopedEdit` runs a targeted edit (~7-20s vs 35-55s full gen). Depth capped at 3. Model selection: `option.scoped_edit_model` override → range/oven gets Max → default Max. Flex runs at 25 steps for scoped edits (half default, sufficient for single-surface swaps).
 
 **Prompt structure** (Flux-native, ~55-80 words):
 ```
@@ -260,15 +260,15 @@ Apply image 2 to all perimeter cabinets — upper, lower, and appliance-adjacent
 Apply image 3 to island base cabinet panel in the foreground.
 Apply image 4 to all countertop surfaces.
 Apply image 5 to backsplash wall between countertop and upper cabinets (4x16 subway tiles).
-Photorealistic, natural lighting.
+Photorealistic, neutral white balance, natural lighting.
 ```
-No opening sentence, no rules block, no scene block. Each line is "Apply image N to [spatial hint]." Dimensions in parentheses. Swatch image is sole appearance authority.
+No opening sentence, no rules block, no scene block. Each line is "Apply image N to [spatial hint]." Dimensions in parentheses. Paint options get hex alongside swatch (`, exact color #hex`) — keyed off `promptDescriptor` containing "painted". Swatch image is sole appearance authority.
 
 **Scoped edit prompt** (~15-25 words): `Change [surface] to match image 2. Match image 2 exactly.`
 
 **Linked option resolution**: Options with `linked_to_subcategory` (e.g. "Match to Main") are resolved before prompt building. Same swatch → merged into one line covering both zones. Different swatch → kept separate.
 
-**Per-option model selection**: `scoped_edit_model` text column on options. Nullable — defaults to Pro when not set. Set via admin UI dropdown (Pro/Klein 9B/Klein 4B/Max). Example: hex mosaic tiles get Klein 9B (better pattern fidelity than Pro at that scale).
+**Per-option model selection**: `scoped_edit_model` text column on options. Nullable — defaults to Max when not set. Set via admin UI dropdown (Pro/Klein 9B/Klein 4B/Max/Flex). Demo org backsplash: Flex (subway tiles) and Flex (herringbone). SM backsplash: Klein 9B (hex mosaic, herringbone).
 
 **Cache versioning**: `GENERATION_CACHE_VERSION` (main) and `DEMO_GENERATION_CACHE_VERSION` (demo) in hash inputs. Bump when prompt semantics change.
 
@@ -278,9 +278,9 @@ No opening sentence, no rules block, no scene block. Each line is "Apply image N
 - `src/lib/bfl.ts` — BFL API client (submit → poll → download)
 - `src/inngest/functions/generate-photo.ts` — main pipeline orchestrator
 - `src/inngest/functions/generate-demo.ts` — demo pipeline orchestrator
-- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-pro"`
+- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-max"`
 
-**Model history**: gpt-image-1 → Gemini → gpt-image-1.5 → gpt-image-1.5 + Gemini Flash/Pro post-passes → multi-pass pipeline → **Flux 2 Max/Pro** (current). OpenAI and Gemini pipelines fully removed.
+**Model history**: gpt-image-1 → Gemini → gpt-image-1.5 → gpt-image-1.5 + Gemini Flash/Pro post-passes → multi-pass pipeline → Flux 2 Max/Pro → **Flux 2 Max/Max + Flex for backsplash scoped edits** (current). OpenAI and Gemini pipelines fully removed. Flex tested for full gen (2026-04-07): good instruction following but warm orange color cast and poor two-tone cabinet discrimination. Not suitable for multi-surface full gen.
 
 ## Swatch Images
 

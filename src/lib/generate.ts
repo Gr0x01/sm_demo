@@ -48,7 +48,7 @@ export function resolveLinkedOptions(
         .replace(/\.\s*(The island|Island|Perimeter wall cabinets|Perimeter)[^.]*separate[^.]*\.?$/i, "")  // BFL-style: "The island is a separate cabinet selection."
         .replace(/,\s*(separate|distinct)\s+from\s+[^.]+$/i, "")  // ", distinct from the perimeter cabinets"
         .trim();
-      spatialHints[linkedSub] = `${stripExclusion(spatialHints[linkedSub])} AND ${stripExclusion(spatialHints[subId])}`;
+      spatialHints[linkedSub] = `${stripExclusion(spatialHints[linkedSub])} and ${stripExclusion(spatialHints[subId])}`;
       delete spatialHints[subId];
     }
 
@@ -200,8 +200,10 @@ export async function buildEditPrompt(
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
           swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: subId });
-          // Paint: hex alongside swatch for precision under varied lighting
-          const paintHex = subId.includes("paint") ? option.swatchColor?.trim() : null;
+          // Paint: hex alongside swatch for precision under varied lighting.
+          // Covers wall paint subcategories AND painted cabinet options (not stains).
+          const isPaint = subId.includes("paint") || option.promptDescriptor?.toLowerCase().includes("painted");
+          const paintHex = isPaint ? option.swatchColor?.trim() : null;
           const hexPart = paintHex ? `, exact color ${paintHex}` : "";
           const dimPart = dims ? ` (${dims})` : "";
           const line = `Apply image ${imageIndex} to ${surface}${dimPart}${hexPart}.`;
@@ -210,6 +212,10 @@ export async function buildEditPrompt(
           continue;
         }
       } catch { /* fallback below */ }
+    }
+
+    if (option.swatchUrl && !swatches.some(s => s.subcategoryId === subId)) {
+      console.warn(`[buildEditPrompt] Swatch resolution failed for ${subId}: ${option.swatchUrl}`);
     }
 
     // Fallback (no swatch image): hex color or option name
@@ -242,7 +248,7 @@ export async function buildEditPrompt(
   }
 
   const prompt = `${lines.join("\n")}
-Photorealistic, natural lighting.`.trimEnd();
+Photorealistic, neutral white balance, natural lighting.`.trimEnd();
 
   return { prompt, swatches };
 }
@@ -274,7 +280,8 @@ export async function buildScopedEditPrompt(
       if (resolved) {
         swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: changedSubcategoryId });
         // Paint: add hex for precision (swatch alone renders too dark under varied lighting)
-        const paintHex = changedSubcategoryId.includes("paint") ? option.swatchColor?.trim() : null;
+        const isPaint = changedSubcategoryId.includes("paint") || option.promptDescriptor?.toLowerCase().includes("painted");
+        const paintHex = isPaint ? option.swatchColor?.trim() : null;
         swatchRef = paintHex ? `Match image 2 exactly, exact color ${paintHex}.` : "Match image 2 exactly.";
       }
     } catch { /* fallback below */ }
