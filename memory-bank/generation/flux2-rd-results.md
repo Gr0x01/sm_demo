@@ -77,14 +77,8 @@ Tested all BFL Flux 2 models as replacements for OpenAI gpt-image-1.5 + Gemini F
 - **404s on poll**: Normal — BFL returns 404 briefly before task is registered for polling
 - **Signed URLs**: Result URLs expire after 10 minutes
 
-## Test Scripts
-- `scripts/test-flux2-max-kitchen.ts` — R1: initial Max test (4 combos, structural)
-- `scripts/test-flux2-kitchen-r2.ts` — R2: herringbone, slide-in, Flex post-pass
-- `scripts/test-flux2-kitchen-r3.ts` — R3: prompt-tuned with scene context, Max-to-Max oven post-pass
-- `scripts/test-flux2-all-models.ts` — All 6 models benchmark (scoped edit + full gen)
-- `scripts/test-flux2-scoped-edit.ts` — Max/Flex/Klein scoped edit comparison
-- `scripts/test-flux2-stress-scoped.ts` — Klein 4B vs Pro stress test (7 surface types)
-- Outputs: `scripts/flux2-test-outputs/`
+## Test Scripts (deleted 2026-04-08, R&D complete)
+R&D test scripts and output directories were cleaned up after Flux 2 shipped and pipeline was refactored. Results are captured in this document.
 
 ## Shipped (2026-04-05)
 - [x] Spatial prompting overhaul — scene context, photo baseline, spatial hints in BFL prompt builder

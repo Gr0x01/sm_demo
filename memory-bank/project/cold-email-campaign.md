@@ -25,8 +25,8 @@ Book meetings. Every email, LinkedIn touch, and demo page exists to get a builde
 | Mike Ruland | Traton Homes | mruland@tratonhomes.com | feedback on traton's design center | Draft Ready |
 | Suzanne Mathison Smith | Lowder New Homes | smathison@lowdernewhomes.com | feedback on lowder's design center | Draft Ready |
 
-**CSV**: `memory-bank/outreach/campaigns/week1-batch1.csv`
-**Personalized lines**: `memory-bank/outreach/campaigns/approved-personalized-lines.md`
+**CSV**: archived to `_archive/outreach-c1c2c3/week1-batch1.csv`
+**Personalized lines**: archived to `_archive/outreach-c1c2c3/approved-personalized-lines.md`
 
 **Remaining leads (personalized lines pending):**
 - Shelby Jagor — Piedmont Residential

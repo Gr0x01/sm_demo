@@ -84,13 +84,11 @@ Rules:
 - Don't duplicate tracking across systems
 
 ## Campaign Pipeline
-Script: `scripts/campaign3-pipeline.sh`
 1. Apollo API searches each company with title hierarchy (free, no credits)
 2. Apollo reveals best contact → verified email (costs credits)
-3. Outputs to `/tmp/c3-success.txt` (pipe-delimited: company|name|title|email|linkedin|floorplan|subject)
-4. Generate CSV: `memory-bank/outreach/campaigns/c3-instantly-upload.csv`
-5. **Upload CSV manually in Instantly UI** (Add Leads button)
-6. Notion Companies + Contacts updated via API separately
+3. Apollo → Instantly native integration (push leads directly, skip CSV)
+4. **Upload to Instantly** via native Apollo integration or manual CSV upload
+5. Notion Companies + Contacts updated via `scripts/apollo-to-notion.ts` or Apollo → Notion native integration
 
 ## Apollo CSV → Notion Sync
 Script: `scripts/apollo-to-notion.ts`

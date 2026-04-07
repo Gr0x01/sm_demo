@@ -420,14 +420,16 @@ src/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
 
 scripts/
-├── seed-sm.ts               # Seed SM data from static TS files into Supabase (idempotent)
+├── apollo-to-notion.ts      # Apollo CSV → Notion Contacts (dedup, campaign tagging)
+├── audit-sm-kinkade.ts      # SM data validation/audit
+├── batch-generate.ts        # Batch AI generation (configurable, for 2-pass photos exceeding Vercel timeout)
+├── indexnow.ts              # Submit marketing URLs to IndexNow (Bing/Yandex)
+├── linkedin-post-finder.ts  # LinkedIn post discovery via ScrapingDog (Cowork automation)
+├── resize-swatches.ts       # Swatch image resizing utility
+├── seed-demo-cache.ts       # Pre-seed /try demo cache (re-run when DEMO_GENERATION_CACHE_VERSION bumps)
 ├── seed-new-tenant.ts       # Seed a new builder org with starter structure (9 cats, 15 subcats, 15 defaults, 5 steps)
-├── seed-lenox.ts            # Create Lenox floorplan (duplicate Kinkade), upload 9 Lenox room photos with full AI metadata, seed 3 generation policies + 55 pricing overrides
-├── migrate-sm-storage.ts    # Upload SM room photos + swatches to Storage, create step_photos
-├── seed-photo-policies.ts   # Seed internal per-photo generation policies (SM Kinkade kitchen-close + greatroom)
-└── sql/
-    ├── 2026-02-21-step-photo-generation-policies.sql # Policy table migration
-    └── 2026-02-23-option-floorplan-pricing.sql       # Per-floorplan pricing override table
+├── seed-prospect-demo.ts    # Seed prospect demo from JSON config (upload photos, create DB records, generate presets)
+└── prospect-configs/        # Per-prospect JSON configs for seed-prospect-demo.ts
 
 public/
 ├── logo.svg                 # Stone Martin Builders logo (currentColor fill)
