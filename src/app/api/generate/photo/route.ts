@@ -28,13 +28,13 @@ async function claimGenerationSlot(
   selectionsJson: Record<string, unknown>,
   leaveOneOutHashes: string[],
 ): Promise<ClaimResult> {
-  // Clean up stale pending rows (older than 5 min — safely above maxDuration of 120s)
+  // Clean up stale pending/failed rows (older than 5 min — safely above maxDuration of 120s)
   const staleThreshold = new Date(Date.now() - 5 * 60 * 1000).toISOString();
   await supabase
     .from("generated_images")
     .delete()
     .eq("selections_hash", selectionsHash)
-    .eq("image_path", "__pending__")
+    .in("image_path", ["__pending__", "__failed__"])
     .lt("created_at", staleThreshold);
 
   const { error } = await supabase

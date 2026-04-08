@@ -1,0 +1,67 @@
+{
+  "slug": "valor",
+  "name": "Valor Communities — Rosemary III",
+  "heroHeadline": "Your Rosemary III kitchen, their selections.",
+  "heroBody": "Sample finishes on your Rosemary III kitchen. Pick a swatch and the room follows. Your actual catalog and pricing slot right in.",
+  "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/scripts/prospect-photos/valor-rosemary-iii-kitchen.jpg",
+  "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/Valor Communities/RA_Rosemary-III-Rendering-5M-Primed-Painted_Alabama_North_05.webp",
+  "photoBaseline": "Open-concept kitchen viewed at an angle from the dining area. White shaker cabinets on perimeter walls — both upper and lower. Medium wood-tone upper cabinets flanking the range hood area. Large white island with overhang for bar seating, dark wood stools. White quartz countertops on all surfaces. Stone or marble slab backsplash behind the range. Stainless steel appliances: French-door refrigerator on the right wall, built-in microwave above range. Pendant lights over island. Wood-look LVP flooring throughout. Ceiling medallion detail above island.",
+  "spatialHint": "Angled view from dining area. White island center-foreground with bar stools. White perimeter cabinets on back and right walls, wood-tone uppers near range hood. Stainless fridge on right, range centered on back wall. Wood-look flooring throughout.",
+  "subcategoryIds": [
+    "kitchen-cabinet-color",
+    "kitchen-island-cabinet-color",
+    "counter-top",
+    "backsplash",
+    "main-area-flooring-color"
+  ],
+  "sections": [
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Countertops", "subcategory_ids": ["counter-top"] },
+    { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] }
+  ],
+  "spatialHints": {
+    "kitchen-cabinet-color": "all perimeter cabinet doors and drawers — upper and lower along every wall",
+    "kitchen-island-cabinet-color": "freestanding base cabinet doors and panels in the center foreground",
+    "counter-top": "all horizontal countertop surfaces — perimeter and center workspace",
+    "backsplash": "exposed wall strips between countertop and cabinetry — cooking alcove, coffee niche, and beside the refrigerator",
+    "main-area-flooring-color": "all visible flooring"
+  },
+  "insights": [
+    { "label": "Markets", "value": "AL, FL, GA — 5 regions" },
+    { "label": "Avg. upgrades per home (est.)", "value": "~$12K" },
+    { "label": "Even a 10% lift", "value": "+$1,200 per home" }
+  ],
+  "closingLine": "Across hundreds of closings a year, that adds up fast — especially as y'all expand into Atlanta.",
+  "presets": [
+    {
+      "label": "Standard",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-white",
+        "counter-top": "ct-granite-dallas-white",
+        "backsplash": "bs-baker-4x12-bev-white",
+        "main-area-flooring-color": "floor-color-polaris-toasted-taupe"
+      }
+    },
+    {
+      "label": "Mid-Range",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-white",
+        "kitchen-island-cabinet-color": "island-color-admiral-blue",
+        "counter-top": "ct-quartz-lace-white",
+        "backsplash": "bs-baker-4x16-glacier",
+        "main-area-flooring-color": "floor-color-polaris-wild-dunes"
+      }
+    },
+    {
+      "label": "Premium",
+      "selections": {
+        "kitchen-cabinet-color": "kitchen-cab-color-fog",
+        "kitchen-island-cabinet-color": "island-color-onyx",
+        "counter-top": "ct-quartz-calacatta-venice",
+        "backsplash": "bs-herringbone-white",
+        "main-area-flooring-color": "floor-color-delray-lowtide"
+      }
+    }
+  ]
+}

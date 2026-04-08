@@ -51,4 +51,5 @@ scripts/scoped-edit-test-outputs/
 scripts/multi-pass-test-outputs/
 scripts/flash-scoped-edit-outputs/
 scripts/flux2-*-outputs/
+scripts/prospect-photos/
 .linkedin-seen.json

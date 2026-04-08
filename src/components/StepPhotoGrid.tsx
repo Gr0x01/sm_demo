@@ -193,6 +193,10 @@ function PhotoViewerCard({
   renderOverlay,
   lastCacheHit,
 }: PhotoCardProps) {
+  // Sentinel from UpgradePicker polling signals a deterministic failure
+  // (e.g. BFL content moderation) — retrying the same inputs will fail.
+  const isUnavailable = error === "__UNAVAILABLE_COMBINATION__";
+
   // Layer-based crossfade: keeps old generated image visible while new fades in
   const [layers, setLayers] = useState<{ src: string; key: number }[]>(
     generatedUrl ? [{ src: generatedUrl, key: 0 }] : []
@@ -305,7 +309,7 @@ function PhotoViewerCard({
           <p className="text-xs font-medium text-white truncate max-w-[52%]">{photo.label}</p>
 
           <div className="flex items-center gap-1 shrink-0">
-            {!isGenerating && (
+            {!isGenerating && !isUnavailable && (
               <button
                 onClick={(e) => { e.stopPropagation(); if (hasGenerated && !isStale) { onRetry(); } else { onGenerate(); } }}
                 disabled={!hasSelections && !hasGenerated}
@@ -325,8 +329,22 @@ function PhotoViewerCard({
         </div>
       </div>
 
-      {/* Error */}
-      {error && !isGenerating && (
+      {/* Unavailable combination — full-card overlay, system-voice copy */}
+      {isUnavailable && !isGenerating && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#fdfaf5]/92 px-6">
+          <div className="max-w-sm w-full bg-white border border-stone-200 px-6 py-5">
+            <p className="text-sm font-semibold text-[var(--color-navy)] leading-snug">
+              This combination isn&apos;t available.
+            </p>
+            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
+              Adjust a selection to see this room.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Transient error (network, timeout) — small badge with retry affordance via Visualize button */}
+      {error && !isUnavailable && !isGenerating && (
         <div className="absolute top-2 right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 max-w-[200px] truncate">
           {error}
         </div>

@@ -1,11 +1,13 @@
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
+import { NonRetriableError } from "inngest";
 import { identifyChangedSubcategory, stripExclusionRulesForMergedLinks } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getOptionLookup, findSingleSurfaceDiffMatch } from "@/lib/db-queries";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
 import { SCOPED_EDIT_MODEL } from "@/lib/models";
 import { generateImage } from "@/lib/bfl";
+import { BflContentModerationError } from "@/lib/bfl";
 import type { BflModel } from "@/lib/bfl";
 import { fluxGenerate, fluxScopedEdit, createSwatchResolver } from "@/lib/flux-pipeline";
 
@@ -148,6 +150,14 @@ export const generatePhoto = inngest.createFunction(
           error: err,
           orgId, orgSlug, floorplanSlug,
         });
+        if (err instanceof BflContentModerationError) {
+          // Mark the row as failed so the polling client sees it immediately
+          await supabase.from("generated_images")
+            .update({ image_path: "__failed__" })
+            .eq("selections_hash", selectionsHash)
+            .eq("image_path", "__pending__");
+          throw new NonRetriableError(err.message, { cause: err });
+        }
         throw err;
       }
     });
@@ -203,6 +213,13 @@ export const generatePhoto = inngest.createFunction(
             error: err,
             orgId, orgSlug, floorplanSlug,
           });
+          if (err instanceof BflContentModerationError) {
+            await supabase.from("generated_images")
+              .update({ image_path: "__failed__" })
+              .eq("selections_hash", selectionsHash)
+              .eq("image_path", "__pending__");
+            throw new NonRetriableError(err.message, { cause: err });
+          }
           throw err;
         }
       });

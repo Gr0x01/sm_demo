@@ -97,6 +97,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "pending", imageUrl: null, selectionsHash: hash });
     }
 
+    if (row.image_path === "__failed__") {
+      return NextResponse.json({ status: "failed", imageUrl: null });
+    }
+
     const { data: { publicUrl } } = supabase.storage
       .from("generated-images")
       .getPublicUrl(row.image_path);

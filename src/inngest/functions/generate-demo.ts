@@ -1,10 +1,12 @@
 import { inngest } from "@/inngest/client";
+import { NonRetriableError } from "inngest";
 import { identifyChangedSubcategory, resolveLinkedOptions } from "@/lib/generate";
 import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
 import { findDemoDiffMatch, getOptionLookup } from "@/lib/db-queries";
 import { getServiceClient } from "@/lib/supabase";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
 import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
+import { BflContentModerationError } from "@/lib/bfl";
 import { fluxGenerate, fluxScopedEdit, createSwatchResolver } from "@/lib/flux-pipeline";
 
 /** Short fallback spatial hints when Gemini scene analysis doesn't provide them. */
@@ -12,7 +14,7 @@ const DEFAULT_SPATIAL_HINTS: Record<string, string> = {
   backsplash: "backsplash tile surface behind the countertop, bounded by the underside of upper cabinets above and the countertop below",
   "counter-top": "all horizontal countertop surfaces — perimeter and center workspace",
   "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets above and flanking appliances — every perimeter cabinet door and drawer",
-  "kitchen-island-cabinet-color": "island base cabinet panel below the countertop overhang in the foreground",
+  "kitchen-island-cabinet-color": "freestanding base cabinet panel below the countertop overhang in the foreground",
 };
 
 /** Merge Gemini-provided spatial hints with defaults */
@@ -135,6 +137,13 @@ export const generateDemo = inngest.createFunction(
           duration_ms: Math.round(performance.now() - genStart),
           error: err,
         });
+        if (err instanceof BflContentModerationError) {
+          await supabase.from("generated_images")
+            .update({ image_path: "__failed__" })
+            .eq("selections_hash", combinedHash)
+            .eq("image_path", "__pending__");
+          throw new NonRetriableError(err.message, { cause: err });
+        }
         throw err;
       }
     });
@@ -181,6 +190,13 @@ export const generateDemo = inngest.createFunction(
             duration_ms: Math.round(performance.now() - genStart),
             error: err,
           });
+          if (err instanceof BflContentModerationError) {
+            await supabase.from("generated_images")
+              .update({ image_path: "__failed__" })
+              .eq("selections_hash", combinedHash)
+              .eq("image_path", "__pending__");
+            throw new NonRetriableError(err.message, { cause: err });
+          }
           throw err;
         }
       });

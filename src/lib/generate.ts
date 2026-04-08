@@ -254,8 +254,11 @@ Photorealistic, neutral white balance, natural sunlight.`.trimEnd();
 }
 
 /**
- * Scoped-edit prompt for Flux 2. Klein preserves unchanged surfaces by default,
- * so we keep this minimal: target surface + swatch reference + location.
+ * Scoped-edit prompt for Flux 2 (Flux-native format).
+ *
+ * Uses "Apply image 2 to [surface]" matching the full-gen format.
+ * Klein/Flex preserve unchanged surfaces by default, so we keep this
+ * minimal: target surface + swatch reference + location.
  */
 export async function buildScopedEditPrompt(
   changedSubcategoryId: string,
@@ -272,8 +275,11 @@ export async function buildScopedEditPrompt(
 
   const { option, subCategory } = changed;
 
-  // Resolve swatch
-  let swatchRef = "";
+  const hint = spatialHints[changedSubcategoryId];
+  const surface = hint || subCategory.name;
+  const dims = option.dimensions?.trim();
+
+  // Resolve swatch — Flux-native format: "Apply image 2 to [surface]"
   if (option.swatchUrl && resolveSwatchBuffer) {
     try {
       const resolved = await resolveSwatchBuffer(option.swatchUrl);
@@ -282,24 +288,20 @@ export async function buildScopedEditPrompt(
         // Paint: add hex for precision (swatch alone renders too dark under varied lighting)
         const isPaint = changedSubcategoryId.includes("paint") || option.promptDescriptor?.toLowerCase().includes("painted");
         const paintHex = isPaint ? option.swatchColor?.trim() : null;
-        swatchRef = paintHex ? `Match image 2 exactly, exact color ${paintHex}.` : "Match image 2 exactly.";
+        const hexPart = paintHex ? `, exact color ${paintHex}` : "";
+        const dimPart = dims ? ` (${dims})` : "";
+        const prompt = `Apply image 2 to ${surface}${dimPart}${hexPart}. Match image 2 exactly. Preserve natural sunlight.`;
+        return { prompt, swatches };
       }
     } catch { /* fallback below */ }
   }
-  if (!swatchRef) {
-    const hex = option.swatchColor?.trim();
-    swatchRef = hex ? `Apply color ${hex}.` : `Apply: ${option.name}.`;
-  }
 
-  const hint = spatialHints[changedSubcategoryId];
-  const surface = hint || subCategory.name;
-  const dims = option.dimensions?.trim();
-  // Skip "the" when surface already starts with a determiner
+  // Fallback (no swatch image): hex color or option name
+  // Keep article for readability when surface is a bare subcategory name
   const article = /^(all|the|every)\b/i.test(surface) ? "" : "the ";
-
-  const prompt = dims
-    ? `Change ${article}${surface} to ${dims}, matching image 2. ${swatchRef} Preserve natural sunlight.`
-    : `Change ${article}${surface} to match image 2. ${swatchRef} Preserve natural sunlight.`;
+  const hex = option.swatchColor?.trim();
+  const fallback = hex ? `Apply color ${hex} to` : `Apply ${option.name} to`;
+  const prompt = `${fallback} ${article}${surface}. Preserve natural sunlight.`;
 
   return { prompt, swatches };
 }
@@ -560,4 +562,3 @@ export function hashSelections(selections: Record<string, string>): string {
     .join("|");
   return createHash("sha256").update(sorted).digest("hex").slice(0, 16);
 }
-

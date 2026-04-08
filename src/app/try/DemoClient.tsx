@@ -256,7 +256,7 @@ export function DemoClient({ bare = false, headerContent, subCategories, validSu
             imageUrl = pollData.imageUrl;
             break;
           }
-          if (pollData.status === "not_found") {
+          if (pollData.status === "not_found" || pollData.status === "failed") {
             // Generation failed permanently — stop polling early
             throw new Error("Generation failed — please try again");
           }

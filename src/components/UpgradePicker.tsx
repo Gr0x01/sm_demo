@@ -392,6 +392,13 @@ export function UpgradePicker({
             track("generation_completed", { stepName, cacheHit: false, joinedInProgress: true });
             return;
           }
+          if (checkData.status === "failed") {
+            // Deterministic failure (e.g. BFL content moderation). Sentinel
+            // value triggers the "This combination isn't available" overlay
+            // in StepPhotoGrid. Anything else falls through to the transient
+            // error badge.
+            throw new Error("__UNAVAILABLE_COMBINATION__");
+          }
           if (checkData.status === "not_found") {
             consecutiveFailures = 0;
             exitReason = "not_found";

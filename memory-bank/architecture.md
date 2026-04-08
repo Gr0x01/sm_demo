@@ -148,8 +148,9 @@ Supabase
    - `persist` — upsert cache row replacing `__pending__`, PostHog event
    - **Scoped edit path** (partial cache): `generate` (diff check → scoped-edit-needed) → `scoped-edit` (Klein 9B, ~7-11s) → `persist`. Skipped for appliance add/remove (`-none` option transitions). Scoped edit preserve list includes spatial hints for each preserved surface so Klein 9B knows surface boundaries.
    - Steps pass images via Supabase Storage as JPEG between invocations. Inngest step output size limit prevents b64 transfer.
-   - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
-6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.
+   - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on transient failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
+   - **Deterministic failures** (`BflContentModerationError`): caught, wrapped in `NonRetriableError` (no retries — same inputs will always fail), row updated to `__failed__` instantly so the client sees failure on the next poll instead of waiting for stale cleanup. Diff cache queries exclude `__failed__` rows so they can't serve as scoped-edit parents.
+6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `failed` (deterministic failure — surface unavailable-combination overlay), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.
 7. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs
 8. Retry → deletes cached row via feedback route, then regenerates fresh
 9. "Visualize All" fires up to 20 concurrent

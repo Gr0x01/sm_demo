@@ -198,7 +198,7 @@ async function main() {
       "common-wall-paint": "painted wall surfaces visible above the cabinetry and on surrounding walls",
     };
     if (hasIsland) {
-      spatialHints["kitchen-island-cabinet-color"] = "the center island base cabinet doors and drawer fronts — the freestanding structure in the foreground";
+      spatialHints["kitchen-island-cabinet-color"] = "freestanding base cabinet doors and panels in the center foreground";
     }
     // Allow config to override any hint
     if (config.spatialHints) {

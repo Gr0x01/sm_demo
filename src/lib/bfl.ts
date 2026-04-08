@@ -114,6 +114,7 @@ async function submitImageEdit(
     width,
     height,
     output_format: "jpeg",
+    safety_tolerance: 5, // High permissiveness — inputs are always kitchen/room photos + material swatches (6 requires BFL authorization)
   };
 
   // Disable prompt upsampling when swatch references are present — BFL's

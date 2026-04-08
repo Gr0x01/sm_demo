@@ -542,6 +542,7 @@ export async function findSingleSurfaceDiffMatch(
     .eq("step_photo_id", stepPhotoId)
     .lt("scoped_edit_depth", maxDepth)
     .neq("image_path", "__pending__")
+    .neq("image_path", "__failed__")
     .overlaps("leave_one_out_hashes", leaveOneOutHashes)
     .order("scoped_edit_depth", { ascending: true })
     .limit(1)
@@ -577,6 +578,7 @@ export async function findDemoDiffMatch(
     .eq("selections_json->>_source", "demo")
     .lt("scoped_edit_depth", maxDepth)
     .neq("image_path", "__pending__")
+    .neq("image_path", "__failed__")
     .overlaps("leave_one_out_hashes", leaveOneOutHashes);
 
   if (cacheVersion) {
