@@ -45,11 +45,11 @@ Server (Next.js API routes + Inngest background functions)
   └── Inngest background functions (src/inngest/functions/):
         ├── generate-photo — partial cache fast path OR full pipeline:
         │     Diff cache check is merged into the generate step (saves a step transition).
-        │     Fast path: generate (diff check → scoped-edit-needed) → scoped-edit → persist-scoped (~7-11s)
+        │     Fast path: generate (diff check → scoped-edit-needed) → scoped-edit → save-image → track (~7-11s)
         │       Leave-one-out hash overlap query (GIN-indexed) finds cached image
         │       differing by 1 subcategory. Klein 9B scoped edit changes only that surface.
         │       Depth capped at 3 to bound quality degradation.
-        │     Full pipeline: generate (diff check miss → BFL Max) → refine (conditional) → persist (~35-46s)
+        │     Full pipeline: generate (diff check miss → BFL Max) → refine (conditional) → save-image → track (~35-46s)
         │       BFL Flux 2 Max via async polling API. Hero photo + up to 7 swatch references.
         │       Two-pass split when >7 swatches: structural surfaces first, fixtures second.
         │       heroImagePath passed via event payload (no re-fetch inside step).
@@ -142,11 +142,12 @@ Supabase
 2. Hash includes `_stepPhotoId` + `_model` + `_cacheVersion` for global uniqueness
 3. Cache hit → returns 200 with URL + `cacheHit: true`
 4. Cache miss → claim `__pending__` slot (DB dedup, 5 min stale TTL) → dispatch `photo/generate.requested` to Inngest → return **202** with `selectionsHash`
-5. **Inngest function** (`generate-photo`): up to 3 steps, each gets its own 120s Vercel invocation:
-   - `generate` — parallel fetch optionLookup + hero photo + swatches (pre-warmed cache), build prompt via `buildEditPrompt`, call BFL Flux 2 Max (async: submit → poll → download). Partitions selections into structural/fixture groups; if >7 total swatches, runs two sequential Max passes (structural first, fixtures second, 55s poll timeout each). Upload JPEG to Storage.
-   - `refine` — conditional policy second pass (e.g., slide-in range correction via Max), only when policy requires it
-   - `persist` — upsert cache row replacing `__pending__`, PostHog event
-   - **Scoped edit path** (partial cache): `generate` (diff check → scoped-edit-needed) → `scoped-edit` (Klein 9B, ~7-11s) → `persist`. Skipped for appliance add/remove (`-none` option transitions). Scoped edit preserve list includes spatial hints for each preserved surface so Klein 9B knows surface boundaries.
+5. **Inngest function** (`generate-photo`): each step gets its own 120s Vercel invocation:
+   - `generate` — parallel fetch optionLookup + hero photo + swatches (pre-warmed cache), build prompt via `buildEditPrompt`, call BFL Flux 2 Max (async: submit → poll → download). Partitions selections into structural/fixture groups; if >7 total swatches, runs two sequential Max passes (structural first, fixtures second, 55s poll timeout each). Writes JPEG **directly to `outputPath`** when no refine is planned, otherwise to `mainPassPath` so refine can read it.
+   - `refine` — conditional policy second pass (e.g., slide-in range correction via Max). On success, writes refined image directly to `outputPath` and orphans `mainPassPath` in the background. On failure, promotes `mainPassPath` → `outputPath` via server-side `storage.move()` (no byte transfer).
+   - `save-image` — just the DB upsert replacing `__pending__`. As soon as this step completes, the polling client sees the final image URL. No file ops in this step — the buffer was already written to `outputPath` by the upstream gen step.
+   - `track` — PostHog event (off the critical path; runs after `save-image`).
+   - **Scoped edit path** (partial cache): `generate` (diff check → scoped-edit-needed) → `scoped-edit` (Klein 9B, writes directly to `outputPath`, ~7-11s) → `save-image` → `track`. Skipped for appliance add/remove (`-none` option transitions). Scoped edit preserve list includes spatial hints for each preserved surface so Klein 9B knows surface boundaries.
    - Steps pass images via Supabase Storage as JPEG between invocations. Inngest step output size limit prevents b64 transfer.
    - Retries: 2 (3 total attempts). Concurrency limit: 5. No slot release on transient failure — Inngest retries with `__pending__` intact; 5-min stale cleanup handles permanent failures.
    - **Deterministic failures** (`BflContentModerationError`): caught, wrapped in `NonRetriableError` (no retries — same inputs will always fail), row updated to `__failed__` instantly so the client sees failure on the next poll instead of waiting for stale cleanup. Diff cache queries exclude `__failed__` rows so they can't serve as scoped-edit parents.
@@ -242,12 +243,12 @@ State shape:
 
 **Main pipeline** (buyer pages, `/for/` prospect demos):
 1. Client POST → `/api/generate/photo` (validates ownership, scopes selections, resolves linked options, computes hash, claims slot)
-2. Inngest `generate-photo` function: diff-cache check → `fluxGenerate` → optional second pass (oven correction) → persist
+2. Inngest `generate-photo` function: diff-cache check → `fluxGenerate` → optional second pass (oven correction) → save-image → track
 3. Client polls `/api/generate/photo/check` until ready
 
 **Demo pipeline** (`/try`):
 1. Client POST → `/api/try/generate` (session cap, upload user photo)
-2. Inngest `generate-demo` function: diff-cache check → `fluxGenerate` or `fluxScopedEdit` → persist
+2. Inngest `generate-demo` function: diff-cache check → `fluxGenerate` or `fluxScopedEdit` → save-image → track
 3. Client polls `/api/try/check` until ready
 4. DB-driven options via `getOptionLookup(DEMO_ORG_ID)` + `createSwatchResolver` — unified with `/for/` prospect demos. `demo-options.ts` deleted. `resolveLinkedOptions` called for "Match to Main" island merge. Subcategory slug: `kitchen-island-cabinet-color` (was `island-cabinet-color` in hardcoded era).
 
@@ -415,8 +416,8 @@ src/
 ├── inngest/
 │   ├── client.ts              # Inngest client singleton + typed event schemas
 │   └── functions/
-│       ├── generate-photo.ts  # Background photo generation (3 steps: generate → refine → persist)
-│       └── generate-demo.ts   # Background demo generation (2 steps: generate → persist)
+│       ├── generate-photo.ts  # Background photo generation (generate → refine? → save-image → track)
+│       └── generate-demo.ts   # Background demo generation (generate → scoped-edit? → save-image → track)
 └── types/
     └── index.ts             # Buyer types (slug-based id) + Admin types (UUID id + slug)
 

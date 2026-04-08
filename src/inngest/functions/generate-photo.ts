@@ -71,9 +71,10 @@ export const generatePhoto = inngest.createFunction(
     console.log(`[generate/photo] Source: ${source}`);
     const MAX_SCOPED_EDIT_DEPTH = 3;
     const outputPath = `${orgId}/${selectionsHash}.jpg`;
+    // Intermediate only used when a second-pass refine is planned — main pass
+    // lives here so refine can read it and promote to outputPath on failure.
     const mainPassPath = `${orgId}/${selectionsHash}_main.jpg`;
-    const scopedEditPath = `${orgId}/${selectionsHash}_scoped.jpg`;
-    const refinePath = `${orgId}/${selectionsHash}_refine.jpg`;
+    const willRefine = !!resolvedPolicy.secondPass;
 
     // --- Step 1: Diff cache check + full generation ---
     const generateResult = await step.run("generate", async () => {
@@ -137,10 +138,13 @@ export const generatePhoto = inngest.createFunction(
           model: modelName,
         });
 
-        await uploadIntermediate(supabase, result.imageBuffer, mainPassPath);
+        // When refine is planned, park at mainPassPath so refine can read it.
+        // Otherwise write straight to outputPath so persist has nothing to copy.
+        const destPath = willRefine ? mainPassPath : outputPath;
+        await uploadIntermediate(supabase, result.imageBuffer, destPath);
         lap("generation-done");
         console.log(`[generate/photo] ${result.passes === 1 ? "Single" : "Two"}-pass complete for ${stepPhotoId} in ${result.durationMs}ms`);
-        return { type: "generated" as const, prompt: result.prompt, durationMs: result.durationMs, lastPath: mainPassPath, passes: result.passes };
+        return { type: "generated" as const, prompt: result.prompt, durationMs: result.durationMs, lastPath: destPath, passes: result.passes };
       } catch (err) {
         await captureAiError(sessionId, {
           provider: "bfl",
@@ -163,13 +167,15 @@ export const generatePhoto = inngest.createFunction(
     });
 
     // --- Tracking vars ---
+    // After all image-producing steps run, the final image always lives at
+    // outputPath — scoped edit, non-refine full gen, and refine (success or
+    // failure fallback) all converge there. No currentPath juggling needed.
     let isScopedEdit = false;
     let scopedEditDepth = 0;
     let scopedEditSurface: string | undefined;
     let scopedEditModelUsed: string = SCOPED_EDIT_MODEL;
     let finalPrompt: string;
     let totalDurationMs: number;
-    let currentPath: string;
     let totalPasses: number;
 
     // --- Scoped edit path (diff cache hit) ---
@@ -201,7 +207,8 @@ export const generatePhoto = inngest.createFunction(
             swatchResolver: createSwatchResolver(supabase),
           });
 
-          await uploadIntermediate(supabase, result.imageBuffer, scopedEditPath);
+          // Scoped edits never refine — write directly to the final path.
+          await uploadIntermediate(supabase, result.imageBuffer, outputPath);
           console.log(`[generate/photo] Scoped edit for ${stepPhotoId}: ${changedSubcategoryId} with ${result.model} (depth ${depth} → ${depth + 1}) in ${result.durationMs}ms`);
           return { prompt: result.prompt, durationMs: result.durationMs, model: result.model };
         } catch (err) {
@@ -224,14 +231,12 @@ export const generatePhoto = inngest.createFunction(
         }
       });
 
-      currentPath = scopedEditPath;
       finalPrompt = scopedResult.prompt;
       totalDurationMs = scopedResult.durationMs;
       scopedEditModelUsed = scopedResult.model;
     } else {
       finalPrompt = generateResult.prompt;
       totalDurationMs = generateResult.durationMs;
-      currentPath = generateResult.lastPath;
       totalPasses = generateResult.passes;
     }
 
@@ -239,7 +244,7 @@ export const generatePhoto = inngest.createFunction(
     if (!isScopedEdit && resolvedPolicy.secondPass) {
       const secondPass = await step.run("refine", async () => {
         const supabase = getServiceClient();
-        const prevBuffer = await downloadIntermediate(supabase, currentPath);
+        const prevBuffer = await downloadIntermediate(supabase, mainPassPath);
 
         console.log(`[generate/photo] Running second pass (${resolvedPolicy.secondPass!.reason}) for ${stepPhotoId}`);
 
@@ -251,34 +256,42 @@ export const generatePhoto = inngest.createFunction(
             inputImage: prevBuffer,
           });
 
-          await uploadIntermediate(supabase, result.imageBuffer, refinePath);
+          // Success — refined image becomes the final output. Orphan the
+          // mainPass intermediate in the background (not load-bearing).
+          await uploadIntermediate(supabase, result.imageBuffer, outputPath);
+          supabase.storage.from("generated-images").remove([mainPassPath]).catch(() => {});
           const durationMs = Math.round(performance.now() - genStart);
           console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { durationMs, success: true as const, path: refinePath };
+          return { durationMs, success: true as const };
         } catch (err) {
+          // Refine failed — promote main pass to final output with a
+          // server-side move (no byte transfer).
+          const { error: moveErr } = await supabase.storage
+            .from("generated-images")
+            .move(mainPassPath, outputPath);
+          if (moveErr) {
+            console.error(`[generate/photo] Refine fallback move failed for ${stepPhotoId}:`, moveErr);
+          }
           const durationMs = Math.round(performance.now() - genStart);
-          console.warn(`[generate/photo] Second pass failed for ${stepPhotoId}; keeping previous output.`, err);
+          console.warn(`[generate/photo] Second pass failed for ${stepPhotoId}; kept main pass.`, err);
           return { durationMs, success: false as const };
         }
       });
 
       totalDurationMs += secondPass.durationMs;
       if (secondPass.success) {
-        currentPath = secondPass.path;
         finalPrompt = `${finalPrompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
         totalPasses += 1;
       }
     }
 
-    // --- Step 3: Persist ---
-    await step.run("persist", async () => {
+    // --- Step 3a: Save image row — unblocks the client ASAP ---
+    // The image buffer is already at outputPath (written by the generate,
+    // scoped-edit, or refine step). Flipping the DB row is the only thing
+    // standing between "done" and the user seeing the image, so it runs
+    // in its own step ahead of analytics tracking.
+    await step.run("save-image", async () => {
       const supabase = getServiceClient();
-
-      if (currentPath !== outputPath) {
-        const finalBuffer = await downloadIntermediate(supabase, currentPath);
-        await uploadIntermediate(supabase, finalBuffer, outputPath);
-      }
-
       const { error: upsertError } = await supabase
         .from("generated_images")
         .upsert({
@@ -297,7 +310,10 @@ export const generatePhoto = inngest.createFunction(
         }, { onConflict: "selections_hash" });
 
       if (upsertError) console.error("[generate/photo] DB upsert failed:", upsertError);
+    });
 
+    // --- Step 3b: PostHog tracking (off the critical path) ---
+    await step.run("track", async () => {
       await captureAiEvent(sessionId, {
         provider: "bfl",
         model: isScopedEdit ? scopedEditModelUsed : modelName,

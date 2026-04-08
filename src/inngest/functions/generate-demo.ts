@@ -201,8 +201,8 @@ export const generateDemo = inngest.createFunction(
         }
       });
 
-      // Persist scoped edit
-      await step.run("persist-scoped", async () => {
+      // Save image row first — unblocks the client ASAP, before PostHog flush.
+      await step.run("save-image-scoped", async () => {
         const supabase = getServiceClient();
 
         const { error: upsertError } = await supabase.from("generated_images").upsert({
@@ -224,7 +224,10 @@ export const generateDemo = inngest.createFunction(
         }, { onConflict: "selections_hash" });
 
         if (upsertError) console.error("[generate/demo] DB upsert failed:", upsertError);
+      });
 
+      // PostHog tracking (off the critical path)
+      await step.run("track-scoped", async () => {
         await captureAiEvent("anonymous", {
           provider: "bfl",
           model: scopedResult.model,
@@ -241,9 +244,9 @@ export const generateDemo = inngest.createFunction(
       return;
     }
 
-    // --- Persist full generation ---
+    // --- Save image row — unblocks the client ASAP ---
     const result = generateResult;
-    await step.run("persist", async () => {
+    await step.run("save-image", async () => {
       const supabase = getServiceClient();
 
       const { error: upsertError } = await supabase.from("generated_images").upsert({
@@ -265,7 +268,10 @@ export const generateDemo = inngest.createFunction(
       }, { onConflict: "selections_hash" });
 
       if (upsertError) console.error("[generate/demo] DB upsert failed:", upsertError);
+    });
 
+    // --- PostHog tracking (off the critical path) ---
+    await step.run("track", async () => {
       await captureAiEvent("anonymous", {
         provider: "bfl",
         model: IMAGE_MODEL,
