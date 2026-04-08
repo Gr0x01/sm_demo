@@ -28,36 +28,32 @@ Podcast: Builder Marketing Podcast Ep 312, "Embracing a Retail Mindset in Home B
 
 ---
 
-## Week 2 (Apr 7-9) — PLANNED: Houzz Buyer Quotes
+## Week 2 (Apr 8) — POSTED
 
-**Angle**: Real quotes from buyers on Houzz forums about the design center experience. Let buyers' own words tell the story. No pitch, no commentary needed.
+**Angle**: Real buyer quotes from Houzz forums. Personal framing tied to Rashaad's own home buying experience. No pitch, no editorial close.
 
-**Raw material (from Houzz forums):**
+**Final post:**
+```
+I've been digging around online trying to figure out if other folks have had similar experiences to me buying a house. Yup:
 
-From "Overwhelmed by building choices" thread:
-- "I do not visualize well and find myself relying on recommendations of the 24 year old designer"
-- "I can't really consider how lighting will affect floor color or paint color when I don't even have a shell of a room yet"
-- "I am second guessing a lot of the choices"
-- "I am becoming depressed and all of the excitement is gone"
-- "I just wish we had never even started the process"
-- "I was so excited at the beginning of this but it is starting to feel that this house is just not my style"
-Source: houzz.com/discussions/4117647/overwhelmed-by-building-choices
+"I do not visualize well and find myself relying on recommendations of the 24 year old designer."
 
-From "Tips for design center appointment" thread:
-- "My price list and options I chose came back wrong 5 times....yes, I said 5 times"
-- "The visit to the design center tacked on another $30,000 just for upgraded cabinets"
-- "we had to make 3 different trips to the Design Center to correct errors, re-choose items that had been suddenly discontinued"
-- "If I frightened you, I apologize. But really, document everything, photograph everything and record the visit if you can"
-Source: houzz.com/discussions/1030734/tips-for-design-center-appointment
+"I can't really consider how lighting will affect floor color or paint color when I don't even have a shell of a room yet."
 
-From M/I Homes' own blog:
-- Described their design center process as "a test of your marriage, an immense feeling of being overwhelmed"
-- Appointment took approximately 5 hours
-Source: mihomes.com/blog/cincinnati/building-our-home-the-overwhelming-trip-to-the-design-center
+"I was so excited at the beginning of this but it is starting to feel that this house is just not my style."
 
-**Draft direction**: Post the quotes with minimal framing. Something like "These are real quotes from buyers about picking upgrades for their new home. This is supposed to be the exciting part." Let the comments do the work.
+"I am becoming depressed and all of the excitement is gone."
 
-**Status**: Needs final copy. Draft next week.
+"If I frightened you, I apologize. But really, document everything, photograph everything and record the visit if you can."
+```
+
+**Sources used:**
+- houzz.com/discussions/4117647/overwhelmed-by-building-choices
+- houzz.com/discussions/1030734/tips-for-design-center-appointment
+
+**Unused material (M/I Homes blog, available for future posts):**
+- M/I described their own design center as "a test of your marriage, an immense feeling of being overwhelmed" (5-hour appointment)
+- Source: mihomes.com/blog/cincinnati/building-our-home-the-overwhelming-trip-to-the-design-center
 
 ---
 
