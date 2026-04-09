@@ -168,6 +168,8 @@ describe("POST /api/generate/photo", () => {
     expect(sentEvent.data.orgId).toBe("org-001");
     expect(sentEvent.data.stepPhotoId).toBe("photo-kitchen-001");
     expect(sentEvent.data.selectionsHash).toBe(body.selectionsHash);
+    // Default path — retry must be false so Inngest runs the partial-cache diff match
+    expect(sentEvent.data.retry).toBe(false);
   });
 
   it("dispatches scoped selections (out-of-scope selections removed)", async () => {
@@ -234,5 +236,11 @@ describe("POST /api/generate/photo", () => {
 
     await POST(makeRequest({ ...validBody, retry: true }));
     expect(deleteFn).toHaveBeenCalled();
+
+    // Retry must flow through to Inngest so the function skips the diff match
+    // and forces full Flux 2 Max generation.
+    expect(mockInngestSend).toHaveBeenCalledOnce();
+    const sentEvent = mockInngestSend.mock.calls[0][0] as { name: string; data: Record<string, unknown> };
+    expect(sentEvent.data.retry).toBe(true);
   });
 });

@@ -131,13 +131,17 @@ export async function POST(request: Request) {
       leaveOneOutHashes,
     } = deriveGenerationContext(aiConfig, mergedSelections, optionLookup, { orgSlug, floorplanSlug, stepPhotoId }, dbPolicy);
 
-    // --- Retry: delete existing cached image so we regenerate fresh ---
+    // --- Retry: delete any row for this hash so we regenerate fresh ---
+    // Includes __pending__ rows (cancel-in-place): if a normal gen is in
+    // flight, the retry would otherwise hit claimGenerationSlot → 429 → poll
+    // → receive the in-flight scoped-edit result, silently breaking the
+    // "retry always = Max" guarantee. The abandoned Inngest run's upsert
+    // still lands last and is still a valid image.
     if (retry) {
       await supabase
         .from("generated_images")
         .delete()
-        .eq("selections_hash", selectionsHash)
-        .neq("image_path", "__pending__");
+        .eq("selections_hash", selectionsHash);
     }
 
     // --- Cache check (skip __pending__ placeholder rows) ---
@@ -201,6 +205,7 @@ export async function POST(request: Request) {
           selectionsJsonForClaim: hashInputs,
           leaveOneOutHashes,
           heroImagePath: aiConfig.photo.imagePath,
+          retry: !!retry,
         },
       });
     } catch (sendError) {

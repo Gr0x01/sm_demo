@@ -66,6 +66,7 @@ export const generatePhoto = inngest.createFunction(
       leaveOneOutHashes,
       heroImagePath,
       source,
+      retry,
     } = event.data;
 
     console.log(`[generate/photo] Source: ${source}`);
@@ -81,7 +82,14 @@ export const generatePhoto = inngest.createFunction(
       const t0 = performance.now();
       const lap = (label: string) => console.log(`[generate/photo][timing] ${label}: ${Math.round(performance.now() - t0)}ms`);
 
-      const diffMatch = await findSingleSurfaceDiffMatch(stepPhotoId, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH);
+      // Retry forces full Flux 2 Max generation — skip the partial-cache
+      // diff match so we never land on a scoped edit (Flex/Klein/Pro).
+      // NOTE: we still write leaveOneOutHashes on the resulting row so the
+      // new Max image can serve as a partial-cache parent for future
+      // *different-selection* generations. Don't "clean this up."
+      const diffMatch = retry
+        ? null
+        : await findSingleSurfaceDiffMatch(stepPhotoId, leaveOneOutHashes, MAX_SCOPED_EDIT_DEPTH);
       lap("diff-check");
       if (diffMatch) {
         const changedSub = identifyChangedSubcategory(diffMatch.selectionsJson, scopedSelections);

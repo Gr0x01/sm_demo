@@ -23,6 +23,8 @@ export interface PhotoGenerateRequestedData {
   selectionsJsonForClaim: Record<string, unknown>;
   leaveOneOutHashes: string[];
   heroImagePath: string;
+  /** Buyer-initiated retry — forces full Flux 2 Max gen (skips partial-cache scoped edit path). */
+  retry?: boolean;
 }
 
 export interface DemoGenerateRequestedData {
