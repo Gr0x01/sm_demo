@@ -9,25 +9,23 @@
   "spatialHint": "Large center island dominates the middle of the frame. CRITICAL: The island countertop is a WATERFALL design — one continuous slab of stone that flows seamlessly from the countertop surface over the edges and down the left and near-facing sides to the floor. There is NO seam, NO break, NO separate panel. The veining pattern and material continue uninterrupted from the top surface over the edge and down the sides. When changing countertop material, treat the top and sides as ONE continuous surface with consistent pattern flow. Back wall: range hood flanked by upper and lower greige shaker cabinets, white subway backsplash. Left of center: walk-in pantry with glass French doors, double wall ovens to its left. Right wall: French-door stainless refrigerator flanked by greige cabinets. Three brass dome pendants hang in a row above the island. Gold bar-pull hardware on all cabinet doors and drawers. Island has undermount sink with gold faucet. Four upholstered barstools line the near side of the island. Light oak LVP flooring visible around island and under barstools. Vaulted white ceiling with recessed can lights.",
   "subcategoryIds": [
     "kitchen-cabinet-color",
-    "kitchen-island-cabinet-color",
     "counter-top",
     "backsplash",
     "main-area-flooring-color",
     "common-wall-paint"
   ],
   "sections": [
-    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"] },
+    { "title": "Cabinets", "subcategory_ids": ["kitchen-cabinet-color"] },
     { "title": "Countertops", "subcategory_ids": ["counter-top"] },
     { "title": "Backsplash & Flooring", "subcategory_ids": ["backsplash", "main-area-flooring-color"] },
     { "title": "Paint", "subcategory_ids": ["common-wall-paint"] }
   ],
   "spatialHints": {
-    "backsplash": "subway tile on the perimeter walls between upper and lower cabinets — back wall behind the range hood area and continuing along adjacent walls",
-    "counter-top": "all countertop surfaces on perimeter and island. WATERFALL EDGE on the island — the stone slab wraps over the near-facing edge and down the left side to the floor as one continuous surface. Apply the same material to the top and the waterfall sides.",
+    "backsplash": "wall areas with upper cabinets above and countertop below along the back wall, plus the wall behind and above the cooktop up to the chimney hood",
+    "counter-top": "horizontal slab surfaces resting on the perimeter base cabinets, plus the top slab of the freestanding center structure and the short left end of that center structure where the slab wraps from the top down to the floor as a continuous waterfall panel",
     "common-wall-paint": "wall surfaces above the upper cabinets and on the vaulted ceiling area",
-    "kitchen-cabinet-color": "upper wall cabinets, lower base cabinets, and cabinets flanking the range hood and refrigerator — every perimeter cabinet door and drawer front on the left and right walls",
-    "main-area-flooring-color": "LVP plank flooring visible around the island base and between cabinets",
-    "kitchen-island-cabinet-color": "the large center island base cabinet doors and drawer fronts — the freestanding structure with bar stools in the foreground"
+    "kitchen-cabinet-color": "upper and lower cabinet doors and drawer fronts along the left wall, the back wall on both sides of the range hood, and the right wall on both sides of the refrigerator",
+    "main-area-flooring-color": "LVP plank flooring visible around the island base and between cabinets"
   },
   "insights": [
     { "label": "Builders using visualization see this in option sales", "value": "+20–40%" },
@@ -40,7 +38,6 @@
       "label": "Standard",
       "selections": {
         "kitchen-cabinet-color": "kitchen-cab-color-driftwood",
-        "kitchen-island-cabinet-color": "island-color-match",
         "counter-top": "ct-granite-steel-grey",
         "backsplash": "bs-baker-4x16-white-gloss",
         "main-area-flooring-color": "floor-color-polaris-toasted-taupe",
@@ -51,7 +48,6 @@
       "label": "Mid-Range",
       "selections": {
         "kitchen-cabinet-color": "kitchen-cab-color-white",
-        "kitchen-island-cabinet-color": "island-color-onyx",
         "counter-top": "ct-quartz-lace-white",
         "backsplash": "bs-baker-4x16-carbon",
         "main-area-flooring-color": "floor-color-polaris-wild-dunes",
@@ -62,7 +58,6 @@
       "label": "Premium",
       "selections": {
         "kitchen-cabinet-color": "kitchen-cab-color-admiral-blue",
-        "kitchen-island-cabinet-color": "island-color-white",
         "counter-top": "ct-quartz-calacatta-venice",
         "backsplash": "bs-baker-herringbone-white",
         "main-area-flooring-color": "floor-color-delray-lowtide",

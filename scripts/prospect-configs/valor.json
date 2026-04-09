@@ -1,7 +1,7 @@
 {
   "slug": "valor",
   "name": "Valor Communities — Rosemary III",
-  "heroHeadline": "Your Rosemary III kitchen, their selections.",
+  "heroHeadline": "Your Rosemary III, their selections.",
   "heroBody": "Sample finishes on your Rosemary III kitchen. Pick a swatch and the room follows. Your actual catalog and pricing slot right in.",
   "kitchenPhoto": "/Users/rb/Documents/coding_projects/sm_demo/scripts/prospect-photos/valor-rosemary-iii-kitchen.jpg",
   "exteriorPhoto": "/Users/rb/Documents/coding_projects/sm_demo/temp/Valor Communities/RA_Rosemary-III-Rendering-5M-Primed-Painted_Alabama_North_05.webp",
@@ -23,7 +23,7 @@
     "kitchen-cabinet-color": "all perimeter cabinet doors and drawers — upper and lower along every wall",
     "kitchen-island-cabinet-color": "freestanding base cabinet doors and panels in the center foreground",
     "counter-top": "all horizontal countertop surfaces — perimeter and center workspace",
-    "backsplash": "exposed wall strips between countertop and cabinetry — cooking alcove, coffee niche, and beside the refrigerator",
+    "backsplash": "wall areas under the upper cabinets and above the countertop — left of, behind, and right of the range",
     "main-area-flooring-color": "all visible flooring"
   },
   "insights": [

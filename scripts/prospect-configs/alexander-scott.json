@@ -23,7 +23,7 @@
     "kitchen-cabinet-color": "all perimeter cabinet doors and drawers — upper and lower along every wall, distinct from the freestanding leg-base structure in the center foreground",
     "kitchen-island-cabinet-color": "the freestanding leg-base structure in the center foreground — side panels and four vertical legs, distinct from the perimeter wall cabinets",
     "counter-top": "horizontal slab surfaces resting on top of the base cabinets",
-    "backsplash": "backsplash wall between the upper cabinets and the countertop, continuing behind and above the range hood",
+    "backsplash": "wall areas with both upper cabinets above and countertop below, plus the wall behind and above the cooktop up to the chimney hood",
     "main-area-flooring-color": "all visible flooring"
   },
   "insights": [
