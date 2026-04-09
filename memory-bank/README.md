@@ -79,6 +79,7 @@ INNGEST_SIGNING_KEY=         # Inngest (auto-injected on Vercel)
 | `phases/completed.md` | Need history of what was built |
 | `architecture.md` | System design, API patterns, admin, generation pipeline, business models |
 | `generation/reliability-playbook.md` | Fixing image-generation failures (prompt/mask/cache tactics) |
+| `generation/shaw-swatch-sourcing.md` | Shaw Industries CDN pattern, SM→Shaw line mapping, audit + upload tooling |
 | `VISION.md` | Business strategy, pricing, GTM, competitive landscape |
 | `decisions.md` | Understanding "why" behind choices |
 | `seo-strategy.md` | SEO keyword research, content strategy |
