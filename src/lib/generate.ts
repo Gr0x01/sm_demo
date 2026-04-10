@@ -113,7 +113,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.13";
+export const GENERATION_CACHE_VERSION = "v2.12";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -224,23 +224,8 @@ export async function buildEditPrompt(
           const paintHex = isPaint ? option.swatchColor?.trim() : null;
           const hexPart = paintHex ? `, exact color ${paintHex}` : "";
           const dimPart = dims ? ` (${dims})` : "";
-          // Cabinet subject: concrete noun phrase derived from subcategory slug.
-          // The template is a state declaration ("The X are now shaker cabinets
-          // in color Y"), not an imperative. Subject identity does the
-          // preservation work implicitly — if the cabinets ARE shaker, they
-          // can't have drifted to a different door profile. "shaker" is
-          // hardcoded because every builder we work with uses shaker as the
-          // standard door style. Future: make this data-driven per step_photo.
-          const cabinetSubjectMap: Record<string, string> = {
-            "kitchen-cabinet-color": "perimeter kitchen cabinets",
-            "kitchen-island-cabinet-color": "kitchen island cabinets",
-            "primary-bath-cabinet-color": "primary bathroom vanity cabinets",
-            "secondary-bath-cabinet-color": "secondary bathroom vanity cabinets",
-          };
-          const cabinetSubject = cabinetSubjectMap[subId]
-            || subId.replace(/-cabinet-color$/, " cabinets").replace(/-/g, " ");
           const line = isCabinetPaint
-            ? `The ${cabinetSubject} are now shaker cabinets in the color shown in image ${imageIndex}${paintHex ? `, color ${paintHex}` : ""}.`
+            ? `Recolor ${surface} to the color in image ${imageIndex}${hexPart}. A color change only — door profile, shaker rails, stiles, panel recesses, and hardware remain as they appear in image 1. The stainless steel refrigerator, range, microwave, oven, vent hood, sink, and faucet remain as they appear in image 1.`
             : `Apply image ${imageIndex} to ${surface}${dimPart}${hexPart}.`;
           lines.push(line);
           imageIndex++;
@@ -334,17 +319,8 @@ export async function buildScopedEditPrompt(
         const paintHex = isPaint ? option.swatchColor?.trim() : null;
         const hexPart = paintHex ? `, exact color ${paintHex}` : "";
         const dimPart = dims ? ` (${dims})` : "";
-        // Cabinet subject: see buildEditPrompt for rationale. Same mapping.
-        const cabinetSubjectMap: Record<string, string> = {
-          "kitchen-cabinet-color": "perimeter kitchen cabinets",
-          "kitchen-island-cabinet-color": "kitchen island cabinets",
-          "primary-bath-cabinet-color": "primary bathroom vanity cabinets",
-          "secondary-bath-cabinet-color": "secondary bathroom vanity cabinets",
-        };
-        const cabinetSubject = cabinetSubjectMap[changedSubcategoryId]
-          || changedSubcategoryId.replace(/-cabinet-color$/, " cabinets").replace(/-/g, " ");
         const prompt = isCabinetPaint
-          ? `The ${cabinetSubject} are now shaker cabinets in the color shown in image 2${paintHex ? `, color ${paintHex}` : ""}. Everything else in the room is unchanged from image 1.`
+          ? `Recolor ${surface} to the color in image 2${hexPart}. A color change only — door profile, shaker rails, stiles, panel recesses, and hardware remain as they appear in image 1. The stainless steel refrigerator, range, microwave, oven, vent hood, sink, and faucet remain as they appear in image 1.`
           : `Apply image 2 to ${surface}${dimPart}${hexPart}. Match image 2 exactly. Preserve natural sunlight.`;
         return { prompt, swatches };
       }
