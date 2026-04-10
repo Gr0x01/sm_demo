@@ -113,7 +113,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.9";
+export const GENERATION_CACHE_VERSION = "v2.11";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -200,13 +200,33 @@ export async function buildEditPrompt(
         const resolved = await resolveSwatchBuffer(option.swatchUrl);
         if (resolved) {
           swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: subId });
-          // Paint: hex alongside swatch for precision under varied lighting.
-          // Covers wall paint subcategories AND painted cabinet options (not stains).
-          const isPaint = subId.includes("paint") || option.promptDescriptor?.toLowerCase().includes("painted");
+          // Cabinet paint is a recolor of existing door geometry, not a material
+          // replacement. "Apply image N to X" + "match exactly" lets Flux drift
+          // door profile / rails / hardware because a flat color swatch has no
+          // geometric anchor. Recolor verb + positive preservation clause pins
+          // the structure.
+          //
+          // Detection is structural (by subcategory slug), NOT by descriptor
+          // text — SM's cabinet options have NULL prompt_descriptor, and
+          // relying on the descriptor text would leave SM on the broken
+          // template. Every *-cabinet-color subcategory is paint or stain by
+          // construction; we carve stains out because stain swatches carry
+          // grain texture and the material-transfer template suits them.
+          const isCabinetColorSub = subId.includes("cabinet-color");
+          const isStain = option.name?.toLowerCase().includes("stain")
+            || option.promptDescriptor?.toLowerCase().includes("stain");
+          const isCabinetPaint = isCabinetColorSub && !isStain;
+          // isPaint still covers wall paint for the hex append; cabinet paint
+          // is additive so SM cabinets get hex even without a descriptor.
+          const isPaint = subId.includes("paint")
+            || option.promptDescriptor?.toLowerCase().includes("painted")
+            || isCabinetPaint;
           const paintHex = isPaint ? option.swatchColor?.trim() : null;
           const hexPart = paintHex ? `, exact color ${paintHex}` : "";
           const dimPart = dims ? ` (${dims})` : "";
-          const line = `Apply image ${imageIndex} to ${surface}${dimPart}${hexPart}.`;
+          const line = isCabinetPaint
+            ? `Recolor ${surface} to the color in image ${imageIndex}${hexPart}. A color change only — door profile, shaker rails, stiles, panel recesses, grain, and hardware remain as they appear in image 1.`
+            : `Apply image ${imageIndex} to ${surface}${dimPart}${hexPart}.`;
           lines.push(line);
           imageIndex++;
           continue;
@@ -285,12 +305,23 @@ export async function buildScopedEditPrompt(
       const resolved = await resolveSwatchBuffer(option.swatchUrl);
       if (resolved) {
         swatches.push({ label: subCategory.name, buffer: resolved.buffer, mediaType: resolved.mediaType, subcategoryId: changedSubcategoryId });
-        // Paint: add hex for precision (swatch alone renders too dark under varied lighting)
-        const isPaint = changedSubcategoryId.includes("paint") || option.promptDescriptor?.toLowerCase().includes("painted");
+        // Cabinet paint: recolor, not material replacement. Detection is by
+        // subcategory slug (not descriptor text) so SM cabinets — which have
+        // NULL prompt_descriptor — get the same fix as Demo cabinets.
+        // See buildEditPrompt for the full rationale.
+        const isCabinetColorSub = changedSubcategoryId.includes("cabinet-color");
+        const isStain = option.name?.toLowerCase().includes("stain")
+          || option.promptDescriptor?.toLowerCase().includes("stain");
+        const isCabinetPaint = isCabinetColorSub && !isStain;
+        const isPaint = changedSubcategoryId.includes("paint")
+          || option.promptDescriptor?.toLowerCase().includes("painted")
+          || isCabinetPaint;
         const paintHex = isPaint ? option.swatchColor?.trim() : null;
         const hexPart = paintHex ? `, exact color ${paintHex}` : "";
         const dimPart = dims ? ` (${dims})` : "";
-        const prompt = `Apply image 2 to ${surface}${dimPart}${hexPart}. Match image 2 exactly. Preserve natural sunlight.`;
+        const prompt = isCabinetPaint
+          ? `Recolor ${surface} to the color in image 2${hexPart}. A color change only — door style and hardware remain as they appear in image 1.`
+          : `Apply image 2 to ${surface}${dimPart}${hexPart}. Match image 2 exactly. Preserve natural sunlight.`;
         return { prompt, swatches };
       }
     } catch { /* fallback below */ }

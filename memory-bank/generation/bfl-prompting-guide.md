@@ -257,6 +257,62 @@ BFL interprets spatial hints literally. Critical lessons:
 
 6. **Front-load the important part.** "upper and lower" at the end of a hint gets lowest attention. Lead with the part BFL tends to skip: `"upper wall cabinets, lower base cabinets..."` not `"cabinet doors along the perimeter walls, upper and lower"`.
 
+### Paint vs Material: Cabinet Recolor Pattern (Learned 2026-04-10)
+
+The "Apply image N to X. Match image 2 exactly" template is a **material transfer** instruction. It works for tile, stone, LVP, and stain because the swatch carries real installed appearance — tile pattern, stone veining, wood grain. Telling Flux to "match exactly" reproduces the texture onto the surface and the existing geometry (cabinet doors, walls, etc.) is preserved as a happy side effect because the swatch contains no competing geometry.
+
+**Paint swatches are the degenerate case.** A paint swatch is a flat color field with no geometry, no grain, no hardware. When you tell Flux "match image 2 exactly" on a paint swatch applied to a cabinet, the only thing image 2 has is a color — so Flux fills in "match" semantics with everything else it's free to reinterpret: door profile, shaker rails/stiles, panel recesses, hardware, grain. Every click produces visibly different cabinet styling run-to-run, even when only the color swatch changed. This is the "cabinet design drift" failure mode we observed on Valor and then on SM.
+
+**The fix is a different operation entirely: Recolor, not Apply.** Paint is a recolor of existing door geometry. The verb has to name that operation explicitly, and the reference image has to be framed as a color source, not a surface to copy.
+
+**Pattern (full gen):**
+```
+Recolor ${surface} to the color in image ${imageIndex}, exact color ${hex}. A color change only — door profile, shaker rails, stiles, panel recesses, grain, and hardware remain as they appear in image 1.
+```
+
+**Pattern (scoped edit — Klein/Pro/Flex):**
+```
+Recolor ${surface} to the color in image 2, exact color ${hex}. A color change only — door style and hardware remain as they appear in image 1.
+```
+
+### Why this wording specifically
+
+- **"Recolor"** — load-bearing. Flux associates "recolor" with hue-shift operations from photo editing contexts. Alternatives considered and rejected: Tint (suggests semi-transparent overlay), Repaint (triggers new brushstroke texture on doors that weren't previously painted), "Shift the color of" (flabby).
+- **"A color change only —"** — positive type declaration. Reframes the instruction from "do this AND preserve that" to "the operation itself is scoped to color." Flux attends to the noun phrase "a color change" and that phrase itself bounds the edit. Reads as a type declaration, not a prohibition. **This is the positive construction for preservation when "Keep" is forbidden.**
+- **"remain as they appear in image 1"** — positional anchor back to the base photo. Base photo is image 1 in BFL numbering; swatches are image 2+. Making the anchor explicit is stronger than any preservation verb because it names which image owns the geometry. "Remain" describes a state, not an action Flux has to perform.
+- **Full gen lists more features** (profile, rails, stiles, panel recesses, grain, hardware) because Max has more resynthesis leeway across 4-5 surface lines. Scoped edit lists fewer (style, hardware) because Klein/Pro preserve by default and the enumeration is belt-and-suspenders there.
+- **Both use the same verb.** Shared verb matters for cache signature stability and for the mental model "cabinet paint is always a recolor across the pipeline." Don't fork.
+
+### Detection: structural, not descriptor-based
+
+The detection gate for cabinet paint must key on the **subcategory slug**, not on the `prompt_descriptor` text field. Every `*-cabinet-color` subcategory is paint or stain by construction. Carve out stains (which stay on the material-transfer template — stain swatches carry wood species + hue + grain, which is a legitimate material transfer):
+
+```ts
+const isCabinetColorSub = subId.includes("cabinet-color");
+const isStain = option.name?.toLowerCase().includes("stain")
+  || option.promptDescriptor?.toLowerCase().includes("stain");
+const isCabinetPaint = isCabinetColorSub && !isStain;
+```
+
+**Do not key on `prompt_descriptor.includes("painted")`.** SM's entire cabinet catalog has NULL descriptors, so descriptor-based detection leaves SM silently on the broken template. Structural detection catches every org including future onboarded builders automatically.
+
+### What NOT to do in cabinet-paint prompts
+
+- **Do not use "Keep"** as a preservation verb. Forbidden (see `reference_bfl_forbidden_words.md`).
+- **Do not use "Not" or "NOT X" clauses.** Forbidden.
+- **Do not enumerate what's "protected" with negatives** ("without changing the hardware", "don't touch the grain"). Negative clauses draw Flux's attention to the thing you're protecting.
+- **Do not add "Preserve natural sunlight"** as a trailer on cabinet-paint prompts. Dead weight — Flux 2 preserves scene lighting by default in editing mode. The trailer dilutes the "color change only" framing.
+- **Do not add this branch to non-cabinet surfaces.** Tile, stone, LVP, wall paint all keep the material-transfer template — "Apply image N to X. Match image 2 exactly." serves them correctly. The recolor branch is cabinet-specific and applying it elsewhere would hurt surfaces whose swatches legitimately carry geometry.
+- **Do not route cabinet paint to Klein 9B.** Klein's pattern fidelity strength (good for hex mosaic backsplash) is exactly wrong for paint — it's more willing to let a flat swatch drive surface detail. Cabinet paint stays on Pro (default). If Pro drifts, escalate to Flex at ~30 steps, not Klein.
+
+### Stain drift (open question — not yet observed)
+
+Stain options stay on the material-transfer template because stain swatches carry wood species + hue + grain texture — genuine material, not a degenerate case. If stain drift shows up later, the fix is NOT to reuse the cabinet-paint recolor template. Stain would need its own pattern, likely something like:
+```
+Apply the wood species and stain hue from image N to ${surface}. Grain direction and door profile remain as they appear in image 1.
+```
+The grain-direction clause is the stain-specific concern — stain swatches show horizontal grain, but doors often have vertical grain on stiles and horizontal on rails, and Flux can rotate grain wrong. File this for future work; don't preemptively rewrite.
+
 ### BFL Limitations (Confirmed 2026-04-05)
 
 1. **No mask support in Flux 2.** Image editing mode is instruction-based only. `input_mask` is NOT a supported parameter. FLUX.1 Fill has masks but doesn't support reference images — unusable for swatch-based editing.
