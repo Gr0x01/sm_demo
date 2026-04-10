@@ -113,7 +113,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.12";
+export const GENERATION_CACHE_VERSION = "v2.11";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -225,7 +225,7 @@ export async function buildEditPrompt(
           const hexPart = paintHex ? `, exact color ${paintHex}` : "";
           const dimPart = dims ? ` (${dims})` : "";
           const line = isCabinetPaint
-            ? `Recolor ${surface} to the color in image ${imageIndex}${hexPart}. A color change only — door profile, shaker rails, stiles, panel recesses, and hardware remain as they appear in image 1. The stainless steel refrigerator, range, microwave, oven, vent hood, sink, and faucet remain as they appear in image 1.`
+            ? `Recolor ${surface} to the color in image ${imageIndex}${hexPart}. A color change only — door profile, shaker rails, stiles, panel recesses, grain, and hardware remain as they appear in image 1.`
             : `Apply image ${imageIndex} to ${surface}${dimPart}${hexPart}.`;
           lines.push(line);
           imageIndex++;
@@ -320,7 +320,7 @@ export async function buildScopedEditPrompt(
         const hexPart = paintHex ? `, exact color ${paintHex}` : "";
         const dimPart = dims ? ` (${dims})` : "";
         const prompt = isCabinetPaint
-          ? `Recolor ${surface} to the color in image 2${hexPart}. A color change only — door profile, shaker rails, stiles, panel recesses, and hardware remain as they appear in image 1. The stainless steel refrigerator, range, microwave, oven, vent hood, sink, and faucet remain as they appear in image 1.`
+          ? `Recolor ${surface} to the color in image 2${hexPart}. A color change only — door style and hardware remain as they appear in image 1.`
           : `Apply image 2 to ${surface}${dimPart}${hexPart}. Match image 2 exactly. Preserve natural sunlight.`;
         return { prompt, swatches };
       }
