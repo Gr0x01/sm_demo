@@ -118,3 +118,18 @@ Built 13 prospect demos: Stylecraft, Davidson, McKinley, ICI, Viera, WestBay, Ro
 
 ### 35. Flux 2 Migration + Pipeline Refactor (2026-04-05 → 2026-04-06)
 Replaced entire OpenAI 1.5 + Gemini Flash pipeline with BFL Flux 2. Full gen: Max (~35-55s, ~$0.09). Scoped edits: Pro default (~15-25s, ~$0.03) with per-option model override via `scoped_edit_model` column (Klein 9B for hex mosaic). Two-pass split when >7 swatches. Oven correction as Max post-pass. Flux-native prompts: "Apply image N to [surface]" (~55-80 words full gen, ~15-25 words scoped). Shared `flux-pipeline.ts` core. Eliminated: Flash isolation, Pro cabinet post-pass, multi-pass pipeline, `pass_cache` table, `collectInvariantRules`, `buildSceneBlock`, `needs_isolation` boolean, all OpenAI/Gemini image gen code. `/try` migrated to DB-driven options (`demo-options.ts` deleted). `resolveLinkedOptions` added to demo pipeline. Spatial hints shortened (24 steps, 30-80 → 5-20 words).
+
+### 36. Demo ↔ SM Tenant Isolation (2026-04-10)
+SM is now a fully independent tenant — delete-SM test passes. Found and fixed the actual coupling: 5 Demo backsplash rows had `swatch_url` values pointing at SM's storage prefix (tenant bleed), and 4 primary-shower + 1 floor-tile-color row had stale pre-Shaw bytes because the 2026-04-09 Shaw audit was hardcoded to SM only. Everywhere else was already clean.
+
+**Shipped:**
+- `scripts/port-sm-swatches-to-demo.ts` — idempotent, 10 byte copies, `cacheControl: 60` on uploads, atomic Group 1 UPDATE, completeness assertion
+- `scripts/audit-tenant-bleed.ts` — rewritten: 14 checks across every path/JSONB column + reverse leaks + shared-ID check, parameterized on `--primary` / `--other` slugs, exits non-zero on bleed. Self-tested with synthetic bleed insert (detected, reverted, clean again).
+- `supabase/migrations/20260410_options_swatch_url_tenant_isolation.sql` — regex CHECK constraint anchored on `/storage/v1/object/(public|sign)/swatches/{org_id}/`, case-insensitive host. First migration file in the project.
+- `POST /api/internal/bust-cache/[orgSlug]` — CRON_SECRET-authed endpoint. One curl unfreezes `categories:{orgId}`, `floorplans:{orgId}`, `org:{slug}`, and admin cache tags simultaneously. Shared by `/try`, `/for/*`, `{org}.withfin.ch`.
+- Dead code purge: `public/swatches/` (358 files), `public/rooms/` (11), `src/lib/options-data.ts` (1667 lines), `steps` constant in `step-config.ts` (types kept). All verified unreferenced at runtime.
+- Contract doc rewritten (`memory-bank/project/swatch-storage-contract.md`) to match what actually shipped — dropped the 10-step phased plan and the row-owned hash identity model (moved to "deferred hardening").
+
+**Review trail**: `backend-architect` + `code-reviewer` reviewed independently (no solution hinted). Second pass fixed: case-insensitive CHECK bypass, bucket-prefix anchor, constraint in version control, audit coverage gap, CDN staleness from default `cacheControl: 3600`, per-row UPDATE loop. Storage bucket RLS verified correct (admin-scoped by org_id via `org_users` join in `storage.objects` policies).
+
+**Deferred (documented)**: CHECK on other path columns (`cover_image_path`, `image_path`, `logo_url`); DELETE handler byte leak; admin PATCH `swatch_url` Zod refine; delete-SM FK/RLS discovery queries before actual execution; row-owned hashed identity model (`putSwatch`/`deleteSwatch`/`listSwatchOrphans` primitives) — none blocking tenant isolation.

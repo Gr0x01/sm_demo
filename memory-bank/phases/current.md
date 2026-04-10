@@ -2,7 +2,7 @@
 
 ## Context
 
-V1 product is fully shipped. SM and Demo orgs are live. Homepage, research pages, learn hub, VS comparisons, prospect demo pages — all live. Flux 2 pipeline shipped and refactored. See `completed.md` for the full history.
+V1 product is fully shipped. SM and Demo orgs are live. Homepage, research pages, learn hub, VS comparisons, prospect demo pages — all live. Flux 2 pipeline shipped and refactored. **Demo↔SM tenant isolation complete (2026-04-10)** — SM is now independently deletable; `scripts/audit-tenant-bleed.ts` is the living verifier; see `completed.md` #36 and `memory-bank/project/swatch-storage-contract.md`. See `completed.md` for the full history.
 
 Now focused on: builder outreach (provocation-first strategy), generation quality fixes, and SEO content expansion.
 

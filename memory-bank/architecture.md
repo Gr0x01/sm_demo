@@ -153,7 +153,7 @@ Supabase
    - **Deterministic failures** (`BflContentModerationError`): caught, wrapped in `NonRetriableError` (no retries — same inputs will always fail), row updated to `__failed__` instantly so the client sees failure on the next poll instead of waiting for stale cleanup. Diff cache queries exclude `__failed__` rows so they can't serve as scoped-edit parents.
 6. **Client polling**: 202 or 429 response triggers polling `/api/generate/photo/check` every 3s. Poll exits on: `complete` (show image), `not_found` (generation failed — surface retry), `failed` (deterministic failure — surface unavailable-combination overlay), `error` (transient — keep polling), or abort (component unmounted). AbortController per photo key, all aborted on unmount.
 7. On refresh: `/api/generate/photo/check` checks per-photo (full derivation mode), restores generated images + IDs
-8. Retry → deletes cached row via feedback route, then regenerates fresh
+8. Retry → POST `/api/generate/photo` with `retry: true`. Deletes the row for this hash (including `__pending__` — cancel-in-place so an in-flight non-retry gen can't hand back its result via 429→poll), passes `retry: true` through to the Inngest event. `generate-photo.ts` skips `findSingleSurfaceDiffMatch` when retry is true → **always full Flux 2 Max**, never a scoped edit. `leaveOneOutHashes` still written so the new Max image can seed partial cache for future different-selection gens.
 9. "Visualize All" fires up to 20 concurrent
 
 ## Pre-generation Strategy
@@ -480,6 +480,26 @@ public/
 **Cache invalidation**: `invalidateOrgCache(orgId, opts?)` supports optional `orgSlug`, `floorplanId`, `floorplanSlug` to bust buyer-facing cache tags (`org:{slug}`, `steps:{floorplanId}`, `floorplan:{orgId}:{floorplanSlug}`, `categories:{orgId}`).
 
 **Key design**: Categories/subcategories/options have UUID PKs + `slug` text column. Buyer-facing queries map `slug → id` (zero downstream changes). Admin uses UUID `id` + `slug`. `UNIQUE(org_id, slug)` prevents cross-org collisions. `generate_unique_slug` RPC checks slug column with 100-iteration safety cap.
+
+## Tenant Isolation
+
+**Invariant**: Every org is independently deletable. Dropping any org's rows + its storage prefix leaves every other org fully functional. SM is a real builder tenant; Demo is Finch's internal sandbox (shared by `/try`, `/for/*` prospect pages, and `demo.withfin.ch`). Neither references the other.
+
+**Enforcement (DB level)**:
+- `options_swatch_url_contains_org_id` CHECK constraint: any Supabase-hosted `swatch_url` must contain the row's own `org_id` in the exact `/storage/v1/object/(public|sign)/swatches/{org_id}/` segment. Case-insensitive host match. NULL and external CDN URLs pass through. Migration: `supabase/migrations/20260410_options_swatch_url_tenant_isolation.sql`.
+- `UNIQUE(org_id, slug)` on categories/subcategories/options prevents id collisions across orgs.
+- Supabase Storage bucket RLS on `swatches`: INSERT/UPDATE/DELETE gated by `storage.foldername(name)[1] IN (SELECT org_id FROM org_users WHERE user_id = auth.uid() AND role = 'admin')`. An admin can only write to their own org's prefix, regardless of client-side `orgId` prop.
+
+**Enforcement (runtime)**:
+- `scripts/audit-tenant-bleed.ts` — 14 automated checks across every path-bearing text/jsonb column (options, floorplans, step_photos, generated_images, pass_cache, steps, organizations, step_photos.subcategory_ids, steps.sections/spatial_hints jsonb, floorplans.prospect_insights jsonb) plus reverse leaks and cross-org id sharing. Parameterized: `--primary <slug> --other <slug>`. Exits non-zero on any finding. Run before any tenant split operation.
+- `scripts/port-sm-swatches-to-demo.ts` — the one-shot port that eliminated pre-existing SM↔Demo coupling (see `completed.md` #36). Kept as reference pattern for future tenant splits.
+- `POST /api/internal/bust-cache/[orgSlug]` — CRON_SECRET-authed endpoint that calls `invalidateOrgCache` for any org slug. One call busts every Next.js `unstable_cache` tag for that org (`categories:*`, `floorplans:*`, `org:*`, `admin:categories:*`, `admin:floorplans:*`, `admin:steps-all:*`). Used after any direct-DB mutation that needs to be visible on `/try`, `/for/*`, or `{org}.withfin.ch`.
+
+**Deferred hardening** (not blocking tenant isolation — documented in `memory-bank/project/swatch-storage-contract.md`):
+- CHECK constraints on `floorplans.cover_image_path`, `step_photos.image_path`, `generated_images.image_path`, `organizations.logo_url` — audit script covers them, no write-time guard yet
+- `DELETE /api/admin/options/[id]` leaks storage bytes on row delete
+- `SwatchUpload.tsx` persists `?t=${Date.now()}` cache-buster in the DB row (should be render-only)
+- Row-owned hashed identity model for swatches (`{orgId}/swatches/{optionId}-{hash}.{ext}`)
 
 ## Analytics
 
