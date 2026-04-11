@@ -26,12 +26,15 @@ export interface StepPhoto {
  * - `{image}` — exactly one per action clause. Substituted with "image 2",
  *   "image 3", … based on visual-impact sort order. Base photo is "image 1".
  *
- * Action clause rules (enforced at save time):
+ * Action clause rules (enforced at save time — see `validatePromptProse` and
+ * `validateActionClause` in `src/lib/generate.ts` for the canonical lists):
  * - Lowercase start, no trailing period — clauses are fragments joined by
  *   the builder into bullet lines.
  * - 4–18 words per clause (medium-band per BFL fundamentals guide).
- * - No negative framing: `not`, `no`, `never`, `only`, `avoid`, `except`.
- * - No material/color/pattern words: swatches are sole appearance authority.
+ * - No negative framing: `not`, `no`, `never`, `without`, `don't`, `dont`,
+ *   `only`, `avoid`, `except`.
+ * - No material/color/pattern words (and their plural forms): swatches are
+ *   sole appearance authority.
  * - No hex color codes.
  * - The standalone word `island` is forbidden (BFL groups surfaces by that
  *   word); describe positionally instead.

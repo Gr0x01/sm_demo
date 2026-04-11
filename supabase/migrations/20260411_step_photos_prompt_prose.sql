@@ -5,11 +5,25 @@
 --
 --   {
 --     "version": 2,
---     "actions": { "<subcategory-slug>": "<imperative clause with {image}>" },
---     "lead":    "optional lead-in clause (≤12 words)",
---     "style":   "optional style trailer (≤20 words)",
---     "preserve": ["optional preservation clauses appended to the tail"]
+--     "actions":       { "<subcategory-slug>": "<imperative clause with {image}>" },
+--     "lead":          "optional lead-in clause (≤12 words)",
+--     "style":         "optional style trailer (≤20 words)",
+--     "preserve":      ["optional preservation clauses appended to the tail"],
+--     "mergedClauses": [
+--       {
+--         "when":   ["<sub-slug-a>", "<sub-slug-b>", ...],
+--         "clause": "<unified imperative clause with {image}>"
+--       }
+--     ]
 --   }
+--
+-- `mergedClauses` handles BFL's same-swatch collapse: when two subcategories
+-- resolve to the same swatch_url, BFL dedupes the byte-identical input_image_N
+-- references and silently ignores the later clause. The merge fires when every
+-- subcategory in `when` is selected AND they all resolve to the same swatch;
+-- in that case the builder emits a single unified clause instead of the
+-- individual per-subcategory clauses. See the "Same-swatch collapse"
+-- section in memory-bank/generation/bfl-prompting-guide.md.
 --
 -- When NULL the legacy templated builder runs (buildEditPrompt). When present
 -- AND complete (actions[subId] for every selected sub) the prose builder runs:

@@ -55,6 +55,10 @@ interface ProspectConfig {
     lead?: string;
     style?: string;
     preserve?: string[];
+    mergedClauses?: Array<{
+      when: string[];
+      clause: string;
+    }>;
   };
   // Insights sidebar
   insights: Array<{ label: string; value: string }>;

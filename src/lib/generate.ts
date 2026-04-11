@@ -379,6 +379,26 @@ function findForbiddenWord(text: string, forbidden: readonly string[]): string |
 }
 
 /**
+ * Plural-permissive forbidden-word check for material/color words. Catches
+ * both "tile" and "tiles", "plank" and "planks", etc. Irregular plurals
+ * (cherries, etc.) aren't covered, but the common leak surfaces are.
+ * Kept separate from `findForbiddenWord` because negative framing words
+ * (`not`, `no`, `only`) don't pluralize.
+ */
+function findForbiddenMaterialWord(
+  text: string,
+  forbidden: readonly string[],
+): string | null {
+  const lower = text.toLowerCase();
+  for (const word of forbidden) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // `s?` allows an optional trailing "s" for plural forms.
+    if (new RegExp(`\\b${escaped}s?\\b`, "i").test(lower)) return word;
+  }
+  return null;
+}
+
+/**
  * A single prompt-time action entry. Unifies the two kinds of entries the
  * builder emits — one per ordinary selected subcategory, and one per merge
  * that fired — so visual-impact sort, swatch resolution, and image-index
@@ -623,7 +643,12 @@ export async function buildProseScopedEdit(
     );
   }
 
-  if (!changed.option.swatchUrl || !resolveSwatchBuffer) {
+  if (!resolveSwatchBuffer) {
+    throw new PromptProseError(
+      `Cannot resolve swatch for "${changedSubcategoryId}": no resolver provided.`,
+    );
+  }
+  if (!changed.option.swatchUrl) {
     throw new PromptProseError(
       `actions["${changedSubcategoryId}"] references a swatch, but option "${changed.option.id}" has no swatchUrl.`,
     );
@@ -701,7 +726,7 @@ function validateActionClause(loc: string, clause: unknown): void {
       `${loc} contains forbidden word "${neg}" (use positive framing; describe "island" positionally).`,
     );
   }
-  const mat = findForbiddenWord(scanText, FORBIDDEN_ACTION_MATERIAL_WORDS);
+  const mat = findForbiddenMaterialWord(scanText, FORBIDDEN_ACTION_MATERIAL_WORDS);
   if (mat) {
     throw new PromptProseError(
       `${loc} contains forbidden material/color word "${mat}" (swatch image is the sole material authority).`,
@@ -721,14 +746,13 @@ function validateActionClause(loc: string, clause: unknown): void {
  *
  * `requiredActionSubIds` is the set of subcategory IDs the photo is scoped to;
  * every entry in it must have an `actions[subId]` clause so generation can't
- * fail at runtime with missing prose.
+ * fail at runtime with missing prose. Pass an empty array to validate
+ * structure only (skips photo-scope enforcement).
  */
 export function validatePromptProse(
   prose: PromptProse,
-  _optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
   requiredActionSubIds: readonly string[],
 ): void {
-  void _optionLookup; // kept in signature for backward compatibility with callers
   if (prose.version !== 2) {
     throw new PromptProseError(
       `prompt_prose.version must be 2 (got ${(prose as { version?: unknown }).version}).`,
@@ -763,7 +787,8 @@ export function validatePromptProse(
       throw new PromptProseError("prompt_prose.mergedClauses must be an array.");
     }
     const requiredSet = new Set(requiredActionSubIds);
-    const seenSubs = new Set<string>();
+    // Slugs claimed by ANY previous entry — used to detect cross-entry overlap.
+    const seenSubsAcrossEntries = new Set<string>();
     for (let i = 0; i < prose.mergedClauses.length; i++) {
       const entry = prose.mergedClauses[i];
       const loc = `mergedClauses[${i}]`;
@@ -775,6 +800,9 @@ export function validatePromptProse(
           `${loc}.when must be an array of at least 2 subcategory slugs.`,
         );
       }
+      // Slugs seen inside THIS entry's when array — used to detect a repeat
+      // within a single declaration (e.g. `when: ["a", "a"]`).
+      const seenInThisEntry = new Set<string>();
       for (const subId of entry.when) {
         if (typeof subId !== "string" || subId.length === 0) {
           throw new PromptProseError(`${loc}.when contains a non-string or empty slug.`);
@@ -792,12 +820,18 @@ export function validatePromptProse(
             `${loc}.when references "${subId}", which is not in this photo's subcategory scope.`,
           );
         }
-        if (seenSubs.has(subId)) {
+        if (seenInThisEntry.has(subId)) {
+          throw new PromptProseError(
+            `${loc}.when contains "${subId}" more than once in the same entry.`,
+          );
+        }
+        if (seenSubsAcrossEntries.has(subId)) {
           throw new PromptProseError(
             `${loc}.when references "${subId}", which already appears in another mergedClauses entry. Subcategories may only participate in one merge.`,
           );
         }
-        seenSubs.add(subId);
+        seenInThisEntry.add(subId);
+        seenSubsAcrossEntries.add(subId);
       }
       validateActionClause(`${loc}.clause`, entry.clause);
     }
@@ -840,6 +874,10 @@ export function validatePromptProse(
   }
 
   // ----- optional preserve[] -----
+  // Preserve clauses intentionally skip FORBIDDEN_ACTION_MATERIAL_WORDS —
+  // authors may need to name the current color of an unchanged surface
+  // ("keep the brass hardware", "keep the existing oak flooring") to anchor
+  // BFL. Only negative framing is forbidden here.
   if (prose.preserve !== undefined) {
     if (!Array.isArray(prose.preserve)) {
       throw new PromptProseError("prompt_prose.preserve must be an array of strings.");

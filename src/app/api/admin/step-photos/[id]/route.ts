@@ -3,7 +3,6 @@ import { z } from "zod/v4";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { invalidateOrgCache } from "@/lib/admin-cache";
 import { getServiceClient } from "@/lib/supabase";
-import { getOptionLookup } from "@/lib/db-queries";
 import { PromptProseError, validatePromptProse } from "@/lib/generate";
 
 const promptProseSchema = z.object({
@@ -58,16 +57,13 @@ export async function PATCH(
     // generation time.
     if (prompt_prose) {
       try {
-        const [optionLookup, existingPhoto] = await Promise.all([
-          getOptionLookup(orgId),
-          supabase
-            .from("step_photos")
-            .select("subcategory_ids")
-            .eq("id", id)
-            .eq("org_id", orgId)
-            .single(),
-        ]);
-        if (existingPhoto.error || !existingPhoto.data) {
+        const { data: existingPhoto, error: photoErr } = await supabase
+          .from("step_photos")
+          .select("subcategory_ids")
+          .eq("id", id)
+          .eq("org_id", orgId)
+          .single();
+        if (photoErr || !existingPhoto) {
           return NextResponse.json({ error: "Not found" }, { status: 404 });
         }
         // The PATCH may be updating subcategory_ids in the same request —
@@ -75,8 +71,8 @@ export async function PATCH(
         const effectiveSubIds =
           subcategory_ids !== undefined
             ? subcategory_ids ?? []
-            : ((existingPhoto.data.subcategory_ids as string[] | null) ?? []);
-        validatePromptProse(prompt_prose, optionLookup, effectiveSubIds);
+            : ((existingPhoto.subcategory_ids as string[] | null) ?? []);
+        validatePromptProse(prompt_prose, effectiveSubIds);
       } catch (err) {
         if (err instanceof PromptProseError) {
           return NextResponse.json({ error: err.message }, { status: 400 });

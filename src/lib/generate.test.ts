@@ -520,7 +520,7 @@ describe("validatePromptProse (v2) — mergedClauses", () => {
         },
       ],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).not.toThrow();
+    expect(() => validatePromptProse(prose,[])).not.toThrow();
   });
 
   it("rejects a merge with fewer than 2 when-slugs", () => {
@@ -529,7 +529,7 @@ describe("validatePromptProse (v2) — mergedClauses", () => {
       actions: { "kitchen-cabinet-color": "apply {image} to every cabinet door along the walls" },
       mergedClauses: [{ when: ["kitchen-cabinet-color"], clause: "apply {image} to everything" }],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/at least 2 subcategory slugs/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/at least 2 subcategory slugs/);
   });
 
   it("rejects when-slug that has no fallback in actions", () => {
@@ -543,7 +543,7 @@ describe("validatePromptProse (v2) — mergedClauses", () => {
         },
       ],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(
+    expect(() => validatePromptProse(prose,[])).toThrow(
       /no fallback entry in actions/,
     );
   });
@@ -561,9 +561,37 @@ describe("validatePromptProse (v2) — mergedClauses", () => {
         { when: ["b", "c"], clause: "apply {image} to surfaces b and c" },
       ],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(
+    expect(() => validatePromptProse(prose,[])).toThrow(
       /already appears in another mergedClauses entry/,
     );
+  });
+
+  it("rejects the same subcategory appearing twice in one when array", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        a: "apply {image} to surface a alone",
+        b: "apply {image} to surface b alone",
+      },
+      // Not cross-entry — repeated inside a single entry's `when`.
+      mergedClauses: [
+        { when: ["a", "a", "b"], clause: "apply {image} to surfaces a and b" },
+      ],
+    };
+    expect(() => validatePromptProse(prose,[])).toThrow(
+      /contains "a" more than once in the same entry/,
+    );
+  });
+
+  it("detects plural forms of forbidden material words", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        // "tiles" (plural) — the old regex only caught "tile" without plural.
+        backsplash: "apply {image} to the tiles between cabinets and counters",
+      },
+    };
+    expect(() => validatePromptProse(prose,[])).toThrow(/forbidden material\/color word/);
   });
 
   it("rejects a merged clause with forbidden material words", () => {
@@ -580,7 +608,7 @@ describe("validatePromptProse (v2) — mergedClauses", () => {
         },
       ],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/forbidden material/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/forbidden material/);
   });
 
   it("rejects a merged clause without exactly one {image} token", () => {
@@ -594,7 +622,7 @@ describe("validatePromptProse (v2) — mergedClauses", () => {
         { when: ["a", "b"], clause: "apply {image} and also {image} to surfaces a and b" },
       ],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/exactly one \{image\}/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/exactly one \{image\}/);
   });
 
   it("rejects when-slug outside the photo's scope when scope is enforced", () => {
@@ -613,7 +641,7 @@ describe("validatePromptProse (v2) — mergedClauses", () => {
     };
     // Scope only includes cabinet, not island — merge references out-of-scope slug
     expect(() =>
-      validatePromptProse(prose, optionLookup, ["kitchen-cabinet-color"]),
+      validatePromptProse(prose,["kitchen-cabinet-color"]),
     ).toThrow(/not in this photo's subcategory scope/);
   });
 });
@@ -665,17 +693,17 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} to every cabinet door along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).not.toThrow();
+    expect(() => validatePromptProse(prose,[])).not.toThrow();
   });
 
   it("rejects wrong version", () => {
     const prose = { version: 1, actions: {} } as unknown as PromptProse;
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/version must be 2/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/version must be 2/);
   });
 
   it("rejects empty actions object", () => {
     const prose = { version: 2, actions: {} } as unknown as PromptProse;
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/at least one entry/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/at least one entry/);
   });
 
   it("rejects missing action coverage for required sub IDs", () => {
@@ -683,7 +711,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} to every cabinet door along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, ["cabinets", "countertops"])).toThrow(/missing an entry.*countertops/);
+    expect(() => validatePromptProse(prose,["cabinets", "countertops"])).toThrow(/missing an entry.*countertops/);
   });
 
   it("rejects action clause with multiple {image} tokens", () => {
@@ -691,7 +719,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} and also apply {image} along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/exactly one \{image\}/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/exactly one \{image\}/);
   });
 
   it("rejects action clause with zero {image} tokens", () => {
@@ -699,7 +727,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply finishes to every cabinet door along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/exactly one \{image\}/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/exactly one \{image\}/);
   });
 
   it("rejects too-short action clauses", () => {
@@ -707,7 +735,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image}" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/4–18 words/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/4–18 words/);
   });
 
   it("rejects too-long action clauses", () => {
@@ -717,7 +745,7 @@ describe("validatePromptProse (v2)", () => {
         cabinets: "apply {image} to every single cabinet door and drawer front along the back and left and right walls of the entire kitchen area",
       },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/4–18 words/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/4–18 words/);
   });
 
   it("rejects action clauses starting with a capital letter", () => {
@@ -725,7 +753,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "Apply {image} to every cabinet door along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/start lowercase/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/start lowercase/);
   });
 
   it("rejects action clauses ending with a period", () => {
@@ -733,7 +761,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} to every cabinet door along the walls." },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/must not end with a period/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/must not end with a period/);
   });
 
   it("rejects negative words in action clauses", () => {
@@ -741,7 +769,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} to every cabinet door but not the island" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/forbidden word/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/forbidden word/);
   });
 
   it("rejects the word 'island' in action clauses", () => {
@@ -749,7 +777,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} to the kitchen island base structure" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/forbidden word "island"/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/forbidden word "island"/);
   });
 
   it("rejects material/color words in action clauses", () => {
@@ -757,7 +785,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} to every white cabinet door along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/forbidden material\/color word/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/forbidden material\/color word/);
   });
 
   it("rejects hex color codes in action clauses", () => {
@@ -765,7 +793,7 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image} to cabinet doors matching color #F5F5F2 exactly" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/hex color code/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/hex color code/);
   });
 
   it("rejects lead longer than 12 words", () => {
@@ -774,7 +802,7 @@ describe("validatePromptProse (v2)", () => {
       lead: "Apply the following finishes to this kitchen photo and also please be careful",
       actions: { cabinets: "apply {image} to every cabinet door along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/lead must be ≤12 words/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/lead must be ≤12 words/);
   });
 
   it("rejects style longer than 20 words", () => {
@@ -783,7 +811,7 @@ describe("validatePromptProse (v2)", () => {
       style: "Photorealistic real estate photography natural daylight neutral white balance shot on canon eos r5 with a wide 24 millimeter prime lens attached",
       actions: { cabinets: "apply {image} to every cabinet door along the walls" },
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/style must be ≤20 words/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/style must be ≤20 words/);
   });
 
   it("accepts optional lead / style / preserve when valid", () => {
@@ -794,7 +822,7 @@ describe("validatePromptProse (v2)", () => {
       style: "Photorealistic real estate photography, natural daylight.",
       preserve: ["Keep the pendant lights and ceiling medallions unchanged"],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).not.toThrow();
+    expect(() => validatePromptProse(prose,[])).not.toThrow();
   });
 
   it("rejects preserve clauses longer than 18 words", () => {
@@ -805,7 +833,7 @@ describe("validatePromptProse (v2)", () => {
         "Keep all of the pendant lights and ceiling medallions and crown molding and window trim unchanged throughout the entire visible area",
       ],
     };
-    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/preserve\[0\] must be ≤18 words/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/preserve\[0\] must be ≤18 words/);
   });
 });
 

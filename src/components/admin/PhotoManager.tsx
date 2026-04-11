@@ -86,6 +86,17 @@ function findForbidden(text: string, list: readonly string[]): string | null {
   return null;
 }
 
+// Plural-permissive variant for material/color words — mirrors
+// findForbiddenMaterialWord in src/lib/generate.ts.
+function findForbiddenMaterial(text: string, list: readonly string[]): string | null {
+  const lower = text.toLowerCase();
+  for (const word of list) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}s?\\b`, "i").test(lower)) return word;
+  }
+  return null;
+}
+
 interface ProseValidationError {
   field: string;
   message: string;
@@ -118,7 +129,7 @@ function validateProseClient(prose: PromptProse): ProseValidationError[] {
     const scan = trimmed.replace(/\{image\}/g, "");
     const neg = findForbidden(scan, CLIENT_FORBIDDEN_NEGATIVE_WORDS);
     if (neg) errors.push({ field, message: `Forbidden word "${neg}" (no negatives; describe island positionally).` });
-    const mat = findForbidden(scan, CLIENT_FORBIDDEN_MATERIAL_WORDS);
+    const mat = findForbiddenMaterial(scan, CLIENT_FORBIDDEN_MATERIAL_WORDS);
     if (mat) errors.push({ field, message: `Forbidden material/color word "${mat}" (swatch is sole authority).` });
     if (CLIENT_HEX_RE.test(scan)) {
       errors.push({ field, message: "Hex color code not allowed (swatch is sole authority)." });
@@ -155,7 +166,7 @@ function validateProseClient(prose: PromptProse): ProseValidationError[] {
   }
 
   if (prose.mergedClauses) {
-    const seenSubs = new Set<string>();
+    const seenSubsAcrossEntries = new Set<string>();
     for (let i = 0; i < prose.mergedClauses.length; i++) {
       const entry = prose.mergedClauses[i];
       const whenField = `mergedClauses.${i}.when`;
@@ -163,14 +174,18 @@ function validateProseClient(prose: PromptProse): ProseValidationError[] {
       if (!Array.isArray(entry.when) || entry.when.length < 2) {
         errors.push({ field: whenField, message: "Need ≥2 subcategories to merge." });
       } else {
+        const seenInThisEntry = new Set<string>();
         for (const subId of entry.when) {
           if (!prose.actions?.[subId]) {
             errors.push({ field: whenField, message: `"${subId}" has no fallback in actions.` });
           }
-          if (seenSubs.has(subId)) {
+          if (seenInThisEntry.has(subId)) {
+            errors.push({ field: whenField, message: `"${subId}" appears twice in this entry.` });
+          } else if (seenSubsAcrossEntries.has(subId)) {
             errors.push({ field: whenField, message: `"${subId}" already in another merge.` });
           }
-          seenSubs.add(subId);
+          seenInThisEntry.add(subId);
+          seenSubsAcrossEntries.add(subId);
         }
       }
       const clause = (entry.clause ?? "").trim();
@@ -186,7 +201,7 @@ function validateProseClient(prose: PromptProse): ProseValidationError[] {
         const scan = clause.replace(/\{image\}/g, "");
         const neg = findForbidden(scan, CLIENT_FORBIDDEN_NEGATIVE_WORDS);
         if (neg) errors.push({ field: clauseField, message: `Forbidden word "${neg}".` });
-        const mat = findForbidden(scan, CLIENT_FORBIDDEN_MATERIAL_WORDS);
+        const mat = findForbiddenMaterial(scan, CLIENT_FORBIDDEN_MATERIAL_WORDS);
         if (mat) errors.push({ field: clauseField, message: `Forbidden material word "${mat}".` });
         if (CLIENT_HEX_RE.test(scan)) errors.push({ field: clauseField, message: "Hex code not allowed." });
       }
@@ -348,6 +363,8 @@ function PhotoCard({
   const setMergedClauseClause = useCallback((idx: number, value: string) => {
     setProse((prev) => {
       const next = [...(prev.mergedClauses ?? [])];
+      // Defensive: bail if idx is out of range (e.g. after a concurrent remove).
+      if (!next[idx]) return prev;
       next[idx] = { ...next[idx], clause: value };
       return { ...prev, mergedClauses: next };
     });
@@ -356,7 +373,8 @@ function PhotoCard({
   const toggleMergedClauseWhen = useCallback((idx: number, subId: string) => {
     setProse((prev) => {
       const next = [...(prev.mergedClauses ?? [])];
-      const current = next[idx]?.when ?? [];
+      if (!next[idx]) return prev;
+      const current = next[idx].when ?? [];
       const exists = current.includes(subId);
       next[idx] = {
         ...next[idx],
