@@ -12,6 +12,14 @@ const promptProseSchema = z.object({
   lead: z.string().optional(),
   style: z.string().optional(),
   preserve: z.array(z.string()).optional(),
+  mergedClauses: z
+    .array(
+      z.object({
+        when: z.array(z.string()),
+        clause: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 const updateSchema = z.object({

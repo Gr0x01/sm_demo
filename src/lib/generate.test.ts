@@ -349,6 +349,275 @@ describe("buildProsePrompt (v2)", () => {
   });
 });
 
+describe("buildProsePrompt (v2) — mergedClauses", () => {
+  // Helper: build a tiny lookup with explicit swatch URLs per option so we
+  // can control merge detection without touching the main fixture.
+  function makeMergeLookup(
+    entries: { subId: string; optId: string; swatchUrl: string }[],
+  ): Map<string, { option: import("@/types").Option; subCategory: import("@/types").SubCategory }> {
+    const map = new Map();
+    for (const { subId, optId, swatchUrl } of entries) {
+      map.set(`${subId}:${optId}`, {
+        option: { id: optId, name: optId, price: 0, swatchUrl },
+        subCategory: { id: subId, name: subId, categoryId: "cat", isVisual: true, options: [] },
+      });
+    }
+    return map;
+  }
+
+  const mergeProse: PromptProse = {
+    version: 2,
+    actions: {
+      "kitchen-cabinet-color": "apply {image} to every perimeter cabinet door and drawer front along the walls",
+      "kitchen-island-cabinet-color": "apply {image} to the freestanding center base structure in the foreground",
+    },
+    mergedClauses: [
+      {
+        when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+        clause: "apply {image} to every cabinet door and drawer front throughout",
+      },
+    ],
+  };
+
+  it("fires when all when-subs resolve to the same swatch URL", async () => {
+    const lookup = makeMergeLookup([
+      { subId: "kitchen-cabinet-color", optId: "dove-a", swatchUrl: "https://storage/dove.jpg" },
+      { subId: "kitchen-island-cabinet-color", optId: "dove-b", swatchUrl: "https://storage/dove.jpg" },
+    ]);
+    const { prompt, swatches } = await buildProsePrompt(
+      mergeProse,
+      { "kitchen-cabinet-color": "dove-a", "kitchen-island-cabinet-color": "dove-b" },
+      lookup,
+      mockResolver,
+    );
+    expect(prompt).toContain("- apply image 2 to every cabinet door and drawer front throughout");
+    expect(prompt).not.toContain("perimeter cabinet door");
+    expect(prompt).not.toContain("freestanding center base structure");
+    expect(swatches).toHaveLength(1);
+    expect(swatches[0].subcategoryId).toBe("kitchen-cabinet-color");
+  });
+
+  it("does NOT fire when swatch URLs differ", async () => {
+    const lookup = makeMergeLookup([
+      { subId: "kitchen-cabinet-color", optId: "dove", swatchUrl: "https://storage/dove.jpg" },
+      { subId: "kitchen-island-cabinet-color", optId: "blue", swatchUrl: "https://storage/blue.jpg" },
+    ]);
+    const { prompt, swatches } = await buildProsePrompt(
+      mergeProse,
+      { "kitchen-cabinet-color": "dove", "kitchen-island-cabinet-color": "blue" },
+      lookup,
+      mockResolver,
+    );
+    expect(prompt).toContain("- apply image 2 to every perimeter cabinet door and drawer front along the walls");
+    expect(prompt).toContain("- apply image 3 to the freestanding center base structure in the foreground");
+    expect(prompt).not.toContain("throughout");
+    expect(swatches).toHaveLength(2);
+  });
+
+  it("does NOT fire when only one when-sub is selected", async () => {
+    const lookup = makeMergeLookup([
+      { subId: "kitchen-cabinet-color", optId: "dove", swatchUrl: "https://storage/dove.jpg" },
+    ]);
+    const { prompt, swatches } = await buildProsePrompt(
+      mergeProse,
+      { "kitchen-cabinet-color": "dove" },
+      lookup,
+      mockResolver,
+    );
+    expect(prompt).toContain("perimeter cabinet door");
+    expect(prompt).not.toContain("throughout");
+    expect(swatches).toHaveLength(1);
+  });
+
+  it("sorts merged entry by the first when-slug's visual-impact priority", async () => {
+    const lookup = makeMergeLookup([
+      { subId: "kitchen-cabinet-color", optId: "dove-a", swatchUrl: "https://storage/dove.jpg" },
+      { subId: "kitchen-island-cabinet-color", optId: "dove-b", swatchUrl: "https://storage/dove.jpg" },
+      { subId: "counter-top", optId: "stone", swatchUrl: "https://storage/stone.jpg" },
+    ]);
+    const proseWithCounter: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-color": "apply {image} to every perimeter cabinet door and drawer front along the walls",
+        "kitchen-island-cabinet-color": "apply {image} to the freestanding center base structure in the foreground",
+        "counter-top": "apply {image} to all horizontal countertop surfaces",
+      },
+      mergedClauses: [
+        {
+          when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+          clause: "apply {image} to every cabinet door and drawer front throughout",
+        },
+      ],
+    };
+    const { prompt } = await buildProsePrompt(
+      proseWithCounter,
+      {
+        "kitchen-cabinet-color": "dove-a",
+        "kitchen-island-cabinet-color": "dove-b",
+        "counter-top": "stone",
+      },
+      lookup,
+      mockResolver,
+    );
+    // Cabinets priority 0 (merged), counter priority 3. Merged line first.
+    const mergedIdx = prompt.indexOf("throughout");
+    const counterIdx = prompt.indexOf("countertop surfaces");
+    expect(mergedIdx).toBeGreaterThan(0);
+    expect(counterIdx).toBeGreaterThan(mergedIdx);
+  });
+
+  it("dedupes the swatch reference array so the merged clause uses one image index", async () => {
+    const lookup = makeMergeLookup([
+      { subId: "kitchen-cabinet-color", optId: "dove-a", swatchUrl: "https://storage/dove.jpg" },
+      { subId: "kitchen-island-cabinet-color", optId: "dove-b", swatchUrl: "https://storage/dove.jpg" },
+      { subId: "counter-top", optId: "stone", swatchUrl: "https://storage/stone.jpg" },
+    ]);
+    const proseWithCounter: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-color": "apply {image} to every perimeter cabinet door and drawer front along the walls",
+        "kitchen-island-cabinet-color": "apply {image} to the freestanding center base structure in the foreground",
+        "counter-top": "apply {image} to all horizontal countertop surfaces",
+      },
+      mergedClauses: [
+        {
+          when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+          clause: "apply {image} to every cabinet door and drawer front throughout",
+        },
+      ],
+    };
+    const { prompt, swatches } = await buildProsePrompt(
+      proseWithCounter,
+      {
+        "kitchen-cabinet-color": "dove-a",
+        "kitchen-island-cabinet-color": "dove-b",
+        "counter-top": "stone",
+      },
+      lookup,
+      mockResolver,
+    );
+    // Two bullets total: merged (image 2) + counter (image 3)
+    expect(prompt).toContain("apply image 2 to every cabinet door and drawer front throughout");
+    expect(prompt).toContain("apply image 3 to all horizontal countertop surfaces");
+    expect(swatches).toHaveLength(2);
+  });
+});
+
+describe("validatePromptProse (v2) — mergedClauses", () => {
+  const optionLookup = buildOptionLookup();
+
+  it("accepts a valid mergedClauses entry", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-color": "apply {image} to every cabinet door along the walls",
+        "kitchen-island-cabinet-color": "apply {image} to the freestanding center base structure",
+      },
+      mergedClauses: [
+        {
+          when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+          clause: "apply {image} to every cabinet door throughout",
+        },
+      ],
+    };
+    expect(() => validatePromptProse(prose, optionLookup, [])).not.toThrow();
+  });
+
+  it("rejects a merge with fewer than 2 when-slugs", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { "kitchen-cabinet-color": "apply {image} to every cabinet door along the walls" },
+      mergedClauses: [{ when: ["kitchen-cabinet-color"], clause: "apply {image} to everything" }],
+    };
+    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/at least 2 subcategory slugs/);
+  });
+
+  it("rejects when-slug that has no fallback in actions", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { "kitchen-cabinet-color": "apply {image} to every cabinet door along the walls" },
+      mergedClauses: [
+        {
+          when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+          clause: "apply {image} to every cabinet door throughout",
+        },
+      ],
+    };
+    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(
+      /no fallback entry in actions/,
+    );
+  });
+
+  it("rejects a subcategory appearing in two merges", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        a: "apply {image} to surface a alone",
+        b: "apply {image} to surface b alone",
+        c: "apply {image} to surface c alone",
+      },
+      mergedClauses: [
+        { when: ["a", "b"], clause: "apply {image} to surfaces a and b" },
+        { when: ["b", "c"], clause: "apply {image} to surfaces b and c" },
+      ],
+    };
+    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(
+      /already appears in another mergedClauses entry/,
+    );
+  });
+
+  it("rejects a merged clause with forbidden material words", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-color": "apply {image} to every cabinet door along the walls",
+        "kitchen-island-cabinet-color": "apply {image} to the freestanding center base structure",
+      },
+      mergedClauses: [
+        {
+          when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+          clause: "apply {image} to every white cabinet door throughout",
+        },
+      ],
+    };
+    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/forbidden material/);
+  });
+
+  it("rejects a merged clause without exactly one {image} token", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        a: "apply {image} to surface a alone",
+        b: "apply {image} to surface b alone",
+      },
+      mergedClauses: [
+        { when: ["a", "b"], clause: "apply {image} and also {image} to surfaces a and b" },
+      ],
+    };
+    expect(() => validatePromptProse(prose, optionLookup, [])).toThrow(/exactly one \{image\}/);
+  });
+
+  it("rejects when-slug outside the photo's scope when scope is enforced", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-color": "apply {image} to every cabinet door along the walls",
+        "kitchen-island-cabinet-color": "apply {image} to the freestanding center base structure",
+      },
+      mergedClauses: [
+        {
+          when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+          clause: "apply {image} to every cabinet door throughout",
+        },
+      ],
+    };
+    // Scope only includes cabinet, not island — merge references out-of-scope slug
+    expect(() =>
+      validatePromptProse(prose, optionLookup, ["kitchen-cabinet-color"]),
+    ).toThrow(/not in this photo's subcategory scope/);
+  });
+});
+
 describe("buildProseScopedEdit (v2)", () => {
   const optionLookup = buildOptionLookup();
 

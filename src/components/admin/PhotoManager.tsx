@@ -154,6 +154,45 @@ function validateProseClient(prose: PromptProse): ProseValidationError[] {
     }
   }
 
+  if (prose.mergedClauses) {
+    const seenSubs = new Set<string>();
+    for (let i = 0; i < prose.mergedClauses.length; i++) {
+      const entry = prose.mergedClauses[i];
+      const whenField = `mergedClauses.${i}.when`;
+      const clauseField = `mergedClauses.${i}.clause`;
+      if (!Array.isArray(entry.when) || entry.when.length < 2) {
+        errors.push({ field: whenField, message: "Need ≥2 subcategories to merge." });
+      } else {
+        for (const subId of entry.when) {
+          if (!prose.actions?.[subId]) {
+            errors.push({ field: whenField, message: `"${subId}" has no fallback in actions.` });
+          }
+          if (seenSubs.has(subId)) {
+            errors.push({ field: whenField, message: `"${subId}" already in another merge.` });
+          }
+          seenSubs.add(subId);
+        }
+      }
+      const clause = (entry.clause ?? "").trim();
+      if (clause.length === 0) {
+        errors.push({ field: clauseField, message: "Clause is empty." });
+      } else {
+        const n = countImageTokens(clause);
+        if (n !== 1) errors.push({ field: clauseField, message: `Exactly one {image} required (found ${n}).` });
+        const wc = wordCount(clause);
+        if (wc < 4 || wc > 18) errors.push({ field: clauseField, message: `4–18 words (got ${wc}).` });
+        if (/^[A-Z]/.test(clause)) errors.push({ field: clauseField, message: "Must start lowercase." });
+        if (clause.endsWith(".")) errors.push({ field: clauseField, message: "Must not end with a period." });
+        const scan = clause.replace(/\{image\}/g, "");
+        const neg = findForbidden(scan, CLIENT_FORBIDDEN_NEGATIVE_WORDS);
+        if (neg) errors.push({ field: clauseField, message: `Forbidden word "${neg}".` });
+        const mat = findForbidden(scan, CLIENT_FORBIDDEN_MATERIAL_WORDS);
+        if (mat) errors.push({ field: clauseField, message: `Forbidden material word "${mat}".` });
+        if (CLIENT_HEX_RE.test(scan)) errors.push({ field: clauseField, message: "Hex code not allowed." });
+      }
+    }
+  }
+
   return errors;
 }
 
@@ -288,6 +327,42 @@ function PhotoCard({
       const next = [...(prev.preserve ?? [])];
       next.splice(idx, 1);
       return { ...prev, preserve: next.length > 0 ? next : undefined };
+    });
+  }, []);
+
+  const addMergedClause = useCallback(() => {
+    setProse((prev) => ({
+      ...prev,
+      mergedClauses: [...(prev.mergedClauses ?? []), { when: [], clause: "" }],
+    }));
+  }, []);
+
+  const removeMergedClause = useCallback((idx: number) => {
+    setProse((prev) => {
+      const next = [...(prev.mergedClauses ?? [])];
+      next.splice(idx, 1);
+      return { ...prev, mergedClauses: next.length > 0 ? next : undefined };
+    });
+  }, []);
+
+  const setMergedClauseClause = useCallback((idx: number, value: string) => {
+    setProse((prev) => {
+      const next = [...(prev.mergedClauses ?? [])];
+      next[idx] = { ...next[idx], clause: value };
+      return { ...prev, mergedClauses: next };
+    });
+  }, []);
+
+  const toggleMergedClauseWhen = useCallback((idx: number, subId: string) => {
+    setProse((prev) => {
+      const next = [...(prev.mergedClauses ?? [])];
+      const current = next[idx]?.when ?? [];
+      const exists = current.includes(subId);
+      next[idx] = {
+        ...next[idx],
+        when: exists ? current.filter((s) => s !== subId) : [...current, subId],
+      };
+      return { ...prev, mergedClauses: next };
     });
   }, []);
 
@@ -622,6 +697,89 @@ function PhotoCard({
                           ×
                         </button>
                         {err && <p className="text-[10px] text-red-600">{err.message}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Merged clauses (same-color merge) */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] text-slate-600">
+                  Merged clauses (fires when multiple subcategories resolve to the same swatch)
+                </label>
+                <button
+                  type="button"
+                  onClick={addMergedClause}
+                  className="text-[10px] text-slate-500 hover:text-slate-900"
+                >
+                  + Add merge
+                </button>
+              </div>
+              {(prose.mergedClauses ?? []).length === 0 ? (
+                <p className="text-[10px] text-slate-400 italic">
+                  Empty — add a merge declaration when two or more selected surfaces should collapse into one clause when the buyer picks the same swatch for both.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {(prose.mergedClauses ?? []).map((entry, i) => {
+                    const whenErr = proseErrors.find((e) => e.field === `mergedClauses.${i}.when`);
+                    const clauseErr = proseErrors.find((e) => e.field === `mergedClauses.${i}.clause`);
+                    return (
+                      <div key={i} className="bg-white border border-slate-200 p-2 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] uppercase tracking-wide text-slate-500">Merge #{i + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeMergedClause(i)}
+                            className="text-[10px] text-slate-500 hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">When (pick ≥2)</div>
+                          <div className="flex flex-wrap gap-1">
+                            {scopedIds.map((subId) => {
+                              const active = entry.when.includes(subId);
+                              return (
+                                <button
+                                  key={subId}
+                                  type="button"
+                                  onClick={() => toggleMergedClauseWhen(i, subId)}
+                                  className={`text-[10px] font-mono px-1.5 py-0.5 border ${
+                                    active
+                                      ? "bg-slate-900 text-white border-slate-900"
+                                      : "bg-white text-slate-700 border-slate-300 hover:border-slate-500"
+                                  }`}
+                                >
+                                  {subId}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {whenErr && <p className="text-[10px] text-red-600 mt-0.5">{whenErr.message}</p>}
+                        </div>
+                        <div>
+                          <div className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Unified clause</div>
+                          <textarea
+                            value={entry.clause}
+                            onChange={(e) => setMergedClauseClause(i, e.target.value)}
+                            className={`w-full bg-white border px-2 py-1 text-xs text-slate-900 resize-y ${
+                              clauseErr ? "border-red-400" : "border-slate-300"
+                            }`}
+                            rows={2}
+                            placeholder="apply {image} to [unified surface description]"
+                          />
+                          {entry.clause && (
+                            <p className="text-[10px] text-slate-500 italic">
+                              → - {renderProseLinePreview(entry.clause, 2)}
+                            </p>
+                          )}
+                          {clauseErr && <p className="text-[10px] text-red-600">{clauseErr.message}</p>}
+                        </div>
                       </div>
                     );
                   })}

@@ -65,6 +65,31 @@ export interface PromptProse {
    * Each clause ≤18 words, positive framing (no "Do NOT"), no `{image}` token.
    */
   preserve?: string[];
+  /**
+   * Optional merge declarations. Each entry merges multiple subcategories into
+   * a single action clause when all of them resolve to the same swatch. This
+   * handles the "same color applied to both cabinets and island" case where
+   * BFL otherwise collapses two byte-identical input images and ignores the
+   * later clause.
+   *
+   * The merge FIRES when:
+   * - Every subcategory in `when` is present in the current selections, AND
+   * - Every subcategory in `when` resolves to the same `swatch_url`.
+   *
+   * When it fires the builder drops all `when` subcategories from the action
+   * iteration and emits the single `clause` with one swatch reference. The
+   * fallback (individual `actions[subId]` clauses) still runs when the merge
+   * does NOT fire — e.g. when the island is a different color than the
+   * perimeter cabinets.
+   *
+   * `clause` follows the same rules as action clauses (lowercase start, no
+   * trailing period, 4–18 words, exactly one `{image}` token, no forbidden
+   * words). Sort order uses the first slug in `when`.
+   */
+  mergedClauses?: Array<{
+    when: string[];
+    clause: string;
+  }>;
 }
 
 export interface StepSection {

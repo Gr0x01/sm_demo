@@ -235,6 +235,10 @@ interface PromptProse {
   lead?: string;                              // optional lead-in, defaults below
   style?: string;                             // optional trailer, defaults below
   preserve?: string[];                        // escape hatch, empty on day 1
+  mergedClauses?: Array<{                     // same-swatch collapse handler
+    when: string[];                           // subcategory slugs, ≥2
+    clause: string;                           // unified clause for the merged case
+  }>;
 }
 ```
 
@@ -273,6 +277,48 @@ default.
 narrate the base scene, reference unchanged surfaces, or describe the swatch
 in text. The validator rejects any of those at save time. The only way to
 author is "imperative surface description with an `{image}` token."
+
+**Same-swatch collapse (mergedClauses, shipped 2026-04-11).** When two
+subcategories resolve to the *same `swatch_url`*, BFL receives two
+byte-identical `input_image_N` images and dedupes them into one visual class
+— causing the later clause in the prompt to be silently ignored. This
+reproduced on Valor's Standard preset where the buyer picked Dove for both
+`kitchen-cabinet-color` and `kitchen-island-cabinet-color`: Max painted
+perimeter cabinets Dove but left the island base at its original base-photo
+color. The Mid-Range and Premium presets (different island color) worked
+fine. The fix is `mergedClauses`, a new optional field on `PromptProse`:
+
+```ts
+mergedClauses: [
+  {
+    when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+    clause: "apply {image} to every cabinet door and drawer front throughout the kitchen"
+  }
+]
+```
+
+The builder resolves merges as phase 1 of assembly. For each entry, it
+checks if every subcategory in `when` is currently selected AND they all
+resolve to the same `swatch_url`. If yes → the `when` subcategories are
+removed from the working selections and a single synthetic entry takes
+their place with the `clause` as its template and one shared swatch. If no
+→ each subcategory runs its own action clause as normal. Zero regression on
+the different-color case, correct output on the same-color case.
+
+Detection by `swatch_url` equality is the correct criterion because it
+maps directly to what BFL sees: two options pointing at the same storage
+path produce byte-identical input images. Options with the same hex but
+different swatch files do not trigger the collapse and do not need merging.
+
+The merged clause follows the same validation rules as any action clause:
+4–18 words, lowercase start, no trailing period, exactly one `{image}`, no
+forbidden words. Plus merge-specific rules: every `when` slug must have a
+fallback entry in `actions`, every `when` slug must be in the photo's
+subcategory scope, and no subcategory can appear in more than one merge.
+
+Scoped edits (`buildProseScopedEdit`) do NOT consult `mergedClauses` —
+single-surface changes are always one swatch, never a collapse case, and
+pull directly from `actions[subId]`.
 
 **Authoring is the specialist's job, not the main agent's.** The main agent
 owns the TypeScript type, builder, validator, admin UI, and tests. The

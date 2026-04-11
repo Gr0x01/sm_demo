@@ -6,7 +6,7 @@ import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/phot
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL } from "@/lib/models";
-import { sortSelectionsByVisualImpact } from "@/lib/visual-impact-sort";
+import { getSubcategoryPriority, sortSelectionsByVisualImpact } from "@/lib/visual-impact-sort";
 
 /**
  * Resolve linked options (e.g. "Match to Main Kitchen Cabinet Color").
@@ -379,6 +379,93 @@ function findForbiddenWord(text: string, forbidden: readonly string[]): string |
 }
 
 /**
+ * A single prompt-time action entry. Unifies the two kinds of entries the
+ * builder emits — one per ordinary selected subcategory, and one per merge
+ * that fired — so visual-impact sort, swatch resolution, and image-index
+ * substitution work uniformly over both.
+ */
+type ActionEntry = {
+  /** Slug used for visual-impact sort. For merges, the first slug in `when`. */
+  sortSlug: string;
+  /** The clause template with exactly one {image} token. */
+  template: string;
+  /** Swatch URL to resolve. Already known to be non-null by the time we build this. */
+  swatchUrl: string;
+  /** Label for the SwatchImage record (for debugging / logs). */
+  label: string;
+  /** `subcategoryId` on the SwatchImage record. For merges, the first sub in `when`. */
+  swatchSubcategoryId: string;
+};
+
+/**
+ * Phase 1 of full-generation assembly: resolve merge declarations against
+ * the current selections.
+ *
+ * A merge fires when every subcategory in `when` is present in
+ * `visualSelections` AND they all resolve to the same `swatch_url`. When it
+ * fires, those subcategories are removed from the working selections and a
+ * single merged entry takes their place.
+ *
+ * Swatch URL equality is the correct detection criterion because it maps
+ * directly to BFL's failure mode: two options pointing at the same storage
+ * path produce byte-identical input images, which BFL dedupes into one
+ * visual class and ignores competing clauses. Options that happen to share
+ * the same hex but use different swatch files would not trigger BFL's
+ * collapse, so we don't need hex fallback.
+ *
+ * Declarations are evaluated in order. A subcategory consumed by one merge
+ * is unavailable to later merges. This is the simplest conflict resolution
+ * for overlapping declarations; the validator prevents overlap at save time
+ * anyway.
+ */
+function resolveMerges(
+  visualSelections: Record<string, string>,
+  mergedClauses: PromptProse["mergedClauses"],
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+): { reducedSelections: Record<string, string>; mergedEntries: ActionEntry[] } {
+  if (!mergedClauses || mergedClauses.length === 0) {
+    return { reducedSelections: { ...visualSelections }, mergedEntries: [] };
+  }
+
+  const reducedSelections = { ...visualSelections };
+  const mergedEntries: ActionEntry[] = [];
+  const consumed = new Set<string>();
+
+  for (const entry of mergedClauses) {
+    if (entry.when.length < 2) continue;
+    if (entry.when.some(subId => consumed.has(subId))) continue;
+    if (!entry.when.every(subId => subId in reducedSelections)) continue;
+
+    const swatchUrls = entry.when.map(subId => {
+      const found = optionLookup.get(`${subId}:${reducedSelections[subId]}`);
+      return found?.option.swatchUrl ?? null;
+    });
+    const firstUrl = swatchUrls[0];
+    if (!firstUrl) continue;
+    if (!swatchUrls.every(u => u === firstUrl)) continue;
+
+    // Merge fires. Consume the subcategories and emit a synthetic entry.
+    const firstFound = optionLookup.get(`${entry.when[0]}:${reducedSelections[entry.when[0]]}`);
+    if (!firstFound) continue;
+
+    for (const subId of entry.when) {
+      delete reducedSelections[subId];
+      consumed.add(subId);
+    }
+
+    mergedEntries.push({
+      sortSlug: entry.when[0],
+      template: entry.clause,
+      swatchUrl: firstUrl,
+      label: firstFound.subCategory.name,
+      swatchSubcategoryId: entry.when[0],
+    });
+  }
+
+  return { reducedSelections, mergedEntries };
+}
+
+/**
  * Full-generation prompt builder for BFL Flux 2 editing mode.
  *
  * Assembles: lead → action bullets (sorted by visual impact) → preserve tail
@@ -386,6 +473,10 @@ function findForbiddenWord(text: string, forbidden: readonly string[]): string |
  * the 1-indexed position in input_image_2..input_image_8 (base photo is
  * image 1). Clauses that target a selection without a resolvable swatch throw
  * — there is no text-only fallback.
+ *
+ * Pipeline: (1) resolve merges against selections, (2) build a unified
+ * ActionEntry list, (3) visual-impact sort, (4) resolve swatches + substitute
+ * image indices, (5) assemble.
  *
  * `opts.emitPreserve` — default true. Set false for the fixture pass of a
  * two-pass split where every structural sub is absent from `visualSelections`;
@@ -401,11 +492,20 @@ export async function buildProsePrompt(
 ): Promise<{ prompt: string; swatches: SwatchImage[] }> {
   const { emitPreserve = true } = opts;
 
-  const swatches: SwatchImage[] = [];
-  const actionLines: string[] = [];
-  let imageIndex = 2; // image 1 = base photo
+  // Phase 1: resolve merges. After this, `reducedSelections` no longer
+  // contains the subcategories that were consumed by a merge; they're
+  // represented by `mergedEntries` instead.
+  const { reducedSelections, mergedEntries } = resolveMerges(
+    visualSelections,
+    prose.mergedClauses,
+    optionLookup,
+  );
 
-  for (const [subId, optId] of sortSelectionsByVisualImpact(visualSelections)) {
+  // Phase 2: build a unified list of ActionEntry records. Single entries for
+  // each remaining selection, plus every merged entry.
+  const entries: ActionEntry[] = [...mergedEntries];
+
+  for (const [subId, optId] of Object.entries(reducedSelections)) {
     const found = optionLookup.get(`${subId}:${optId}`);
     if (!found) continue;
     const { option, subCategory } = found;
@@ -420,34 +520,64 @@ export async function buildProsePrompt(
       );
     }
 
-    if (!option.swatchUrl || !resolveSwatchBuffer) {
+    if (!option.swatchUrl) {
       throw new PromptProseError(
         `actions["${subId}"] references a swatch, but option "${option.id}" has no swatchUrl.`,
       );
     }
-    const resolved = await resolveSwatchBuffer(option.swatchUrl);
+
+    entries.push({
+      sortSlug: subId,
+      template,
+      swatchUrl: option.swatchUrl,
+      label: subCategory.name,
+      swatchSubcategoryId: subId,
+    });
+  }
+
+  // Phase 3: visual-impact sort, using each entry's sortSlug.
+  entries.sort((a, b) => {
+    const pa = getSubcategoryPriority(a.sortSlug);
+    const pb = getSubcategoryPriority(b.sortSlug);
+    if (pa !== pb) return pa - pb;
+    return a.sortSlug.localeCompare(b.sortSlug);
+  });
+
+  if (entries.length === 0) {
+    return { prompt: "Return this image unchanged.", swatches: [] };
+  }
+
+  // Phase 4: resolve swatches and substitute image indices.
+  const swatches: SwatchImage[] = [];
+  const actionLines: string[] = [];
+  let imageIndex = 2; // image 1 = base photo
+
+  for (const entry of entries) {
+    if (!resolveSwatchBuffer) {
+      throw new PromptProseError(
+        `Cannot resolve swatch for "${entry.sortSlug}": no resolver provided.`,
+      );
+    }
+    const resolved = await resolveSwatchBuffer(entry.swatchUrl);
     if (!resolved) {
       throw new PromptProseError(
-        `actions["${subId}"] swatch failed to resolve for option "${option.id}".`,
+        `Swatch failed to resolve for "${entry.sortSlug}" at ${entry.swatchUrl}.`,
       );
     }
 
     swatches.push({
-      label: subCategory.name,
+      label: entry.label,
       buffer: resolved.buffer,
       mediaType: resolved.mediaType,
-      subcategoryId: subId,
+      subcategoryId: entry.swatchSubcategoryId,
     });
 
-    const substituted = template.replace(IMAGE_TOKEN, `image ${imageIndex}`);
+    const substituted = entry.template.replace(IMAGE_TOKEN, `image ${imageIndex}`);
     actionLines.push(`- ${substituted}`);
     imageIndex++;
   }
 
-  if (actionLines.length === 0) {
-    return { prompt: "Return this image unchanged.", swatches: [] };
-  }
-
+  // Phase 5: assemble lead → bullets → preserve → style.
   const lead = (prose.lead ?? DEFAULT_PROSE_LEAD).trim();
   const style = (prose.style ?? DEFAULT_PROSE_STYLE).trim();
 
@@ -523,6 +653,68 @@ export async function buildProseScopedEdit(
 }
 
 /**
+ * Validate one action clause (either an `actions[subId]` entry or a
+ * `mergedClauses[i].clause` entry). Enforces every rule that applies to
+ * clauses that end up as bullet lines in the assembled prompt.
+ *
+ * `loc` is a human-readable location like `actions["cabinets"]` or
+ * `mergedClauses[0].clause` so error messages point at the offending field.
+ */
+function validateActionClause(loc: string, clause: unknown): void {
+  if (typeof clause !== "string") {
+    throw new PromptProseError(`${loc} must be a string.`);
+  }
+  const trimmed = clause.trim();
+  if (trimmed.length === 0) {
+    throw new PromptProseError(`${loc} must not be empty.`);
+  }
+
+  const imageCount = countToken(trimmed, IMAGE_TOKEN);
+  if (imageCount !== 1) {
+    throw new PromptProseError(
+      `${loc} must contain exactly one {image} token (found ${imageCount}).`,
+    );
+  }
+
+  const wc = wordCount(trimmed);
+  if (wc < 4 || wc > 18) {
+    throw new PromptProseError(`${loc} must be 4–18 words (got ${wc}).`);
+  }
+
+  if (/^[A-Z]/.test(trimmed)) {
+    throw new PromptProseError(
+      `${loc} must start lowercase (clauses are joined into bullet lines by the builder).`,
+    );
+  }
+  if (trimmed.endsWith(".")) {
+    throw new PromptProseError(
+      `${loc} must not end with a period (builder appends separators).`,
+    );
+  }
+
+  // Strip the literal {image} token before scanning so nothing inside the
+  // placeholder is mistaken for forbidden text.
+  const scanText = trimmed.replace(IMAGE_TOKEN, "");
+  const neg = findForbiddenWord(scanText, FORBIDDEN_NEGATIVE_WORDS);
+  if (neg) {
+    throw new PromptProseError(
+      `${loc} contains forbidden word "${neg}" (use positive framing; describe "island" positionally).`,
+    );
+  }
+  const mat = findForbiddenWord(scanText, FORBIDDEN_ACTION_MATERIAL_WORDS);
+  if (mat) {
+    throw new PromptProseError(
+      `${loc} contains forbidden material/color word "${mat}" (swatch image is the sole material authority).`,
+    );
+  }
+  if (HEX_COLOR_RE.test(scanText)) {
+    throw new PromptProseError(
+      `${loc} contains a hex color code (swatch image is the sole color authority).`,
+    );
+  }
+}
+
+/**
  * Validate a PromptProse object without resolving swatches. Used by the admin
  * PATCH handler at save time. Throws `PromptProseError` on any structural
  * problem so the API and the editor UI surface identical error text.
@@ -553,57 +745,7 @@ export function validatePromptProse(
 
   // ----- actions -----
   for (const [subId, clause] of Object.entries(prose.actions)) {
-    if (typeof clause !== "string") {
-      throw new PromptProseError(`actions["${subId}"] must be a string.`);
-    }
-    const trimmed = clause.trim();
-    if (trimmed.length === 0) {
-      throw new PromptProseError(`actions["${subId}"] must not be empty.`);
-    }
-
-    const imageCount = countToken(trimmed, IMAGE_TOKEN);
-    if (imageCount !== 1) {
-      throw new PromptProseError(
-        `actions["${subId}"] must contain exactly one {image} token (found ${imageCount}).`,
-      );
-    }
-
-    const wc = wordCount(trimmed);
-    if (wc < 4 || wc > 18) {
-      throw new PromptProseError(`actions["${subId}"] must be 4–18 words (got ${wc}).`);
-    }
-
-    if (/^[A-Z]/.test(trimmed)) {
-      throw new PromptProseError(
-        `actions["${subId}"] must start lowercase (action clauses are joined into bullet lines by the builder).`,
-      );
-    }
-    if (trimmed.endsWith(".")) {
-      throw new PromptProseError(
-        `actions["${subId}"] must not end with a period (builder appends separators).`,
-      );
-    }
-
-    // Strip the literal {image} token before scanning so nothing inside the
-    // placeholder is mistaken for forbidden text.
-    const scanText = trimmed.replace(IMAGE_TOKEN, "");
-    const neg = findForbiddenWord(scanText, FORBIDDEN_NEGATIVE_WORDS);
-    if (neg) {
-      throw new PromptProseError(
-        `actions["${subId}"] contains forbidden word "${neg}" (use positive framing; describe "island" positionally).`,
-      );
-    }
-    const mat = findForbiddenWord(scanText, FORBIDDEN_ACTION_MATERIAL_WORDS);
-    if (mat) {
-      throw new PromptProseError(
-        `actions["${subId}"] contains forbidden material/color word "${mat}" (swatch image is the sole material authority).`,
-      );
-    }
-    if (HEX_COLOR_RE.test(scanText)) {
-      throw new PromptProseError(
-        `actions["${subId}"] contains a hex color code (swatch image is the sole color authority).`,
-      );
-    }
+    validateActionClause(`actions["${subId}"]`, clause);
   }
 
   // ----- required coverage -----
@@ -612,6 +754,52 @@ export function validatePromptProse(
       throw new PromptProseError(
         `prompt_prose.actions is missing an entry for required subcategory "${subId}".`,
       );
+    }
+  }
+
+  // ----- optional mergedClauses -----
+  if (prose.mergedClauses !== undefined) {
+    if (!Array.isArray(prose.mergedClauses)) {
+      throw new PromptProseError("prompt_prose.mergedClauses must be an array.");
+    }
+    const requiredSet = new Set(requiredActionSubIds);
+    const seenSubs = new Set<string>();
+    for (let i = 0; i < prose.mergedClauses.length; i++) {
+      const entry = prose.mergedClauses[i];
+      const loc = `mergedClauses[${i}]`;
+      if (!entry || typeof entry !== "object") {
+        throw new PromptProseError(`${loc} must be an object with \`when\` and \`clause\`.`);
+      }
+      if (!Array.isArray(entry.when) || entry.when.length < 2) {
+        throw new PromptProseError(
+          `${loc}.when must be an array of at least 2 subcategory slugs.`,
+        );
+      }
+      for (const subId of entry.when) {
+        if (typeof subId !== "string" || subId.length === 0) {
+          throw new PromptProseError(`${loc}.when contains a non-string or empty slug.`);
+        }
+        if (!(subId in prose.actions)) {
+          throw new PromptProseError(
+            `${loc}.when references "${subId}", but it has no fallback entry in actions. Every merged subcategory must have an action clause that runs when the merge does not fire.`,
+          );
+        }
+        // Only enforce photo-scope coverage when the caller supplied a scope.
+        // An empty `requiredActionSubIds` means "validate structure only" (used
+        // by some tests and the client-side validator).
+        if (requiredActionSubIds.length > 0 && !requiredSet.has(subId)) {
+          throw new PromptProseError(
+            `${loc}.when references "${subId}", which is not in this photo's subcategory scope.`,
+          );
+        }
+        if (seenSubs.has(subId)) {
+          throw new PromptProseError(
+            `${loc}.when references "${subId}", which already appears in another mergedClauses entry. Subcategories may only participate in one merge.`,
+          );
+        }
+        seenSubs.add(subId);
+      }
+      validateActionClause(`${loc}.clause`, entry.clause);
     }
   }
 
