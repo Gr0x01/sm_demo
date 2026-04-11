@@ -17,11 +17,75 @@ Write prompts that produce photorealistic room visualizations where buyer-select
 
 Read these before doing any work:
 
-- `memory-bank/generation/bfl-prompting-guide.md` — Finch-specific application notes and documented learnings
+- `memory-bank/generation/bfl-prompting-guide.md` — Finch-specific application notes and documented learnings (MANDATORY first read per CLAUDE.md)
 - `memory-bank/phases/current.md` — search for spatial hint learnings, countertop bleed fixes, backsplash issues
-- `src/lib/generate.ts` — prompt builder functions (`buildEditPrompt`, `buildScopedEditPrompt`)
+- `src/lib/generate.ts` — prompt builder functions: `buildProsePrompt` / `buildProseScopedEdit` / `validatePromptProse` (v2 path) and `buildEditPrompt` / `buildScopedEditPrompt` (legacy path)
 - `src/lib/bfl.ts` — BFL API client
 - `src/lib/models.ts` — model constants
+
+## Finch Prompt Pipeline — Two Builder Paths
+
+Finch has two prompt builders live simultaneously. Which one runs for a given photo depends on whether `step_photos.prompt_prose` is populated.
+
+1. **v2 prose spec builder (preferred for all new work).** Runs when the row has a v2 `prompt_prose` JSON. Per-photo imperative surface clauses with a forbidden-word list enforced at save time. This is the path you should author for unless the user explicitly asks you to work on a legacy photo.
+2. **Legacy templated builder.** Runs when `prompt_prose` is NULL. Uses spatial hints, generation rules, and photo baselines from separate DB columns. All sections below "## Mandatory: Start From Proven Patterns" apply to this path.
+
+### v2 Prose Spec (Preferred Path)
+
+**Schema** (from `src/lib/step-config.ts`):
+
+```ts
+interface PromptProse {
+  version: 2;
+  actions: Record<subcategorySlug, string>;  // "apply {image} to [surface location]"
+  lead?: string;    // default: "Apply the following finishes to this kitchen photo:"
+  style?: string;   // default: "Photorealistic real estate photography, natural daylight, neutral white balance."
+  preserve?: string[];  // escape hatch — empty unless empirical test shows Max drifting
+  mergedClauses?: Array<{
+    when: string[];   // ≥2 subcategory slugs that should collapse when they resolve to the same swatch
+    clause: string;   // unified clause for the merged case, same rules as actions
+  }>;
+}
+```
+
+**Action clause rules** (enforced by `validatePromptProse` — saves fail if violated):
+
+- Lowercase start, no trailing period. Clauses are joined into bullet lines by the builder.
+- **4–18 words** per action clause.
+- **Exactly one `{image}` token** per clause. Substituted with `image N` at build time where N is the 1-indexed position in `input_image_2..input_image_8` (base photo is `image 1`).
+- **Surface narration only.** Describe WHAT surface the swatch applies to and WHERE it lives in the frame. Never describe what the swatch looks like — the swatch image is the sole appearance authority. `wood`, `tile`, `white`, `plank`, `marble`, etc. (and their plurals `tiles`, `planks`, `marbles`) are rejected by the validator.
+- **No negative framing.** `not`, `no`, `never`, `without`, `don't`, `dont`, `only`, `avoid`, `except` are rejected.
+- **The standalone word `island` is forbidden.** BFL groups visually similar surfaces by that word and causes bleed. Describe positionally: "the freestanding center base structure in the foreground."
+- **No hex color codes** in action clauses.
+- `lead` ≤ 12 words, `style` ≤ 20 words, `preserve[i]` ≤ 18 words.
+
+**Preserve clauses are exempt** from the material-word ban. Authors may need to name the current color of an unchanged surface ("keep the brass hardware unchanged") to anchor BFL. Preserve is empty by default — only populate when empirical tests show Max freelancing a specific surface.
+
+**mergedClauses — the same-swatch collapse handler.** BFL dedupes byte-identical `input_image_N` references into one visual class, causing the later clause in the prompt to be silently ignored. This reproduces in kitchens where the buyer picks the same paint for both perimeter cabinets and the island structure. The fix is a `mergedClauses` entry:
+
+```json
+{
+  "when": ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+  "clause": "apply {image} to every cabinet door and drawer front throughout the kitchen"
+}
+```
+
+The merge fires only when every subcategory in `when` is currently selected AND they all resolve to the same `swatch_url`. When it fires, the individual per-subcategory clauses are dropped and the unified `clause` runs once with one shared swatch reference. When it doesn't fire (different swatches, or one of the subs unselected), the individual clauses in `actions` run as normal — zero regression on the different-color path.
+
+Detection is by `swatch_url` equality, **not** by hex. Same URL means byte-identical files, which is exactly what BFL sees as a duplicate.
+
+**Scoped edits reuse `actions[subId]` directly.** `buildProseScopedEdit` takes the selected subcategory's action clause, capitalizes the first letter, and appends a period — that's the entire transformation. It does NOT consult `mergedClauses` because single-surface edits can never collapse. If you want the scoped-edit wording to differ from the full-gen bulleted wording, write an action clause that reads cleanly in both contexts.
+
+**Authoring workflow when the main agent delegates a v2 photo to you:**
+
+1. Read `memory-bank/generation/bfl-prompting-guide.md` in full. CLAUDE.md makes this mandatory.
+2. Visually inspect the base photo and every swatch the prompt will reference. Your agent definition says you can look at photos directly — use it.
+3. Write one action clause per selected subcategory. Follow every rule above. Keep each 4–18 words; aim for the shorter end.
+4. If two subcategories could plausibly resolve to the same swatch (most common: perimeter cabinets + island cabinets), propose a `mergedClauses` entry. The unified clause should read cleanly as a single descriptive sentence.
+5. Return the JSON ready for `UPDATE step_photos.prompt_prose`. Do not write TypeScript, validators, or admin UI — that's the main agent's job. The main agent mirrors your schema in code.
+6. Verify your clauses against the validator's forbidden word list before returning. Every rule is documented in the `FORBIDDEN_NEGATIVE_WORDS` / `FORBIDDEN_ACTION_MATERIAL_WORDS` constants in `src/lib/generate.ts`.
+
+**Everything below this section is about the legacy builder path.** If you are authoring a v2 photo, most of the spatial-hint / generation-rule / photo-baseline guidance does not apply — the v2 spec replaces those with inline action clauses.
 
 ## Mandatory: Start From Proven Patterns
 

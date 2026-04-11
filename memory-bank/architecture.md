@@ -256,7 +256,37 @@ State shape:
 
 **Scoped edits**: Leave-one-out hash system finds cached images differing by one surface. `fluxScopedEdit` runs a targeted edit (~7-20s vs 35-55s full gen). Depth capped at 3. Model selection: `option.scoped_edit_model` override → range/oven gets Max → default Max. Flex runs at 25 steps for scoped edits (half default, sufficient for single-surface swaps).
 
-**Prompt structure** (Flux-native, ~55-80 words):
+**Two prompt builders, selected per photo.** The pipeline has two builders that run side-by-side; which one fires depends on whether `step_photos.prompt_prose` is populated.
+
+1. **v2 prose spec builder (preferred for new photos, shipped 2026-04-11).** Per-photo JSON spec authored by `bfl-prompt-engineer` and validated structurally at save time. Enforces the BFL editing-guide rules that the legacy builder allowed to drift. See the "Prose spec builder (v2)" section in `memory-bank/generation/bfl-prompting-guide.md` for the schema and full rules.
+2. **Legacy templated builder.** Runs when `prompt_prose` is NULL. Uses spatial hints, generation rules, and photo baselines from separate DB columns.
+
+**v2 prose spec schema** (`PromptProse` in `src/lib/step-config.ts`):
+```ts
+{
+  version: 2,
+  actions: { [subcategorySlug]: "apply {image} to [surface location]" },
+  lead?: string,    // default: "Apply the following finishes to this kitchen photo:"
+  style?: string,   // default: "Photorealistic real estate photography, natural daylight, neutral white balance."
+  preserve?: string[],
+  mergedClauses?: Array<{ when: string[]; clause: string }>
+}
+```
+
+**v2 assembly pipeline** (`buildProsePrompt`):
+1. Resolve merges — for each `mergedClauses` entry, if every `when` sub is selected AND they all resolve to the same `swatch_url`, drop those subs from the working selections and emit a single synthetic entry with the unified clause + one shared swatch.
+2. Build unified `ActionEntry` list (merged entries + remaining individual selections).
+3. Visual-impact sort (`getSubcategoryPriority`). Merged entries sort by their first `when` slug.
+4. Resolve swatches, substitute `{image}` → `image N` starting at 2.
+5. Assemble: `lead` → bulleted actions → `preserve` tail (if present) → `style` trailer.
+
+**v2 validator rules** (`validatePromptProse`, save-time): 4–18 words per action clause, lowercase start, no trailing period, exactly one `{image}` token, no negative framing words (`not`/`no`/`never`/`without`/`only`/...), no material/color words including plurals (`wood`/`tile`/`white`/`plank`/`tiles`/...), no hex codes, no standalone word `island`. Merged clauses follow the same rules plus: ≥2 when-slugs, every when-slug has a fallback entry in `actions`, every when-slug is in the photo's subcategory scope, no slug appears in more than one merge entry.
+
+**Scoped edits (v2)** reuse `actions[subId]` directly. `buildProseScopedEdit` capitalizes the first letter and appends a period — no lead, no style trailer, no preserve, no merged-clause consultation. Single-surface edits can never trigger the same-swatch collapse.
+
+**Same-swatch collapse (mergedClauses)**: BFL dedupes byte-identical `input_image_N` references and silently ignores the later clause. Reproduces when a buyer picks the same paint for both perimeter cabinets and the island (first seen on Valor's Standard preset). Detection by `swatch_url` equality — same URL means same bytes from BFL's perspective. Hex fallback not needed for the Valor case; options sharing a hex but pointing at different storage files don't trigger the collapse. Architecture: `resolveMerges` in `src/lib/generate.ts`.
+
+**Legacy prompt structure** (Flux-native, ~55-80 words):
 ```
 Apply image 2 to all perimeter cabinets — upper, lower, and appliance-adjacent.
 Apply image 3 to island base cabinet panel in the foreground.
@@ -266,17 +296,18 @@ Photorealistic, neutral white balance, natural lighting.
 ```
 No opening sentence, no rules block, no scene block. Each line is "Apply image N to [spatial hint]." Dimensions in parentheses. Paint options get hex alongside swatch (`, exact color #hex`) — keyed off `promptDescriptor` containing "painted". Swatch image is sole appearance authority.
 
-**Scoped edit prompt** (~15-25 words): `Change [surface] to match image 2. Match image 2 exactly.`
+**Legacy scoped edit prompt** (~15-25 words): `Change [surface] to match image 2. Match image 2 exactly.`
 
-**Linked option resolution**: Options with `linked_to_subcategory` (e.g. "Match to Main") are resolved before prompt building. Same swatch → merged into one line covering both zones. Different swatch → kept separate.
+**Linked option resolution** (legacy path): Options with `linked_to_subcategory` (e.g. "Match to Main") are resolved before prompt building. Same swatch → merged into one line covering both zones. Different swatch → kept separate. v2 has its own `mergedClauses` mechanism that supersedes this for v2 photos.
 
 **Per-option model selection**: `scoped_edit_model` text column on options. Nullable — defaults to Max when not set. Set via admin UI dropdown (Pro/Klein 9B/Klein 4B/Max/Flex). Demo org backsplash: Flex (subway tiles) and Flex (herringbone). SM backsplash: Klein 9B (hex mosaic, herringbone).
 
 **Cache versioning**: `GENERATION_CACHE_VERSION` (main) and `DEMO_GENERATION_CACHE_VERSION` (demo) in hash inputs. Bump when prompt semantics change.
 
 **Key files**:
-- `src/lib/flux-pipeline.ts` — shared Flux generation core
-- `src/lib/generate.ts` — prompt builders (`buildEditPrompt`, `buildScopedEditPrompt`), hash functions, context derivation
+- `src/lib/flux-pipeline.ts` — shared Flux generation core (`fluxGenerate`, `fluxScopedEdit`, `analyzeProseCoverage` for v2 routing)
+- `src/lib/step-config.ts` — `PromptProse` v2 type
+- `src/lib/generate.ts` — prompt builders (`buildProsePrompt`/`buildProseScopedEdit` for v2, `buildEditPrompt`/`buildScopedEditPrompt` for legacy), `validatePromptProse`, `resolveMerges`, hash functions, context derivation
 - `src/lib/bfl.ts` — BFL API client (submit → poll → download)
 - `src/inngest/functions/generate-photo.ts` — main pipeline orchestrator
 - `src/inngest/functions/generate-demo.ts` — demo pipeline orchestrator
