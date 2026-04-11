@@ -415,6 +415,14 @@ type ActionEntry = {
   label: string;
   /** `subcategoryId` on the SwatchImage record. For merges, the first sub in `when`. */
   swatchSubcategoryId: string;
+  /**
+   * Optional `option.dimensions` text. Emitted as a parenthetical after the
+   * substituted `{image}` token. Used to supply scale/size context that the
+   * swatch image alone cannot carry (e.g. "thin 5-inch bar pull"). This is
+   * the BFL-documented exception to swatch authority — see the prompting
+   * guide's "Swatch Authority Rule" section.
+   */
+  dimensions?: string;
 };
 
 /**
@@ -479,6 +487,7 @@ function resolveMerges(
       swatchUrl: firstUrl,
       label: firstFound.subCategory.name,
       swatchSubcategoryId: entry.when[0],
+      dimensions: firstFound.option.dimensions?.trim() || undefined,
     });
   }
 
@@ -552,6 +561,7 @@ export async function buildProsePrompt(
       swatchUrl: option.swatchUrl,
       label: subCategory.name,
       swatchSubcategoryId: subId,
+      dimensions: option.dimensions?.trim() || undefined,
     });
   }
 
@@ -593,7 +603,8 @@ export async function buildProsePrompt(
     });
 
     const substituted = entry.template.replace(IMAGE_TOKEN, `image ${imageIndex}`);
-    actionLines.push(`- ${substituted}`);
+    const withDims = entry.dimensions ? `${substituted} (${entry.dimensions})` : substituted;
+    actionLines.push(`- ${withDims}`);
     imageIndex++;
   }
 
@@ -670,9 +681,19 @@ export async function buildProseScopedEdit(
   // Capitalize the first letter (templates are authored lowercase) and add a
   // terminal period. That's the minimum to turn an action clause into a
   // standalone edit instruction.
+  //
+  // Light preservation trailer appended for scoped-edit context ONLY: the
+  // same action clauses are used for both full-gen and scoped-edit paths, but
+  // full-gen doesn't need preservation (every other surface is also changing)
+  // while scoped-edit does (bleed into adjacent surfaces is a known Pro
+  // limitation). Kept short and positive per BFL's Klein guidance on
+  // "maintain all other aspects of the original image".
   const clause = template.replace(IMAGE_TOKEN, "image 2");
-  const capitalized = clause.charAt(0).toUpperCase() + clause.slice(1);
-  const prompt = capitalized.endsWith(".") ? capitalized : `${capitalized}.`;
+  const dims = changed.option.dimensions?.trim();
+  const clauseWithDims = dims ? `${clause} (${dims})` : clause;
+  const capitalized = clauseWithDims.charAt(0).toUpperCase() + clauseWithDims.slice(1);
+  const withPeriod = capitalized.endsWith(".") ? capitalized : `${capitalized}.`;
+  const prompt = `${withPeriod} Maintain all other aspects of the original image.`;
 
   return { prompt, swatches };
 }

@@ -251,7 +251,7 @@ describe("buildProsePrompt (v2)", () => {
 
     const expected = [
       "Apply the following finishes to this kitchen photo:",
-      "- apply image 2 to the wall between upper cabinets and countertops",
+      "- apply image 2 to the wall between upper cabinets and countertops (4x16)",
       "- apply image 3 to all horizontal countertop surfaces",
       "- apply image 4 to the upper walls above the cabinets",
       "- apply image 5 to every cabinet door and drawer front along the walls",
@@ -264,6 +264,28 @@ describe("buildProsePrompt (v2)", () => {
     // First swatch in the reference array matches the first bullet line.
     expect(swatches[0].subcategoryId).toBe("backsplash");
     expect(swatches[4].subcategoryId).toBe("range");
+  });
+
+  it("appends option.dimensions as a parenthetical after the {image} substitution", async () => {
+    // backsplash fixture has dimensions "4x16"; countertops fixture has none.
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        backsplash: "apply {image} to the wall strip above the countertops",
+        countertops: "apply {image} to all perimeter countertop surfaces",
+      },
+    };
+    const { prompt } = await buildProsePrompt(
+      prose,
+      { backsplash: "bs-subway-white", countertops: "ct-granite-luna" },
+      optionLookup,
+      mockResolver,
+    );
+    // Entry with dimensions gets the parenthetical.
+    expect(prompt).toContain("- apply image 2 to the wall strip above the countertops (4x16)");
+    // Entry without dimensions is unchanged.
+    expect(prompt).toContain("- apply image 3 to all perimeter countertop surfaces");
+    expect(prompt).not.toContain("perimeter countertop surfaces (");
   });
 
   it("substitutes {image} with sequential indexes starting at 2", async () => {
@@ -655,7 +677,7 @@ describe("buildProseScopedEdit (v2)", () => {
       actions: { cabinets: "apply {image} to every cabinet door and drawer front along the walls" },
     };
     const { prompt, swatches } = await buildProseScopedEdit(prose, "cabinets", "cab-espresso", optionLookup, mockResolver);
-    expect(prompt).toBe("Apply image 2 to every cabinet door and drawer front along the walls.");
+    expect(prompt).toBe("Apply image 2 to every cabinet door and drawer front along the walls. Maintain all other aspects of the original image.");
     expect(swatches).toHaveLength(1);
     expect(swatches[0].subcategoryId).toBe("cabinets");
   });
@@ -668,6 +690,16 @@ describe("buildProseScopedEdit (v2)", () => {
     await expect(
       buildProseScopedEdit(prose, "countertops", "ct-granite-luna", optionLookup, mockResolver),
     ).rejects.toThrow(/Missing actions/);
+  });
+
+  it("appends option.dimensions as a parenthetical inside the scoped-edit clause", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { backsplash: "apply {image} to the wall strip above the countertops" },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "backsplash", "bs-subway-white", optionLookup, mockResolver);
+    // Dimensions parenthetical lives inside the clause, period still terminates the full edit.
+    expect(prompt).toBe("Apply image 2 to the wall strip above the countertops (4x16). Maintain all other aspects of the original image.");
   });
 
   it("emits no lead, no style trailer, no preserve tail", async () => {

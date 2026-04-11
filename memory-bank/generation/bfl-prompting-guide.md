@@ -117,7 +117,7 @@ Use JSON for: production workflows, automation, complex scenes, independent elem
 
 Klein is for targeted single-surface changes. Key principle: **reference images carry visual details, prompt describes what changes.**
 
-**Klein preserves everything by default.** No preservation lists needed.
+**Klein preserves everything by default.** No *long* preservation lists needed. However, to explicitly protect unchanged elements from bleed, the official BFL fallback phrase is appended.
 
 **Target: 15-25 words.** Write descriptive prose, not keywords.
 
@@ -183,6 +183,27 @@ When the changed surface is adjacent to a preserved one, include spatial locatio
 2. Front-load the positive description (word order matters)
 3. Add descriptive detail strengthening the alternative
 4. Use environmental context to naturalize the positive element
+
+## BFL Agent Skills Setup
+
+BFL provides an official, installable skills package for AI agents (like Cursor, Windsurf, or Claude Code) that encodes procedural knowledge about FLUX prompting and API integration. This package (`black-forest-labs/skills`) includes:
+- **`flux-best-practices`**: Teaches the core formula (Subject+Action+Style+Context+Lighting+Technical), the ban on negative prompts, lighting vocabulary, and model selection.
+- **`bfl-api`**: Teaches polling mechanisms, rate limits, and endpoint structure.
+
+**Installation for Finch Agents:**
+When utilizing the `bfl-prompt-engineer` subagent, the agent can be equipped with these skills.
+- **Cursor/Windsurf**: `npx skills add black-forest-labs/skills`
+- **Claude Code**:
+  ```bash
+  /plugin marketplace add black-forest-labs/skills
+  /plugin install flux-best-practices@bfl-skills
+  ```
+
+**Interaction with Finch Rules:**
+The official BFL skills handle the *foundational* capabilities (writing flowing prose, omitting negative prompts, structuring API calls). However, the agent must *still* read this `bfl-prompting-guide.md` file because it contains our **Finch-specific rules**:
+1. The **v2 Schema constraints** (no scene blocking, required `{image}` tokens).
+2. The **Swatch Authority Rule** (never write material/color words; let the swatch drive appearance).
+3. **Spatial Hint logic** (preventing bleed between adjacent surfaces).
 
 ## API Parameters (Editing Mode)
 
@@ -264,14 +285,30 @@ interface PromptProse {
 1. Sort selected actions by visual-impact priority (`visual-impact-sort.ts`).
 2. For each, resolve the swatch into the reference array and substitute
    `{image}` → `image N` where N starts at 2 (base photo is image 1).
-3. Assemble: `lead` → bulleted action lines → `preserve` tail (if populated)
+3. If the option has a non-empty `dimensions` field, append it as a
+   parenthetical after the substitution: `apply image 2 to every cabinet
+   pull (thin 5-inch bar pull, small relative to cabinet face)`. This is
+   the BFL-documented exception to swatch authority — the swatch image
+   cannot carry scale signal for small objects whose correct size depends
+   on a larger surface they don't contain, so `dimensions` supplies it.
+4. Assemble: `lead` → bulleted action lines → `preserve` tail (if populated)
    → `style` trailer. Join with `\n`.
+
+**Dimensions authoring rules** (same as legacy v1, recap):
+- Relative scale, not absolute units. "thin 5-inch bar pull, small
+  relative to cabinet face" — not "4 inches wide". BFL has no internal
+  concept of inches.
+- No material/color words — those are the swatch's job. Scale words
+  (thin, small, narrow, wide, large) and count words (dozens of tiny
+  rectangular pieces) are allowed.
+- Kept short. The parenthetical is a scale supplement, not a second
+  description of the object.
 
 **Scoped edits reuse the same `actions` map.** `buildProseScopedEdit` takes
 the action clause for the changed subcategory, capitalizes the first letter,
-appends a period, and sends it with the swatch as `image 2`. No lead, no
-style trailer, no preserve tail — Klein/Flex preserve unchanged surfaces by
-default.
+appends a period, and sends it with the swatch as `image 2`. If the option
+has `dimensions`, it is appended as a parenthetical before the terminal
+period, same as full-gen. No lead, no style trailer. To protect unchanged surfaces from bleed, the BFL official fallback phrase is appended: "Maintain all other aspects of the original image."
 
 **Rule the v2 spec enforces structurally:** you cannot author prompts that
 narrate the base scene, reference unchanged surfaces, or describe the swatch
