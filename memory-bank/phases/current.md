@@ -55,6 +55,19 @@ Now focused on: builder outreach (provocation-first strategy), generation qualit
 
 Pipeline shipped and refactored (see `completed.md` #35). These quality issues remain:
 
+**Prose spec v2 shipped 2026-04-11.** New bare-minimum per-photo prompt spec
+replaces the previous prose builder that violated BFL rules with a hallucinated
+`subject` field. Schema: `{ version: 2, actions, lead?, style?, preserve? }`
+with forbidden-word and word-count enforcement at save time. Scoped edits now
+reuse the same `actions` map. `preserve[]` is empty on day 1 — we trust Max
+to leave unselected surfaces alone via the base image, add preservation
+clauses only when an empirical test shows Max freelancing a specific surface.
+Valor is the first photo on v2. See `memory-bank/generation/bfl-prompting-guide.md`
+"Prose spec builder (v2)" section for the full rules. Builders:
+`buildProsePrompt` / `buildProseScopedEdit` / `validatePromptProse` in
+`src/lib/generate.ts`.
+
+
 - [ ] **Countertop scoped edit bleeds onto island face** — tried 3 hint iterations. Current hint avoids "island" but still bleeds on some combos. May need adjacency preservation clause in `buildScopedEditPrompt` or Klein 9B for countertop edits.
 - [ ] **Inconsistent cabinet rendering between full gen runs** — same fog paint swatch produces visibly different results across runs. Likely Flux Max non-determinism, not a code bug.
 - [ ] **Re-seed `/try` demo cache** — run `npx tsx scripts/seed-demo-cache.ts` after deploy

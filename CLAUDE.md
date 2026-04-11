@@ -70,6 +70,16 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 ### LLM Model Usage — CRITICAL
 **NEVER change LLM model names or configurations without explicit authorization.**
 
+### BFL Flux Prompting — CRITICAL
+**`memory-bank/generation/bfl-prompting-guide.md` MUST be read before writing, editing, or reviewing ANY Flux prompt.** This applies to:
+- The main agent writing prompts directly (full-gen templates, scoped-edit templates, spatial hints, generation_rules, prompt builder code)
+- Any subagent delegated Flux prompt work — the delegating agent MUST either pass the guide contents in the brief or instruct the subagent to read it first
+- `bfl-prompt-engineer` delegations — the brief must explicitly require reading the guide before responding
+
+Why: the guide encodes the Foundation First framework (Subject + Action + Style + Context), the state-declaration template for cabinet recolors, the swatch-authority rule, and the forbidden-word list. Skipping it reintroduces shipped bugs. The guide is the source of truth; patch-lineage memory is not a substitute.
+
+No exceptions. If a prompt change is urgent, read the guide first, then move fast.
+
 ## SUBAGENTS & DELEGATION
 
 ### Available Specialized Subagents
@@ -109,7 +119,7 @@ Notion search returns max 25 results per call. NEVER draw conclusions from a sin
 11. **cold-email-writer**: Use for writing fully custom cold outreach emails. Takes research notes, produces ready-to-send emails in Rashaad's voice. Use AFTER lead-researcher has done the research.
 12. **prospect-demo-builder**: Use to spin up a new `/for/` prospect demo page. Give it a builder name + kitchen/exterior photo paths. Can run multiple in parallel for different builders.
 13. **crm-auditor**: Use for batch CRM cleanup — propagating company verdicts to contacts, auditing pipeline hygiene, researching unresearched companies. Run modes: `scan` → `fix` → `research` → `report`.
-14. **bfl-prompt-engineer**: Use for writing or tuning BFL Flux 2 prompts — generation_rules, spatial_hints, step photo policies, option rules, or prompt builder code. Knows the official BFL prompting guides and Finch's swatch-authority rules.
+14. **bfl-prompt-engineer**: Use for writing or tuning BFL Flux 2 prompts — generation_rules, spatial_hints, step photo policies, option rules, or prompt builder code. Knows the official BFL prompting guides and Finch's swatch-authority rules. **MANDATORY**: every brief must instruct the agent to read `memory-bank/generation/bfl-prompting-guide.md` before responding (see BFL Flux Prompting CRITICAL rule above).
 
 ## SKILLS
 

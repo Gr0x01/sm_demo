@@ -3,6 +3,16 @@ import { z } from "zod/v4";
 import { authenticateAdminRequest } from "@/lib/admin-auth";
 import { invalidateOrgCache } from "@/lib/admin-cache";
 import { getServiceClient } from "@/lib/supabase";
+import { getOptionLookup } from "@/lib/db-queries";
+import { PromptProseError, validatePromptProse } from "@/lib/generate";
+
+const promptProseSchema = z.object({
+  version: z.literal(2),
+  actions: z.record(z.string(), z.string()),
+  lead: z.string().optional(),
+  style: z.string().optional(),
+  preserve: z.array(z.string()).optional(),
+});
 
 const updateSchema = z.object({
   org_id: z.string(),
@@ -12,6 +22,7 @@ const updateSchema = z.object({
   photo_baseline: z.string().nullable().optional(),
   subcategory_ids: z.array(z.string()).nullable().optional(),
   sort_order: z.number().int().optional(),
+  prompt_prose: promptProseSchema.nullable().optional(),
 });
 
 export async function PATCH(
@@ -30,7 +41,41 @@ export async function PATCH(
     if ("error" in auth) return auth.error;
 
     const { supabase, orgId } = auth;
-    const { label, is_hero, spatial_hint, photo_baseline, subcategory_ids, sort_order } = parsed.data;
+    const { label, is_hero, spatial_hint, photo_baseline, subcategory_ids, sort_order, prompt_prose } = parsed.data;
+
+    // Validate prompt_prose structurally AND against coverage of the photo's
+    // effective subcategory_ids. Save-time coverage enforcement prevents the
+    // "active badge lies" failure mode where an author saves partial prose,
+    // ships, and the photo silently falls back to the legacy builder at
+    // generation time.
+    if (prompt_prose) {
+      try {
+        const [optionLookup, existingPhoto] = await Promise.all([
+          getOptionLookup(orgId),
+          supabase
+            .from("step_photos")
+            .select("subcategory_ids")
+            .eq("id", id)
+            .eq("org_id", orgId)
+            .single(),
+        ]);
+        if (existingPhoto.error || !existingPhoto.data) {
+          return NextResponse.json({ error: "Not found" }, { status: 404 });
+        }
+        // The PATCH may be updating subcategory_ids in the same request —
+        // validate against the incoming value if present, otherwise the stored one.
+        const effectiveSubIds =
+          subcategory_ids !== undefined
+            ? subcategory_ids ?? []
+            : ((existingPhoto.data.subcategory_ids as string[] | null) ?? []);
+        validatePromptProse(prompt_prose, optionLookup, effectiveSubIds);
+      } catch (err) {
+        if (err instanceof PromptProseError) {
+          return NextResponse.json({ error: err.message }, { status: 400 });
+        }
+        throw err;
+      }
+    }
 
     // If setting hero, do atomic swap via dedicated RPC
     if (is_hero === true) {
@@ -62,6 +107,7 @@ export async function PATCH(
     if (photo_baseline !== undefined) updates.photo_baseline = photo_baseline;
     if (subcategory_ids !== undefined) updates.subcategory_ids = subcategory_ids;
     if (sort_order !== undefined) updates.sort_order = sort_order;
+    if (prompt_prose !== undefined) updates.prompt_prose = prompt_prose;
     if (is_hero === false) updates.is_hero = false;
 
     let data;

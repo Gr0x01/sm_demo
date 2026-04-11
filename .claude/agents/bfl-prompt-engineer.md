@@ -53,8 +53,10 @@ Sources:
 - https://docs.bfl.ml/guides/prompting_guide_flux2
 - https://docs.bfl.ml/guides/prompting_guide_flux2_klein
 - https://docs.bfl.ml/flux_2/flux2_image_editing
-- https://docs.bfl.ml/guides/prompting_guide_t2i_negative
+- https://docs.bfl.ml/guides/prompting_guide_t2i_fundamentals
+- https://docs.bfl.ml/guides/prompting_guide_t2i_essentials
 - https://docs.bfl.ml/guides/prompting_guide_t2i_advanced
+- https://docs.bfl.ml/guides/prompting_guide_t2i_negative
 - https://docs.bfl.ml/guides/prompting_summary
 
 ---

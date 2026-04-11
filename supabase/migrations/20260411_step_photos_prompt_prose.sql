@@ -1,0 +1,31 @@
+-- Per-photo prompt spec (BFL Flux 2 editing mode, v2).
+--
+-- Adds a nullable JSONB column on step_photos that holds the prompt spec for
+-- a given photo. v2 shape:
+--
+--   {
+--     "version": 2,
+--     "actions": { "<subcategory-slug>": "<imperative clause with {image}>" },
+--     "lead":    "optional lead-in clause (≤12 words)",
+--     "style":   "optional style trailer (≤20 words)",
+--     "preserve": ["optional preservation clauses appended to the tail"]
+--   }
+--
+-- When NULL the legacy templated builder runs (buildEditPrompt). When present
+-- AND complete (actions[subId] for every selected sub) the prose builder runs:
+-- loads spec, sorts actions by visual-impact, substitutes {image} → image N,
+-- assembles lead → action bullets → preserve tail → style trailer.
+--
+-- Scoped edits reuse the same actions map (no separate scopedEdits field —
+-- dropped in v2 together with `subject`, `context`, `scopedContext`, and
+-- the per-subcategory `preservation` map).
+--
+-- Rollout is per-photo opt-in. Rules and forbidden-word lists are enforced by
+-- `validatePromptProse` in src/lib/generate.ts. See
+-- memory-bank/generation/bfl-prompting-guide.md for the full guide.
+--
+-- This project has no Supabase CLI migration runner — apply manually via MCP or
+-- the Supabase SQL editor.
+
+ALTER TABLE step_photos
+  ADD COLUMN IF NOT EXISTS prompt_prose JSONB;

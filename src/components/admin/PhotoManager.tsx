@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2, Loader2, RefreshCw, Sparkles, Star } from "lucide-react";
 import type { AdminStep, AdminStepPhoto } from "@/types";
+import type { PromptProse } from "@/lib/step-config";
+import { sortSubcategoryIdsByVisualImpact } from "@/lib/visual-impact-sort";
 import { RoomPhotoUpload } from "./RoomPhotoUpload";
 import { PhotoQualityBadge } from "./PhotoQualityBadge";
 
@@ -53,6 +55,113 @@ function areStringArraysEqual(a: string[], b: string[]): boolean {
   return a.every((v, i) => v === b[i]);
 }
 
+function countImageTokens(text: string): number {
+  return (text.match(/\{image\}/g) || []).length;
+}
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+// Mirrors the server-side validator in src/lib/generate.ts. Keep in sync.
+const CLIENT_FORBIDDEN_NEGATIVE_WORDS = [
+  "not", "no", "never", "without", "don't", "dont",
+  "only", "avoid", "except", "island",
+];
+const CLIENT_FORBIDDEN_MATERIAL_WORDS = [
+  "wood", "wooden", "oak", "walnut", "maple", "cherry", "pine", "birch",
+  "marble", "granite", "quartz", "quartzite", "slate", "travertine", "limestone",
+  "subway", "herringbone", "hexagon", "mosaic", "tile", "plank",
+  "white", "black", "blue", "onyx", "beige", "taupe", "gray", "grey",
+  "green", "red", "yellow", "brown", "cream", "ivory", "fog", "dove",
+];
+const CLIENT_HEX_RE = /#[0-9a-f]{3,8}\b/i;
+
+function findForbidden(text: string, list: readonly string[]): string | null {
+  const lower = text.toLowerCase();
+  for (const word of list) {
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}\\b`, "i").test(lower)) return word;
+  }
+  return null;
+}
+
+interface ProseValidationError {
+  field: string;
+  message: string;
+}
+
+function validateProseClient(prose: PromptProse): ProseValidationError[] {
+  const errors: ProseValidationError[] = [];
+
+  for (const [subId, clause] of Object.entries(prose.actions ?? {})) {
+    const field = `actions.${subId}`;
+    const trimmed = clause.trim();
+    if (trimmed.length === 0) {
+      errors.push({ field, message: "Action clause is empty." });
+      continue;
+    }
+    const n = countImageTokens(clause);
+    if (n !== 1) {
+      errors.push({ field, message: `Exactly one {image} required (found ${n}).` });
+    }
+    const wc = wordCount(trimmed);
+    if (wc < 4 || wc > 18) {
+      errors.push({ field, message: `4–18 words (got ${wc}).` });
+    }
+    if (/^[A-Z]/.test(trimmed)) {
+      errors.push({ field, message: "Must start lowercase." });
+    }
+    if (trimmed.endsWith(".")) {
+      errors.push({ field, message: "Must not end with a period." });
+    }
+    const scan = trimmed.replace(/\{image\}/g, "");
+    const neg = findForbidden(scan, CLIENT_FORBIDDEN_NEGATIVE_WORDS);
+    if (neg) errors.push({ field, message: `Forbidden word "${neg}" (no negatives; describe island positionally).` });
+    const mat = findForbidden(scan, CLIENT_FORBIDDEN_MATERIAL_WORDS);
+    if (mat) errors.push({ field, message: `Forbidden material/color word "${mat}" (swatch is sole authority).` });
+    if (CLIENT_HEX_RE.test(scan)) {
+      errors.push({ field, message: "Hex color code not allowed (swatch is sole authority)." });
+    }
+  }
+
+  if (prose.lead !== undefined && prose.lead.trim().length > 0) {
+    const wc = wordCount(prose.lead);
+    if (wc > 12) errors.push({ field: "lead", message: `Lead must be ≤12 words (got ${wc}).` });
+    const neg = findForbidden(prose.lead, CLIENT_FORBIDDEN_NEGATIVE_WORDS);
+    if (neg) errors.push({ field: "lead", message: `Forbidden word "${neg}".` });
+    if (prose.lead.includes("{image}")) errors.push({ field: "lead", message: "Lead must not contain {image}." });
+  }
+
+  if (prose.style !== undefined && prose.style.trim().length > 0) {
+    const wc = wordCount(prose.style);
+    if (wc > 20) errors.push({ field: "style", message: `Style must be ≤20 words (got ${wc}).` });
+    const neg = findForbidden(prose.style, CLIENT_FORBIDDEN_NEGATIVE_WORDS);
+    if (neg) errors.push({ field: "style", message: `Forbidden word "${neg}".` });
+    if (prose.style.includes("{image}")) errors.push({ field: "style", message: "Style must not contain {image}." });
+  }
+
+  if (prose.preserve) {
+    for (let i = 0; i < prose.preserve.length; i++) {
+      const clause = prose.preserve[i];
+      const field = `preserve.${i}`;
+      if (clause.trim().length === 0) continue;
+      const wc = wordCount(clause);
+      if (wc > 18) errors.push({ field, message: `≤18 words (got ${wc}).` });
+      const neg = findForbidden(clause, CLIENT_FORBIDDEN_NEGATIVE_WORDS);
+      if (neg) errors.push({ field, message: `Forbidden word "${neg}".` });
+      if (clause.includes("{image}")) errors.push({ field, message: "Must not contain {image}." });
+    }
+  }
+
+  return errors;
+}
+
+const EMPTY_PROSE: PromptProse = {
+  version: 2,
+  actions: {},
+};
+
 function PhotoCard({
   photo,
   orgId,
@@ -75,6 +184,10 @@ function PhotoCard({
   const [deleting, setDeleting] = useState(false);
   const [savingField, setSavingField] = useState<string | null>(null);
   const [togglingHero, setTogglingHero] = useState(false);
+  const [prose, setProse] = useState<PromptProse>(photo.prompt_prose ?? EMPTY_PROSE);
+  const [proseOpen, setProseOpen] = useState(!!photo.prompt_prose);
+  const [proseSaving, setProseSaving] = useState(false);
+  const [proseErrors, setProseErrors] = useState<ProseValidationError[]>([]);
 
   const saveField = useCallback(async (field: string, value: unknown) => {
     setSavingField(field);
@@ -141,6 +254,83 @@ function PhotoCard({
       setTogglingHero(false);
     }
   }, [photo.id, photo.is_hero, orgId, onUpdate]);
+
+  const scopedIds = useMemo(() => {
+    const parsed = parseSubcategoryScopeText(subcategoryScope);
+    return sortSubcategoryIdsByVisualImpact(parsed);
+  }, [subcategoryScope]);
+
+  const setProseField = useCallback(<K extends keyof PromptProse>(field: K, value: PromptProse[K]) => {
+    setProse((prev) => ({ ...prev, [field]: value }));
+  }, []);
+
+  const setActionLine = useCallback((subId: string, value: string) => {
+    setProse((prev) => ({
+      ...prev,
+      actions: { ...(prev.actions ?? {}), [subId]: value },
+    }));
+  }, []);
+
+  const setPreserveLine = useCallback((idx: number, value: string) => {
+    setProse((prev) => {
+      const next = [...(prev.preserve ?? [])];
+      next[idx] = value;
+      return { ...prev, preserve: next };
+    });
+  }, []);
+
+  const addPreserveLine = useCallback(() => {
+    setProse((prev) => ({ ...prev, preserve: [...(prev.preserve ?? []), ""] }));
+  }, []);
+
+  const removePreserveLine = useCallback((idx: number) => {
+    setProse((prev) => {
+      const next = [...(prev.preserve ?? [])];
+      next.splice(idx, 1);
+      return { ...prev, preserve: next.length > 0 ? next : undefined };
+    });
+  }, []);
+
+  const handleSaveProse = useCallback(async () => {
+    const errors = validateProseClient(prose);
+    setProseErrors(errors);
+    if (errors.length > 0) return;
+
+    setProseSaving(true);
+    try {
+      const data = await apiCall(`/api/admin/step-photos/${photo.id}`, "PATCH", {
+        org_id: orgId,
+        prompt_prose: prose,
+      });
+      onUpdate(data);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to save prose");
+    } finally {
+      setProseSaving(false);
+    }
+  }, [photo.id, orgId, prose, onUpdate]);
+
+  const handleClearProse = useCallback(async () => {
+    if (!confirm("Clear prose and revert this photo to the legacy templated builder?")) return;
+    setProseSaving(true);
+    try {
+      const data = await apiCall(`/api/admin/step-photos/${photo.id}`, "PATCH", {
+        org_id: orgId,
+        prompt_prose: null,
+      });
+      setProse(EMPTY_PROSE);
+      setProseErrors([]);
+      onUpdate(data);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to clear prose");
+    } finally {
+      setProseSaving(false);
+    }
+  }, [photo.id, orgId, onUpdate]);
+
+  const renderProseLinePreview = (template: string, previewIndex: number): string => {
+    return template.replace(/\{image\}/g, `image ${previewIndex}`);
+  };
 
   const handleDelete = useCallback(async () => {
     if (!confirm("Delete this photo?")) return;
@@ -294,6 +484,177 @@ function PhotoCard({
         <p className="text-[11px] text-slate-500 mt-1">
           If set, this is the full generation scope for this photo.
         </p>
+      </div>
+
+      {/* Prompt prose (BFL Foundation First) */}
+      <div className="border-t border-slate-200 pt-3">
+        <button
+          type="button"
+          onClick={() => setProseOpen((v) => !v)}
+          className="text-xs text-slate-700 hover:text-slate-900 font-medium flex items-center gap-2"
+        >
+          <span>{proseOpen ? "▾" : "▸"}</span>
+          <span>Prompt Prose</span>
+          {photo.prompt_prose && (
+            <span className="text-[10px] uppercase tracking-wide text-emerald-700 bg-emerald-50 border border-emerald-200 px-1">
+              active
+            </span>
+          )}
+        </button>
+
+        {proseOpen && (
+          <div className="mt-3 space-y-3">
+            <p className="text-[10px] text-slate-500 italic">
+              Per BFL&apos;s editing guide: describe what changes, not the scene. The base photo carries the scene. Author one imperative clause per selected surface (4–18 words, lowercase start, no trailing period, exactly one <code className="bg-slate-200 px-0.5">{"{image}"}</code> token). Describe the surface, not the swatch — swatch is sole authority for material/color.
+            </p>
+
+            {/* Actions per subcategory */}
+            {scopedIds.length === 0 ? (
+              <p className="text-[11px] text-slate-500">
+                Add subcategory IDs to the scope field above to author action lines.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                <div className="text-[11px] text-slate-600 font-medium">
+                  Actions — one clause per in-scope subcategory
+                </div>
+                {scopedIds.map((subId, idx) => {
+                  const previewIndex = idx + 2;
+                  const actionValue = prose.actions?.[subId] ?? "";
+                  const actionError = proseErrors.find((e) => e.field === `actions.${subId}`);
+                  return (
+                    <div key={subId} className="bg-white border border-slate-200 p-2 space-y-1">
+                      <div className="text-[11px] text-slate-700 font-mono">{subId}</div>
+                      <textarea
+                        value={actionValue}
+                        onChange={(e) => setActionLine(subId, e.target.value)}
+                        className={`w-full bg-white border px-2 py-1 text-xs text-slate-900 resize-y ${
+                          actionError ? "border-red-400" : "border-slate-300"
+                        }`}
+                        rows={2}
+                        placeholder={`apply {image} to [surface description]`}
+                      />
+                      {actionValue && (
+                        <p className="text-[10px] text-slate-500 italic">
+                          → - {renderProseLinePreview(actionValue, previewIndex)}
+                        </p>
+                      )}
+                      {actionError && (
+                        <p className="text-[10px] text-red-600">{actionError.message}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Lead + Style overrides */}
+            <div className="space-y-2">
+              <div>
+                <label className="text-[11px] text-slate-600 block mb-1">
+                  Lead (optional, ≤12 words)
+                </label>
+                <input
+                  value={prose.lead ?? ""}
+                  onChange={(e) => setProseField("lead", e.target.value || undefined)}
+                  className={`w-full bg-white border px-2 py-1 text-xs text-slate-900 ${
+                    proseErrors.some((e) => e.field === "lead") ? "border-red-400" : "border-slate-300"
+                  }`}
+                  placeholder="Apply the following finishes to this kitchen photo:"
+                />
+                {proseErrors.filter((e) => e.field === "lead").map((e, i) => (
+                  <p key={i} className="text-[10px] text-red-600 mt-0.5">{e.message}</p>
+                ))}
+              </div>
+              <div>
+                <label className="text-[11px] text-slate-600 block mb-1">
+                  Style (optional, ≤20 words)
+                </label>
+                <input
+                  value={prose.style ?? ""}
+                  onChange={(e) => setProseField("style", e.target.value || undefined)}
+                  className={`w-full bg-white border px-2 py-1 text-xs text-slate-900 ${
+                    proseErrors.some((e) => e.field === "style") ? "border-red-400" : "border-slate-300"
+                  }`}
+                  placeholder="Photorealistic real estate photography, natural daylight, neutral white balance."
+                />
+                {proseErrors.filter((e) => e.field === "style").map((e, i) => (
+                  <p key={i} className="text-[10px] text-red-600 mt-0.5">{e.message}</p>
+                ))}
+              </div>
+            </div>
+
+            {/* Preserve (escape hatch — empty on day 1) */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-[11px] text-slate-600">
+                  Preserve (optional, escape hatch — leave empty unless Max is drifting)
+                </label>
+                <button
+                  type="button"
+                  onClick={addPreserveLine}
+                  className="text-[10px] text-slate-500 hover:text-slate-900"
+                >
+                  + Add line
+                </button>
+              </div>
+              {(prose.preserve ?? []).length === 0 ? (
+                <p className="text-[10px] text-slate-400 italic">Empty — base image carries unselected surfaces.</p>
+              ) : (
+                <div className="space-y-1">
+                  {(prose.preserve ?? []).map((clause, i) => {
+                    const err = proseErrors.find((e) => e.field === `preserve.${i}`);
+                    return (
+                      <div key={i} className="flex items-center gap-1">
+                        <input
+                          value={clause}
+                          onChange={(e) => setPreserveLine(i, e.target.value)}
+                          className={`flex-1 bg-white border px-2 py-1 text-xs text-slate-900 ${
+                            err ? "border-red-400" : "border-slate-300"
+                          }`}
+                          placeholder="Keep the pendant lights and ceiling medallions unchanged"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removePreserveLine(i)}
+                          className="text-[10px] text-slate-500 hover:text-red-600 px-1"
+                        >
+                          ×
+                        </button>
+                        {err && <p className="text-[10px] text-red-600">{err.message}</p>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveProse}
+                disabled={proseSaving}
+                className="text-xs bg-slate-900 text-white px-3 py-1 hover:bg-slate-700 disabled:opacity-50 flex items-center gap-1"
+              >
+                {proseSaving && <Loader2 className="w-3 h-3 animate-spin" />}
+                Save prose
+              </button>
+              {photo.prompt_prose && (
+                <button
+                  type="button"
+                  onClick={handleClearProse}
+                  disabled={proseSaving}
+                  className="text-xs text-slate-600 hover:text-red-600 px-2 py-1"
+                >
+                  Clear (revert to legacy)
+                </button>
+              )}
+              <span className="text-[10px] text-slate-500 ml-auto">
+                {"{image}"} → image N (visual-impact sort)
+              </span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

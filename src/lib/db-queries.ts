@@ -2,7 +2,7 @@ import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { getServiceClient } from "./supabase";
 import type { Category, SubCategory, Option } from "@/types";
-import type { StepConfig, StepSection, StepPhoto } from "./step-config";
+import type { StepConfig, StepSection, StepPhoto, PromptProse } from "./step-config";
 
 // ---------- Cross-request cache (Next.js data cache) ----------
 // These rarely change — revalidate every 5 minutes, bust via tags on admin update.
@@ -269,7 +269,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
       id, slug, number, name, subtitle, hero_image, hero_variant,
       show_generate_button, scene_description, also_include_ids, photo_baseline,
       sort_order, sections, spatial_hints,
-      step_photos!step_photos_org_match ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline, subcategory_ids, remap_accent_as_wall_paint )
+      step_photos!step_photos_org_match ( id, image_path, label, is_hero, sort_order, spatial_hint, photo_baseline, subcategory_ids, remap_accent_as_wall_paint, prompt_prose )
     `)
     .eq("floorplan_id", floorplanId)
     .order("sort_order");
@@ -296,6 +296,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
       id: string; image_path: string; label: string; is_hero: boolean;
       sort_order: number; spatial_hint: string | null; photo_baseline: string | null;
       subcategory_ids: string[] | null; remap_accent_as_wall_paint: boolean;
+      prompt_prose: PromptProse | null;
     };
     const rawPhotos = ((s.step_photos ?? []) as RawStepPhoto[])
       .sort((a, b) => a.sort_order - b.sort_order);
@@ -311,6 +312,7 @@ const _getStepsWithConfig = async (floorplanId: string): Promise<StepConfig[]> =
           photoBaseline: p.photo_baseline,
           subcategoryIds: p.subcategory_ids ?? null,
           remapAccentAsWallPaint: p.remap_accent_as_wall_paint,
+          promptProse: p.prompt_prose,
         }))
       : undefined;
 
@@ -388,7 +390,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
 
   const { data: photo, error: photoErr } = await supabase
     .from("step_photos")
-    .select("id, label, step_id, spatial_hint, photo_baseline, image_path, subcategory_ids, remap_accent_as_wall_paint")
+    .select("id, label, step_id, spatial_hint, photo_baseline, image_path, subcategory_ids, remap_accent_as_wall_paint, prompt_prose")
     .eq("id", stepPhotoId)
     .single();
 
@@ -420,6 +422,7 @@ export async function getStepPhotoAiConfig(stepPhotoId: string) {
       photoBaseline: photo.photo_baseline as string | null,
       subcategoryIds: (photo.subcategory_ids as string[] | null) ?? null,
       remapAccentAsWallPaint: Boolean(photo.remap_accent_as_wall_paint),
+      promptProse: (photo.prompt_prose as PromptProse | null) ?? null,
     },
   };
 }

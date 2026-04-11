@@ -4,19 +4,26 @@ Sources:
 - https://docs.bfl.ml/guides/prompting_guide_flux2 (Max/Pro)
 - https://docs.bfl.ml/guides/prompting_guide_flux2_klein (Klein)
 - https://docs.bfl.ml/flux_2/flux2_image_editing (Image Editing API)
-- https://docs.bfl.ml/guides/prompting_guide_t2i_negative (No Negative Prompts)
-- https://docs.bfl.ml/guides/prompting_guide_t2i_advanced (Advanced Techniques)
+- https://docs.bfl.ml/guides/prompting_guide_t2i_fundamentals (Core Framework)
+- https://docs.bfl.ml/guides/prompting_guide_t2i_essentials (Enhancement Hierarchy)
+- https://docs.bfl.ml/guides/prompting_guide_t2i_advanced (Photography & Composition)
+- https://docs.bfl.ml/guides/prompting_guide_t2i_negative (Replacement Method)
 - https://docs.bfl.ml/guides/prompting_summary (Quick Reference)
 - Full doc index: https://docs.bfl.ml/llms.txt
 
 ## Critical Rules
 
-1. **NO negative prompts.** Flux 2 does not support them. AI focuses on the prohibited element rather than avoiding it. Describe what you WANT, not what to avoid.
+1. **NO negative prompts.** Flux 2 does not support them. AI focuses on the prohibited element rather than avoiding it. Describe what you WANT, not what to avoid. The canonical fix is the **Replacement Method**: identify the unwanted element → ask "what would be there instead?" → describe the positive alternative.
 2. **Word order matters.** Flux 2 pays more attention to what comes first. Lead with the most important changes, not scene context. Sequence: Main subject → Key action → Critical style → Essential context → Secondary details.
-3. **30-80 words ideal.** Short prompts = better results. Our old 300+ word prompts with 20 "Do NOT" rules are wrong for Flux 2.
+3. **30-80 words ideal, 512 tokens hard max.** Short prompts = better results. Our old 300+ word prompts with 20 "Do NOT" rules are wrong for Flux 2.
 4. **Reference images carry the visual details.** The prompt describes what changes — not what the swatch looks like. Don't repeat what's in the image.
 5. **Write prose, not keywords.** "A woman with short blonde hair posing against a neutral background" > "woman, blonde, short hair, neutral background". Especially critical for Klein.
 6. **Disable `prompt_upsampling` for color accuracy.** Upsampling enhances prompt text which can override the visual information from swatch reference images.
+7. **Iterate one variable at a time.** Don't rewrite the whole prompt between runs. Change one thing, render, measure. Also protects Finch's deterministic prompt hashing.
+8. **Enhancement Hierarchy (from T2I Essentials).** After the Subject+Action+Style+Context foundation, layer enhancements in order, and make sure they **support, not overwhelm**:
+   1. Visual Polish (lighting, color palette, composition)
+   2. Technical Precision (camera, lens, film grain)
+   3. Atmosphere & Intent (mood, narrative tone)
 
 ## Model Specs
 
@@ -196,28 +203,106 @@ When the changed surface is adjacent to a preserved one, include spatial locatio
 
 ## Implications for Finch Prompt Pipeline
 
-### Current Architecture (post-rewrite)
+### Two builder paths
 
-**`buildBflEditPrompt` (Max — full generation):**
-- Opens with "Apply the following finish changes to this room photo:" (positive, no "ONLY")
-- Surface list sorted by visual impact: cabinets → island → countertop → backsplash → flooring → paint
+Finch has two prompt builders live at the same time. Which one runs for a
+given photo depends on whether `step_photos.prompt_prose` is populated.
+
+1. **Prose spec builder (v2, 2026-04-11)** — runs when `prompt_prose` is
+   populated and covers every selected subcategory. This is the path we are
+   actively authoring and the one all new photos should use. See
+   `buildProsePrompt` / `buildProseScopedEdit` / `validatePromptProse` in
+   `src/lib/generate.ts`.
+2. **Legacy templated builder** — `buildEditPrompt` / `buildScopedEditPrompt`
+   in `src/lib/generate.ts`. Runs for photos without a `prompt_prose` row. Kept
+   in place so existing orgs continue to work, but net-new photos should not
+   rely on it.
+
+### Prose spec builder (v2, shipped 2026-04-11)
+
+**Why it exists.** The previous session shipped a prose builder with a
+`subject` field that narrated the base scene. That field caused hallucinated
+architectural elements (filigree scrollwork in a Valor test). A deeper read
+of BFL's editing docs, Klein guide, and fundamentals guide confirmed that
+edit-mode prompts should describe *what changes*, not the scene — the base
+image carries the scene. The v2 spec enforces that rule structurally.
+
+**Schema** (`PromptProse` in `src/lib/step-config.ts`):
+```ts
+interface PromptProse {
+  version: 2;
+  actions: Record<subcategorySlug, string>;  // one imperative clause per surface
+  lead?: string;                              // optional lead-in, defaults below
+  style?: string;                             // optional trailer, defaults below
+  preserve?: string[];                        // escape hatch, empty on day 1
+}
+```
+
+**Defaults:**
+- `lead` → `"Apply the following finishes to this kitchen photo:"`
+- `style` → `"Photorealistic real estate photography, natural daylight, neutral white balance."`
+- `preserve` → empty. Populate only when an empirical test shows Max
+  freelancing a specific unselected surface. This was an explicit agreement
+  with the user: start with the bare minimum, add only what failure justifies.
+
+**Action clause rules** (enforced at save time by `validatePromptProse`):
+- Lowercase start, no trailing period — clauses are joined into bullet lines
+  by the builder.
+- 4–18 words per clause (medium band per the fundamentals guide).
+- Exactly one `{image}` token per clause.
+- Forbidden: negative framing (`not`, `no`, `never`, `only`, `avoid`,
+  `except`, `without`, `don't`), the standalone word `island` (describe
+  positionally), any material/color/pattern word (swatch is sole authority),
+  any hex color code.
+- `lead` ≤ 12 words, `style` ≤ 20 words, `preserve[i]` ≤ 18 words.
+
+**Builder pipeline** (`buildProsePrompt`):
+1. Sort selected actions by visual-impact priority (`visual-impact-sort.ts`).
+2. For each, resolve the swatch into the reference array and substitute
+   `{image}` → `image N` where N starts at 2 (base photo is image 1).
+3. Assemble: `lead` → bulleted action lines → `preserve` tail (if populated)
+   → `style` trailer. Join with `\n`.
+
+**Scoped edits reuse the same `actions` map.** `buildProseScopedEdit` takes
+the action clause for the changed subcategory, capitalizes the first letter,
+appends a period, and sends it with the swatch as `image 2`. No lead, no
+style trailer, no preserve tail — Klein/Flex preserve unchanged surfaces by
+default.
+
+**Rule the v2 spec enforces structurally:** you cannot author prompts that
+narrate the base scene, reference unchanged surfaces, or describe the swatch
+in text. The validator rejects any of those at save time. The only way to
+author is "imperative surface description with an `{image}` token."
+
+**Authoring is the specialist's job, not the main agent's.** The main agent
+owns the TypeScript type, builder, validator, admin UI, and tests. The
+`bfl-prompt-engineer` specialist owns the schema shape and the action clause
+content. Briefs to the specialist must instruct them to read this guide
+before responding (see CLAUDE.md's BFL Flux Prompting rule).
+
+### Legacy templated builder (`buildEditPrompt`)
+
+Still runs for photos without a `prompt_prose` row. Kept for back-compat.
+Behavior documented here for reference — prefer the prose spec for new work.
+
+**`buildEditPrompt` (Max — full generation):**
+- Opens with "Apply the following finish changes to this room photo:"
+- Surface list sorted by visual impact: cabinets → backsplash → island → countertop → flooring → paint
 - Each edit: surface name + spatial hint + "use image N" (no hex alongside swatches)
 - Unselected surfaces with known photo colors: hex preservation at END of list ("keep at color #HEX")
-- No scene block for demo pipeline (mentions of unselected surfaces cause bleed)
-- NO "Do NOT" rules — all converted to positive instructions
-- Target: 50-80 words for simple rooms, up to 120 for complex kitchens
+- No scene block (mentions of unselected surfaces cause bleed)
+- NO "Do NOT" rules
+- Target: 50–80 words
 
-**`buildBflScopedEditPrompt` (Klein — scoped edits):**
-- "Change ONLY the [spatial hint] to match image 2. Match image 2 exactly." + dimensions
-- Uses spatial hint as surface identifier (not subcategory name — BFL doesn't know what "Island Base" means)
-- Only includes generation rules for the changed surface itself (no cross-surface rules)
-- No hex alongside swatches (overrides textures like wood stain)
-- No preserve list, no scene block (Klein preserves by default)
-- Target: 15-25 words
+**`buildScopedEditPrompt` (Klein/Flex — scoped edits):**
+- "Apply image 2 to [spatial hint]. Match image 2 exactly. Preserve natural sunlight."
+- Uses spatial hint as surface identifier
+- No hex alongside swatches (overrides textures)
+- Target: 15–25 words
 
 **Two-pass split prompt ordering (>7 swatches):**
-- Pass 1 (structural): Cabinets first (highest visual impact), then countertop, backsplash, flooring, paint
-- Pass 2 (fixtures): Range first (structural change), then hardware, faucet, sink, lighting
+- Pass 1 (structural): cabinets first, then countertop, backsplash, flooring, paint
+- Pass 2 (fixtures): range first, then hardware, faucet, sink, lighting
 
 ### Swatch Authority Rule
 Swatch images = SOLE appearance authority. Never send text alongside swatches when a swatch image is present:
@@ -265,6 +350,20 @@ BFL interprets spatial hints literally. Critical lessons:
 
 ### Open Questions
 
-- Should we try JSON structured prompts for the full generation case?
+- ~~Should we try JSON structured prompts for the full generation case?~~
+  **Answered 2026-04-11.** No. BFL's editing API docs never demonstrate JSON;
+  every documented edit-mode example is natural-language prose. The JSON
+  schema in the main Flux 2 guide is T2I-flavored (`scene`/`mood`/`camera`
+  fields don't apply when the base image carries the scene). BFL says
+  "FLUX.2 understands both formats" — meaning neither is inherently better
+  for the model — so the decision reduces to authoring convenience. JSON
+  would help automation but at the cost of diverging from what BFL actually
+  documents for edit mode. Prose with a structured authoring object (the v2
+  spec) gives us both: struct-level validation for the human author, and
+  documented-format output for BFL.
 - Klein 9B only supports 4 total images — this limits scoped edits to hero + 3 swatches. Currently we send hero + 1 changed swatch, but could we send hero + changed + 2 adjacent-surface swatches for bleed prevention?
 - Automated `defaultSurfaceColors` extraction: Gemini can identify surface colors during validate-photo. Currently only the sample kitchen has hardcoded colors. Uploaded photos fall back to `generationRulesWhenNotSelected` text rules.
+- Does the bare-minimum v2 spec (no `preserve` tail) hold up across multiple
+  kitchens? Valor is the first photo authored on v2 — if Max freelances
+  unselected surfaces we add preservation clauses photo-by-photo and
+  document the failure mode here.

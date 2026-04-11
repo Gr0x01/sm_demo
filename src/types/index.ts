@@ -137,6 +137,7 @@ export interface AdminStepPhoto {
   checked_at: string | null;
   spatial_hint: string | null;
   photo_baseline: string | null;
+  prompt_prose: import("@/lib/step-config").PromptProse | null;
   created_at: string;
 }
 

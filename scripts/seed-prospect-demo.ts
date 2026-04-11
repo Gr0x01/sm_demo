@@ -45,6 +45,17 @@ interface ProspectConfig {
   sections: Array<{ title: string; subcategory_ids: string[] }>;
   spatialHints?: Record<string, string>; // per-subcategory overrides (auto-generated if omitted)
   remapAccentAsWallPaint?: boolean;
+  // Optional per-photo prompt spec (BFL Flux 2 editing mode, v2). When present
+  // on a seeded photo the prose builder runs instead of the legacy templated
+  // builder. See memory-bank/generation/bfl-prompting-guide.md and
+  // src/lib/step-config.ts for the rules.
+  promptProse?: {
+    version: 2;
+    actions: Record<string, string>;
+    lead?: string;
+    style?: string;
+    preserve?: string[];
+  };
   // Insights sidebar
   insights: Array<{ label: string; value: string }>;
   closingLine?: string;
@@ -242,6 +253,7 @@ async function main() {
         spatial_hint: config.spatialHint,
         subcategory_ids: config.subcategoryIds,
         remap_accent_as_wall_paint: config.remapAccentAsWallPaint ?? false,
+        prompt_prose: config.promptProse ?? null,
       })
       .select("id")
       .single();

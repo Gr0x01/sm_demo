@@ -1,6 +1,7 @@
 import { Inngest, EventSchemas } from "inngest";
 import type { ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
+import type { PromptProse } from "@/lib/step-config";
 
 export interface PhotoGenerateRequestedData {
   /** Human-readable label for Inngest dev UI, e.g. "SM Kinkade / Kitchen" or "prospect:stylecraft / Kitchen" */
@@ -20,6 +21,7 @@ export interface PhotoGenerateRequestedData {
   sceneDescription: string | null;
   spatialHints: Record<string, string>;
   photoSpatialHint: string | null;
+  promptProse: PromptProse | null;
   selectionsJsonForClaim: Record<string, unknown>;
   leaveOneOutHashes: string[];
   heroImagePath: string;

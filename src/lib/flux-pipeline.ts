@@ -1,6 +1,7 @@
 import sharp from "sharp";
-import { buildEditPrompt, buildScopedEditPrompt } from "@/lib/generate";
+import { buildEditPrompt, buildScopedEditPrompt, buildProsePrompt, buildProseScopedEdit } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
+import type { PromptProse } from "@/lib/step-config";
 import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
 import { generateImage } from "@/lib/bfl";
 import type { BflModel } from "@/lib/bfl";
@@ -108,6 +109,39 @@ export interface FluxGenerateOpts {
   swatchResolver: SwatchBufferResolver;
   defaultSurfaceColors?: Record<string, string>;
   model?: string;
+  /** When present and complete (subject + actions for every selected sub), routes through the prose builder. */
+  promptProse?: PromptProse | null;
+}
+
+/**
+ * Analyze a PromptProse object against the current selections.
+ *
+ * Returns:
+ *   - `present: false` when the photo has no prose at all (legacy builder path)
+ *   - `present: true, missing: []` when prose fully covers selections (prose path)
+ *   - `present: true, missing: [subIds]` when prose is structurally valid but
+ *     missing `actions[subId]` for one or more selected subs — this is the
+ *     smoking-gun signal for an authoring gap. Callers should log a warning
+ *     and fall back to the legacy builder to avoid runtime failure.
+ */
+export function analyzeProseCoverage(
+  prose: PromptProse | null | undefined,
+  selections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+): { present: boolean; missing: string[] } {
+  if (!prose || !prose.actions) {
+    return { present: false, missing: [] };
+  }
+  const missing: string[] = [];
+  for (const [subId, optId] of Object.entries(selections)) {
+    const entry = optionLookup.get(`${subId}:${optId}`);
+    if (!entry) continue;
+    const { option } = entry;
+    if (optId.endsWith("-none") || optId.endsWith("-no-upgrade")) continue;
+    if (!option.swatchUrl && !option.swatchColor && !option.promptDescriptor) continue;
+    if (!prose.actions[subId]) missing.push(subId);
+  }
+  return { present: true, missing };
 }
 
 export interface FluxGenerateResult {
@@ -124,7 +158,7 @@ export interface FluxGenerateResult {
 export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerateResult> {
   const {
     heroBuffer, selections, optionLookup, spatialHints,
-    swatchResolver, defaultSurfaceColors,
+    swatchResolver, defaultSurfaceColors, promptProse,
   } = opts;
   const model = (opts.model ?? IMAGE_MODEL) as BflModel;
 
@@ -146,13 +180,30 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     && fixtureSwatchCount > 0
     && structuralSwatchCount > 0;
 
+  // Prose-path eligibility: needs the full selections (not per-pass subsets).
+  // Log a warning when prose is present but incomplete — that's the smoking-
+  // gun signal for an authoring gap vs a photo that's plain legacy-only.
+  const proseCoverage = analyzeProseCoverage(promptProse, selections, optionLookup);
+  const completeProse: PromptProse | null =
+    promptProse && proseCoverage.present && proseCoverage.missing.length === 0 ? promptProse : null;
+  if (proseCoverage.present && proseCoverage.missing.length > 0) {
+    console.warn(
+      `[flux-pipeline] prose incomplete, falling back to legacy builder. Missing actions for: ${proseCoverage.missing.join(", ")}`,
+    );
+  }
+  console.log(`[flux-pipeline] builder=${completeProse ? "prose" : "legacy"}`);
+
   const genStart = performance.now();
 
   if (!needsSplit) {
     // --- Single pass ---
-    const { prompt, swatches } = await buildEditPrompt(
-      selections, optionLookup, spatialHints, cachedResolver, defaultSurfaceColors,
-    );
+    const { prompt, swatches } = completeProse
+      ? await buildProsePrompt(completeProse, selections, optionLookup, cachedResolver)
+      : await buildEditPrompt(selections, optionLookup, spatialHints, cachedResolver, defaultSurfaceColors);
+
+    // DIAGNOSTIC: log swatch-to-BFL-index binding so we can confirm the prompt's
+    // "image N" references resolve to the intended swatches at the API boundary.
+    console.log(`[flux-pipeline] swatch order (becomes input_image_2..N): ${JSON.stringify(swatches.map((s, i) => ({ idx: i + 2, subId: s.subcategoryId, label: s.label })))}`);
 
     const result = await generateImage({
       model,
@@ -177,12 +228,16 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     else structuralSelections[subId] = optId;
   }
 
-  const { prompt: structuralPrompt, swatches: structuralSwatches } = await buildEditPrompt(
-    structuralSelections, optionLookup, spatialHints, cachedResolver,
-  );
-  const { prompt: fixturePrompt, swatches: fixtureSwatches } = await buildEditPrompt(
-    fixtureSelections, optionLookup, spatialHints, cachedResolver,
-  );
+  // Two-pass split: pass 1 (structural) emits preservation lines for in-scope-
+  // unselected subs as usual. Pass 2 (fixtures) MUST suppress preservation —
+  // from fixtureSelections' perspective every structural sub is "unselected,"
+  // which would otherwise ask Flux to "preserve" surfaces pass 1 just rewrote.
+  const { prompt: structuralPrompt, swatches: structuralSwatches } = completeProse
+    ? await buildProsePrompt(completeProse, structuralSelections, optionLookup, cachedResolver, { emitPreserve: true })
+    : await buildEditPrompt(structuralSelections, optionLookup, spatialHints, cachedResolver);
+  const { prompt: fixturePrompt, swatches: fixtureSwatches } = completeProse
+    ? await buildProsePrompt(completeProse, fixtureSelections, optionLookup, cachedResolver, { emitPreserve: false })
+    : await buildEditPrompt(fixtureSelections, optionLookup, spatialHints, cachedResolver);
 
   const pass1Result = await generateImage({
     model,
@@ -217,6 +272,8 @@ export interface FluxScopedEditOpts {
   optionLookup: Map<string, { option: Option; subCategory: SubCategory }>;
   spatialHints: Record<string, string>;
   swatchResolver: SwatchBufferResolver;
+  /** When present with a matching actions[subId] entry, routes through the prose builder. */
+  promptProse?: PromptProse | null;
 }
 
 export interface FluxScopedEditResult {
@@ -232,15 +289,27 @@ export interface FluxScopedEditResult {
  * Stateless — caller handles storage downloads/uploads.
  */
 export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScopedEditResult> {
-  const { baseImageBuffer, changedSubcategoryId, changedOptionId, optionLookup, spatialHints, swatchResolver } = opts;
+  const { baseImageBuffer, changedSubcategoryId, changedOptionId, optionLookup, spatialHints, swatchResolver, promptProse } = opts;
 
-  const { prompt, swatches } = await buildScopedEditPrompt(
-    changedSubcategoryId,
-    changedOptionId,
-    optionLookup,
-    spatialHints,
-    swatchResolver,
-  );
+  // Scoped edits reuse the full-gen actions map — no separate scopedEdits field.
+  const useProse = !!promptProse?.actions?.[changedSubcategoryId];
+  console.log(`[flux-pipeline] builder=${useProse ? "prose" : "legacy"} (scoped)`);
+
+  const { prompt, swatches } = useProse
+    ? await buildProseScopedEdit(
+        promptProse,
+        changedSubcategoryId,
+        changedOptionId,
+        optionLookup,
+        swatchResolver,
+      )
+    : await buildScopedEditPrompt(
+        changedSubcategoryId,
+        changedOptionId,
+        optionLookup,
+        spatialHints,
+        swatchResolver,
+      );
 
   // Model selection: option-level override → range/oven gets Max → global default (Flex)
   const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);

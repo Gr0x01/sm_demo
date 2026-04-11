@@ -36,6 +36,7 @@ export const kitchenAiConfig: StepPhotoAiConfig = {
     photoBaseline: "Modern kitchen with white shaker cabinets, gray granite counters, stainless appliances",
     subcategoryIds: ["cabinets", "countertops", "backsplash", "range", "refrigerator", "dishwasher"],
     remapAccentAsWallPaint: false,
+    promptProse: null,
   },
 };
 
@@ -68,6 +69,7 @@ export const bedroomAiConfig: StepPhotoAiConfig = {
     photoBaseline: "Primary bedroom with carpet flooring and neutral walls",
     subcategoryIds: ["common-wall-paint", "carpet-color", "main-area-flooring-type", "main-area-flooring-color"],
     remapAccentAsWallPaint: false,
+    promptProse: null,
   },
 };
 
@@ -100,6 +102,7 @@ export const livingRoomAiConfig: StepPhotoAiConfig = {
     photoBaseline: "Great room with hardwood floors, accent wall behind fireplace",
     subcategoryIds: ["common-wall-paint", "accent-color", "main-area-flooring-type", "main-area-flooring-color"],
     remapAccentAsWallPaint: true,
+    promptProse: null,
   },
 };
 

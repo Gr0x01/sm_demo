@@ -202,6 +202,7 @@ export async function POST(request: Request) {
           sceneDescription,
           spatialHints,
           photoSpatialHint: aiConfig.photo.spatialHint,
+          promptProse: aiConfig.photo.promptProse,
           selectionsJsonForClaim: hashInputs,
           leaveOneOutHashes,
           heroImagePath: aiConfig.photo.imagePath,

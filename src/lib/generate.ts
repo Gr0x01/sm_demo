@@ -1,10 +1,12 @@
 import { createHash } from "crypto";
 import type { Option, SubCategory } from "@/types";
 import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
+import type { PromptProse } from "@/lib/step-config";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
 import { IMAGE_MODEL } from "@/lib/models";
+import { sortSelectionsByVisualImpact } from "@/lib/visual-impact-sort";
 
 /**
  * Resolve linked options (e.g. "Match to Main Kitchen Cabinet Color").
@@ -113,7 +115,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v2.9";
+export const GENERATION_CACHE_VERSION = "v3.0";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -158,28 +160,7 @@ export async function buildEditPrompt(
   // BFL numbering: input_image = image 1 (base photo), input_image_2 = image 2, etc.
   let imageIndex = 2;
 
-  // Sort by visual impact — highest-impact surfaces get earliest word position.
-  // More specific patterns first (island-cabinet before cabinet-color).
-  const SUBCATEGORY_PRIORITY: [string, number][] = [
-    ["island-cabinet", 1],     // renders after perimeter cabinets (priority 0)
-    ["cabinet-color", 0],      // perimeter cabinets — largest surface
-    ["counter", 2],
-    ["backsplash", 3],
-    ["floor", 4],
-    ["paint", 5],
-  ];
-  function getSubcategoryPriority(slug: string): number {
-    for (const [pattern, priority] of SUBCATEGORY_PRIORITY) {
-      if (slug.includes(pattern)) return priority;
-    }
-    return 99;
-  }
-  const sortedSelections = Object.entries(visualSelections).sort(([a], [b]) => {
-    const pa = getSubcategoryPriority(a);
-    const pb = getSubcategoryPriority(b);
-    if (pa !== pb) return pa - pb;
-    return a.localeCompare(b);
-  });
+  const sortedSelections = sortSelectionsByVisualImpact(visualSelections);
 
   for (const [subId, optId] of sortedSelections) {
     const found = optionLookup.get(`${subId}:${optId}`);
@@ -306,6 +287,400 @@ export async function buildScopedEditPrompt(
   return { prompt, swatches };
 }
 
+// ---------- Prose prompt builders (BFL Flux 2 editing mode, v2) ----------
+//
+// Shape and rules are documented on the `PromptProse` type in step-config.ts.
+// Everything here follows the BFL editing guide quotes captured in
+// memory-bank/generation/bfl-prompting-guide.md — specifically:
+//
+//   - "Start short. Add only what changes the image." (fundamentals)
+//   - "Reference images carry visual details. Your prompt describes what
+//      should change." (Klein guide)
+//   - "Word order matters — FLUX.2 pays more attention to what comes first."
+//      (Max guide)
+//
+// Bare-minimum assembly: lead → action bullets (visual-impact sorted) →
+// preserve tail (empty on day 1) → style trailer.
+
+/**
+ * Raised when a PromptProse object is structurally invalid. Used by both the
+ * runtime builders and the admin save-time validator so error messages are
+ * identical between the UI and the generation pipeline.
+ */
+export class PromptProseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PromptProseError";
+  }
+}
+
+/** Default lead clause appended in front of the action bullets. */
+const DEFAULT_PROSE_LEAD = "Apply the following finishes to this kitchen photo:";
+
+/**
+ * Default style trailer. "real estate photography" anchors the photographic
+ * genre (prevents editorial/product drift) and "neutral white balance"
+ * counters Flux's documented warm cast on interiors.
+ */
+const DEFAULT_PROSE_STYLE = "Photorealistic real estate photography, natural daylight, neutral white balance.";
+
+const IMAGE_TOKEN = "{image}";
+
+/** Negative-framing and BFL-forbidden tokens. Forbidden in every field. */
+const FORBIDDEN_NEGATIVE_WORDS = [
+  "not", "no", "never", "without", "don't", "dont",
+  "only", "avoid", "except",
+  // "island" collapses to a BFL surface class — describe positionally instead.
+  "island",
+];
+
+/**
+ * Material/color/format words forbidden inside action clauses. The swatch is
+ * the sole appearance authority; the action clause describes the SURFACE, not
+ * what's on it. This list is enforced only on `actions` — style/lead/preserve
+ * are allowed to use camera/film/photographic vocabulary.
+ */
+const FORBIDDEN_ACTION_MATERIAL_WORDS = [
+  // Wood / stone materials
+  "wood", "wooden", "oak", "walnut", "maple", "cherry", "pine", "birch",
+  "marble", "granite", "quartz", "quartzite", "slate", "travertine", "limestone",
+  // Tile formats
+  "subway", "herringbone", "hexagon", "mosaic", "tile", "plank",
+  // Colors
+  "white", "black", "blue", "onyx", "beige", "taupe", "gray", "grey",
+  "green", "red", "yellow", "brown", "cream", "ivory", "fog", "dove",
+];
+
+/** Hex code like #fff / #ffffff / #ffffffff. */
+const HEX_COLOR_RE = /#[0-9a-f]{3,8}\b/i;
+
+function wordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}
+
+function countToken(text: string, token: string): number {
+  let count = 0;
+  let idx = 0;
+  while ((idx = text.indexOf(token, idx)) !== -1) {
+    count++;
+    idx += token.length;
+  }
+  return count;
+}
+
+function findForbiddenWord(text: string, forbidden: readonly string[]): string | null {
+  const lower = text.toLowerCase();
+  for (const word of forbidden) {
+    // Word-boundary match. Escape any regex metachars in the forbidden word.
+    const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (new RegExp(`\\b${escaped}\\b`, "i").test(lower)) return word;
+  }
+  return null;
+}
+
+/**
+ * Full-generation prompt builder for BFL Flux 2 editing mode.
+ *
+ * Assembles: lead → action bullets (sorted by visual impact) → preserve tail
+ * → style trailer. Each action references its swatch via `image N` where N is
+ * the 1-indexed position in input_image_2..input_image_8 (base photo is
+ * image 1). Clauses that target a selection without a resolvable swatch throw
+ * — there is no text-only fallback.
+ *
+ * `opts.emitPreserve` — default true. Set false for the fixture pass of a
+ * two-pass split where every structural sub is absent from `visualSelections`;
+ * emitting preservation in that pass would ask Flux to "preserve" surfaces
+ * pass 1 just rewrote.
+ */
+export async function buildProsePrompt(
+  prose: PromptProse,
+  visualSelections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  resolveSwatchBuffer?: SwatchBufferResolver,
+  opts: { emitPreserve?: boolean } = {},
+): Promise<{ prompt: string; swatches: SwatchImage[] }> {
+  const { emitPreserve = true } = opts;
+
+  const swatches: SwatchImage[] = [];
+  const actionLines: string[] = [];
+  let imageIndex = 2; // image 1 = base photo
+
+  for (const [subId, optId] of sortSelectionsByVisualImpact(visualSelections)) {
+    const found = optionLookup.get(`${subId}:${optId}`);
+    if (!found) continue;
+    const { option, subCategory } = found;
+
+    if (optId.endsWith("-none") || optId.endsWith("-no-upgrade")) continue;
+    if (!option.swatchUrl && !option.swatchColor && !option.promptDescriptor) continue;
+
+    const template = prose.actions?.[subId];
+    if (!template) {
+      throw new PromptProseError(
+        `Missing actions["${subId}"] in prompt_prose. Every selected subcategory must have an action clause.`,
+      );
+    }
+
+    if (!option.swatchUrl || !resolveSwatchBuffer) {
+      throw new PromptProseError(
+        `actions["${subId}"] references a swatch, but option "${option.id}" has no swatchUrl.`,
+      );
+    }
+    const resolved = await resolveSwatchBuffer(option.swatchUrl);
+    if (!resolved) {
+      throw new PromptProseError(
+        `actions["${subId}"] swatch failed to resolve for option "${option.id}".`,
+      );
+    }
+
+    swatches.push({
+      label: subCategory.name,
+      buffer: resolved.buffer,
+      mediaType: resolved.mediaType,
+      subcategoryId: subId,
+    });
+
+    const substituted = template.replace(IMAGE_TOKEN, `image ${imageIndex}`);
+    actionLines.push(`- ${substituted}`);
+    imageIndex++;
+  }
+
+  if (actionLines.length === 0) {
+    return { prompt: "Return this image unchanged.", swatches: [] };
+  }
+
+  const lead = (prose.lead ?? DEFAULT_PROSE_LEAD).trim();
+  const style = (prose.style ?? DEFAULT_PROSE_STYLE).trim();
+
+  const segments: string[] = [];
+  segments.push(lead);
+  segments.push(actionLines.join("\n"));
+
+  if (emitPreserve && prose.preserve && prose.preserve.length > 0) {
+    const preserveLines = prose.preserve
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+    if (preserveLines.length > 0) segments.push(preserveLines.join("\n"));
+  }
+
+  segments.push(style);
+
+  return { prompt: segments.join("\n"), swatches };
+}
+
+/**
+ * Scoped-edit prompt builder. Reuses the same `actions[subId]` clause as
+ * full-generation — a single-surface change to the island uses the exact
+ * same "apply {image} to the freestanding center base structure in the
+ * foreground" line with the swatch bound to image 2. No lead, no style
+ * trailer, no preserve — Klein/Flex preserve unchanged surfaces by default.
+ */
+export async function buildProseScopedEdit(
+  prose: PromptProse,
+  changedSubcategoryId: string,
+  changedOptionId: string,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  resolveSwatchBuffer?: SwatchBufferResolver,
+): Promise<{ prompt: string; swatches: SwatchImage[] }> {
+  const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
+  if (!changed) {
+    return { prompt: "Return this image unchanged.", swatches: [] };
+  }
+
+  const template = prose.actions?.[changedSubcategoryId];
+  if (!template) {
+    throw new PromptProseError(
+      `Missing actions["${changedSubcategoryId}"] in prompt_prose. Scoped edits reuse the full-gen actions map.`,
+    );
+  }
+
+  if (!changed.option.swatchUrl || !resolveSwatchBuffer) {
+    throw new PromptProseError(
+      `actions["${changedSubcategoryId}"] references a swatch, but option "${changed.option.id}" has no swatchUrl.`,
+    );
+  }
+  const resolved = await resolveSwatchBuffer(changed.option.swatchUrl);
+  if (!resolved) {
+    throw new PromptProseError(
+      `actions["${changedSubcategoryId}"] swatch failed to resolve for option "${changed.option.id}".`,
+    );
+  }
+
+  const swatches: SwatchImage[] = [{
+    label: changed.subCategory.name,
+    buffer: resolved.buffer,
+    mediaType: resolved.mediaType,
+    subcategoryId: changedSubcategoryId,
+  }];
+
+  // Capitalize the first letter (templates are authored lowercase) and add a
+  // terminal period. That's the minimum to turn an action clause into a
+  // standalone edit instruction.
+  const clause = template.replace(IMAGE_TOKEN, "image 2");
+  const capitalized = clause.charAt(0).toUpperCase() + clause.slice(1);
+  const prompt = capitalized.endsWith(".") ? capitalized : `${capitalized}.`;
+
+  return { prompt, swatches };
+}
+
+/**
+ * Validate a PromptProse object without resolving swatches. Used by the admin
+ * PATCH handler at save time. Throws `PromptProseError` on any structural
+ * problem so the API and the editor UI surface identical error text.
+ *
+ * `requiredActionSubIds` is the set of subcategory IDs the photo is scoped to;
+ * every entry in it must have an `actions[subId]` clause so generation can't
+ * fail at runtime with missing prose.
+ */
+export function validatePromptProse(
+  prose: PromptProse,
+  _optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  requiredActionSubIds: readonly string[],
+): void {
+  void _optionLookup; // kept in signature for backward compatibility with callers
+  if (prose.version !== 2) {
+    throw new PromptProseError(
+      `prompt_prose.version must be 2 (got ${(prose as { version?: unknown }).version}).`,
+    );
+  }
+  if (!prose.actions || typeof prose.actions !== "object") {
+    throw new PromptProseError(
+      "prompt_prose.actions is required and must be an object keyed by subcategory slug.",
+    );
+  }
+  if (Object.keys(prose.actions).length === 0) {
+    throw new PromptProseError("prompt_prose.actions must contain at least one entry.");
+  }
+
+  // ----- actions -----
+  for (const [subId, clause] of Object.entries(prose.actions)) {
+    if (typeof clause !== "string") {
+      throw new PromptProseError(`actions["${subId}"] must be a string.`);
+    }
+    const trimmed = clause.trim();
+    if (trimmed.length === 0) {
+      throw new PromptProseError(`actions["${subId}"] must not be empty.`);
+    }
+
+    const imageCount = countToken(trimmed, IMAGE_TOKEN);
+    if (imageCount !== 1) {
+      throw new PromptProseError(
+        `actions["${subId}"] must contain exactly one {image} token (found ${imageCount}).`,
+      );
+    }
+
+    const wc = wordCount(trimmed);
+    if (wc < 4 || wc > 18) {
+      throw new PromptProseError(`actions["${subId}"] must be 4–18 words (got ${wc}).`);
+    }
+
+    if (/^[A-Z]/.test(trimmed)) {
+      throw new PromptProseError(
+        `actions["${subId}"] must start lowercase (action clauses are joined into bullet lines by the builder).`,
+      );
+    }
+    if (trimmed.endsWith(".")) {
+      throw new PromptProseError(
+        `actions["${subId}"] must not end with a period (builder appends separators).`,
+      );
+    }
+
+    // Strip the literal {image} token before scanning so nothing inside the
+    // placeholder is mistaken for forbidden text.
+    const scanText = trimmed.replace(IMAGE_TOKEN, "");
+    const neg = findForbiddenWord(scanText, FORBIDDEN_NEGATIVE_WORDS);
+    if (neg) {
+      throw new PromptProseError(
+        `actions["${subId}"] contains forbidden word "${neg}" (use positive framing; describe "island" positionally).`,
+      );
+    }
+    const mat = findForbiddenWord(scanText, FORBIDDEN_ACTION_MATERIAL_WORDS);
+    if (mat) {
+      throw new PromptProseError(
+        `actions["${subId}"] contains forbidden material/color word "${mat}" (swatch image is the sole material authority).`,
+      );
+    }
+    if (HEX_COLOR_RE.test(scanText)) {
+      throw new PromptProseError(
+        `actions["${subId}"] contains a hex color code (swatch image is the sole color authority).`,
+      );
+    }
+  }
+
+  // ----- required coverage -----
+  for (const subId of requiredActionSubIds) {
+    if (!(subId in prose.actions)) {
+      throw new PromptProseError(
+        `prompt_prose.actions is missing an entry for required subcategory "${subId}".`,
+      );
+    }
+  }
+
+  // ----- optional lead -----
+  if (prose.lead !== undefined) {
+    if (typeof prose.lead !== "string") {
+      throw new PromptProseError("prompt_prose.lead must be a string.");
+    }
+    const wc = wordCount(prose.lead);
+    if (wc > 12) {
+      throw new PromptProseError(`prompt_prose.lead must be ≤12 words (got ${wc}).`);
+    }
+    if (prose.lead.includes(IMAGE_TOKEN)) {
+      throw new PromptProseError("prompt_prose.lead must not contain {image}.");
+    }
+    const neg = findForbiddenWord(prose.lead, FORBIDDEN_NEGATIVE_WORDS);
+    if (neg) {
+      throw new PromptProseError(`prompt_prose.lead contains forbidden word "${neg}".`);
+    }
+  }
+
+  // ----- optional style -----
+  if (prose.style !== undefined) {
+    if (typeof prose.style !== "string") {
+      throw new PromptProseError("prompt_prose.style must be a string.");
+    }
+    const wc = wordCount(prose.style);
+    if (wc > 20) {
+      throw new PromptProseError(`prompt_prose.style must be ≤20 words (got ${wc}).`);
+    }
+    if (prose.style.includes(IMAGE_TOKEN)) {
+      throw new PromptProseError("prompt_prose.style must not contain {image}.");
+    }
+    const neg = findForbiddenWord(prose.style, FORBIDDEN_NEGATIVE_WORDS);
+    if (neg) {
+      throw new PromptProseError(`prompt_prose.style contains forbidden word "${neg}".`);
+    }
+  }
+
+  // ----- optional preserve[] -----
+  if (prose.preserve !== undefined) {
+    if (!Array.isArray(prose.preserve)) {
+      throw new PromptProseError("prompt_prose.preserve must be an array of strings.");
+    }
+    for (let i = 0; i < prose.preserve.length; i++) {
+      const clause = prose.preserve[i];
+      if (typeof clause !== "string") {
+        throw new PromptProseError(`prompt_prose.preserve[${i}] must be a string.`);
+      }
+      if (clause.trim().length === 0) {
+        throw new PromptProseError(`prompt_prose.preserve[${i}] must not be empty.`);
+      }
+      const wc = wordCount(clause);
+      if (wc > 18) {
+        throw new PromptProseError(`prompt_prose.preserve[${i}] must be ≤18 words (got ${wc}).`);
+      }
+      if (clause.includes(IMAGE_TOKEN)) {
+        throw new PromptProseError(`prompt_prose.preserve[${i}] must not contain {image}.`);
+      }
+      const neg = findForbiddenWord(clause, FORBIDDEN_NEGATIVE_WORDS);
+      if (neg) {
+        throw new PromptProseError(
+          `prompt_prose.preserve[${i}] contains forbidden word "${neg}" (use positive framing).`,
+        );
+      }
+    }
+  }
+}
+
 /**
  * Build a deterministic signature of the prompt context fields that affect generation output.
  * Used in the selections hash so cache invalidates when prompts/spatial hints/generation rules change.
@@ -313,7 +688,7 @@ export async function buildScopedEditPrompt(
 export function buildPromptContextSignature(
   aiConfig: {
     sceneDescription?: string | null;
-    photo: { photoBaseline?: string | null; spatialHint?: string | null };
+    photo: { photoBaseline?: string | null; spatialHint?: string | null; promptProse?: PromptProse | null };
     spatialHints?: Record<string, string> | null;
   },
   selections?: Record<string, string>,
@@ -364,6 +739,19 @@ export function buildPromptContextSignature(
     if (ruleParts.length > 0) rulesSignature = ruleParts.join("|");
   }
 
+  // Serialize prompt_prose deterministically — key order matters for the hash.
+  const prose = aiConfig.photo.promptProse;
+  let proseSignature = "";
+  if (prose) {
+    const stableStringify = (obj: unknown): string => {
+      if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
+      if (Array.isArray(obj)) return `[${obj.map(stableStringify).join(",")}]`;
+      const keys = Object.keys(obj as Record<string, unknown>).sort();
+      return `{${keys.map(k => `${JSON.stringify(k)}:${stableStringify((obj as Record<string, unknown>)[k])}`).join(",")}}`;
+    };
+    proseSignature = stableStringify(prose);
+  }
+
   return [
     `scene:${aiConfig.sceneDescription ?? ""}`,
     `photoBaseline:${aiConfig.photo.photoBaseline ?? ""}`,
@@ -371,6 +759,7 @@ export function buildPromptContextSignature(
     `spatialHints:${sortedSpatialHints}`,
     `rules:${rulesSignature}`,
     `scopedIds:${[...(scopedSubcategoryIds ?? [])].sort().join(",")}`,
+    `prose:${proseSignature}`,
   ].join("||");
 }
 
@@ -457,6 +846,7 @@ export function deriveGenerationContext(
     photo: {
       photoBaseline: aiConfig.photo.photoBaseline,
       spatialHint: aiConfig.photo.spatialHint,
+      promptProse: aiConfig.photo.promptProse,
     },
   }, scopedSelections, optionLookup, scopedSubcategoryIds);
 

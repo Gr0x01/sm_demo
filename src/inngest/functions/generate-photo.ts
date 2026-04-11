@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { inngest } from "@/inngest/client";
 import { NonRetriableError } from "inngest";
-import { identifyChangedSubcategory, stripExclusionRulesForMergedLinks } from "@/lib/generate";
+import { identifyChangedSubcategory, stripExclusionRulesForMergedLinks, PromptProseError } from "@/lib/generate";
 import { getServiceClient } from "@/lib/supabase";
 import { getOptionLookup, findSingleSurfaceDiffMatch } from "@/lib/db-queries";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
@@ -62,6 +62,7 @@ export const generatePhoto = inngest.createFunction(
       modelName,
       resolvedPolicy,
       spatialHints,
+      promptProse,
       selectionsJsonForClaim,
       leaveOneOutHashes,
       heroImagePath,
@@ -144,6 +145,7 @@ export const generatePhoto = inngest.createFunction(
           spatialHints,
           swatchResolver: createSwatchResolver(supabase),
           model: modelName,
+          promptProse,
         });
 
         // When refine is planned, park at mainPassPath so refine can read it.
@@ -162,8 +164,10 @@ export const generatePhoto = inngest.createFunction(
           error: err,
           orgId, orgSlug, floorplanSlug,
         });
-        if (err instanceof BflContentModerationError) {
-          // Mark the row as failed so the polling client sees it immediately
+        if (err instanceof BflContentModerationError || err instanceof PromptProseError) {
+          // Deterministic failures — mark the row as failed immediately so the
+          // polling client sees it, and wrap as non-retriable so Inngest stops
+          // burning retries on a bug that won't fix itself.
           await supabase.from("generated_images")
             .update({ image_path: "__failed__" })
             .eq("selections_hash", selectionsHash)
@@ -213,6 +217,7 @@ export const generatePhoto = inngest.createFunction(
             optionLookup,
             spatialHints,
             swatchResolver: createSwatchResolver(supabase),
+            promptProse,
           });
 
           // Scoped edits never refine — write directly to the final path.
@@ -228,7 +233,7 @@ export const generatePhoto = inngest.createFunction(
             error: err,
             orgId, orgSlug, floorplanSlug,
           });
-          if (err instanceof BflContentModerationError) {
+          if (err instanceof BflContentModerationError || err instanceof PromptProseError) {
             await supabase.from("generated_images")
               .update({ image_path: "__failed__" })
               .eq("selections_hash", selectionsHash)
