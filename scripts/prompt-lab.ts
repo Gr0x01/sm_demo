@@ -19,7 +19,7 @@ import fs from "fs";
 import path from "path";
 import { createClient } from "@supabase/supabase-js";
 import { getStepPhotoAiConfig } from "@/lib/db-queries";
-import { createSwatchResolver, preWarmSwatchCache } from "@/lib/flux-pipeline";
+import { createSwatchResolver, preWarmSwatchCache, fluxGenerate, fluxScopedEdit } from "@/lib/flux-pipeline";
 import { buildProsePrompt, buildProseScopedEdit } from "@/lib/generate";
 import { generateImage } from "@/lib/bfl";
 import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
@@ -341,8 +341,10 @@ function ls() {
 // STATUS — show variant detail for a session
 // ---------------------------------------------------------------------------
 
-function status(session: string) {
+async function status(session: string) {
   const config = loadConfig(session);
+  const supabase = getSupabase();
+  const optionLookup = await getOptionLookupDirect(supabase, config.orgId);
 
   console.log(`Session: ${session}`);
   console.log(`Photo:   ${config.photo.label} (${config.stepSlug})`);
@@ -350,7 +352,9 @@ function status(session: string) {
   console.log(`Subs:    ${config.scopedSubcategoryIds.join(", ")}`);
   console.log(`\nSelections:`);
   for (const [sub, opt] of Object.entries(config.selections)) {
-    console.log(`  ${sub}: ${opt}`);
+    const entry = optionLookup.get(`${sub}:${opt}`);
+    const name = entry?.option.name ?? opt;
+    console.log(`  ${sub.padEnd(32)} ${name.padEnd(24)} ${opt}`);
   }
 
   console.log(`\nVariants (${config.variants.length}):\n`);
@@ -493,6 +497,29 @@ function importVerdicts(session: string, jsonPath: string) {
 // SHOW — print assembled prompts without generating
 // ---------------------------------------------------------------------------
 
+const FIXTURE_PATTERNS = ["hardware", "faucet", "sink", "lighting", "fan", "refrigerator", "range", "dishwasher"];
+const MAX_SWATCHES_PER_PASS = 7;
+
+function classifySwatchSplit(
+  selections: Record<string, string>,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+): { structural: string[]; fixtures: string[]; willSplit: boolean } {
+  const isFixture = (subId: string) => FIXTURE_PATTERNS.some(p => subId.includes(p));
+  const structural: string[] = [];
+  const fixtures: string[] = [];
+  for (const [subId, optId] of Object.entries(selections)) {
+    const entry = optionLookup.get(`${subId}:${optId}`);
+    if (!entry?.option.swatchUrl) continue;
+    if (isFixture(subId)) fixtures.push(subId);
+    else structural.push(subId);
+  }
+  const willSplit =
+    structural.length + fixtures.length > MAX_SWATCHES_PER_PASS &&
+    fixtures.length > 0 &&
+    structural.length > 0;
+  return { structural, fixtures, willSplit };
+}
+
 async function show(session: string) {
   const config = loadConfig(session);
   const supabase = getSupabase();
@@ -521,6 +548,15 @@ async function show(session: string) {
         console.log(prompt);
         console.log(`\nSwatch: image 2 = ${swatches[0]?.subcategoryId} (${swatches[0]?.label})`);
       } else {
+        const split = classifySwatchSplit(config.selections, optionLookup);
+        if (split.willSplit) {
+          console.log(
+            `\n⚠ Will split into TWO passes in production (${split.structural.length} structural + ${split.fixtures.length} fixtures > ${MAX_SWATCHES_PER_PASS}).`,
+          );
+          console.log(`  Pass 1 (structural): ${split.structural.join(", ")}`);
+          console.log(`  Pass 2 (fixtures):   ${split.fixtures.join(", ")}`);
+          console.log(`  The preview below shows the unsplit single-pass prompt.`);
+        }
         const { prompt, swatches } = await buildProsePrompt(
           variant.prose,
           config.selections,
@@ -541,7 +577,12 @@ async function show(session: string) {
 // RUN
 // ---------------------------------------------------------------------------
 
-async function run(session: string, concurrency: number, variantFilter?: string, onlyPending?: boolean) {
+// BFL rate limit is 24 concurrent for most endpoints (flux-2-*). Each lab job
+// fires 1-2 BFL calls (single or two-pass), so 12 jobs ≈ 24 requests worst case.
+const MAX_LAB_CONCURRENCY = 12;
+const LAB_POLL_TIMEOUT_MS = 180_000;
+
+async function run(session: string, explicitConcurrency: number | undefined, variantFilter?: string, onlyPending?: boolean) {
   const config = loadConfig(session);
   const dir = sessionDir(session);
 
@@ -579,6 +620,7 @@ async function run(session: string, concurrency: number, variantFilter?: string,
     return;
   }
 
+  const concurrency = explicitConcurrency ?? Math.min(queue.length, MAX_LAB_CONCURRENCY);
   console.log(`Running ${queue.length} generation(s) with concurrency ${concurrency}...\n`);
 
   let completed = 0;
@@ -592,48 +634,48 @@ async function run(session: string, concurrency: number, variantFilter?: string,
     try {
       const genStart = performance.now();
       let prompt: string;
-      let swatchBuffers: Buffer[];
       let modelUsed: string;
+      let mainBuffer: Buffer;
+      let passes = 1;
 
       if (variant.scoped) {
-        // --- Scoped edit (single surface) ---
+        // --- Scoped edit (single surface) — delegate to production path ---
         const { subcategoryId, optionId } = variant.scoped;
-        const { prompt: p, swatches } = await buildProseScopedEdit(
-          variant.prose,
-          subcategoryId,
-          optionId,
+        const result = await fluxScopedEdit({
+          baseImageBuffer: heroBuffer,
+          changedSubcategoryId: subcategoryId,
+          changedOptionId: optionId,
           optionLookup,
-          cachedResolver,
-        );
-        prompt = p;
-        swatchBuffers = swatches.map(s => s.buffer);
-        modelUsed = (variant.model ?? SCOPED_EDIT_MODEL) as string;
+          spatialHints: config.spatialHints,
+          swatchResolver: cachedResolver,
+          promptProse: variant.prose,
+          model: variant.model,
+          maxWaitMs: LAB_POLL_TIMEOUT_MS,
+        });
+        prompt = result.prompt;
+        modelUsed = result.model;
+        mainBuffer = result.imageBuffer;
         console.log(`[${tag}] Scoped edit: ${subcategoryId} → ${modelUsed} (${prompt.split(/\s+/).length} words)`);
       } else {
-        // --- Full generation ---
-        const { prompt: p, swatches } = await buildProsePrompt(
-          variant.prose,
-          config.selections,
+        // --- Full generation — delegate to production path (handles two-pass split) ---
+        const result = await fluxGenerate({
+          heroBuffer,
+          selections: config.selections,
           optionLookup,
-          cachedResolver,
-        );
-        prompt = p;
-        swatchBuffers = swatches.map(s => s.buffer);
+          spatialHints: config.spatialHints,
+          swatchResolver: cachedResolver,
+          promptProse: variant.prose,
+          model: variant.model,
+          maxWaitMs: LAB_POLL_TIMEOUT_MS,
+        });
+        prompt = result.prompt;
         modelUsed = (variant.model ?? IMAGE_MODEL) as string;
-        console.log(`[${tag}] Full gen: ${modelUsed} (${prompt.split(/\s+/).length} words, ${swatchBuffers.length} swatches)`);
+        mainBuffer = result.imageBuffer;
+        passes = result.passes;
+        console.log(`[${tag}] Full gen: ${modelUsed} (${passes} pass${passes === 1 ? "" : "es"}, ${prompt.split(/\s+/).length} words)`);
       }
 
-      const isFlex = modelUsed === "flux-2-flex";
-      const result = await generateImage({
-        model: modelUsed as BflModel,
-        prompt,
-        inputImage: heroBuffer,
-        referenceImages: swatchBuffers,
-        maxWaitMs: 180_000,
-        ...(isFlex && { steps: 50, guidance: 7 }),
-      });
-
-      let finalBuffer = result.imageBuffer;
+      let finalBuffer = mainBuffer;
       let refineDurationMs = 0;
 
       // --- Refine pass (conditional) ---
@@ -658,9 +700,9 @@ async function run(session: string, concurrency: number, variantFilter?: string,
           const refineResult = await generateImage({
             model: IMAGE_MODEL as BflModel, // Refine always uses Max
             prompt: variant.refine.prompt,
-            inputImage: result.imageBuffer,
+            inputImage: mainBuffer,
             referenceImages: refineRefs.length > 0 ? refineRefs : undefined,
-            maxWaitMs: 180_000,
+            maxWaitMs: LAB_POLL_TIMEOUT_MS,
           });
           finalBuffer = refineResult.imageBuffer;
           refineDurationMs = Math.round(performance.now() - refineStart);
@@ -680,7 +722,7 @@ async function run(session: string, concurrency: number, variantFilter?: string,
       // Also save the pre-refine image when refine was used (for comparison)
       if (variant.refine && refineDurationMs > 0) {
         const preRefineName = `${variant.id}-${runIndex}-pre-refine.jpg`;
-        fs.writeFileSync(path.join(resultsDir(session), preRefineName), result.imageBuffer);
+        fs.writeFileSync(path.join(resultsDir(session), preRefineName), mainBuffer);
       }
 
       // Record result
@@ -735,7 +777,11 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function buildReviewHtml(session: string, config: SessionConfig): string {
+function buildReviewHtml(
+  session: string,
+  config: SessionConfig,
+  resolvedSelections: Record<string, { optionId: string; optionName: string }> = {},
+): string {
   const variantsWithResults = config.variants.filter(v => v.results.length > 0);
   if (variantsWithResults.length === 0) {
     return "<html><body><h1>No results yet. Run some variants first.</h1></body></html>";
@@ -798,7 +844,11 @@ function buildReviewHtml(session: string, config: SessionConfig): string {
 
   .selections-block { margin-bottom: 16px; }
   .selections-block summary { font-size: 13px; color: #888; cursor: pointer; }
-  .selections-block pre { font-size: 11px; color: #777; margin-top: 4px; }
+  .selections-table { margin-top: 8px; border-collapse: collapse; font-size: 12px; }
+  .selections-table td { padding: 4px 16px 4px 0; vertical-align: top; }
+  .selections-table .sub { color: #666; font-family: monospace; }
+  .selections-table .name { color: #e0e0e0; font-weight: 500; }
+  .selections-table .slug { color: #555; font-family: monospace; font-size: 11px; }
 
   /* Lightbox */
   .lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; cursor: zoom-out; }
@@ -816,9 +866,15 @@ function buildReviewHtml(session: string, config: SessionConfig): string {
   Total runs: <span>${variantsWithResults.reduce((s, v) => s + v.results.length, 0)}</span>
 </div>
 
-<details class="selections-block">
+<details class="selections-block" open>
   <summary>Selections (${Object.keys(config.selections).length} surfaces)</summary>
-  <pre>${escapeHtml(JSON.stringify(config.selections, null, 2))}</pre>
+  <table class="selections-table">
+    ${Object.entries(config.selections).map(([subId, optId]) => {
+      const resolved = resolvedSelections[subId];
+      const name = resolved?.optionName ?? optId;
+      return `<tr><td class="sub">${escapeHtml(subId)}</td><td class="name">${escapeHtml(name)}</td><td class="slug">${escapeHtml(optId)}</td></tr>`;
+    }).join("")}
+  </table>
 </details>
 
 <div class="actions-bar">
@@ -957,9 +1013,22 @@ function buildReviewHtml(session: string, config: SessionConfig): string {
 </html>`;
 }
 
-function review(session: string) {
+async function review(session: string) {
   const config = loadConfig(session);
-  const html = buildReviewHtml(session, config);
+
+  // Resolve option slugs → human-readable names for the review page
+  const supabase = getSupabase();
+  const optionLookup = await getOptionLookupDirect(supabase, config.orgId);
+  const resolvedSelections: Record<string, { optionId: string; optionName: string }> = {};
+  for (const [subId, optId] of Object.entries(config.selections)) {
+    const entry = optionLookup.get(`${subId}:${optId}`);
+    resolvedSelections[subId] = {
+      optionId: optId,
+      optionName: entry?.option.name ?? optId,
+    };
+  }
+
+  const html = buildReviewHtml(session, config, resolvedSelections);
   const outPath = reviewPath(session);
   fs.writeFileSync(outPath, html);
   console.log(`Review page written to ${outPath}`);
@@ -1039,7 +1108,7 @@ Session data: tmp/prompt-lab/<session>/
     }
 
     case "status": {
-      status(session);
+      await status(session);
       break;
     }
 
@@ -1097,7 +1166,7 @@ Session data: tmp/prompt-lab/<session>/
 
     case "run": {
       const concIdx = args.indexOf("--concurrency");
-      const concurrency = concIdx !== -1 ? parseInt(args[concIdx + 1], 10) : 2;
+      const concurrency = concIdx !== -1 ? parseInt(args[concIdx + 1], 10) : undefined;
 
       const varIdx = args.indexOf("--variant");
       const variantFilter = varIdx !== -1 ? args[varIdx + 1] : undefined;
@@ -1109,7 +1178,7 @@ Session data: tmp/prompt-lab/<session>/
     }
 
     case "review": {
-      review(session);
+      await review(session);
       break;
     }
 
