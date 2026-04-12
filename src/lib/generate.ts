@@ -409,21 +409,28 @@ type ActionEntry = {
   sortSlug: string;
   /** The clause template with exactly one {image} token. */
   template: string;
-  /** Swatch URL to resolve. Already known to be non-null by the time we build this. */
-  swatchUrl: string;
   /** Label for the SwatchImage record (for debugging / logs). */
   label: string;
   /** `subcategoryId` on the SwatchImage record. For merges, the first sub in `when`. */
   swatchSubcategoryId: string;
   /**
    * Optional `option.dimensions` text. Emitted as a parenthetical after the
-   * substituted `{image}` token. Used to supply scale/size context that the
-   * swatch image alone cannot carry (e.g. "thin 5-inch bar pull"). This is
-   * the BFL-documented exception to swatch authority — see the prompting
-   * guide's "Swatch Authority Rule" section.
+   * substituted token. Used to supply scale/size context that the swatch
+   * image alone cannot carry (e.g. "thin 5-inch bar pull").
    */
   dimensions?: string;
-};
+} & (
+  | {
+    /** Swatch URL to resolve. Entry sends a reference image to BFL. */
+    mode: "swatch";
+    swatchUrl: string;
+  }
+  | {
+    /** Painted finish — hex substituted into prompt text, no reference image sent. (D100) */
+    mode: "hex";
+    hexColor: string;
+  }
+);
 
 /**
  * Phase 1 of full-generation assembly: resolve merge declarations against
@@ -481,14 +488,29 @@ function resolveMerges(
       consumed.add(subId);
     }
 
-    mergedEntries.push({
-      sortSlug: entry.when[0],
-      template: entry.clause,
-      swatchUrl: firstUrl,
-      label: firstFound.subCategory.name,
-      swatchSubcategoryId: entry.when[0],
-      dimensions: firstFound.option.dimensions?.trim() || undefined,
-    });
+    // Merges fire when all swatch URLs match. For painted options, auto-switch
+    // to hex mode (D100) — the merge means same color on both surfaces.
+    if (firstFound.option.isPainted && firstFound.option.swatchColor) {
+      mergedEntries.push({
+        sortSlug: entry.when[0],
+        template: entry.clause,
+        mode: "hex",
+        hexColor: firstFound.option.swatchColor,
+        label: firstFound.subCategory.name,
+        swatchSubcategoryId: entry.when[0],
+        dimensions: firstFound.option.dimensions?.trim() || undefined,
+      });
+    } else {
+      mergedEntries.push({
+        sortSlug: entry.when[0],
+        template: entry.clause,
+        mode: "swatch",
+        swatchUrl: firstUrl,
+        label: firstFound.subCategory.name,
+        swatchSubcategoryId: entry.when[0],
+        dimensions: firstFound.option.dimensions?.trim() || undefined,
+      });
+    }
   }
 
   return { reducedSelections, mergedEntries };
@@ -549,20 +571,35 @@ export async function buildProsePrompt(
       );
     }
 
-    if (!option.swatchUrl) {
-      throw new PromptProseError(
-        `actions["${subId}"] references a swatch, but option "${option.id}" has no swatchUrl.`,
-      );
+    if (option.isPainted && option.swatchColor) {
+      // Painted finish (D100): use hex in prompt text, skip swatch image.
+      // Dramatically better color fidelity for flat paint vs photographed swatches.
+      entries.push({
+        sortSlug: subId,
+        template,
+        mode: "hex",
+        hexColor: option.swatchColor,
+        label: subCategory.name,
+        swatchSubcategoryId: subId,
+        dimensions: option.dimensions?.trim() || undefined,
+      });
+    } else {
+      // Textured finish: reference image sent to BFL
+      if (!option.swatchUrl) {
+        throw new PromptProseError(
+          `actions["${subId}"] references a swatch, but option "${option.id}" has no swatchUrl.`,
+        );
+      }
+      entries.push({
+        sortSlug: subId,
+        template,
+        mode: "swatch",
+        swatchUrl: option.swatchUrl,
+        label: subCategory.name,
+        swatchSubcategoryId: subId,
+        dimensions: option.dimensions?.trim() || undefined,
+      });
     }
-
-    entries.push({
-      sortSlug: subId,
-      template,
-      swatchUrl: option.swatchUrl,
-      label: subCategory.name,
-      swatchSubcategoryId: subId,
-      dimensions: option.dimensions?.trim() || undefined,
-    });
   }
 
   // Phase 3: visual-impact sort, using each entry's sortSlug.
@@ -577,35 +614,44 @@ export async function buildProsePrompt(
     return { prompt: "Return this image unchanged.", swatches: [] };
   }
 
-  // Phase 4: resolve swatches and substitute image indices.
+  // Phase 4: resolve swatches and substitute image indices / hex codes.
   const swatches: SwatchImage[] = [];
   const actionLines: string[] = [];
   let imageIndex = 2; // image 1 = base photo
 
   for (const entry of entries) {
-    if (!resolveSwatchBuffer) {
-      throw new PromptProseError(
-        `Cannot resolve swatch for "${entry.sortSlug}": no resolver provided.`,
-      );
-    }
-    const resolved = await resolveSwatchBuffer(entry.swatchUrl);
-    if (!resolved) {
-      throw new PromptProseError(
-        `Swatch failed to resolve for "${entry.sortSlug}" at ${entry.swatchUrl}.`,
-      );
+    let substituted: string;
+
+    if (entry.mode === "hex") {
+      // Painted finish (D100): substitute {image} with hex code, no swatch image
+      substituted = entry.template.replace(IMAGE_TOKEN, `hex ${entry.hexColor}`);
+    } else {
+      // Swatch path: resolve swatch buffer and substitute {image} with image index
+      if (!resolveSwatchBuffer) {
+        throw new PromptProseError(
+          `Cannot resolve swatch for "${entry.sortSlug}": no resolver provided.`,
+        );
+      }
+      const resolved = await resolveSwatchBuffer(entry.swatchUrl);
+      if (!resolved) {
+        throw new PromptProseError(
+          `Swatch failed to resolve for "${entry.sortSlug}" at ${entry.swatchUrl}.`,
+        );
+      }
+
+      swatches.push({
+        label: entry.label,
+        buffer: resolved.buffer,
+        mediaType: resolved.mediaType,
+        subcategoryId: entry.swatchSubcategoryId,
+      });
+
+      substituted = entry.template.replace(IMAGE_TOKEN, `image ${imageIndex}`);
+      imageIndex++;
     }
 
-    swatches.push({
-      label: entry.label,
-      buffer: resolved.buffer,
-      mediaType: resolved.mediaType,
-      subcategoryId: entry.swatchSubcategoryId,
-    });
-
-    const substituted = entry.template.replace(IMAGE_TOKEN, `image ${imageIndex}`);
     const withDims = entry.dimensions ? `${substituted} (${entry.dimensions})` : substituted;
     actionLines.push(`- ${withDims}`);
-    imageIndex++;
   }
 
   // Phase 5: assemble lead → bullets → preserve → style.
@@ -654,41 +700,45 @@ export async function buildProseScopedEdit(
     );
   }
 
-  if (!resolveSwatchBuffer) {
-    throw new PromptProseError(
-      `Cannot resolve swatch for "${changedSubcategoryId}": no resolver provided.`,
-    );
-  }
-  if (!changed.option.swatchUrl) {
-    throw new PromptProseError(
-      `actions["${changedSubcategoryId}"] references a swatch, but option "${changed.option.id}" has no swatchUrl.`,
-    );
-  }
-  const resolved = await resolveSwatchBuffer(changed.option.swatchUrl);
-  if (!resolved) {
-    throw new PromptProseError(
-      `actions["${changedSubcategoryId}"] swatch failed to resolve for option "${changed.option.id}".`,
-    );
-  }
+  const isPainted = changed.option.isPainted && changed.option.swatchColor;
+  const swatches: SwatchImage[] = [];
+  let clause: string;
 
-  const swatches: SwatchImage[] = [{
-    label: changed.subCategory.name,
-    buffer: resolved.buffer,
-    mediaType: resolved.mediaType,
-    subcategoryId: changedSubcategoryId,
-  }];
+  if (isPainted) {
+    // Painted finish (D100): hex in prompt text, no swatch image
+    clause = template.replace(IMAGE_TOKEN, `hex ${changed.option.swatchColor}`);
+  } else {
+    // Swatch path: resolve swatch buffer
+    if (!resolveSwatchBuffer) {
+      throw new PromptProseError(
+        `Cannot resolve swatch for "${changedSubcategoryId}": no resolver provided.`,
+      );
+    }
+    if (!changed.option.swatchUrl) {
+      throw new PromptProseError(
+        `actions["${changedSubcategoryId}"] uses {image} but option "${changed.option.id}" has no swatchUrl.`,
+      );
+    }
+    const resolved = await resolveSwatchBuffer(changed.option.swatchUrl);
+    if (!resolved) {
+      throw new PromptProseError(
+        `actions["${changedSubcategoryId}"] swatch failed to resolve for option "${changed.option.id}".`,
+      );
+    }
+
+    swatches.push({
+      label: changed.subCategory.name,
+      buffer: resolved.buffer,
+      mediaType: resolved.mediaType,
+      subcategoryId: changedSubcategoryId,
+    });
+
+    clause = template.replace(IMAGE_TOKEN, "image 2");
+  }
 
   // Capitalize the first letter (templates are authored lowercase) and add a
   // terminal period. That's the minimum to turn an action clause into a
   // standalone edit instruction.
-  //
-  // Light preservation trailer appended for scoped-edit context ONLY: the
-  // same action clauses are used for both full-gen and scoped-edit paths, but
-  // full-gen doesn't need preservation (every other surface is also changing)
-  // while scoped-edit does (bleed into adjacent surfaces is a known Pro
-  // limitation). Kept short and positive per BFL's Klein guidance on
-  // "maintain all other aspects of the original image".
-  const clause = template.replace(IMAGE_TOKEN, "image 2");
   const dims = changed.option.dimensions?.trim();
   const clauseWithDims = dims ? `${clause} (${dims})` : clause;
   const capitalized = clauseWithDims.charAt(0).toUpperCase() + clauseWithDims.slice(1);
@@ -704,7 +754,9 @@ export async function buildProseScopedEdit(
     .map(p => p.endsWith(".") ? p.charAt(0).toUpperCase() + p.slice(1) : `${p.charAt(0).toUpperCase()}${p.slice(1)}.`);
   const preserveBlock = specificPreserves.length > 0 ? ` ${specificPreserves.join(" ")}` : "";
 
-  const prompt = `${withPeriod} Match image 2 exactly.${preserveBlock} Maintain all other aspects of the original image.`;
+  // Painted: no swatch to match, just the hex in the text. Swatch: "Match image 2 exactly."
+  const matchClause = isPainted ? "" : " Match image 2 exactly.";
+  const prompt = `${withPeriod}${matchClause}${preserveBlock} Maintain all other aspects of the original image.`;
 
   return { prompt, swatches };
 }

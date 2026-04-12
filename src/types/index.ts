@@ -9,6 +9,7 @@ export interface Option {
   nudge?: string;
   generationRules?: string[];
   isDefault?: boolean;
+  isPainted?: boolean;
   scopedEditModel?: string;
   linkedToSubcategory?: string;
 }

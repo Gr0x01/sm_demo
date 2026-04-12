@@ -369,6 +369,46 @@ describe("buildProsePrompt (v2)", () => {
     );
     expect(prompt).not.toContain("pendant");
   });
+
+  it("substitutes hex for painted options (isPainted=true), skips swatch image", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: "paint every cabinet door and drawer front along the walls to match {image}",
+        countertops: "apply {image} to all horizontal countertop surfaces",
+      },
+    };
+    const { prompt, swatches } = await buildProsePrompt(
+      prose,
+      { cabinets: "cab-dove", countertops: "ct-granite-luna" },
+      optionLookup,
+      mockResolver,
+    );
+    // Dove (painted) → hex in prompt, no swatch sent. Counter → image 2 (first and only swatch).
+    expect(prompt).toContain("hex #F5F5F2");
+    expect(prompt).toContain("image 2 to all horizontal countertop");
+    expect(prompt).not.toContain("image 3"); // only 1 swatch slot used
+    expect(swatches).toHaveLength(1);
+    expect(swatches[0].subcategoryId).toBe("countertops");
+  });
+
+  it("falls through to swatch path when isPainted is true but swatchColor is null", async () => {
+    // Build a lookup with isPainted but no swatchColor
+    const lookup = buildOptionLookup();
+    const nohex = { id: "cab-nohex", name: "No Hex", price: 0, swatchUrl: "https://storage/swatch-nohex.jpg", isPainted: true };
+    const sub = lookup.get("cabinets:cab-dove")!.subCategory;
+    lookup.set("cabinets:cab-nohex", { option: nohex, subCategory: sub });
+
+    const prose: PromptProse = {
+      version: 2,
+      actions: { cabinets: "apply {image} to every cabinet door along the walls" },
+    };
+    const { prompt, swatches } = await buildProsePrompt(prose, { cabinets: "cab-nohex" }, lookup, mockResolver);
+    // Should fall through to swatch path
+    expect(prompt).toContain("image 2");
+    expect(prompt).not.toContain("hex");
+    expect(swatches).toHaveLength(1);
+  });
 });
 
 describe("buildProsePrompt (v2) — mergedClauses", () => {
@@ -522,6 +562,47 @@ describe("buildProsePrompt (v2) — mergedClauses", () => {
     expect(prompt).toContain("apply image 2 to every cabinet door and drawer front throughout");
     expect(prompt).toContain("apply image 3 to all horizontal countertop surfaces");
     expect(swatches).toHaveLength(2);
+  });
+
+  it("uses hex for merged clause when options are painted (isPainted=true)", async () => {
+    const map = new Map<string, { option: import("@/types").Option; subCategory: import("@/types").SubCategory }>();
+    const sub = (id: string) => ({ id, name: id, categoryId: "cat", isVisual: true, options: [] as import("@/types").Option[] });
+    map.set("kitchen-cabinet-color:dove-a", {
+      option: { id: "dove-a", name: "Dove", price: 0, swatchUrl: "https://storage/dove.jpg", swatchColor: "#F5F5F2", isPainted: true },
+      subCategory: sub("kitchen-cabinet-color"),
+    });
+    map.set("kitchen-island-cabinet-color:dove-b", {
+      option: { id: "dove-b", name: "Dove", price: 0, swatchUrl: "https://storage/dove.jpg", swatchColor: "#F5F5F2", isPainted: true },
+      subCategory: sub("kitchen-island-cabinet-color"),
+    });
+    map.set("counter-top:stone", {
+      option: { id: "stone", name: "Stone", price: 0, swatchUrl: "https://storage/stone.jpg" },
+      subCategory: sub("counter-top"),
+    });
+
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-color": "paint every perimeter cabinet door and drawer front along the walls to match {image}",
+        "kitchen-island-cabinet-color": "paint the freestanding center base structure in the foreground to match {image}",
+        "counter-top": "apply {image} to all horizontal countertop surfaces",
+      },
+      mergedClauses: [
+        { when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"], clause: "paint every cabinet door and drawer front throughout to match {image}" },
+      ],
+    };
+
+    const { prompt, swatches } = await buildProsePrompt(
+      prose,
+      { "kitchen-cabinet-color": "dove-a", "kitchen-island-cabinet-color": "dove-b", "counter-top": "stone" },
+      map,
+      mockResolver,
+    );
+    // Merged clause uses hex — no cab swatch. Counter is image 2 (first and only swatch).
+    expect(prompt).toContain("hex #F5F5F2");
+    expect(prompt).toContain("image 2 to all horizontal countertop");
+    expect(swatches).toHaveLength(1);
+    expect(swatches[0].subcategoryId).toBe("counter-top");
   });
 });
 
@@ -721,6 +802,18 @@ describe("buildProseScopedEdit (v2)", () => {
     expect(prompt).not.toContain("photography");
     expect(prompt).toContain("Keep the pendant lights unchanged.");
     expect(prompt).toContain("Maintain all other aspects of the original image.");
+  });
+
+  it("substitutes hex for painted options, drops 'Match image 2' clause", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { cabinets: "paint every cabinet door and drawer front along the walls to match {image}" },
+    };
+    const { prompt, swatches } = await buildProseScopedEdit(prose, "cabinets", "cab-dove", optionLookup, mockResolver);
+    expect(prompt).toContain("hex #F5F5F2");
+    expect(prompt).not.toContain("Match image 2");
+    expect(prompt).toContain("Maintain all other aspects of the original image.");
+    expect(swatches).toHaveLength(0);
   });
 });
 

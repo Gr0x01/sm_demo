@@ -143,6 +143,8 @@ export function buildOptionLookup(): OptionLookupMap {
   map.set("cabinets:cab-white-shaker", { option: cabinetsOpt, subCategory: cabinetsSub });
   const cabinetsOptUpgrade = makeOpt("cab-espresso", "Espresso", { swatchUrl: "https://storage/swatch-esp.jpg", price: 2500 });
   map.set("cabinets:cab-espresso", { option: cabinetsOptUpgrade, subCategory: cabinetsSub });
+  const cabinetsOptDove = makeOpt("cab-dove", "Dove Paint", { swatchUrl: "https://storage/swatch-dove.jpg", swatchColor: "#F5F5F2", isPainted: true, price: 1200 });
+  map.set("cabinets:cab-dove", { option: cabinetsOptDove, subCategory: cabinetsSub });
 
   const counterSub = makeSub("countertops", "Countertops");
   const counterOpt = makeOpt("ct-granite-luna", "Luna Pearl Granite", { swatchUrl: "https://storage/swatch-luna.jpg", price: 1800 });

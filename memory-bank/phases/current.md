@@ -73,6 +73,7 @@ Every new demo/tenant photo goes through the lab. Full docs: `memory-bank/genera
 
 - [ ] **Countertop scoped edit bleeds onto island face** — tried 3 hint iterations. Current hint avoids "island" but still bleeds on some combos. May need adjacency preservation clause in `buildScopedEditPrompt` or Klein 9B for countertop edits.
 - [ ] **Inconsistent cabinet rendering between full gen runs** — same fog paint swatch produces visibly different results across runs. Likely Flux Max non-determinism, not a code bug.
+- [ ] **Implement paint+hex for painted cab/island options (D100)** — Prompt Lab R&D proved that hex codes with "paint" verb produce dramatically better color fidelity for painted finishes vs swatches (3/3 correct with hex, ~2/15 with swatches on Dove+Onyx combo). Needs code path in `buildProsePrompt` to detect painted options and emit hex instead of swatch reference. See `decisions.md` D100.
 - [ ] **Re-seed `/try` demo cache** — run `npx tsx scripts/seed-demo-cache.ts` after deploy
 - [ ] Test non-kitchen SM rooms (bedrooms, bathrooms)
 - [ ] **Audit other prospect demos for loose backsplash spatial hints** — one at a time. Same failure mode as Valor (zone undercoverage or doorway bleed) likely exists on the rest. Review order: alexander-scott ✓ → davidson ✓ → westbay → stylecraft → (then mckinley, ici, viera, chesapeake, kolter, neal, rocklyn, signature). 11 of 12 had the identical generic hint `"backsplash wall between the upper cabinets and the countertop"`.

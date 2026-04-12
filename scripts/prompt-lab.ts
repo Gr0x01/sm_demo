@@ -42,7 +42,7 @@ async function getOptionLookupDirect(
       id, slug, name, sort_order,
       subcategories (
         id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, scoped_edit_model, linked_to_subcategory )
+        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, is_painted, scoped_edit_model, linked_to_subcategory )
       )
     `)
     .eq("org_id", orgId)
@@ -81,6 +81,7 @@ async function getOptionLookupDirect(
           nudge: opt.nudge ?? undefined,
           generationRules: opt.generation_rules ?? undefined,
           isDefault: opt.is_default || undefined,
+          isPainted: opt.is_painted || undefined,
           scopedEditModel: opt.scoped_edit_model ?? undefined,
           linkedToSubcategory: opt.linked_to_subcategory ?? undefined,
         };

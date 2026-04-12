@@ -388,10 +388,17 @@ Behavior documented here for reference — prefer the prose spec for new work.
 - Pass 2 (fixtures): range first, then hardware, faucet, sink, lighting
 
 ### Swatch Authority Rule
-Swatch images = SOLE appearance authority. Never send text alongside swatches when a swatch image is present:
+Swatch images = SOLE appearance authority for **textured** surfaces (stained wood, stone, tile, flooring). Never send text alongside swatches for these:
 - **No `promptDescriptor`** — BFL treats text as higher authority and overrides the swatch.
-- **No hex color codes alongside swatches** — hex describes flat color, which overrides textured finishes (wood stain rendered as flat paint, granite rendered as solid color). Hex is ONLY safe in fallback paths when no swatch image is available.
+- **No hex color codes alongside swatches** — hex describes flat color, which overrides textured finishes (wood stain rendered as flat paint, granite rendered as solid color).
 - **`dimensions` is the one exception**: describes installed appearance using relative scale, not absolute measurements.
+
+**Painted surfaces (cabinets, island) exception — hex WITHOUT swatch (D100, 2026-04-12):**
+For solid-paint cabinet/island options, send hex code in the prompt with the verb "paint" and do NOT send a swatch image. Swatches for painted finishes are photographed color chips with lighting artifacts (cool cast, shadows) that confuse BFL — Dove (#F5F5F2) consistently rendered as grey when using its swatch. Hex is unambiguous.
+- Use: `"paint every perimeter cabinet door and drawer front on every wall to hex #F5F5F2"`
+- Do NOT use: `"change every perimeter cabinet door to match image 2"` with a Dove swatch
+- This only applies to painted finishes. Stained wood (Driftwood) still needs a swatch — the grain pattern can't be described by hex.
+- Tested on Valor kitchen: 3/3 runs with hex produced correct white perimeter + dark island separation. 0/15 runs with swatches produced correct white.
 
 **Dimensions must use relative scale, not absolute units.** BFL has no concept of inches. "0.5x2 inch mosaic" → BFL renders standard subway-sized tiles. Instead describe scale relative to the surface: "small mosaic herringbone — dozens of tiny rectangular pieces visible across the backsplash" or "4x16 subway tiles, staggered layout". The key is how many tiles are visible, not how big each tile is in inches.
 
