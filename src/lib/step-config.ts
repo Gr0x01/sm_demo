@@ -30,7 +30,12 @@ export interface StepPhoto {
  * `validateActionClause` in `src/lib/generate.ts` for the canonical lists):
  * - Lowercase start, no trailing period — clauses are fragments joined by
  *   the builder into bullet lines.
- * - 4–18 words per clause (medium-band per BFL fundamentals guide).
+ * - 4–30 words per clause. BFL's medium band is 4–18, but photos with
+ *   structurally segmented surfaces (multiple disconnected backsplash zones,
+ *   multi-wall cabinet runs with unique architecture) need enumeration that
+ *   doesn't fit in 18 words. The 30-word ceiling is a deliberate exception
+ *   per-photo authors should only use when sweep directives have been shown
+ *   to fail.
  * - No negative framing: `not`, `no`, `never`, `without`, `don't`, `dont`,
  *   `only`, `avoid`, `except`.
  * - No material/color/pattern words (and their plural forms): swatches are
@@ -86,7 +91,7 @@ export interface PromptProse {
    * perimeter cabinets.
    *
    * `clause` follows the same rules as action clauses (lowercase start, no
-   * trailing period, 4–18 words, exactly one `{image}` token, no forbidden
+   * trailing period, 4–30 words, exactly one `{image}` token, no forbidden
    * words). Sort order uses the first slug in `when`.
    */
   mergedClauses?: Array<{

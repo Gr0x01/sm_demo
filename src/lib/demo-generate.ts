@@ -3,9 +3,35 @@ import { hashSelections } from "@/lib/generate";
 import { getCategoriesWithOptions } from "@/lib/db-queries";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
+import type { PromptProse } from "@/lib/step-config";
 
-export const DEMO_GENERATION_CACHE_VERSION = "v3.8";
 export const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
+
+/** Known photo hash for the sample kitchen (public/sample-kitchen.jpg, pre-sized 1536x1024). */
+export const SAMPLE_KITCHEN_HASH = "a6aeb46b36635226";
+
+/** v2 prose spec for the sample kitchen. */
+export const SAMPLE_KITCHEN_PROSE: PromptProse = {
+  version: 2,
+  actions: {
+    "kitchen-cabinet-color": "apply {image} to every perimeter cabinet door and drawer front along each wall",
+    "kitchen-island-cabinet-color": "apply {image} to the freestanding center structure base panel in the foreground",
+    "counter-top": "apply {image} to all horizontal countertop surfaces on the perimeter and center structure",
+    "backsplash": "change the backsplash to {image}, including behind the hood",
+  },
+  mergedClauses: [
+    {
+      when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
+      clause: "apply {image} to every cabinet door and drawer front throughout the kitchen",
+    },
+  ],
+};
+
+/** Derived from prose content — auto-invalidates when the prose changes. */
+export const DEMO_GENERATION_CACHE_VERSION = createHash("sha256")
+  .update(JSON.stringify(SAMPLE_KITCHEN_PROSE))
+  .digest("hex")
+  .slice(0, 8);
 
 /**
  * Get valid subcategory and option IDs from the Demo org DB.

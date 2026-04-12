@@ -677,7 +677,7 @@ describe("buildProseScopedEdit (v2)", () => {
       actions: { cabinets: "apply {image} to every cabinet door and drawer front along the walls" },
     };
     const { prompt, swatches } = await buildProseScopedEdit(prose, "cabinets", "cab-espresso", optionLookup, mockResolver);
-    expect(prompt).toBe("Apply image 2 to every cabinet door and drawer front along the walls. Maintain all other aspects of the original image.");
+    expect(prompt).toBe("Apply image 2 to every cabinet door and drawer front along the walls. Match image 2 exactly. Maintain all other aspects of the original image.");
     expect(swatches).toHaveLength(1);
     expect(swatches[0].subcategoryId).toBe("cabinets");
   });
@@ -699,21 +699,28 @@ describe("buildProseScopedEdit (v2)", () => {
     };
     const { prompt } = await buildProseScopedEdit(prose, "backsplash", "bs-subway-white", optionLookup, mockResolver);
     // Dimensions parenthetical lives inside the clause, period still terminates the full edit.
-    expect(prompt).toBe("Apply image 2 to the wall strip above the countertops (4x16). Maintain all other aspects of the original image.");
+    expect(prompt).toBe("Apply image 2 to the wall strip above the countertops (4x16). Match image 2 exactly. Maintain all other aspects of the original image.");
   });
 
-  it("emits no lead, no style trailer, no preserve tail", async () => {
+  it("emits no lead, no style trailer, but DOES emit preserve entries", async () => {
+    // preserve entries apply to scoped-edit context too — the same surfaces
+    // Flux mutates in full-gen (e.g. a pantry door misread as a cabinet) also
+    // get mutated in scoped-edit, so per-photo preserve clauses need to be in
+    // both prompt paths. Lead and style are still excluded (scoped edit has
+    // its own fixed lead-in implicit in the capitalized action clause, and no
+    // style trailer).
     const prose: PromptProse = {
       version: 2,
       actions: { cabinets: "apply {image} to every cabinet door along the walls" },
       lead: "Apply the following finishes to this kitchen photo:",
       style: "Architectural editorial photography.",
-      preserve: ["Keep the pendant lights unchanged"],
+      preserve: ["keep the pendant lights unchanged"],
     };
     const { prompt } = await buildProseScopedEdit(prose, "cabinets", "cab-espresso", optionLookup, mockResolver);
     expect(prompt).not.toContain("kitchen photo");
     expect(prompt).not.toContain("photography");
-    expect(prompt).not.toContain("pendant");
+    expect(prompt).toContain("Keep the pendant lights unchanged.");
+    expect(prompt).toContain("Maintain all other aspects of the original image.");
   });
 });
 
@@ -767,17 +774,17 @@ describe("validatePromptProse (v2)", () => {
       version: 2,
       actions: { cabinets: "apply {image}" },
     };
-    expect(() => validatePromptProse(prose,[])).toThrow(/4–18 words/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/4–30 words/);
   });
 
   it("rejects too-long action clauses", () => {
     const prose: PromptProse = {
       version: 2,
       actions: {
-        cabinets: "apply {image} to every single cabinet door and drawer front along the back and left and right walls of the entire kitchen area",
+        cabinets: "apply {image} to every single cabinet door and drawer front along the back and left and right walls of the entire kitchen area and dining area and hall and foyer and garage",
       },
     };
-    expect(() => validatePromptProse(prose,[])).toThrow(/4–18 words/);
+    expect(() => validatePromptProse(prose,[])).toThrow(/4–30 words/);
   });
 
   it("rejects action clauses starting with a capital letter", () => {

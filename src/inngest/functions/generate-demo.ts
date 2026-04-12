@@ -1,7 +1,7 @@
 import { inngest } from "@/inngest/client";
 import { NonRetriableError } from "inngest";
 import { identifyChangedSubcategory, resolveLinkedOptions } from "@/lib/generate";
-import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID } from "@/lib/demo-generate";
+import { DEMO_GENERATION_CACHE_VERSION, DEMO_ORG_ID, SAMPLE_KITCHEN_HASH, SAMPLE_KITCHEN_PROSE } from "@/lib/demo-generate";
 import { findDemoDiffMatch, getOptionLookup } from "@/lib/db-queries";
 import { getServiceClient } from "@/lib/supabase";
 import { captureAiEvent, captureAiError, estimateBflCost } from "@/lib/posthog-server";
@@ -112,6 +112,7 @@ export const generateDemo = inngest.createFunction(
 
       const genStart = performance.now();
       try {
+        const promptProse = photoHash === SAMPLE_KITCHEN_HASH ? SAMPLE_KITCHEN_PROSE : null;
         const result = await fluxGenerate({
           heroBuffer: Buffer.from(await photoData.arrayBuffer()),
           selections: resolvedSelections,
@@ -119,6 +120,7 @@ export const generateDemo = inngest.createFunction(
           spatialHints,
           swatchResolver: createSwatchResolver(supabase),
           defaultSurfaceColors: resolvedDefaultColors,
+          promptProse,
         });
 
         // Upload to storage within this step
@@ -166,6 +168,7 @@ export const generateDemo = inngest.createFunction(
 
         const genStart = performance.now();
         try {
+          const promptProse = photoHash === SAMPLE_KITCHEN_HASH ? SAMPLE_KITCHEN_PROSE : null;
           const result = await fluxScopedEdit({
             baseImageBuffer: Buffer.from(await baseImageData.arrayBuffer()),
             changedSubcategoryId,
@@ -173,6 +176,7 @@ export const generateDemo = inngest.createFunction(
             optionLookup,
             spatialHints,
             swatchResolver: createSwatchResolver(supabase),
+            promptProse,
           });
 
           const { error: uploadError } = await supabase.storage

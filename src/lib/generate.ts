@@ -693,7 +693,18 @@ export async function buildProseScopedEdit(
   const clauseWithDims = dims ? `${clause} (${dims})` : clause;
   const capitalized = clauseWithDims.charAt(0).toUpperCase() + clauseWithDims.slice(1);
   const withPeriod = capitalized.endsWith(".") ? capitalized : `${capitalized}.`;
-  const prompt = `${withPeriod} Maintain all other aspects of the original image.`;
+
+  // Per-photo preserve clauses are included in scoped-edit prompts too — the
+  // same surfaces Flux mutates in full-gen it also mutates in scoped-edit
+  // (e.g. a pantry door misread as a cabinet). Appended before the generic
+  // trailer so the specific preservation is stated first, then the blanket.
+  const specificPreserves = (prose.preserve ?? [])
+    .map(p => p.trim())
+    .filter(p => p.length > 0)
+    .map(p => p.endsWith(".") ? p.charAt(0).toUpperCase() + p.slice(1) : `${p.charAt(0).toUpperCase()}${p.slice(1)}.`);
+  const preserveBlock = specificPreserves.length > 0 ? ` ${specificPreserves.join(" ")}` : "";
+
+  const prompt = `${withPeriod} Match image 2 exactly.${preserveBlock} Maintain all other aspects of the original image.`;
 
   return { prompt, swatches };
 }
@@ -723,8 +734,8 @@ function validateActionClause(loc: string, clause: unknown): void {
   }
 
   const wc = wordCount(trimmed);
-  if (wc < 4 || wc > 18) {
-    throw new PromptProseError(`${loc} must be 4–18 words (got ${wc}).`);
+  if (wc < 4 || wc > 30) {
+    throw new PromptProseError(`${loc} must be 4–30 words (got ${wc}).`);
   }
 
   if (/^[A-Z]/.test(trimmed)) {
