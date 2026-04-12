@@ -106,8 +106,8 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
       options: {
         id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
         dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
-        sort_order: number; generation_rules: string[] | null; is_default: boolean; scoped_edit_model: string | null;
-        linked_to_subcategory: string | null;
+        sort_order: number; generation_rules: string[] | null; is_default: boolean; is_painted: boolean | null;
+        scoped_edit_model: string | null; linked_to_subcategory: string | null;
       }[];
     }[])
       .sort((a, b) => a.sort_order - b.sort_order)
@@ -202,7 +202,8 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
     options: {
       id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
       dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
-      sort_order: number; floorplan_ids: string[]; generation_rules: string[] | null; is_default: boolean; scoped_edit_model: string | null;
+      sort_order: number; floorplan_ids: string[]; generation_rules: string[] | null; is_default: boolean;
+      is_painted: boolean | null; scoped_edit_model: string | null;
       linked_to_subcategory: string | null;
     }[];
   };
@@ -244,7 +245,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
               nudge: opt.nudge ?? undefined,
               generationRules: opt.generation_rules ?? undefined,
               isDefault: opt.is_default || undefined,
-            isPainted: opt.is_painted || undefined,
+              isPainted: opt.is_painted || undefined,
               scopedEditModel: opt.scoped_edit_model ?? undefined,
               linkedToSubcategory: opt.linked_to_subcategory ?? undefined,
             })),
