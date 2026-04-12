@@ -67,6 +67,9 @@ Valor is the first photo on v2. See `memory-bank/generation/bfl-prompting-guide.
 `buildProsePrompt` / `buildProseScopedEdit` / `validatePromptProse` in
 `src/lib/generate.ts`.
 
+**Prompt Lab (built 2026-04-12).** Core internal CLI tool for prompt tuning.
+Every new demo/tenant photo goes through the lab. Full docs: `memory-bank/generation/prompt-lab.md`.
+
 
 - [ ] **Countertop scoped edit bleeds onto island face** — tried 3 hint iterations. Current hint avoids "island" but still bleeds on some combos. May need adjacency preservation clause in `buildScopedEditPrompt` or Klein 9B for countertop edits.
 - [ ] **Inconsistent cabinet rendering between full gen runs** — same fog paint swatch produces visibly different results across runs. Likely Flux Max non-determinism, not a code bug.

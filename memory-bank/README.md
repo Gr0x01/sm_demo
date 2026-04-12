@@ -54,6 +54,10 @@ npm run test:watch   # watch mode
 npm run seed:new-tenant -- --org-name "Builder Name" --org-slug "slug"  # seed a new builder org
 npx tsx scripts/indexnow.ts            # submit marketing URLs to IndexNow (Bing/Yandex)
 npx tsx scripts/linkedin-post-finder.ts [--period day|week] [--fetch] [--json] [--top N]  # find LinkedIn posts to engage with
+npx tsx scripts/prompt-lab.ts ls                    # list prompt tuning sessions
+npx tsx scripts/prompt-lab.ts init <name> --photo <id>  # start a new prompt lab session
+npx tsx scripts/prompt-lab.ts run <name>            # generate all variants
+npx tsx scripts/prompt-lab.ts review <name>         # open HTML comparison page
 ```
 
 ## Environment Variables
@@ -85,6 +89,7 @@ INNGEST_SIGNING_KEY=         # Inngest (auto-injected on Vercel)
 | `seo-strategy.md` | SEO keyword research, content strategy |
 | `v1-product.md` | Historical — original V1 spec (shipped, archived) |
 | `crm-system.md` | Notion CRM (Companies/Contacts/Interactions), Instantly, Apollo, outreach workflow |
+| `generation/prompt-lab.md` | Prompt Lab CLI — prompt tuning workflow, commands, session structure, config format |
 | `generation/` | Image generation R&D — backsplash research, speed research, reliability playbook |
 | `outreach/` | Sales playbooks, campaigns, prospect demo ops, LinkedIn/email scripts |
 | `prospects/` | Individual builder research briefs (one per prospect) |
