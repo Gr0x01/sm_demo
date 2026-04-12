@@ -17,6 +17,15 @@ export interface ResolvedPhotoGenerationPolicy {
   secondPass?: {
     reason: string;
     prompt: string;
+    /**
+     * Subcategory slug whose selected option's swatch should be passed as
+     * `input_image_2` to the refine pass. Sourced from `whenSelected.subId`
+     * on the policy config. When set, the refine call sends the swatch as a
+     * reference image so Flux has a visual target for the correction,
+     * instead of relying on prompt text alone. The refine prompt should
+     * reference this swatch as `image 2`.
+     */
+    swatchSubId?: string;
   };
 }
 
@@ -49,6 +58,9 @@ function resolveDbBackedPolicy(
     ? {
         reason: secondPassConfig.reason,
         prompt: secondPassConfig.prompt,
+        // Expose the whenSelected subId so the refine step knows which
+        // subcategory's swatch to resolve and pass as `input_image_2`.
+        swatchSubId: secondPassConfig.whenSelected?.subId,
       }
     : undefined;
 

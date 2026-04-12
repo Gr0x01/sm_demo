@@ -259,6 +259,34 @@ export const generatePhoto = inngest.createFunction(
         const supabase = getServiceClient();
         const prevBuffer = await downloadIntermediate(supabase, mainPassPath);
 
+        // Resolve the target subcategory's swatch so the refine has a visual
+        // target for the correction, not just prompt text. Without this, the
+        // refine prompt has to describe the selected option's appearance in
+        // words — which violates swatch authority and leaves Flux guessing.
+        // The policy's `whenSelected.subId` names which subcategory to pull
+        // the swatch from (e.g. `range` for the slide-in correction).
+        const refineReferenceImages: Buffer[] = [];
+        const swatchSubId = resolvedPolicy.secondPass!.swatchSubId;
+        if (swatchSubId) {
+          const selectedOptId = scopedSelections[swatchSubId];
+          if (selectedOptId) {
+            const optionLookup = await getOptionLookup(orgId);
+            const found = optionLookup.get(`${swatchSubId}:${selectedOptId}`);
+            if (found?.option.swatchUrl) {
+              const resolver = createSwatchResolver(supabase);
+              const resolved = await resolver(found.option.swatchUrl);
+              if (resolved) {
+                refineReferenceImages.push(resolved.buffer);
+                console.log(`[generate/photo] Refine swatch resolved for ${swatchSubId}:${selectedOptId}`);
+              } else {
+                console.warn(`[generate/photo] Refine swatch resolve returned null for ${swatchSubId}:${selectedOptId}`);
+              }
+            } else {
+              console.warn(`[generate/photo] Refine swatch lookup missed for ${swatchSubId}:${selectedOptId}`);
+            }
+          }
+        }
+
         console.log(`[generate/photo] Running second pass (${resolvedPolicy.secondPass!.reason}) for ${stepPhotoId}`);
 
         const genStart = performance.now();
@@ -267,15 +295,23 @@ export const generatePhoto = inngest.createFunction(
             model: modelName as BflModel,
             prompt: resolvedPolicy.secondPass!.prompt,
             inputImage: prevBuffer,
+            referenceImages: refineReferenceImages.length > 0 ? refineReferenceImages : undefined,
           });
 
-          // Success — refined image becomes the final output. Orphan the
-          // mainPass intermediate in the background (not load-bearing).
+          // Success — refined image becomes the final output.
+          // DEBUG: mainPassPath is NOT deleted here (normally fire-and-forget removed)
+          // so we can diff pre-refine vs post-refine externally. Revert after debugging.
           await uploadIntermediate(supabase, result.imageBuffer, outputPath);
-          supabase.storage.from("generated-images").remove([mainPassPath]).catch(() => {});
           const durationMs = Math.round(performance.now() - genStart);
           console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
-          return { durationMs, success: true as const };
+          return {
+            durationMs,
+            success: true as const,
+            // DEBUG: surface what BFL actually received so Inngest captures it.
+            debugPrompt: resolvedPolicy.secondPass!.prompt,
+            debugReferenceCount: refineReferenceImages.length,
+            debugMainPassPath: mainPassPath,
+          };
         } catch (err) {
           // Refine failed — promote main pass to final output with a
           // server-side move (no byte transfer).

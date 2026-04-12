@@ -324,7 +324,7 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
     prompt,
     inputImage: baseImageBuffer,
     referenceImages: swatches.map(s => s.buffer),
-    ...(isFlex && { steps: 25 }),
+    ...(isFlex && { steps: 50, guidance: 7 }),
   });
 
   return {
