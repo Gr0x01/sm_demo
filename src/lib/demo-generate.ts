@@ -14,15 +14,15 @@ export const SAMPLE_KITCHEN_HASH = "a6aeb46b36635226";
 export const SAMPLE_KITCHEN_PROSE: PromptProse = {
   version: 2,
   actions: {
-    "kitchen-cabinet-color": "apply {image} to every perimeter cabinet door and drawer front along each wall",
-    "kitchen-island-cabinet-color": "apply {image} to the freestanding center structure base panel in the foreground",
-    "counter-top": "apply {image} to all horizontal countertop surfaces on the perimeter and center structure",
-    "backsplash": "change the backsplash to {image}, including behind the hood",
+    "kitchen-cabinet-color": "paint every perimeter cabinet door and drawer front along each wall to match {image}",
+    "kitchen-island-cabinet-color": "paint the freestanding center structure base panel in the foreground to match {image}",
+    "counter-top": "apply {image} to the countertop slabs resting on top of the perimeter base cabinets and on top of the island",
+    "backsplash": "apply {image} as backsplash tile on the wall between the upper cabinets and countertop, including behind the hood",
   },
   mergedClauses: [
     {
       when: ["kitchen-cabinet-color", "kitchen-island-cabinet-color"],
-      clause: "apply {image} to every cabinet door and drawer front throughout the kitchen",
+      clause: "paint every cabinet door and drawer front throughout the kitchen to match {image}",
     },
   ],
 };
