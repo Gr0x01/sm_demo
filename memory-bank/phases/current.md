@@ -104,11 +104,35 @@ Photorealistic real estate photography, cool-toned natural daylight, neutral whi
 
 ~21s average on Flex (vs Max ~36s on same scene). Full 3/3 clean.
 
+**Added afternoon 2026-04-13 — hardware scoped edits validated (D103):**
+
+Continued the session on Nest kitchen testing hardware scoped edits. Five hardware options validated across four finishes (brushed gold, matte black, oil-rubbed bronze, satin nickel) + both all-pulls and combo structures. Key finding: metallic surfaces need a **material-verb gate** around the hex anchor — the D102 bare-hex pattern flattens metallic surfaces, and the guide's "omit hex for metal" guidance breaks multi-class color consistency. The fix parallels D101's stain pattern:
+
+```
+change cabinet pulls on upper, lower, corner, and center cabinets to match {image}, brushed gold finish matching hex #CCBA78
+change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, matte black finish matching hex #1A1A1A
+```
+
+The material descriptor ("brushed gold finish", "matte black finish") tells Flex to interpret the hex as a color waypoint on a reflective material, not as flat paint RGB. The swatch still carries the metallic texture/sheen.
+
+Also validated this session: scoped edit path + cumulative edits (watchlist items #7 and #8 resolved). A scoped hardware swap on top of a full-gen base (driftwood cabs + symmetrized hex anchors on backsplash/counter/floor) preserved the scene correctly and applied the new hardware across all visual classes.
+
+Other hardware-specific findings captured in D103:
+- Zone enumeration (`"upper, lower, corner, and center cabinets"`) is required for scoped edit to reach multiple visual classes — same fix as stained cabs.
+- Hex must be inline mid-clause, NOT in a trailing parenthetical. The `"Match image 2 exactly."` auto-suffix from `buildProseScopedEdit` binds to the nearest preceding anchor.
+- "Change" verb beats "Replace" for repeated small objects (hardware across multiple cabinets). "Replace" is BFL's pattern for single large objects.
+- Dimensions: single relative phrase. `"slim bar pull, small relative to cabinet face"`. Three competing scale signals ("small slim bar pull, roughly a hand's span wide") produced framing-bar-sized hardware.
+- Combo options (pulls + knobs) need different clause text than all-pulls options. Production authoring gap — same material-aware rendering problem as D101.
+- Trailing positional modifier trap confirmed on hardware (critical rule #9): `"drawer front"` was parsed as "the front face of the drawer" and Flex left the casing unchanged. Use `"drawer"` alone.
+
+Also swapped the Demo org's `hw-key-grande-pulls-brushed-gold` swatch from the round Key Grande style to the squared Stanton style (uploaded to Demo org storage path via `scripts/upload-stanton.ts`). Renamed the option to "Stanton All Pulls - Brushed Gold" in DB.
+
 **Not yet shipped:**
 - Cross-photo validation (only tested on Nest kitchen). Need to verify on Valor + at least one SM Kinkade room before locking the pattern in production.
 - Production runtime integration — hex-anchor injection for textured swatches should auto-apply when an option has `swatch_color` set. Currently lab-only via manual clause authoring.
-- D100 memory was corrected (see D101 + D102). Old paint+hex text still accurate for painted surfaces.
-- Validation of source-agnostic behavior across cumulative edits (scoped edit path not yet tested with hex anchors).
+- Material-aware action clauses — now THREE material axes (paint/stain/metallic per D100/D101/D103). Production authoring gap expanded. See `memory-bank/generation/flux2-architecture-watchlist.md` #1.
+- Hardware combo-vs-all-pulls structure variation is a new authoring dimension on top of material — may need a `hardware_structure` column on options.
+- Cross-finish hardware tests (4 of 5 options were single-run visual checks). Need 3-run consistency confirmation on each before production use.
 
 **Paint+hex SHIPPED (2026-04-13, D100).** Runtime detection in `buildProsePrompt` — when an option has `is_painted = true` and `swatch_color`, the builder substitutes hex inline and skips the swatch reference image. Dramatically better color fidelity on painted finishes: Dove landed as white 3/3 with hex vs ~2/15 with swatches.
   - **Prose clauses authored with `{image}` always** — runtime decides swatch vs hex. No token changes at authoring time.

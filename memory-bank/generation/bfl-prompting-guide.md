@@ -390,13 +390,14 @@ Behavior documented here for reference — prefer the prose spec for new work.
 
 ### Swatch Authority Rule (revised 2026-04-13)
 
-**TL;DR** — the old "no text alongside swatches" rule was too strict. Three patterns now coexist, picked based on material:
+**TL;DR** — the old "no text alongside swatches" rule was too strict. Four patterns now coexist, picked based on material:
 
 | Material | Pattern | Swatch sent? | Hex in text? |
 |---|---|---|---|
 | **Painted** (D100) | `"paint X to hex #XXX"` | No | Yes |
 | **Stained wood** (D101) | `"stain X with wood grain matching hex #XXX"` | No | Yes |
 | **Textured** (stone, tile, flooring) (D102) | `"apply {image} to X matching hex #XXX"` | **Yes** | **Yes** |
+| **Metallic** (hardware, faucets) (D103) | `"change X to match {image}, <finish> finish matching hex #XXX"` | **Yes** | **Yes (gated by material verb)** |
 
 **Rules that still hold:**
 - **No `promptDescriptor`** — BFL treats long descriptive text as higher authority and overrides swatches on single-material claims. Descriptive material/color words are still forbidden.
@@ -432,6 +433,28 @@ The swatch reference image is still sent (via `input_image_N`). The hex is a tex
 - Also tested lower guidance (g=5, g=6) with and without hex anchors — hex anchors + g=7 won. Higher guidance works BETTER with symmetrized text signals.
 - **Validation gap**: tested on one photo. Needs cross-photo validation before ship. Suspected-fragile cases: multi-tone stones (calacatta averages multiple colors into one hex), reverse-direction transformations (dark source → light target).
 - **Production integration path**: runtime auto-append `" matching hex #XXX"` to every action clause whose option has `swatch_color` AND isn't already painted/stained via is_painted+forceHex. Gated for safe rollout.
+
+**Metallic surfaces — swatch PLUS material-verb-gated hex (D103, 2026-04-13):**
+Metallic hardware (cabinet pulls, faucets, sinks) are reflective — flat hex color kills the metallic sheen. But omitting hex entirely breaks color consistency on multi-class scenes (perimeter pulls default to dark finishes pulled from scene neighbors). The fix is a **material-verb gate** — wrap the hex in a phrase that tells Flex "this color is on a reflective material type":
+
+Pattern:
+```
+change cabinet pulls on upper, lower, corner, and center cabinets to match {image}, brushed gold finish matching hex #CCBA78
+change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, matte black finish matching hex #1A1A1A
+change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, oil-rubbed bronze finish matching hex #804A2E
+change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, satin nickel finish matching hex #C0BDBA
+```
+
+Critical rules for metallic hardware clauses:
+- **Material descriptor immediately before the hex**: "brushed gold finish", "matte black finish", etc. This gates the hex — Flex reads it as a color waypoint on a reflective material, not as flat paint RGB.
+- **Hex is inline mid-clause, NOT in a trailing parenthetical.** The scoped-edit auto-suffix `"Match image 2 exactly."` binds to the nearest preceding anchor. Trailing-parenthetical hex + this suffix = Flex paints the whole containing surface the hex color (mustard-gold doors, etc.). Keep the hex out of the clause tail.
+- **Zone enumeration required** for scoped edit multi-class reach: `"upper, lower, corner, and center cabinets"`. Without this, scoped edit only updates one visual class on two-tone kitchens (e.g. hits the island but skips the perimeter). Same zone-enumeration pattern as D101 for stained cabs.
+- **"Change" verb, not "Replace"**: BFL's docs use "Replace X with..." for single large objects (a range swap). For repeated small objects across multiple cabinets, "change" gives Flex more shape-interpretation room. "Replace" over-prescribes.
+- **Dimensions: single relative phrase.** `"slim bar pull, small relative to cabinet face"` — not three competing scale signals like `"small slim bar pull, roughly a hand's span wide"`. Three competing scale anchors produce framing-rail-sized hardware; one phrase renders correctly.
+- **Combo options need different clauses**: options with both pulls and knobs (e.g. Seaver, Sedona Combo) use `"cabinet pulls and knobs"`. All-pulls options use `"cabinet pulls"`. The clause reflects the hardware structure.
+- **Trailing positional modifier trap**: `"drawer front"` is parsed as "the front face of the drawer" — Flex renders only the front face and leaves the casing unchanged. Use `"drawer"` alone. See critical rule #9.
+- Tested on Nest kitchen across 5 hardware options (brushed gold, matte black all-pulls, matte black combo, oil-rubbed bronze combo, satin nickel combo) via Flex g=7 scoped edit on a cumulative base. Grande Gold had the most iterations (3/3 on the final clause). Other 4 were single-run visual checks and passed.
+- Works in concert with D102 — scoped edit hardware changes compose correctly on top of a hex-anchored full-gen base image. Scoped edit + cumulative edit path validated.
 
 **Dimensions must use relative scale, not absolute units.** BFL has no concept of inches. "0.5x2 inch mosaic" → BFL renders standard subway-sized tiles. Instead describe scale relative to the surface: "small mosaic herringbone — dozens of tiny rectangular pieces visible across the backsplash" or "4x16 subway tiles, staggered layout". The key is how many tiles are visible, not how big each tile is in inches.
 

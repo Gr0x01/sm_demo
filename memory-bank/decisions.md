@@ -675,3 +675,36 @@ The swatch reference image is still sent via `input_image_N`. The hex is text, n
 **Implementation**: Currently lab-only via manual clause authoring. Production path needs runtime injection — modify `buildProsePrompt` to auto-append `" matching hex #XXX"` (or similar) to every action clause whose option has `swatch_color` AND isn't already being handled via `is_painted`+forceHex. Gated behind a flag for safe rollout.
 **Validation gap**: Tested on one photo (Nest kitchen), one selection combo, one model (Flex g=7 steps=50). Needs cross-validation on at least 2-3 additional photos and different selection combos before shipping to production. Specifically needs testing on multi-tone stones like calacatta marble (where the hex averages a multi-color swatch) and reverse-direction transformations (dark → light).
 **Supersedes the Swatch Authority Rule partially**: The original swatch-authority rule said "No hex color codes alongside swatches — hex describes flat color, which overrides textured finishes." D102 finds the opposite: hex alongside swatches IMPROVES rendering when multiple swatch surfaces compete for attention. The original rule held for single-surface edits but fails on multi-surface full-gen.
+
+## D103: Metallic hardware — material-verb gate around the hex anchor
+**Context (2026-04-13)**: Prompt Lab session on Nest kitchen testing cabinet hardware scoped edits on a previously-generated base image (Driftwood perimeter + Admiral Blue island + grey granite counter + dark carbon backsplash). Tested 5 hardware options across 4 finishes (brushed gold, matte black, oil-rubbed bronze, satin nickel) using `buildProseScopedEdit`.
+**Problem**: The D102 inline-hex-anchor pattern (proven for stone/tile/wood-flooring textured swatches) FAILED on metallic hardware. Hex inline gave one of two bad outcomes:
+- Trailing parenthetical hex (`"... to match image 2 (hex #CCBA78, ...)`): the scoped-edit auto-suffix `"Match image 2 exactly."` bound to the nearest anchor (the hex) and Flex painted the entire containing surface (upper cabinet doors) mustard gold.
+- Mid-clause bare hex (`"... to match image 2 at hex #CCBA78"`): rendered as flat matte color, killing the brushed metallic sheen. Hardware looked like flat paint, not metal.
+- No hex at all: perimeter cabs defaulted to BLACK pulls (not gold) — Flex grabbed color from nearest dark scene elements (existing bronze hardware, dark backsplash, dark granite). Island pulls went oversized ("framing rail" problem).
+**Discovery**: Gating the hex with a material-verb phrase — `"<finish descriptor> matching hex #XXXXXX"` — produces consistent multi-class coverage AND metallic sheen. The material phrase tells Flex "interpret this hex as a color waypoint on a reflective material," not "paint this RGB exactly." Parallel to D101's `"stain ... with wood grain matching hex"` — a material descriptor gates how Flex reads the color.
+**Pattern**:
+```
+change cabinet pulls on upper, lower, corner, and center cabinets to match {image}, brushed gold finish matching hex #CCBA78
+change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, matte black finish matching hex #1A1A1A
+change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, oil-rubbed bronze finish matching hex #804A2E
+change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, satin nickel finish matching hex #C0BDBA
+```
+**Key structural elements**:
+- **Hex position**: inline mid-clause, NOT in a trailing parenthetical. The scoped-edit auto-suffix binds to the nearest anchor — keeping the hex away from the tail prevents the "paint this color exactly" misread.
+- **Material descriptor**: "brushed gold finish", "matte black finish", "oil-rubbed bronze finish", "satin nickel finish". Describes the reflective material type immediately before the hex anchor, gating interpretation.
+- **Zone enumeration**: `"upper, lower, corner, and center cabinets"` — same pattern as stained cabs (D101), forces scoped edit to reach multiple visual classes. Without this, scoped edit only updates one cab zone on a two-tone kitchen.
+- **Combo vs all-pulls**: combo options (Seaver, Sedona Combo) use `"cabinet pulls and knobs"`. All-pulls options (Sedona All Pulls, Key Grande, Stanton) use `"cabinet pulls"`. Different authored clauses for different hardware structures.
+- **Dimensions (single relative phrase)**: `"slim bar pull, small relative to cabinet face"` — ONE scale phrase, not three competing signals. Previous tests with "small slim bar pull, roughly a hand's span wide" had three competing scale signals and produced framing-bar-sized hardware.
+- **Verb**: "change" beats "replace" for small repeated objects. BFL's documented "Replace" pattern works for single large objects (a range swap); for repeated small objects like hardware across multiple cabinets, "change" gives Flex more shape-interpretation room from the swatch.
+**Validated**: 5 hardware options × scoped edit on a cumulatively-edited base image, all 5 produced visible correct hardware in the right zones. Grande Gold was the primary test with the most detailed iteration (3/3 on the final clause). The other 4 finishes were single-run tests and passed visually.
+**Implementation**: Lab-only. Production path needs:
+- Schema or runtime path to author material-specific clauses (joining the same gap flagged by D101 for stain verb and D100 for paint verb — this is the third material axis)
+- `dimensions` field cleanup across hardware options (bad values were stripped during testing)
+- Combo-vs-all-pulls clause variants (maybe a `hardware_structure` column on options)
+**Validation gap**: Tested on one photo, one base state, one model (Flex g=7). Needs cross-photo validation. Also: the other 4 finishes were single-run visual checks — need 3-run consistency confirmation before production use.
+**Trade-off**: The guide says "Caution with metallic finishes: Hex codes describe flat color... Consider omitting hex for metal surfaces." D103 shows you CAN use hex for metal if you gate it with a material descriptor. Without the gate, hex flattens the metallic appearance; with the gate, the hex is a color waypoint and the swatch still carries the reflective texture.
+**Companion learnings from this session**:
+- Scoped edit + cumulative edit works (watchlist items #7 and #8 resolved). A scoped edit on top of a hex-anchored full-gen base preserves the scene correctly.
+- The `"Match image 2 exactly."` scoped-edit suffix in `buildProseScopedEdit` aggressively binds to the nearest preceding anchor. Clause-tail content needs to be friendly to this — keep hex out of the tail.
+- Trailing positional modifier trap (critical rule #9) confirmed on hardware: `"drawer front"` was being parsed as "the front face of the drawer" and rendering only the front face. Dropped to `"drawer"` alone.
