@@ -16,7 +16,7 @@ Sources:
 1. **NO negative prompts.** Flux 2 does not support them. AI focuses on the prohibited element rather than avoiding it. Describe what you WANT, not what to avoid. The canonical fix is the **Replacement Method**: identify the unwanted element → ask "what would be there instead?" → describe the positive alternative.
 2. **Word order matters.** Flux 2 pays more attention to what comes first. Lead with the most important changes, not scene context. Sequence: Main subject → Key action → Critical style → Essential context → Secondary details.
 3. **30-80 words ideal, 512 tokens hard max.** Short prompts = better results. Our old 300+ word prompts with 20 "Do NOT" rules are wrong for Flux 2.
-4. **Reference images carry the visual details.** The prompt describes what changes — not what the swatch looks like. Don't repeat what's in the image.
+4. **Reference images carry visual details — but color needs a text anchor when multiple swatch surfaces compete.** For single-surface edits the swatch is authoritative. For multi-surface full gens where other surfaces are hex-anchored (painted or stained), every textured-swatch clause also needs an inline hex anchor (`"at hex #XXX"`) to prevent attention-budget cross-wire. See D100, D101, D102 and the Swatch Authority Rule section below.
 5. **Write prose, not keywords.** "A woman with short blonde hair posing against a neutral background" > "woman, blonde, short hair, neutral background". Especially critical for Klein.
 6. **Disable `prompt_upsampling` for color accuracy.** Upsampling enhances prompt text which can override the visual information from swatch reference images.
 7. **Iterate one variable at a time.** Don't rewrite the whole prompt between runs. Change one thing, render, measure. Also protects Finch's deterministic prompt hashing.
@@ -24,6 +24,7 @@ Sources:
    1. Visual Polish (lighting, color palette, composition)
    2. Technical Precision (camera, lens, film grain)
    3. Atmosphere & Intent (mood, narrative tone)
+9. **Avoid trailing positional modifiers on action targets.** `"cabinet door and drawer front"` reads to BFL as "the front face of the drawer," not "the drawer's front panel." BFL will render only the front face and leave the casing unchanged. Use `"cabinet door and drawer"` instead. Pattern: any noun that ends a clause and doubles as a positional word (front, back, top, bottom, side) should be dropped or rephrased.
 
 ## Model Specs
 
@@ -387,18 +388,50 @@ Behavior documented here for reference — prefer the prose spec for new work.
 - Pass 1 (structural): cabinets first, then countertop, backsplash, flooring, paint
 - Pass 2 (fixtures): range first, then hardware, faucet, sink, lighting
 
-### Swatch Authority Rule
-Swatch images = SOLE appearance authority for **textured** surfaces (stained wood, stone, tile, flooring). Never send text alongside swatches for these:
-- **No `promptDescriptor`** — BFL treats text as higher authority and overrides the swatch.
-- **No hex color codes alongside swatches** — hex describes flat color, which overrides textured finishes (wood stain rendered as flat paint, granite rendered as solid color).
-- **`dimensions` is the one exception**: describes installed appearance using relative scale, not absolute measurements.
+### Swatch Authority Rule (revised 2026-04-13)
 
-**Painted surfaces (cabinets, island) exception — hex WITHOUT swatch (D100, 2026-04-12):**
-For solid-paint cabinet/island options, send hex code in the prompt with the verb "paint" and do NOT send a swatch image. Swatches for painted finishes are photographed color chips with lighting artifacts (cool cast, shadows) that confuse BFL — Dove (#F5F5F2) consistently rendered as grey when using its swatch. Hex is unambiguous.
+**TL;DR** — the old "no text alongside swatches" rule was too strict. Three patterns now coexist, picked based on material:
+
+| Material | Pattern | Swatch sent? | Hex in text? |
+|---|---|---|---|
+| **Painted** (D100) | `"paint X to hex #XXX"` | No | Yes |
+| **Stained wood** (D101) | `"stain X with wood grain matching hex #XXX"` | No | Yes |
+| **Textured** (stone, tile, flooring) (D102) | `"apply {image} to X matching hex #XXX"` | **Yes** | **Yes** |
+
+**Rules that still hold:**
+- **No `promptDescriptor`** — BFL treats long descriptive text as higher authority and overrides swatches on single-material claims. Descriptive material/color words are still forbidden.
+- **`dimensions` is still the scale-signal exception** — installed scale using relative terms (not absolute inches).
+- **No material/color/pattern words in action clauses** — let the swatch (or the hex) carry the appearance. The hex is a color *anchor*, not a descriptor.
+
+**Painted surfaces — hex WITHOUT swatch (D100):**
+For solid-paint cabinet/island options (`is_painted=true`), send hex code in the prompt with the verb "paint" and do NOT send a swatch image. Swatches for painted finishes are photographed color chips with lighting artifacts (cool cast, shadows) that confuse BFL — Dove (#F5F5F2) consistently rendered as grey when using its swatch. Hex is unambiguous.
 - Use: `"paint every perimeter cabinet door and drawer front on every wall to hex #F5F5F2"`
-- Do NOT use: `"change every perimeter cabinet door to match image 2"` with a Dove swatch
-- This only applies to painted finishes. Stained wood (Driftwood) still needs a swatch — the grain pattern can't be described by hex.
 - Tested on Valor kitchen: 3/3 runs with hex produced correct white perimeter + dark island separation. 0/15 runs with swatches produced correct white.
+
+**Stained wood — hex WITHOUT swatch (D101, 2026-04-13):**
+Stained wood options render correctly from hex + `"wood grain matching"` text descriptor, without a swatch image. The "stain" verb activates BFL's material-aware scope resolution and filters out non-wood surfaces (e.g., white shaker cabs) unless the scope is explicit. Use:
+- `"stain every upper, lower, corner, and center cabinet door and drawer with wood grain matching hex #B09A7E"`
+- Zone enumeration (`"upper, lower, corner, and center"`) defeats BFL's visual-class grouping and catches isolated cabinet sections
+- Use `"drawer"` NOT `"drawer front"` — trailing `"front"` is parsed as a positional modifier and BFL leaves the casing white
+- Tested on Nest kitchen Flex g=7: 3/3 clean on driftwood stain, full wood grain rendered synthetically from the hex
+- Supersedes the earlier D100 note that said "stained wood still needs a swatch"
+
+**Textured swatch surfaces — swatch PLUS inline hex anchor (D102, 2026-04-13):**
+When a prompt has multiple textured swatch surfaces AND other surfaces are using hex-anchored clauses (painted or stained), every textured-swatch clause must also carry an inline hex anchor — otherwise the hex-anchored surfaces steal the attention budget and the swatch surfaces cross-wire between each other. Each surface needs symmetric text weight.
+
+Pattern:
+```
+- change the wall surface between the upper cabinets and countertop to match {image} at hex #3D3D3D
+- apply {image} to every countertop surface matching hex #6B6E72
+- change all visible flooring throughout the room to match {image} at hex #9A8268
+```
+
+The swatch reference image is still sent (via `input_image_N`). The hex is a text **anchor** for color binding, not a replacement for the swatch. Swatch still drives pattern/texture; hex locks the color and target binding.
+
+- Tested on Nest kitchen Flex g=7 with driftwood cabs (hex) + steel grey granite counter + carbon herringbone backsplash + warm wood floor: 3/3 clean full scene. Previous 7 clause variants without hex anchors averaged ~10% pass rate on counter alone.
+- Also tested lower guidance (g=5, g=6) with and without hex anchors — hex anchors + g=7 won. Higher guidance works BETTER with symmetrized text signals.
+- **Validation gap**: tested on one photo. Needs cross-photo validation before ship. Suspected-fragile cases: multi-tone stones (calacatta averages multiple colors into one hex), reverse-direction transformations (dark source → light target).
+- **Production integration path**: runtime auto-append `" matching hex #XXX"` to every action clause whose option has `swatch_color` AND isn't already painted/stained via is_painted+forceHex. Gated for safe rollout.
 
 **Dimensions must use relative scale, not absolute units.** BFL has no concept of inches. "0.5x2 inch mosaic" → BFL renders standard subway-sized tiles. Instead describe scale relative to the surface: "small mosaic herringbone — dozens of tiny rectangular pieces visible across the backsplash" or "4x16 subway tiles, staggered layout". The key is how many tiles are visible, not how big each tile is in inches.
 

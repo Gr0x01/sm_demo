@@ -70,11 +70,62 @@ Valor is the first photo on v2. See `memory-bank/generation/bfl-prompting-guide.
 **Prompt Lab (built 2026-04-12).** Core internal CLI tool for prompt tuning.
 Every new demo/tenant photo goes through the lab. Full docs: `memory-bank/generation/prompt-lab.md`.
 
+**Prompt Lab hardening + stained wood breakthrough (2026-04-13):**
+
+Spent a full day in the lab stress-testing on Nest kitchen. Three major outcomes:
+
+1. **Lab was silently broken before this session.** `prompt-lab run` called `buildProsePrompt` + `generateImage` directly, bypassing `fluxGenerate`. That meant two-pass split never fired in the lab, and BFL silently truncated swatches above the ref limit (dropped the range swatch on every run). Every multi-swatch lab result from before today was invalid. Fixes shipped:
+   - `prompt-lab run` now delegates to `fluxGenerate` / `fluxScopedEdit` — same path production takes
+   - `bfl.ts` throws on ref truncation instead of warning (silent data loss is never right)
+   - Added `maxWaitMs`, `steps`, `guidance` passthrough to `FluxGenerateOpts` / `FluxScopedEditOpts`
+   - Lab default concurrency = `min(queueLength, 12)` per BFL's 24-concurrent limit (two-pass doubles request count)
+   - Lab poll timeout bumped from 90s → 180s per pass
+   - Added lab-only `forceHex: string[]` flag on variants — flips `isPainted=true` on a cloned option lookup so prose routes through the hex path for specific subcategories, independent of DB state
+   - `show` command now previews two-pass split boundaries when they would fire in production
+   - **Latent bug found, NOT fixed yet**: `MAX_REFERENCES["flux-2-flex"]` in `bfl.ts` is set to `9` but BFL API cap is `7` refs (8 total incl. hero). Not affecting current tests (we send ≤3 swatches to Flex) but needs a correction pass.
+
+2. **Stained wood can render from hex + "wood grain" text alone (D101, 2026-04-13).** Old D100 said stained wood needs a swatch because hex can't express grain. Wrong. `"stain every upper, lower, corner, and center cabinet door and drawer with wood grain matching hex #B09A7E"` + `forceHex` rendered 3/3 clean on Flex g=7 with full visible wood grain synthesized from the hex + descriptor. Zone enumeration (`upper, lower, corner, and center`) defeats BFL's visual-class grouping that was dropping isolated left-of-doorway cab sections. Also learned: `"drawer"` not `"drawer front"` — trailing `"front"` parses as a positional modifier and BFL leaves the casing unchanged.
+
+3. **Symmetrized hex anchors fix multi-swatch attention cross-wire (D102, 2026-04-13).** On the Nest kitchen with cabs (hex via D101) + backsplash (swatch) + counter (swatch) + floor (swatch), the counter swatch systematically failed (10% pass rate across 21 runs, 7 clause variants). Diagnostic: dark granite sometimes landed on island base or floor instead of counter — attention binding failure, not swatch comprehension. Fix: append inline hex anchor to every textured-swatch clause (`"apply {image} to every countertop surface matching hex #6B6E72"`). Symmetrizes text weight across surfaces so no single surface steals the attention budget. **Tested on Flex g=7: 3/3 clean full scene.** Higher guidance works BETTER with symmetric text anchors (g=6 was 2/3, g=5 was 0/3).
+
+**Winning full-scene recipe for Flex 2 on Nest kitchen** (two-tone stained cabs + dark granite + dark herringbone backsplash + warm wood floor + white walls):
+
+```
+Model: flux-2-flex, steps=50, guidance=7
+forceHex: [kitchen-cabinet-color, kitchen-island-cabinet-color]
+
+- stain every upper, lower, corner, and center cabinet door and drawer with wood grain matching {image}
+- change the wall surface between the upper cabinets and countertop to match {image} at hex #3D3D3D
+- apply {image} to every countertop surface matching hex #6B6E72
+- change all visible flooring throughout the room to match {image} at hex #9A8268
+- paint every wall surface to match {image}  (runtime-substituted to hex via is_painted)
+Photorealistic real estate photography, cool-toned natural daylight, neutral white balance.
+```
+
+~21s average on Flex (vs Max ~36s on same scene). Full 3/3 clean.
+
+**Not yet shipped:**
+- Cross-photo validation (only tested on Nest kitchen). Need to verify on Valor + at least one SM Kinkade room before locking the pattern in production.
+- Production runtime integration — hex-anchor injection for textured swatches should auto-apply when an option has `swatch_color` set. Currently lab-only via manual clause authoring.
+- D100 memory was corrected (see D101 + D102). Old paint+hex text still accurate for painted surfaces.
+- Validation of source-agnostic behavior across cumulative edits (scoped edit path not yet tested with hex anchors).
+
+**Paint+hex SHIPPED (2026-04-13, D100).** Runtime detection in `buildProsePrompt` — when an option has `is_painted = true` and `swatch_color`, the builder substitutes hex inline and skips the swatch reference image. Dramatically better color fidelity on painted finishes: Dove landed as white 3/3 with hex vs ~2/15 with swatches.
+  - **Prose clauses authored with `{image}` always** — runtime decides swatch vs hex. No token changes at authoring time.
+  - **Verb matters**: action clauses for painted subcategories MUST use "paint" verb (not "apply" or "change"). The paint+hex pattern is both parts — the runtime hex substitution AND the authored verb. Enforced by convention, not code.
+  - **`is_painted` column** set on all painted options across both orgs (cabinets, islands, wall paint, baseboard, crown, trim, ceiling, accent, bath vanity).
+  - **Updated prose:**
+    - Valor kitchen (`step_photos.prompt_prose`) — "paint" verb on cab/island
+    - Nest kitchen, living room, bathroom, bedroom (`step_photos.prompt_prose`) — "paint" verb on cab/island/wall/trim
+    - `/try` sample kitchen (`SAMPLE_KITCHEN_PROSE` in `src/lib/demo-generate.ts`) — "paint" verb on cab/island. Also switched backsplash to "apply" (source photo has no existing backsplash, "change" confused Flux). Counter clause uses "resting on top of" for explicit horizontal targeting.
+  - **`/try` cache invalidated** — `DEMO_GENERATION_CACHE_VERSION` is derived from the prose hash. The 200 pre-seeded combos from `seed-demo-cache.ts` are stale. Re-seed when ready (~$20).
+  - Test coverage: 4 new tests in `generate.test.ts` covering full gen, scoped edit, merged clause with painted options, and fallback when `isPainted=true` but `swatchColor=null`. 234 total tests passing.
+  - Docs: `decisions.md` D100, `memory-bank/generation/bfl-prompting-guide.md` (swatch authority rule updated), `feedback_paint_hex_verb.md` (reminder for future sessions).
 
 - [ ] **Countertop scoped edit bleeds onto island face** — tried 3 hint iterations. Current hint avoids "island" but still bleeds on some combos. May need adjacency preservation clause in `buildScopedEditPrompt` or Klein 9B for countertop edits.
-- [ ] **Inconsistent cabinet rendering between full gen runs** — same fog paint swatch produces visibly different results across runs. Likely Flux Max non-determinism, not a code bug.
-- [ ] **Implement paint+hex for painted cab/island options (D100)** — Prompt Lab R&D proved that hex codes with "paint" verb produce dramatically better color fidelity for painted finishes vs swatches (3/3 correct with hex, ~2/15 with swatches on Dove+Onyx combo). Needs code path in `buildProsePrompt` to detect painted options and emit hex instead of swatch reference. See `decisions.md` D100.
-- [ ] **Re-seed `/try` demo cache** — run `npx tsx scripts/seed-demo-cache.ts` after deploy
+- [ ] **Inconsistent cabinet rendering between full gen runs** — same fog paint swatch produces visibly different results across runs. Likely Flux Max non-determinism, not a code bug. **Mostly resolved by D100 paint+hex** for painted finishes. Stained options (Driftwood) still exhibit some run-to-run variance in door profile.
+- [ ] **Re-seed `/try` demo cache** — `DEMO_GENERATION_CACHE_VERSION` changed after D100. Run `npx tsx scripts/seed-demo-cache.ts`.
+- [ ] **Apply paint+hex to remaining prospect demos** — the 12 other prospect demos (alexander-scott, davidson, westbay, stylecraft, mckinley, ici, viera, chesapeake, kolter, neal, rocklyn, signature) are still on the legacy builder (no v2 prose). When writing their v2 prose, use "paint" verb for painted cab/island/wall/trim actions.
 - [ ] Test non-kitchen SM rooms (bedrooms, bathrooms)
 - [ ] **Audit other prospect demos for loose backsplash spatial hints** — one at a time. Same failure mode as Valor (zone undercoverage or doorway bleed) likely exists on the rest. Review order: alexander-scott ✓ → davidson ✓ → westbay → stylecraft → (then mckinley, ici, viera, chesapeake, kolter, neal, rocklyn, signature). 11 of 12 had the identical generic hint `"backsplash wall between the upper cabinets and the countertop"`.
 

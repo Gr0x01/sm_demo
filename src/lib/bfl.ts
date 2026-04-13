@@ -102,10 +102,10 @@ async function submitImageEdit(
 ): Promise<{ taskId: string; pollingUrl: string; cost?: number }> {
   const limit = MAX_REFERENCES[model];
   if (referenceImages.length > limit) {
-    console.warn(
-      `[bfl] ${model} supports ${limit} reference images but got ${referenceImages.length} — truncating`,
+    throw new Error(
+      `[bfl] ${model} supports ${limit} reference images but got ${referenceImages.length}. ` +
+        `Truncation is silent data loss — split the work into multiple passes or use a model with a higher reference limit.`,
     );
-    referenceImages = referenceImages.slice(0, limit);
   }
 
   const body: Record<string, unknown> = {

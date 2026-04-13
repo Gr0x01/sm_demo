@@ -111,6 +111,12 @@ export interface FluxGenerateOpts {
   model?: string;
   /** When present and complete (subject + actions for every selected sub), routes through the prose builder. */
   promptProse?: PromptProse | null;
+  /** Override BFL poll timeout per pass (default 90s). */
+  maxWaitMs?: number;
+  /** Flex-only: refinement steps 1-50 (default 50). Ignored on Max/Pro. */
+  steps?: number;
+  /** Flex-only: prompt adherence 1.5-10 (default 4.5). Higher = stricter. Ignored on Max/Pro. */
+  guidance?: number;
 }
 
 /**
@@ -210,6 +216,9 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
       prompt,
       inputImage: heroBuffer,
       referenceImages: swatches.map(s => s.buffer),
+      maxWaitMs: opts.maxWaitMs,
+      steps: opts.steps,
+      guidance: opts.guidance,
     });
 
     return {
@@ -244,6 +253,9 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     prompt: structuralPrompt,
     inputImage: heroBuffer,
     referenceImages: structuralSwatches.map(s => s.buffer),
+    maxWaitMs: opts.maxWaitMs,
+    steps: opts.steps,
+    guidance: opts.guidance,
   });
 
   const pass2Result = await generateImage({
@@ -251,6 +263,9 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     prompt: fixturePrompt,
     inputImage: pass1Result.imageBuffer,
     referenceImages: fixtureSwatches.map(s => s.buffer),
+    maxWaitMs: opts.maxWaitMs,
+    steps: opts.steps,
+    guidance: opts.guidance,
   });
 
   return {
@@ -274,6 +289,10 @@ export interface FluxScopedEditOpts {
   swatchResolver: SwatchBufferResolver;
   /** When present with a matching actions[subId] entry, routes through the prose builder. */
   promptProse?: PromptProse | null;
+  /** Force a specific BFL model, bypassing the per-option/default selection chain. */
+  model?: string;
+  /** Override BFL poll timeout (default 90s). */
+  maxWaitMs?: number;
 }
 
 export interface FluxScopedEditResult {
@@ -311,10 +330,11 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
         swatchResolver,
       );
 
-  // Model selection: option-level override → range/oven gets Max → global default (Flex)
+  // Model selection: explicit opts.model → option-level → range/oven gets Max → global default (Flex)
   const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
   const isRangeOven = changedSubcategoryId.includes("range") || changedSubcategoryId.includes("oven");
-  const model = changed?.option.scopedEditModel
+  const model = opts.model
+    ?? changed?.option.scopedEditModel
     ?? (isRangeOven ? IMAGE_MODEL : SCOPED_EDIT_MODEL);
 
   const genStart = performance.now();
@@ -324,6 +344,7 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
     prompt,
     inputImage: baseImageBuffer,
     referenceImages: swatches.map(s => s.buffer),
+    maxWaitMs: opts.maxWaitMs,
     ...(isFlex && { steps: 50, guidance: 7 }),
   });
 

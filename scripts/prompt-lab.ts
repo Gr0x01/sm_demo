@@ -133,6 +133,17 @@ interface Variant {
   scoped?: ScopedEditConfig;
   /** When set, runs a second Max pass on the output (oven correction, etc.). */
   refine?: RefineConfig;
+  /**
+   * Lab-only: subcategory slugs whose selected options should be treated as
+   * painted (hex in text, no swatch image) even when the DB says
+   * is_painted=false. Used to test hex-vs-swatch generation strategy
+   * independent of the finish's actual material type.
+   */
+  forceHex?: string[];
+  /** Flex-only: refinement steps 1-50 (default 50). Ignored on Max/Pro. */
+  steps?: number;
+  /** Flex-only: prompt adherence 1.5-10 (default 4.5). Ignored on Max/Pro. */
+  guidance?: number;
 }
 
 interface SessionConfig {
@@ -638,6 +649,29 @@ async function run(session: string, explicitConcurrency: number | undefined, var
       let mainBuffer: Buffer;
       let passes = 1;
 
+      // Lab-only: build a per-variant optionLookup that flips isPainted=true
+      // for listed subcategories, forcing hex mode in buildProsePrompt.
+      // Leaves the shared optionLookup untouched for other variants.
+      let variantLookup = optionLookup;
+      if (variant.forceHex && variant.forceHex.length > 0) {
+        variantLookup = new Map(optionLookup);
+        for (const subId of variant.forceHex) {
+          const selectedOptId = config.selections[subId];
+          if (!selectedOptId) continue;
+          const key = `${subId}:${selectedOptId}`;
+          const entry = optionLookup.get(key);
+          if (!entry) continue;
+          if (!entry.option.swatchColor) {
+            console.warn(`[${tag}] forceHex: ${subId}:${selectedOptId} has no swatchColor — skipping override`);
+            continue;
+          }
+          variantLookup.set(key, {
+            ...entry,
+            option: { ...entry.option, isPainted: true },
+          });
+        }
+      }
+
       if (variant.scoped) {
         // --- Scoped edit (single surface) — delegate to production path ---
         const { subcategoryId, optionId } = variant.scoped;
@@ -645,7 +679,7 @@ async function run(session: string, explicitConcurrency: number | undefined, var
           baseImageBuffer: heroBuffer,
           changedSubcategoryId: subcategoryId,
           changedOptionId: optionId,
-          optionLookup,
+          optionLookup: variantLookup,
           spatialHints: config.spatialHints,
           swatchResolver: cachedResolver,
           promptProse: variant.prose,
@@ -661,12 +695,14 @@ async function run(session: string, explicitConcurrency: number | undefined, var
         const result = await fluxGenerate({
           heroBuffer,
           selections: config.selections,
-          optionLookup,
+          optionLookup: variantLookup,
           spatialHints: config.spatialHints,
           swatchResolver: cachedResolver,
           promptProse: variant.prose,
           model: variant.model,
           maxWaitMs: LAB_POLL_TIMEOUT_MS,
+          steps: variant.steps,
+          guidance: variant.guidance,
         });
         prompt = result.prompt;
         modelUsed = (variant.model ?? IMAGE_MODEL) as string;
