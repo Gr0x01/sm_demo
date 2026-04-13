@@ -676,8 +676,25 @@ The swatch reference image is still sent via `input_image_N`. The hex is text, n
 **Validation gap**: Tested on one photo (Nest kitchen), one selection combo, one model (Flex g=7 steps=50). Needs cross-validation on at least 2-3 additional photos and different selection combos before shipping to production. Specifically needs testing on multi-tone stones like calacatta marble (where the hex averages a multi-color swatch) and reverse-direction transformations (dark → light).
 **Supersedes the Swatch Authority Rule partially**: The original swatch-authority rule said "No hex color codes alongside swatches — hex describes flat color, which overrides textured finishes." D102 finds the opposite: hex alongside swatches IMPROVES rendering when multiple swatch surfaces compete for attention. The original rule held for single-surface edits but fails on multi-surface full-gen.
 
-## D103: Metallic hardware — material-verb gate around the hex anchor
-**Context (2026-04-13)**: Prompt Lab session on Nest kitchen testing cabinet hardware scoped edits on a previously-generated base image (Driftwood perimeter + Admiral Blue island + grey granite counter + dark carbon backsplash). Tested 5 hardware options across 4 finishes (brushed gold, matte black, oil-rubbed bronze, satin nickel) using `buildProseScopedEdit`.
+**Layout-class change failure mode (added 2026-04-13 evening)**: D102's `"change ... to match {image} at hex #X"` pattern works for *same-layout* color/material swaps (stone counter → stone counter, wood floor → wood floor, mosaic backsplash → mosaic backsplash). It **fails for layout-class changes** — e.g., a herringbone mosaic backsplash being changed to a 4x16 staggered subway layout. The hex anchor lands the color, but Flex preserves the source's structural layout (incumbent-preservation bias on tile geometry). Tested at g=7, g=8, g=9 — no guidance level fixes it.
+
+**Fix for layout-class changes — retile verb + explicit layout descriptor**: switch from "match" to a spawn-style verb (`retile`) and name the target layout in the clause. Same spawn-vs-transform principle as the fixture remove/install pattern. Example for the Glacier 4x16 case:
+```
+retile the wall between the upper cabinets and countertop with {image}, large staggered rectangular tiles in horizontal rows at hex #D4E4EC
+```
+
+Validated 1/1 on the first test (Glacier 4x16 swatch on a herringbone source photo — output rendered correctly as staggered rectangular tiles in horizontal rows in glacier blue, no herringbone preservation).
+
+**Safe layout vocabulary for backsplash clauses**:
+- Allowed: `staggered rectangular tiles`, `horizontal rows`, `running bond`, `offset rows`, `large flat tiles`, `brick-pattern tiles`, `horizontal courses`
+- **Poisoned**: `subway` triggers Flex's strong "subway tile = white" prior and overrides the swatch color entirely. `metro` likely the same family — avoid until tested.
+
+**Architecture flag**: backsplash options whose swatch layout differs from the photo's installed layout (mosaic ↔ rectangular, herringbone ↔ subway-style) should carry a `layout_class_change = true` flag in DB or be authored with the retile-verb clause from the start. Without that, full-gen on these options will silently render as "right color, wrong layout."
+
+## D103: Metallic surfaces — material-verb gate around the hex anchor
+**Scope (revised 2026-04-13 evening)**: applies to ALL metallic surfaces, not just cabinet hardware. Validated on cabinet pulls (brushed gold, matte black, oil-rubbed bronze, satin nickel), faucets (polished stainless), and sinks (polished stainless). Same pattern works whether the metal is on a small repeated object (pulls), a single fixture (faucet, sink), or presumably range/microhood/refrigerator-front when those are swap targets. Originally written for hardware; the fix transfers cleanly to any reflective metal target.
+
+**Context (2026-04-13)**: Prompt Lab session on Nest kitchen testing cabinet hardware scoped edits on a previously-generated base image (Driftwood perimeter + Admiral Blue island + grey granite counter + dark carbon backsplash). Tested 5 hardware options across 4 finishes (brushed gold, matte black, oil-rubbed bronze, satin nickel) using `buildProseScopedEdit`. Faucet + sink validation came later in the same session via the bundled fullgen test — both also rendered as flat/wrong without the gate, then rendered correctly when the gate was added.
 **Problem**: The D102 inline-hex-anchor pattern (proven for stone/tile/wood-flooring textured swatches) FAILED on metallic hardware. Hex inline gave one of two bad outcomes:
 - Trailing parenthetical hex (`"... to match image 2 (hex #CCBA78, ...)`): the scoped-edit auto-suffix `"Match image 2 exactly."` bound to the nearest anchor (the hex) and Flex painted the entire containing surface (upper cabinet doors) mustard gold.
 - Mid-clause bare hex (`"... to match image 2 at hex #CCBA78"`): rendered as flat matte color, killing the brushed metallic sheen. Hardware looked like flat paint, not metal.
@@ -685,10 +702,15 @@ The swatch reference image is still sent via `input_image_N`. The hex is text, n
 **Discovery**: Gating the hex with a material-verb phrase — `"<finish descriptor> matching hex #XXXXXX"` — produces consistent multi-class coverage AND metallic sheen. The material phrase tells Flex "interpret this hex as a color waypoint on a reflective material," not "paint this RGB exactly." Parallel to D101's `"stain ... with wood grain matching hex"` — a material descriptor gates how Flex reads the color.
 **Pattern**:
 ```
+# Cabinet hardware (small repeated objects):
 change cabinet pulls on upper, lower, corner, and center cabinets to match {image}, brushed gold finish matching hex #CCBA78
 change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, matte black finish matching hex #1A1A1A
 change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, oil-rubbed bronze finish matching hex #804A2E
 change cabinet pulls and knobs on upper, lower, corner, and center cabinets to match {image}, satin nickel finish matching hex #C0BDBA
+
+# Faucets, sinks, range/microhood, refrigerator front (single metallic fixtures):
+remove the existing faucet and install {image} centered behind the sink basin, polished stainless steel finish matching hex #C8C8C8
+remove the existing sink and install {image} in the same countertop cutout, polished stainless steel finish matching hex #C8C8C8
 ```
 **Key structural elements**:
 - **Hex position**: inline mid-clause, NOT in a trailing parenthetical. The scoped-edit auto-suffix binds to the nearest anchor — keeping the hex away from the tail prevents the "paint this color exactly" misread.

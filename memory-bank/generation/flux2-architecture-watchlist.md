@@ -18,7 +18,7 @@ Quick at-a-glance view. Update as new tests run. Detailed prose for each item li
 | 1 | **D100** painted: paint+hex (no swatch) | LOCKED | ✓ | | | | ✓ | ✓ | Max, Pro, Flex (any) | SHIPPED | D100 |
 | 2 | **D101** stained: hex + "wood grain matching" | VALIDATED | ✓ | | | | | | Flex g=7 (winner) | LAB-ONLY | D101 |
 | 3 | **D102** textured swatch + inline hex anchor | VALIDATED | ✓ | | | | | | Flex g=7 (winner) | LAB-ONLY | D102 |
-| 4 | **D103** metallic: material-verb gate + hex | VALIDATED | ✓ | | | | | | Flex g=7 scoped (winner); Klein 9B fails | LAB-ONLY | D103 |
+| 4 | **D103** metallic (hardware, faucets, sinks): material-verb gate + hex | VALIDATED | ✓ | | | | | | Flex g=7 scoped (winner); Klein 9B fails. Generalized 2026-04-13 evening from hardware-only to all metallic surfaces (faucets, sinks confirmed; range/fridge presumed) | LAB-ONLY | D103 |
 | 5 | Cab zone enumeration `upper, lower, corner, center` | LOCKED | ✓ | | | | | | (all) — required for multi-class reach | LAB-ONLY | D101, D103 |
 | 6 | Hardware clause: combo vs all-pulls structures | VALIDATED | ✓ | | | | | | Flex scoped, all 4 finishes | LAB-ONLY | D103 |
 | 7 | Symmetrized hex anchors (full-gen multi-swatch) | VALIDATED | ✓ | | | | | | Flex g=7 (3/3 clean) | LAB-ONLY | D102 |
@@ -30,6 +30,8 @@ Quick at-a-glance view. Update as new tests run. Detailed prose for each item li
 | 12-b | Bundled fullgen pipeline: Flex g=9 + Klein 4B refine | VALIDATED | ✓ | | | | | | Total ~50s per pass; cabs stain, fixtures land via remove/install, fridge spawns, tone cool/photographic | LAB-ONLY | #10-b, #11, new |
 | 12-c | Fixture clauses: "remove existing X and install {image}" pattern | VALIDATED | ✓ | | | | | | Flex g=9 — beats "swap X for {image}" by breaking pass-2 incumbent-preservation bias (per BFL expert diagnosis) | LAB-ONLY | new |
 | 12-d | Drop range clause when option = photo default | VALIDATED | ✓ | | | | | | Saves a pass-2 attention slot; reduces total swatch count toward single-pass threshold | LAB-ONLY | new |
+| 12-e | Backsplash layout-class change via retile verb | VALIDATED | ✓ | | | | | | Flex g=7 (1/1) — `retile the wall ... with {image}, large staggered rectangular tiles in horizontal rows at hex #X`. D102 fails on layout-class changes (mosaic source → rectangular target); retile verb + layout descriptor unlocks it. Avoid `subway`/`metro` (poisoned). | LAB-ONLY | D102 update |
+| 12-f | Style trailer: `cool practical lighting` (not warm) | VALIDATED | ✓ | | | | | | Replaces the earlier `warm practical lighting` in the locked tone style trailer. Reads cooler and more neutral on the wood/scene without the cartoony warm cast. Final form: `Shot on Canon 5D Mark IV. Cool practical lighting, soft diffused daylight fill, cool interior photography.` | LAB-ONLY | #11 |
 | 13 | Mixed paint+stain cabs (per-clause material verbs) | VALIDATED | ✓ | | | | | | Flex g=7 — both directions 3/3 | LAB-ONLY | D101 |
 | 14 | Two-pass split with hex anchors at >7 swatches | VALIDATED | ✓ | | | | | | Flex g=7 (3/3 with symmetrized anchors) | LAB-ONLY | D102 |
 | 15 | Multi-round cumulative scoped edits | VALIDATED | ✓ | | | | | | Scoped on hex-anchored full-gen base — 1 cumulative depth | LAB-ONLY | #7, #8 |

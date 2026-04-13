@@ -397,7 +397,7 @@ Behavior documented here for reference — prefer the prose spec for new work.
 | **Painted** (D100) | `"paint X to hex #XXX"` | No | Yes |
 | **Stained wood** (D101) | `"stain X with wood grain matching hex #XXX"` | No | Yes |
 | **Textured** (stone, tile, flooring) (D102) | `"apply {image} to X matching hex #XXX"` | **Yes** | **Yes** |
-| **Metallic** (hardware, faucets) (D103) | `"change X to match {image}, <finish> finish matching hex #XXX"` | **Yes** | **Yes (gated by material verb)** |
+| **Metallic** (hardware, faucets, sinks, range, fridge) (D103) | `"change X to match {image}, <finish> finish matching hex #XXX"` | **Yes** | **Yes (gated by material verb)** |
 
 **Rules that still hold:**
 - **No `promptDescriptor`** — BFL treats long descriptive text as higher authority and overrides swatches on single-material claims. Descriptive material/color words are still forbidden.
@@ -434,8 +434,29 @@ The swatch reference image is still sent (via `input_image_N`). The hex is a tex
 - **Validation gap**: tested on one photo. Needs cross-photo validation before ship. Suspected-fragile cases: multi-tone stones (calacatta averages multiple colors into one hex), reverse-direction transformations (dark source → light target).
 - **Production integration path**: runtime auto-append `" matching hex #XXX"` to every action clause whose option has `swatch_color` AND isn't already painted/stained via is_painted+forceHex. Gated for safe rollout.
 
+**D102 layout-class change failure (2026-04-13 evening) and the retile fix**:
+The D102 "match {image} at hex" pattern works for *same-layout* swaps but fails when the swatch has a different structural layout than the source surface. Tested with `bs-baker-4x16-glacier` (4x16 staggered subway layout swatch) on the Nest kitchen (which has a herringbone mosaic backsplash in the source photo). Result: glacier color landed correctly, but the herringbone layout was preserved from the source. Tested at g=7, g=8, g=9 — no guidance level fixed it. Flex has an incumbent-preservation bias on tile geometry.
+
+**Fix — retile verb + explicit layout descriptor in the action clause**:
+```
+retile the wall between the upper cabinets and countertop with {image}, large staggered rectangular tiles in horizontal rows at hex #D4E4EC
+```
+
+The verb `"retile"` signals layout replacement (spawn pattern, not transform). The explicit layout phrase `"large staggered rectangular tiles in horizontal rows"` describes the target geometry. Hex anchor still locks the color. Validated 1/1 on first test.
+
+**Safe layout vocabulary**: `staggered rectangular tiles`, `horizontal rows`, `running bond`, `offset rows`, `large flat tiles`, `brick-pattern tiles`, `horizontal courses`.
+
+**Poisoned words for backsplash clauses**:
+- **`subway`** — triggers Flex's "subway tile = white" prior and overrides the swatch color entirely. Confirmed in earlier session testing.
+- **`metro`** — untested but likely same family as subway. Avoid until proven safe.
+
+**When to use D102 vs the retile pattern**:
+- Same-layout swap (mosaic source → mosaic target, brick source → brick target, etc.): use D102 `"change/match"` clause.
+- Layout-class change (mosaic source → rectangular target, herringbone source → subway-style target, etc.): use the retile verb + explicit layout descriptor.
+- The DB option should carry a flag (or the swatch upload pipeline should detect) when the option's layout differs from the photo's source layout, and route to the right clause pattern.
+
 **Metallic surfaces — swatch PLUS material-verb-gated hex (D103, 2026-04-13):**
-Metallic hardware (cabinet pulls, faucets, sinks) are reflective — flat hex color kills the metallic sheen. But omitting hex entirely breaks color consistency on multi-class scenes (perimeter pulls default to dark finishes pulled from scene neighbors). The fix is a **material-verb gate** — wrap the hex in a phrase that tells Flex "this color is on a reflective material type":
+Applies to ALL metallic surfaces, not just cabinet hardware: pulls/knobs, faucets, sinks, range/microhood front, refrigerator front. They are reflective — flat hex color kills the metallic sheen. But omitting hex entirely breaks color consistency on multi-class scenes (perimeter pulls default to dark finishes pulled from scene neighbors; faucet swap fails entirely on bundled fullgens because pass-2 incumbent-preservation bias keeps the source faucet). The fix is a **material-verb gate** — wrap the hex in a phrase that tells Flex "this color is on a reflective material type":
 
 Pattern:
 ```
