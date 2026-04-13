@@ -117,6 +117,8 @@ interface RefineConfig {
   prompt: string;
   /** Subcategory slug whose selected swatch is sent as input_image_2 to the refine. */
   swatchSubId?: string;
+  /** Override refine model. Default: flux-2-max. Use flux-2-klein-9b or flux-2-klein-4b for fast/cheap post-passes. */
+  model?: string;
 }
 
 interface Variant {
@@ -144,6 +146,13 @@ interface Variant {
   steps?: number;
   /** Flex-only: prompt adherence 1.5-10 (default 4.5). Ignored on Max/Pro. */
   guidance?: number;
+  /**
+   * Lab-only: path (relative to session dir) to an existing image. When set,
+   * skips the main generation pass entirely and runs the refine pass on this
+   * image directly. Useful for testing tone-shift / refine prompts against
+   * known-good outputs without re-rendering the main pass each time.
+   */
+  inputImageOverride?: string;
 }
 
 interface SessionConfig {
@@ -672,7 +681,19 @@ async function run(session: string, explicitConcurrency: number | undefined, var
         }
       }
 
-      if (variant.scoped) {
+      if (variant.inputImageOverride) {
+        // --- Lab-only: skip main pass, load an existing image directly ---
+        // Used for testing refine/tone-shift passes against a known-good output
+        // without re-rendering the main pass each time.
+        const overridePath = path.join(dir, variant.inputImageOverride);
+        if (!fs.existsSync(overridePath)) {
+          throw new Error(`inputImageOverride not found: ${overridePath}`);
+        }
+        mainBuffer = fs.readFileSync(overridePath);
+        prompt = `[inputImageOverride: ${variant.inputImageOverride}]`;
+        modelUsed = "none";
+        console.log(`[${tag}] Using override image: ${variant.inputImageOverride} (${(mainBuffer.length / 1024).toFixed(0)}KB)`);
+      } else if (variant.scoped) {
         // --- Scoped edit (single surface) — delegate to production path ---
         const { subcategoryId, optionId } = variant.scoped;
         const result = await fluxScopedEdit({
@@ -715,7 +736,9 @@ async function run(session: string, explicitConcurrency: number | undefined, var
       let refineDurationMs = 0;
 
       // --- Refine pass (conditional) ---
-      if (variant.refine && !variant.scoped) {
+      // Runs on both full-gen and scoped-edit main passes. Useful for
+      // scene-tone post-passes (Klein 9B) or oven-correction post-passes (Max).
+      if (variant.refine) {
         console.log(`[${tag}] Running refine pass...`);
         const refineStart = performance.now();
 
@@ -733,8 +756,9 @@ async function run(session: string, explicitConcurrency: number | undefined, var
         }
 
         try {
+          const refineModel = (variant.refine.model ?? IMAGE_MODEL) as BflModel;
           const refineResult = await generateImage({
-            model: IMAGE_MODEL as BflModel, // Refine always uses Max
+            model: refineModel,
             prompt: variant.refine.prompt,
             inputImage: mainBuffer,
             referenceImages: refineRefs.length > 0 ? refineRefs : undefined,
@@ -918,11 +942,19 @@ function buildReviewHtml(
   <span class="status" id="export-status"></span>
 </div>
 
-<div class="grid">
+${(() => {
+  // Source display: if any variant has an inputImageOverride, show THAT as the source
+  // (since it's the actual input to those variants). Falls back to session source.jpg.
+  const overrides = variantsWithResults.map(v => v.inputImageOverride).filter(Boolean) as string[];
+  const firstOverride = overrides[0];
+  const sourcePath = firstOverride ?? "source.jpg";
+  const sourceLabel = firstOverride ? `Input: ${firstOverride}` : `Source: ${config.photo.label}`;
+  return `<div class="grid">
   <div class="source-col">
-    <img src="source.jpg" alt="Source photo" onclick="openLightbox(this.src)">
-    <div class="label">Source: ${escapeHtml(config.photo.label)}</div>
-  </div>
+    <img src="${escapeHtml(sourcePath)}" alt="Source" onclick="openLightbox(this.src)">
+    <div class="label">${escapeHtml(sourceLabel)}</div>
+  </div>`;
+})()}
 
   ${variantsWithResults.map(v => `
   <div class="variant-col" id="variant-${escapeHtml(v.id)}" data-variant-id="${escapeHtml(v.id)}">

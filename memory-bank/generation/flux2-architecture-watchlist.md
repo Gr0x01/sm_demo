@@ -5,6 +5,45 @@
 
 **Rule**: Do not implement anything on this list until cross-photo / cross-material / cross-model validation is reasonably complete on the Nest demo (kitchen + bathroom + living room + bedroom + any secondary spaces). Band-aids now will be wrong later.
 
+## Status matrix
+
+Quick at-a-glance view. Update as new tests run. Detailed prose for each item lives in the numbered sections below.
+
+**Status legend**: `LOCKED` (fully validated, ready to ship) · `VALIDATED` (works in lab, blocks on cross-photo) · `PARTIAL` (works in some configs, fails in others) · `BROKEN` (confirmed failure mode) · `PENDING` (not yet tested)
+
+**Photo legend**: NK = Nest Kitchen, NB = Nest Bathroom, NL = Nest Living Room, NBR = Nest Bedroom, VAL = Valor, SM = Stone Martin (any room). Empty = not tested. ✓ = validated. ~ = partial. ✗ = failed.
+
+| # | Pattern / test | Status | NK | NB | NL | NBR | VAL | SM | Models tested (winner) | Prod | Linked |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | **D100** painted: paint+hex (no swatch) | LOCKED | ✓ | | | | ✓ | ✓ | Max, Pro, Flex (any) | SHIPPED | D100 |
+| 2 | **D101** stained: hex + "wood grain matching" | VALIDATED | ✓ | | | | | | Flex g=7 (winner) | LAB-ONLY | D101 |
+| 3 | **D102** textured swatch + inline hex anchor | VALIDATED | ✓ | | | | | | Flex g=7 (winner) | LAB-ONLY | D102 |
+| 4 | **D103** metallic: material-verb gate + hex | VALIDATED | ✓ | | | | | | Flex g=7 scoped (winner); Klein 9B fails | LAB-ONLY | D103 |
+| 5 | Cab zone enumeration `upper, lower, corner, center` | LOCKED | ✓ | | | | | | (all) — required for multi-class reach | LAB-ONLY | D101, D103 |
+| 6 | Hardware clause: combo vs all-pulls structures | VALIDATED | ✓ | | | | | | Flex scoped, all 4 finishes | LAB-ONLY | D103 |
+| 7 | Symmetrized hex anchors (full-gen multi-swatch) | VALIDATED | ✓ | | | | | | Flex g=7 (3/3 clean) | LAB-ONLY | D102 |
+| 8 | Range slide-in transformation (scoped) | VALIDATED | ✓ | | | | | | Flex g=7/g=8 (winners); Max ok; Klein 9B fails; Klein 4B inconclusive | LAB-ONLY | #11 |
+| 9 | Range slide-in **bundled** in full-gen | BROKEN | ✗ | | | | | | Flex 2-pass split — island merge + counter drift, range unreliable | — | #11 |
+| 10 | Refrigerator add-to-alcove (bundled) | VALIDATED | ✓ | | | | | | Flex g=9 + remove/install fixture pattern, fridge places 3/3 | LAB-ONLY | new |
+| 11 | Tone correction: inline style trailer at Flex g=8 | PARTIAL | ~ | | | | | | Works for smaller selection sets; insufficient for bundled fullgen at g=9 (still cartoony) | LAB-ONLY | #10-b |
+| 12 | Tone correction: Klein 4B refine post-pass | VALIDATED | ✓ | | | | | | Klein 4B winner over 9B; ~6-10s; required on bundled fullgen + scoped edit outputs | LAB-ONLY | #10-b |
+| 12-b | Bundled fullgen pipeline: Flex g=9 + Klein 4B refine | VALIDATED | ✓ | | | | | | Total ~50s per pass; cabs stain, fixtures land via remove/install, fridge spawns, tone cool/photographic | LAB-ONLY | #10-b, #11, new |
+| 12-c | Fixture clauses: "remove existing X and install {image}" pattern | VALIDATED | ✓ | | | | | | Flex g=9 — beats "swap X for {image}" by breaking pass-2 incumbent-preservation bias (per BFL expert diagnosis) | LAB-ONLY | new |
+| 12-d | Drop range clause when option = photo default | VALIDATED | ✓ | | | | | | Saves a pass-2 attention slot; reduces total swatch count toward single-pass threshold | LAB-ONLY | new |
+| 13 | Mixed paint+stain cabs (per-clause material verbs) | VALIDATED | ✓ | | | | | | Flex g=7 — both directions 3/3 | LAB-ONLY | D101 |
+| 14 | Two-pass split with hex anchors at >7 swatches | VALIDATED | ✓ | | | | | | Flex g=7 (3/3 with symmetrized anchors) | LAB-ONLY | D102 |
+| 15 | Multi-round cumulative scoped edits | VALIDATED | ✓ | | | | | | Scoped on hex-anchored full-gen base — 1 cumulative depth | LAB-ONLY | #7, #8 |
+| 16 | Trailing positional modifier trap (`drawer front`) | LOCKED | ✓ | | | | | | (all) — guide rule #9 added | SHIPPED-IN-DOCS | guide rule #9 |
+| 17 | BFL Flex ref limit code bug (9 → 7) | PENDING | — | — | — | — | — | — | — | NOT FIXED | #10 |
+| 18 | Material-aware action clause rendering (paint/stain/metal) | BLOCKED | — | | | | | | (architecture, not lab) | NOT IMPLEMENTED | #1 |
+| 19 | Klein 4B tone refine non-blocking integration | BLOCKED | — | | | | | | Pipeline integration design needed | NOT IMPLEMENTED | #10-b |
+
+**Hot blockers** (most important things to unstick):
+- **Cross-photo validation** — almost every VALIDATED row needs to be tested on at least one non-Nest-kitchen photo before LOCKED
+- **#10 fridge cab revert** — bundled fridge run regressed cabs; need to understand why fridge fits OK but cab clauses get knocked out of pass 1
+- **#9 range bundled** — confirmed BROKEN, range needs its own scoped pass
+- **#18 material-aware clauses** — production authoring gap. Authoring per-photo prose can't cover paint/stain/metallic on the same subcategory without runtime help.
+
 ## Open questions / candidate changes
 
 ### 1. Material-aware action clause rendering — now THREE material axes
@@ -83,6 +122,67 @@
 - Per-photo sort order override in `step_photos.sort_override` JSONB
 - Revisit the global default after behavior mapping
 **Blocked on**: Does the sort order actually matter once hex anchors are in place? Run a test comparing current sort vs counter-first sort on the same locked recipe.
+
+### 10-b. Tone correction — inline style trailer at g=8 (full-gen) + Klein post-pass (scoped edit)
+**Learned (2026-04-13)**: Flex 2 has a warm-bias color cast at default guidance (g=7) that style trailer text doesn't fully counter. Two parallel paths were tested and both work:
+
+**Full-gen path — inline style trailer at higher guidance:**
+Bumping Flex guidance from 7 to **g=8** lets the style trailer text actually land. The style trailer:
+
+```
+Shot on Canon 5D Mark IV. Warm practical lighting, soft diffused daylight fill, cool interior photography.
+```
+
+At g=7: no visible tone effect (Flex bias dominates).
+At g=8: tone corrections hold, cool interior photography aesthetic renders.
+At g=9: also good, slightly stronger.
+At g=10: untested on this recipe but likely over-constrains other elements.
+
+No post-pass, no second BFL call. One full-gen at g=8 lands the tone and the content.
+
+**Scoped edit path — Klein 4B refine pass:**
+Scoped edit ignores the prose `style` trailer entirely (by design in `buildProseScopedEdit`). For tone correction on scoped edits, a Klein 4B refine pass with the same prompt:
+
+```
+Shot on Canon 5D Mark IV. Warm practical lighting, soft diffused daylight fill, cool interior photography.
+```
+
+Applied to the scoped-edit main pass output. ~6-10s per pass, cheap. Validated on the gold-hardware scoped edit — produced visibly cooler output matching the full-gen g=8 result.
+
+**Proposed production integration:**
+- Full gen (`fluxGenerate`): bump default guidance to 8 for Flex model. Lock the tone style trailer as the default `style` value in the prose spec. One pass, no architecture change.
+- Scoped edit (`fluxScopedEdit`): add a non-blocking Klein 4B tone pass after the main scoped edit. Main image returns immediately; refined image swaps in ~6-10s later via client polling.
+
+**Validation gap:**
+- Inline g=8 is only tested on ONE full-gen recipe (Nest kitchen, driftwood merged cabs). Needs cross-recipe and cross-photo validation before shipping.
+- Klein 4B post-pass is tested on one scoped edit (Grande Gold hardware). Needs validation on other scoped edit types (color changes, material swaps).
+- The tone style trailer itself is tuned to the Nest kitchen aesthetic. Other rooms (bathroom, living room, bedroom) may need different wording.
+- g=8 is the current pick; g=9 was also good. The production default should be whichever is more robust across the validation sweep.
+
+### 11. Slide-in range transformation needs its own Flex scoped-edit pass
+**Learned (2026-04-13)**: The Nest kitchen has a freestanding range with a raised backguard as the source. Two slide-in range options (GE slide-in, GE slide-in convection) are available as upgrades. Transformation requires removing the backguard AND extending the backsplash into the newly-exposed wall area — a structural change, not just a color/material swap.
+
+**Isolated test**: Flex scoped edit on range alone, clause `"change the range to a slide-in style matching {image}, cooktop flush with countertop, backsplash continues behind the range"` — **worked perfectly** on both g=7 and g=8. Klein 9B did NOT transform (preserved freestanding). Klein 4B was inconclusive.
+
+**Bundled test**: Same range clause included in a full-gen with all other surfaces (cabs, backsplash, counter, floor, hardware, sink, faucet, range). 3 runs. Multiple failures:
+- Island merge failed 2/3 (rendered dark grey instead of driftwood)
+- Counter drifted 2/3 (white / dark grey instead of steel grey granite)
+- Range transformation hard to confirm in any run due to microwave occlusion — likely didn't fire reliably
+- Two-pass split fired (9+ swatches), but the range ended up in pass 2 with 4 fixtures competing for attention
+
+**Conclusion**: The range slide-in transformation is **not safely bundled** into a multi-surface full-gen. The structural change (remove backguard + extend backsplash) needs clause attention that the two-pass fixture pass can't give when 4 clauses compete.
+
+**Proposed production pattern** (possibility, not validated):
+- Main full-gen runs as normal (multi-surface, all clauses).
+- AFTER the main pass completes, check if the selected range is a slide-in variant (or similar structural-transformation option).
+- If yes: run a **Flex scoped edit refine pass** on the range specifically, using the same clause that worked in isolation.
+- Main image saved first; refine updates it. Could be blocking (total +20s latency) or non-blocking (user sees main first, swap to refined).
+
+**Why Flex, not Max**: Flex scoped edit is ~18-20s vs Max ~30s. Per user feedback, Flex handles the transformation cleanly. Max is overkill. Existing oven-correction refine pass in `generate-photo.ts` uses Max hardcoded — this finding suggests Flex should replace it for the range case.
+
+**Why not Klein**: Klein 9B did not transform the range (preserved freestanding backguard). Klein 4B was visually inconclusive. Structural transformations exceed Klein's targeted-edit capacity.
+
+**Validation gap**: Only tested on Nest kitchen source. Range transformation behavior may differ on photos with different range cutout geometry, different surrounding cabinetry, or different backsplash patterns.
 
 ### 10. BFL Flex reference limit is wrong in code
 **Found**: `src/lib/bfl.ts` has `MAX_REFERENCES["flux-2-flex"]: 9`. BFL docs say Flex supports up to 8 images total (hero + 7 refs) via the API, matching Max and Pro. Code says 9 refs, would allow payloads BFL would silently truncate.
