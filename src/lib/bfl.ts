@@ -81,7 +81,7 @@ export interface GenerateImageResult {
 const MAX_REFERENCES: Record<BflModel, number> = {
   "flux-2-max": 7,
   "flux-2-pro": 7,
-  "flux-2-flex": 9,
+  "flux-2-flex": 7,
   "flux-2-klein-4b": 3,
   "flux-2-klein-9b": 3,
 };

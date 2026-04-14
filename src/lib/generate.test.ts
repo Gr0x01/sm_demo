@@ -783,13 +783,14 @@ describe("buildProseScopedEdit (v2)", () => {
     expect(prompt).toBe("Apply image 2 to the wall strip above the countertops (4x16). Match image 2 exactly. Maintain all other aspects of the original image.");
   });
 
-  it("emits no lead, no style trailer, but DOES emit preserve entries", async () => {
+  it("emits no lead, but DOES emit preserve entries and the style trailer", async () => {
     // preserve entries apply to scoped-edit context too — the same surfaces
     // Flux mutates in full-gen (e.g. a pantry door misread as a cabinet) also
     // get mutated in scoped-edit, so per-photo preserve clauses need to be in
-    // both prompt paths. Lead and style are still excluded (scoped edit has
-    // its own fixed lead-in implicit in the capitalized action clause, and no
-    // style trailer).
+    // both prompt paths. Lead is still excluded (scoped edit has its own fixed
+    // lead-in implicit in the capitalized action clause). Style trailer is
+    // now appended per watchlist row 12-k (validated 2026-04-13) so scoped
+    // edits get the same Canon 5D color/light treatment as full-gen.
     const prose: PromptProse = {
       version: 2,
       actions: { cabinets: "apply {image} to every cabinet door along the walls" },
@@ -799,7 +800,7 @@ describe("buildProseScopedEdit (v2)", () => {
     };
     const { prompt } = await buildProseScopedEdit(prose, "cabinets", "cab-espresso", optionLookup, mockResolver);
     expect(prompt).not.toContain("kitchen photo");
-    expect(prompt).not.toContain("photography");
+    expect(prompt).toContain("Architectural editorial photography.");
     expect(prompt).toContain("Keep the pendant lights unchanged.");
     expect(prompt).toContain("Maintain all other aspects of the original image.");
   });

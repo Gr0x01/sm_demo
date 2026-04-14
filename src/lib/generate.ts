@@ -115,7 +115,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v3.0";
+export const GENERATION_CACHE_VERSION = "v4.0";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -756,7 +756,8 @@ export async function buildProseScopedEdit(
 
   // Painted: no swatch to match, just the hex in the text. Swatch: "Match image 2 exactly."
   const matchClause = isPainted ? "" : " Match image 2 exactly.";
-  const prompt = `${withPeriod}${matchClause}${preserveBlock} Maintain all other aspects of the original image.`;
+  const styleTrail = prose.style?.trim() ? ` ${prose.style.trim()}` : "";
+  const prompt = `${withPeriod}${matchClause}${preserveBlock} Maintain all other aspects of the original image.${styleTrail}`;
 
   return { prompt, swatches };
 }

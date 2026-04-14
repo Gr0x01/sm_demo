@@ -35,13 +35,17 @@ const GEMINI_IMAGE_COST: Record<string, number> = {
 };
 const DEFAULT_GEMINI_IMAGE_COST = 0.04;
 
-// BFL (Black Forest Labs) Flux 2 — flat per-image cost
+// BFL (Black Forest Labs) Flux 2 — flat per-image cost.
+// Source: https://docs.bfl.ai/quick_start/pricing (verified 2026-04-14).
+// Klein uses megapixel-based pricing — these are the "from" base rates.
 const BFL_IMAGE_COST: Record<string, number> = {
-  "flux-2-max": 0.09,
-  "flux-2-klein-4b": 0.017,
-  "flux-2-klein-9b": 0.02,
+  "flux-2-max": 0.07,
+  "flux-2-pro": 0.03,
+  "flux-2-flex": 0.06,
+  "flux-2-klein-9b": 0.015,
+  "flux-2-klein-4b": 0.014,
 };
-const DEFAULT_BFL_IMAGE_COST = 0.09;
+const DEFAULT_BFL_IMAGE_COST = 0.06;
 
 interface BaseEvent {
   provider: "openai" | "google" | "bfl";

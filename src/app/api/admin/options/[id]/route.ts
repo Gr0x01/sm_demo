@@ -35,7 +35,10 @@ export async function PATCH(
     if ("error" in auth) return auth.error;
 
     const { supabase, orgId } = auth;
-    const { org_id: _orgId, ...updates } = parsed.data;
+    // scoped_edit_model retired 2026-04-14 (watchlist row 12-m, all scoped edits → Flex).
+    // Schema still accepts the field for backward compat with stale clients, but writes
+    // are silently dropped here. Column itself drops in PR #4.
+    const { org_id: _orgId, scoped_edit_model: _ignored, ...updates } = parsed.data;
 
     const { data, error } = await supabase
       .from("options")

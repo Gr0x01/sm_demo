@@ -304,7 +304,8 @@ export interface FluxScopedEditResult {
 
 /**
  * Run a scoped Flux 2 edit on a single surface.
- * Automatically selects Max for range/oven, Klein 9B for everything else.
+ * Always uses Flex (watchlist row 12-m, locked 2026-04-13) — per-option model
+ * overrides and the range/oven Max exception were retired 2026-04-14.
  * Stateless — caller handles storage downloads/uploads.
  */
 export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScopedEditResult> {
@@ -330,12 +331,10 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
         swatchResolver,
       );
 
-  // Model selection: explicit opts.model → option-level → range/oven gets Max → global default (Flex)
-  const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
-  const isRangeOven = changedSubcategoryId.includes("range") || changedSubcategoryId.includes("oven");
-  const model = opts.model
-    ?? changed?.option.scopedEditModel
-    ?? (isRangeOven ? IMAGE_MODEL : SCOPED_EDIT_MODEL);
+  // Model selection: explicit opts.model wins, otherwise the global Flex default.
+  // Per-option `scopedEditModel` overrides and the range/oven Max exception were
+  // retired 2026-04-14 — watchlist row 12-m locks "all scoped edits → Flex".
+  const model = opts.model ?? SCOPED_EDIT_MODEL;
 
   const genStart = performance.now();
   const isFlex = model === "flux-2-flex";

@@ -1332,8 +1332,8 @@ function OptionEditorModal({
     if (normalizedDimensions !== (option.dimensions ?? null)) updates.dimensions = normalizedDimensions;
     if (normalizedSwatchUrl !== (option.swatch_url ?? null)) updates.swatch_url = normalizedSwatchUrl;
     if (draft.isDefault !== option.is_default) updates.is_default = draft.isDefault;
-    const normalizedScopedModel = draft.scopedEditModel.trim() || null;
-    if (normalizedScopedModel !== (option.scoped_edit_model ?? null)) updates.scoped_edit_model = normalizedScopedModel;
+    // scoped_edit_model retired 2026-04-14 (watchlist row 12-m). Field is no
+    // longer editable; do not diff. Column drops in PR #4.
     const normalizedGenRules = parseRulesText(draft.generationRulesText);
     if (JSON.stringify(normalizedGenRules) !== JSON.stringify(option.generation_rules ?? null)) updates.generation_rules = normalizedGenRules;
 
@@ -1699,19 +1699,17 @@ function OptionDetailPanel({
             />
             Default (included)
           </label>
-          <label className="flex items-center gap-2 text-slate-700">
+          <div
+            className="flex items-center gap-2 text-slate-400"
+            title="Retired 2026-04-14 — all scoped edits run on Flex (watchlist row 12-m). Column drops in PR #4."
+          >
             <span className="text-xs whitespace-nowrap">Scoped edit model:</span>
-            <select
-              value={draft.scopedEditModel}
-              onChange={(e) => setDraft((prev) => ({ ...prev, scopedEditModel: e.target.value }))}
-              className="text-xs border border-slate-300 px-1.5 py-0.5 bg-white text-slate-800"
-            >
-              <option value="">Default (Pro)</option>
-              <option value="flux-2-klein-9b">Klein 9B</option>
-              <option value="flux-2-klein-4b">Klein 4B</option>
-              <option value="flux-2-max">Max</option>
-            </select>
-          </label>
+            <span className="text-xs border border-slate-200 px-1.5 py-0.5 bg-slate-100 text-slate-400 font-mono">
+              {option.scoped_edit_model
+                ? `Retired (was ${option.scoped_edit_model})`
+                : "Retired — Flex only"}
+            </span>
+          </div>
         </div>
         <div className="text-slate-500 text-xs">
           Slug: <span className="font-mono text-slate-700">{option.slug}</span>

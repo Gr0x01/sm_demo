@@ -15,49 +15,199 @@ Quick at-a-glance view. Update as new tests run. Detailed prose for each item li
 
 | # | Pattern / test | Status | NK | NB | NL | NBR | VAL | SM | Models tested (winner) | Prod | Linked |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | **D100** painted: paint+hex (no swatch) | LOCKED | ✓ | | | | ✓ | ✓ | Max, Pro, Flex (any) | SHIPPED | D100 |
-| 2 | **D101** stained: hex + "wood grain matching" | VALIDATED | ✓ | | | | | | Flex g=7 (winner) | LAB-ONLY | D101 |
-| 3 | **D102** textured swatch + inline hex anchor | VALIDATED | ✓ | | | | | | Flex g=7 (winner) | LAB-ONLY | D102 |
-| 4 | **D103** metallic (hardware, faucets, sinks): material-verb gate + hex | VALIDATED | ✓ | | | | | | Flex g=7 scoped (winner); Klein 9B fails. Generalized 2026-04-13 evening from hardware-only to all metallic surfaces (faucets, sinks confirmed; range/fridge presumed) | LAB-ONLY | D103 |
+'
+| 1 | **D100** painted: paint+hex (no swatch) | LOCKED | ✓ | ✓ | | ✓ | ✓ | ✓ | Max, Pro, Flex (any) | SHIPPED | D100 |
+| 2 | **D101** stained: hex + "wood grain matching" | PARTIAL | ✓ full-gen / ✗ scoped | ✓ | | | | | Flex g=7 full-gen 3/3 on NK; cross-validated on NB 2026-04-14 (driftwood vanity cab in bundled bathroom fullgen landed on first try). **Scoped edit FAILS on all 3 models** (Flex, Klein 9B, Klein 4B) — none reliably hold the driftwood color from a clean white-shaker source via scoped edit. Stain scoped edits should route to full-gen path in production. | LAB-ONLY | D101 |
+| 3 | **D102** textured swatch + inline hex anchor | VALIDATED | ✓ | ✓ | | ✓ | | | Flex g=7–8 (winner). Cross-validated on NB 2026-04-14 (Omega Bone floor tile in bundled bathroom fullgen). Cross-validated on NBR 2026-04-14 — all 4 carpet options (taupe, concrete, ecru, whisper) landed distinct and hex-accurate. **Carpet is now a validated D102 surface class** alongside stone/tile/quartz/flooring. Walls in Family C runs also read truer to hex than Family A — symmetrized anchor effect re-confirmed on bedroom. | LAB-ONLY | D102 |
+| 4 | **D103** metallic (hardware, faucets, sinks): material-verb gate + hex | VALIDATED (single-material only) | ✓ | ✓ | | ✗ (fans) | | | Flex g=7 scoped (winner); Klein 9B fails. Generalized 2026-04-13 evening from hardware-only to all metallic surfaces. Cross-validated on NB 2026-04-14 — FOUR metallic surfaces on same photo (brushed nickel faucets, satin nickel towel ring, oil-rubbed bronze vanity pulls, gunmetal mirror frames) all landed in single bundled fullgen. **NEW scope limitation (NBR 2026-04-14)**: D103 does NOT transfer to **multi-material objects** like ceiling fans (housing + blades + light kit + chains). Material-verb gate has too many possible binding targets — Flex picks wrong or spreads. Family A baseline vs Family B D103 on fans produced visually indistinguishable results. D103 is scoped to single-material metallic fixtures. See new row 20 for multi-material object pattern. | LAB-ONLY | D103, #20 |
 | 5 | Cab zone enumeration `upper, lower, corner, center` | LOCKED | ✓ | | | | | | (all) — required for multi-class reach | LAB-ONLY | D101, D103 |
 | 6 | Hardware clause: combo vs all-pulls structures | VALIDATED | ✓ | | | | | | Flex scoped, all 4 finishes | LAB-ONLY | D103 |
-| 7 | Symmetrized hex anchors (full-gen multi-swatch) | VALIDATED | ✓ | | | | | | Flex g=7 (3/3 clean) | LAB-ONLY | D102 |
+| 7 | Symmetrized hex anchors (full-gen multi-swatch) | VALIDATED | ✓ | ✓ | | ✓ | | | Flex g=7–8 (3/3 clean on NK). Cross-validated on NB 2026-04-14 — 5 swatches + 2 hex-text selections on same bundled pass held cleanly. Cross-validated on NBR 2026-04-14 — Family C carpet anchor variants made walls read truer to hex than Family A (no anchor), confirming attention-budget evening effect on a third room type. | LAB-ONLY | D102 |
 | 8 | Range slide-in transformation (scoped) | VALIDATED | ✓ | | | | | | Flex g=7/g=8 (winners); Max ok; Klein 9B fails; Klein 4B inconclusive | LAB-ONLY | #11 |
-| 9 | Range slide-in **bundled** in full-gen | BROKEN | ✗ | | | | | | Flex 2-pass split — island merge + counter drift, range unreliable | — | #11 |
+| 9 | Range slide-in **bundled** in full-gen | WORKAROUND SHIPPED | ✓ | | | | | | Bundled pass can't hold the range geometry on its own, but production solves this via a `secondPass` policy (`kitchen-hero-slide-in-range`) — dedicated refine pass triggered when a slide-in range is selected, runs with range swatch as reference image. Validated in prod pipeline via policy resolver tests. | SHIPPED | #11 |
 | 10 | Refrigerator add-to-alcove (bundled) | VALIDATED | ✓ | | | | | | Flex g=9 + remove/install fixture pattern, fridge places 3/3 | LAB-ONLY | new |
 | 11 | Tone correction: inline style trailer at Flex g=8 | PARTIAL | ~ | | | | | | Works for smaller selection sets; insufficient for bundled fullgen at g=9 (still cartoony) | LAB-ONLY | #10-b |
-| 12 | Tone correction: Klein 4B refine post-pass | VALIDATED | ✓ | | | | | | Klein 4B winner over 9B; ~6-10s; required on bundled fullgen + scoped edit outputs | LAB-ONLY | #10-b |
-| 12-b | Bundled fullgen pipeline: Flex g=9 + Klein 4B refine | VALIDATED | ✓ | | | | | | Total ~50s per pass; cabs stain, fixtures land via remove/install, fridge spawns, tone cool/photographic | LAB-ONLY | #10-b, #11, new |
+| 12 | Tone correction: Klein 4B refine post-pass | VALIDATED | ✓ | ✓ | | | | | Klein 4B winner over 9B; ~6-10s; required on bundled fullgen + scoped edit outputs. Cross-validated on NB 2026-04-14 (~11s refine, tone landed clean). | LAB-ONLY | #10-b |
+| 12-b | Bundled fullgen pipeline: Flex g=8–9 + Klein 4B refine | VALIDATED | ✓ | ✓ | | ✓ | | | Total ~35s on NB (24s Flex main + 11s K4B refine), ~50s on NK, ~20s on NBR (single Flex g=8 pass, no refine needed on simple bedroom scenes). Cross-validated on NB 2026-04-14 — 7 subcategories (mixed paint/stain/textured/metallic) landed first try. Cross-validated on NBR 2026-04-14 — 3 subcategories (carpet/wall/fan) landed cleanly on Flex g=8 with no refine pass required. Simple scenes (bedroom) can skip the K4B refine; complex scenes (kitchen, bathroom) still benefit from it. | LAB-ONLY | #10-b, #11, new |
 | 12-c | Fixture clauses: "remove existing X and install {image}" pattern | VALIDATED | ✓ | | | | | | Flex g=9 — beats "swap X for {image}" by breaking pass-2 incumbent-preservation bias (per BFL expert diagnosis) | LAB-ONLY | new |
 | 12-d | Drop range clause when option = photo default | VALIDATED | ✓ | | | | | | Saves a pass-2 attention slot; reduces total swatch count toward single-pass threshold | LAB-ONLY | new |
-| 12-e | Backsplash layout-class change via retile verb | VALIDATED | ✓ | | | | | | Flex g=7 (1/1) — `retile the wall ... with {image}, large staggered rectangular tiles in horizontal rows at hex #X`. D102 fails on layout-class changes (mosaic source → rectangular target); retile verb + layout descriptor unlocks it. Avoid `subway`/`metro` (poisoned). | LAB-ONLY | D102 update |
-| 12-f | Style trailer: `cool practical lighting` (not warm) | VALIDATED | ✓ | | | | | | Replaces the earlier `warm practical lighting` in the locked tone style trailer. Reads cooler and more neutral on the wood/scene without the cartoony warm cast. Final form: `Shot on Canon 5D Mark IV. Cool practical lighting, soft diffused daylight fill, cool interior photography.` | LAB-ONLY | #11 |
-| 13 | Mixed paint+stain cabs (per-clause material verbs) | VALIDATED | ✓ | | | | | | Flex g=7 — both directions 3/3 | LAB-ONLY | D101 |
+| 12-e | Backsplash layout-class change via retile verb | VALIDATED | ✓ | | | | | | Flex g=7 (1/1 first test) — `retile the wall ... with {image}, large staggered rectangular tiles in horizontal rows at hex #X`. D102 fails on layout-class changes (mosaic source → rectangular target); retile verb + layout descriptor unlocks it. Avoid `subway`/`metro` (poisoned). Re-validated 2026-04-13 evening across 4 cab combos at g=9 — Glacier 4x16 retile held alongside Dove+Driftwood, Driftwood+Onyx, Fog+Admiral, Dove+Admiral. | LAB-ONLY | D102 update |
+| 12-f | Style trailer: `Soft diffused afternoon fill light, neutral interior photography` | LOCKED | ✓ | ✓ | | ✓ | | | Iterated through warm practical → cool practical → soft diffused afternoon fill. Final form: `Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.` Validated across 4 NK cab combo runs at g=9, cross-validated on NB 2026-04-14, cross-validated on NBR 2026-04-14 (19 variants at g=8, consistent cool-neutral tone across walls/carpet/fan swatches). Reads consistent and neutral across 3 rooms and 3 material classes — ready to ship as production default. Important side effect: cool-neutral fill intentionally shifts warm finishes (bronze, nickel) toward cooler/darker than swatch pigment — do NOT compare output to swatch pixel values, compare to "how the swatch product would look under cool afternoon fill light." | LAB-ONLY | #11 |
+| 12-g | Scoped edit model fitness for **paint** (D100 cab color) | VALIDATED | ✓ | | | | | | **Klein 4B winner** (clean Dove paint, scope preserved). Klein 9B also works. **Flex FAILS** (paint went chartreuse yellow, bled across island). Reversal of full-gen pattern: Klein is the right model for paint scoped edits, NOT Flex. | LAB-ONLY | new |
+| 12-h | Scoped edit model fitness for **stain** (D101 cab color) | BROKEN | ✗ | | | | | | All 3 models fail (Flex too-light wood, Klein 9B blonde oak, Klein 4B olive-grey). Stained cab scoped edits are unreliable across the model space. **Production must route stain selections to full-gen path**, not the diff-cache scoped edit path. | LAB-ONLY | D101 |
+| 12-i | Scoped edit model fitness for **counter-top** (D102 textured) | PARTIAL | ✓ Flex / ✗ K9B | | | | | | Flex g=7 3/3 (calacatta, steel grey, dallas white) with `change every horizontal countertop surface to match {image} at hex #X` + style trailer. `horizontal` qualifier load-bearing (keeps edit off vertical edges). **Klein 9B BROKEN 2026-04-13**: leaks counter material onto backsplash across all 3 swatches, `horizontal` qualifier does not contain it. Counters are Flex-only. | LAB-ONLY | D102 |
+| 12-j | Scoped edit model fitness for **flooring** (D102 textured) | VALIDATED | ✓ | | | | | | Both Flex g=7 and Klein 9B land 3/3 (cinnamon walnut, wild dunes, toasted taupe) with `change all visible flooring throughout the room to match {image} at hex #X` + style trailer. Klein 9B is ~6-10s vs Flex ~18s. First surface where Klein 9B is production-viable for scoped edits. | LAB-ONLY | D102 |
+| 12-k | Scoped edit builder appends `prose.style` trailer | VALIDATED | ✓ | | | | | | 2026-04-13 — `buildProseScopedEdit` extended to append the style trailer (previously ignored). Scoped edits now get the same Canon 5D soft diffused afternoon fill light style as full-gen. Tested on counters + floors. | LAB-ONLY | #12-f |
+| 12-l | Scoped edit model fitness for **hardware** (D103 metallic) | PARTIAL | ✓ Flex / ~ Klein | | | | | | Klein 4B + 9B both land the right finish across gold/black/nickel but are "pretty close, not good enough" — geometry/sharpness/shine fall short of Flex. Hardware stays Flex-only. Klein is the fast-preview tier, Flex is production. | LAB-ONLY | D103 |
+| 12-m | **Policy: all scoped edits → Flex (~20s)** | LOCKED | ✓ | | | | | | 2026-04-13 — per-surface model picking adds complexity for uncertain payoff. Klein 9B is sometimes good, sometimes broken (counters leak, hardware "close"). Flex is ~20s and works across every surface class tested. Simpler prod path: one model for all scoped edits. Revisit only if latency budget tightens. | LAB-ONLY | #12-g,h,i,j,l |
+| 12-n | **Policy: bundled-fullgen validation covers scoped** | LOCKED | ✓ | | | | | | 2026-04-13 — surfaces that land correctly inside a multi-surface Flex full-gen don't need separate scoped-edit tests on the same model. Rationale: scoped edit is a strictly smaller prompt (single clause) with the same model, same style trailer, same D100/D102/D103 pattern — if the full clause survives swatch cross-talk in a crowded prompt, it survives alone. **Exception**: stained cabs (12-h) — scoped failed despite full-gen working. Material-specific divergence is the only reason to run an isolated scoped test. | LAB-ONLY | #12-g,h,l, #13 |
+| 12-o | **Marble/pattern shower tile → Max, not Flex** | VALIDATED | | ✓ | | | | | 2026-04-14 — Calacatta 12x24 marble shower wall tile requires Max for consistent rendering. Flex produced squashed/non-uniform tiles at any aspect-ratio descriptor tried (explicit 12x24, 2:1, "twice as wide as tall"). Max handles terse clauses and produces uniform tiles across all wall faces. Tradeoff: Max is ~35-45s bundled vs Flex ~22s. Policy: if a selected tile option is marble/patterned (swatch has veining), route the fullgen to Max. Plain tiles (Omega Bone, Onyx White) still work on Flex. Validated at 3/3 consistency on Nest bathroom bundled fullgen. | LAB-ONLY | new |
+| 12-p | **Calacatta winning clause** | LOCKED | | ✓ | | | | | `apply {image} to the walls inside the shower in a staggered horizontal pattern, consistent 12x24 tile module on every face` — the "consistent ... tile module on every face" trade phrase is load-bearing: it locks uniform sizing across the different wall faces of the shower stall which was the dominant failure mode earlier. "Staggered horizontal pattern" gives running-bond layout without poisoning orientation. No veining/marble words needed — swatch carries pattern. Max scoped ~30s, Max bundled ~42s. Tile clause is the ONLY action that needs Max; other surfaces are D100/D102/D103 as normal. | LAB-ONLY | D102, #12-e |
+| 12-q | Counter-veining bleed side effect on bundled tile | PARTIAL | | ~ | | | | | 2026-04-14 — when Calacatta marble tile is in the bundled prompt, the vanity quartz counter picks up light marble veining even though it wasn't targeted. Minor cosmetic leak, not structural. Hypothesis: Flex/Max are pattern-matching "marble" cross-scene. Future fix candidates: explicit preserve clause for counter, or sequenced 2-pass (tile first, then other surfaces). User approved 3/3 consistency despite the bleed — not a shipping blocker. | LAB-ONLY | #12-o,p |
+| 13 | Mixed paint+stain cabs (per-clause material verbs) | VALIDATED | ✓ | ✓ | | ✓ | | | Flex g=7 — both directions 3/3 on NK. Re-validated 2026-04-13 evening across 4 NK cab combos at g=9. Cross-validated on NB 2026-04-14 — driftwood stain vanity + delicate white walls + bronze metallic on same bundled pass. Cross-validated on NBR 2026-04-14 — D100 paint path landed 4 non-default wall hex values (Whiskers #D1CCC2, Hurricane Haze #BDBBAD, Fog #D6D7D2, Cold Foam #E9E5D7) cleanly. `"paint every vertical wall surface"` qualifier prevents sloped-ceiling bleed even at the darkest haze hex. Mixed-material authoring transfers cleanly across 3 rooms. | LAB-ONLY | D101 |
 | 14 | Two-pass split with hex anchors at >7 swatches | VALIDATED | ✓ | | | | | | Flex g=7 (3/3 with symmetrized anchors) | LAB-ONLY | D102 |
 | 15 | Multi-round cumulative scoped edits | VALIDATED | ✓ | | | | | | Scoped on hex-anchored full-gen base — 1 cumulative depth | LAB-ONLY | #7, #8 |
 | 16 | Trailing positional modifier trap (`drawer front`) | LOCKED | ✓ | | | | | | (all) — guide rule #9 added | SHIPPED-IN-DOCS | guide rule #9 |
-| 17 | BFL Flex ref limit code bug (9 → 7) | PENDING | — | — | — | — | — | — | — | NOT FIXED | #10 |
+| 17 | BFL Flex ref limit code bug (9 → 7) | FIXED 2026-04-14 | — | — | — | — | — | — | — | SHIPPED in PR #1 | #10 |
 | 18 | Material-aware action clause rendering (paint/stain/metal) | BLOCKED | — | | | | | | (architecture, not lab) | NOT IMPLEMENTED | #1 |
 | 19 | Klein 4B tone refine non-blocking integration | BLOCKED | — | | | | | | Pipeline integration design needed | NOT IMPLEMENTED | #10-b |
+| 20 | **Multi-material object pattern gap (ceiling fans, similar)** | BROKEN | | | | ✗ | | | 2026-04-14 NBR sweep — D103 material-verb gate does NOT transfer to objects with >1 material class (fan housing + blades + light kit + chains). All 4 fan options (black/bronze/nickel/white) tested on Family A (baseline) AND Family B (D103 gate) produced visually indistinguishable results per finish pair. The D103 gate can't bind correctly when a fan has 4 possible material targets; it picks wrong or spreads. No validated pattern exists for "change a multi-material object to a different SKU." Row 12-c's fixture install pattern (`remove existing X and install {image}`) requires a swatch image — fans have swatches but they're poisoned (see row 21). Next test candidates: (a) fan swatches cropped to housing-only close-ups + D102 bare pattern, (b) hex-only no-swatch path with per-component finish descriptors, (c) Max-only scoped edit pass after full-gen with fan clause removed. None tested yet. | LAB-ONLY | #4, #21, #18 |
+| 21 | **Swatch contamination: text overlays + multi-component product photos** | BROKEN | | | | ✗ | | | 2026-04-14 NBR sweep — Demo org fan swatches are product photos with (a) text overlays naming blade color options ("Fan Blade Colors: Midnight Black and American Walnut"), (b) walnut blades visible on 3 of 4 fans because the physical product is reversible. BFL reads text in images semantically — the "American Walnut" text overlay is pulling walnut/brass tones into the nickel and bronze fan renders regardless of clause text. Same failure mode likely on any option catalog where the swatches are marketing product photos instead of cropped material close-ups. Mirrors the SM Shaw re-sourcing initiative (73 of 163 swatches replaced 2026-04-09). Production blocker for multi-material option renders. Fix: swatch re-sourcing sweep for Demo org option catalogs (fans, lighting, possibly others). Not a Flux pipeline bug — a data-quality bug. | LAB-ONLY | #20, SM Shaw re-sourcing |
+| 22 | **Baseboard profile differentiation at standard room framing** | BROKEN (removed) | | | | ✗ | | | 2026-04-14 NBR sweep — attempted to differentiate 5" / 7" / 1x6 craftsman baseboard profiles via clause text. All variants rendered identical. Three converging failure reasons: (1) pixel budget — baseboards occupy 8-12 vertical pixels at room-framing distance, 5"→7" height delta is 2-3 pixels, below Flex resolution, (2) wrong verb family — `paint` is a recolor verb and can't express profile replacement, and we didn't have swatch images to use the object-install pattern from row 12-c, (3) incumbent preservation bias on small peripheral surfaces. Also tested `reinstall ... taller baseboard` (expert override): scene-wide drift from the new verb + no visible profile delta. **Resolution (2026-04-14): baseboard subcategory removed from Nest demo entirely.** Not tractable via prompt engineering alone. Would require (a) swatch images per profile AND (b) a closer-framed photo where the wall-floor junction occupies 60+ vertical pixels AND (c) an object-install clause pattern. Generalizable rule: subcategories whose visual delta is subpixel or near-pixel at the test photo's framing are not viable targets for prompt-engineering-based differentiation — they belong in price-only UX or need a dedicated closeup crop. | REMOVED FROM DEMO | #18, #20 |
+| 23 | **Verb-axis distinction: recolor vs object-replace** | VALIDATED (as framing) | ✓ | ✓ | | ✓ | | | 2026-04-14 NBR sweep surfaced a missing architecture axis: subcategories bifurcate along a verb axis, not just a material axis. **Recolor verbs** (`paint`, `stain`, `change to match`) apply when options are color/finish variants of one physical product — cabinets, wall paint, baseboards-if-same-profile, counters. **Object-replace verbs** (`change`, `replace`, `remove-and-install`) apply when options are different physical SKUs — ceiling fans, faucets, ranges, refrigerators, possibly baseboards-if-profile-matters. The two axes are orthogonal: a metallic fixture can be object-replace (D103 swap) while a painted trim piece is recolor (D100). Today the prose authoring treats all subcategories the same way — one clause string per subcategory — which works for recolor but underfits object-replace. Production authoring gap: no runtime mechanism to route based on verb axis. See Open Question #1 update. | LAB-ONLY | #1, #18 |
 
 **Hot blockers** (most important things to unstick):
-- **Cross-photo validation** — almost every VALIDATED row needs to be tested on at least one non-Nest-kitchen photo before LOCKED
+- **Cross-photo validation** — NK + NB + NBR validated 2026-04-14. D100/D102/symmetrized anchors/style trailer/pipeline cleared on 3 rooms. Still need **NL (Nest Living Room)** plus at least one non-Nest room (Valor or SM Kinkade) before graduating LAB-ONLY rows to LOCKED. Bedroom sweep surfaced 3 new findings (rows 20/21/22) and 1 architecture axis (row 23).
 - **#10 fridge cab revert** — bundled fridge run regressed cabs; need to understand why fridge fits OK but cab clauses get knocked out of pass 1
-- **#9 range bundled** — confirmed BROKEN, range needs its own scoped pass
-- **#18 material-aware clauses** — production authoring gap. Authoring per-photo prose can't cover paint/stain/metallic on the same subcategory without runtime help.
+- ~~**#9 range bundled**~~ — resolved: production ships `kitchen-hero-slide-in-range` secondPass policy
+- **#18 material-aware clauses** — production authoring gap. Now a bigger gap: the bedroom sweep surfaced a **verb-axis dimension** (row 23) on top of the existing material axis. Paint/stain/metallic is one axis; recolor/object-replace is a second orthogonal axis. Schema migration needs to handle both. User deferred implementation until more cross-photo evidence — bedroom adds evidence but LR and a non-Nest room would solidify.
+- **#21 swatch contamination** — NEW blocker. Demo org fan swatches (and likely lighting, possibly others) are marketing product photos with text overlays that poison renders. Parallel to the SM Shaw re-sourcing initiative. Production-blocking for any subcategory that inherits this data-quality issue. Needs its own sourcing sweep.
+- **Demo org stale data** — bathroom options mostly missing swatch_color (hex) and finish descriptors. Driftwood stain fixed 2026-04-14 (`#B09A7E`). Bedroom option hex backfilled 2026-04-14 (3 baseboards, 4 fans, 4 carpets). Rest still need hex backfill before prod can route them through the locked D101/D102/D103 patterns.
+
+## Architecture decisions ready to ship
+
+Based on cross-photo validation across NK + NB + NBR (3 rooms, 3 material classes, 19 bedroom variants + bathroom bundled + kitchen sweep), the following are no longer blocked on evidence and can be designed into production:
+
+1. **Row 12-f style trailer** (`Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.`) — LOCKED across 3 rooms. Ship as the production default `prose.style` when a step_photo has no explicit override.
+2. **Row 7 symmetrized hex anchors** — validated on NK + NB + NBR. Production needs auto-injection of inline hex anchors on textured-swatch clauses when multiple surfaces share a scene. Currently hand-authored in lab; needs a `buildProsePrompt` change to append `" at hex #XXXXXX"` (or equivalent) to any textured-swatch clause when the option has `swatch_color`. See Open Question #2.
+3. **Row 12-m scoped edits → Flex** — LOCKED. Already a policy decision; ready to lock in `fluxScopedEdit` as Flex-only, retire the per-option `scoped_edit_model` column.
+4. **Row 12-o marble/pattern tile → Max** — VALIDATED on NB. Ship a per-option routing mechanism (tile options with veining → Max; plain tiles → Flex) via either a `full_gen_model` override on options or a heuristic on swatch contents.
+5. **Row 12-b bundled pipeline (Flex g=8–9 + optional Klein 4B refine)** — VALIDATED on 3 rooms. Bedroom confirmed simple scenes can skip the refine pass. Production needs a "refine-when-complex" heuristic: if total swatch count ≥ N or if certain material classes are present, run K4B refine; else skip it.
+6. **Row 23 verb-axis distinction** — captured as framing, not a concrete mechanism yet. Schema migration for material+verb axes is the actual implementation work. Open Question #1 updated with the new dimension.
+
+Still blocked (need NL + non-Nest validation): D101 scoped edit failure (routing stain to full-gen), D103 scope narrowing (single-material only), row 18 material-aware clause authoring (needs schema design).
+
+## Locked recipes (canonical clause templates)
+
+These are the validated clause templates by pattern. Copy-paste ready.
+
+**Runtime substitution rules — READ THIS**:
+- `{image}` is the **only** token the runtime substitutes. For painted options (`is_painted=true` + `swatch_color`), it becomes `hex #XXXXXX` and no swatch image is sent. For swatch options, it becomes `image N` referencing the reference image at position N in the BFL payload.
+- `#XXXXXX` in the templates below is a **literal placeholder for hand-authoring** — the runtime does NOT substitute it. When you use a template like `change <target> to match {image} at hex #XXXXXX` for a D102 inline hex anchor, you must hand-write the actual hex into the prose clause at authoring time. This is the root of the material-axis authoring gap (row 1 / row 18): a single prose clause can't carry per-option hex without schema changes.
+- D100 painted options render their hex via `{image}` substitution — the clause `paint <target> to match {image}` becomes `paint <target> to match hex #F5F5F0` at runtime for a white trim option.
+- D102 textured clauses in shipped kitchen prose (as of 2026-04-14) do NOT have inline hex anchors — the anchors are a lab-validated improvement still pending production integration (see Architecture decisions ready to ship, item #2).
+
+### D100 — Painted surface (no swatch image)
+Full-gen AND scoped edit, any model:
+```
+paint <spatial target> to hex #XXXXXX
+```
+- No swatch image sent; hex rendered inline in clause text
+- Routed via `option.is_painted = true && option.swatch_color` → hex path in `buildProsePrompt`/`buildProseScopedEdit`
+- Works everywhere tested: Nest kitchen cabs + walls, Nest bathroom vanity cabs + walls
+
+### D101 — Stained wood (no swatch image)
+Full-gen on Flex g=7–9 (scoped edit is BROKEN per row 12-h):
+```
+stain <spatial target> with wood grain matching hex #XXXXXX
+```
+- Same hex path as D100 — `is_painted=true` + `swatch_color` set, but the clause uses `stain...wood grain` verb structure
+- Zone enumeration often required: `"upper, lower, corner, and center cabinet doors and drawers"`
+- Cross-validated on Nest bathroom (driftwood vanity cab, 2026-04-14)
+
+### D102 — Textured swatch with inline hex anchor
+Full-gen on Flex g=7–9 AND scoped edit on Flex:
+```
+change <spatial target> to match {image} at hex #XXXXXX
+```
+Common variants by surface:
+- **Counter**: `change every horizontal countertop surface to match {image} at hex #XXXXXX` (the `horizontal` qualifier is load-bearing — keeps edit off vertical edges)
+- **Flooring**: `change all visible flooring throughout the room to match {image} at hex #XXXXXX`
+- **Bathroom floor/tile (if actual floor visible)**: `change the bathroom floor to match {image} at hex #XXXXXX`
+
+**Layout-class change (backsplash, subway-to-rectangular, etc.) → retile verb** instead of `change`:
+```
+retile the wall between the upper cabinets and countertop with {image}, large staggered rectangular tiles in horizontal rows at hex #XXXXXX
+```
+- Avoid `subway` and `metro` — poisoned words in Flex priors
+- Safe layout vocab: `staggered rectangular tiles`, `horizontal rows`, `running bond`, `large flat tiles`, `brick-pattern tiles`
+
+### D103 — Metallic fixtures with finish gate
+Full-gen on Flex, scoped edit on Flex:
+```
+change <spatial target> to match {image}, <finish> finish matching hex #XXXXXX
+```
+- `<finish>` values validated: `brushed gold`, `matte black`, `oil-rubbed bronze`, `satin nickel`, `brushed nickel`, `gunmetal nickel`
+- Material-verb gate (`<finish> finish matching hex`) is load-bearing. Bare hex without gate flattens metallic sheen. No hex at all breaks color consistency on multi-class scenes.
+- Hex goes inline mid-clause, NOT trailing parenthetical (scoped-edit `"Match image 2 exactly"` suffix binds to nearest preceding anchor — hex at tail gets reinterpreted as flood color).
+- Structural variants: `cabinet pulls and knobs` for combo options, `cabinet pulls` for all-pulls. Don't use `drawer front` (positional modifier trap).
+- Cross-validated on Nest bathroom: brushed nickel faucets + satin nickel towel ring + oil-rubbed bronze vanity pulls + gunmetal mirror frames, all four metallic types on same photo landed in one bundled fullgen.
+
+### 12-p — Marble shower wall tile (Max required)
+Scoped edit AND bundled full-gen on **Max only**:
+```
+apply {image} to the walls inside the shower in a staggered horizontal pattern, consistent 12x24 tile module on every face
+```
+- **Max required**: Flex produces non-uniform tile sizing across shower wall faces at any aspect-ratio descriptor. Max handles terse clauses and produces uniform tiles 3/3 times.
+- **Load-bearing**: `consistent ... tile module on every face` — trade phrase that locks uniform sizing across the different wall faces of the shower stall.
+- **No veining/marble text**: swatch carries pattern. Adding "marble veining" in text didn't help.
+- **No "only"**: forbidden word. Use positive spatial phrasing.
+- **Side effect**: vanity counter picks up light marble veining when Calacatta is in the bundle (row 12-q, non-blocker).
+- **Plain tiles** (Omega Bone matte, Onyx White matte) still work on Flex with D102 pattern.
+
+## Style trailer (locked)
+
+```
+Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.
+```
+
+- Used as the inline `style` field on prose v2 spec for full-gen
+- Used as the Klein 4B refine prompt on scoped edit outputs (where the style field is now ALSO respected as of 2026-04-13 via row 12-k — `buildProseScopedEdit` appends the style trailer)
+- Iterated through `warm practical lighting` (too warm) → `cool practical lighting` (still off) → `soft diffused afternoon fill light` (locked). Validated on NK bundled fullgen, 4 cab combos at g=9, cross-validated on NB bathroom bundled 2026-04-14.
+
+## Forbidden words and poisoned priors
+
+The BFL Flux prompting guide has a forbidden word list. Don't paraphrase it from memory — delegate prompt work to `bfl-prompt-engineer` which knows the current list. Known bans as of 2026-04-14:
+
+| Word / phrase | Why |
+|---|---|
+| `only` | Flips attention in bad ways; use positive spatial phrasing instead |
+| `not` / `NOT X` exclusion | Negative framing; affirmative enumeration only |
+| `keep` as preservation verb | Triggers unintended model behavior; use positive type declarations: `"A color change only — X remain as they appear in image 1"` |
+| `island` | Use `freestanding center structure` or similar |
+| `subway` | Flux Flex prior = white; overrides everything |
+| `metro` | Same family as subway, likely poisoned |
+| Material/color/tile-format words (`marble`, `glossy`, `white`, `tile`) | Swatch is the sole appearance authority — these override the swatch |
+
+**Positive preservation pattern** (use instead of "keep"):
+```
+A <attribute> change only — <surface> remain as they appear in image 1
+```
+- Type declaration bounds the operation linguistically without any preservation verb
+- Positional anchor (`remain as they appear in image 1`) names which reference image owns the geometry
+
+## Per-material model routing (validated)
+
+| Material class | Full-gen model | Scoped edit model | Notes |
+|---|---|---|---|
+| Paint (D100) | Flex g=7–9 | Flex (policy 12-m) | Hex path, no swatch |
+| Stain (D101) | Flex g=7–9 | **BROKEN on all models** — route to full-gen | Hex path, no swatch |
+| Textured stone/quartz (D102) | Flex g=7–9 | Flex (policy 12-m) | Swatch + hex anchor text |
+| Metallic (D103) | Flex g=7–9 | Flex (policy 12-m) | Swatch + `<finish>` gate |
+| Plain matte tile | Flex g=7–9 | Flex (policy 12-m) | D102 pattern |
+| **Marble / patterned stone tile** | **Max** | **Max** | 12-o/p — Flex can't produce uniform tile sizing |
+
+Klein 4B / 9B / Flex / Pro / Max tested extensively 2026-04-13–14. Klein models are sanity-pass quality for scoped edits (leak surfaces, soften edges) except floors where Klein 9B is on par with Flex. Pro is rejected (changes cabinet geometry between runs). Max is slower but required for patterned-tile use cases.
 
 ## Open questions / candidate changes
 
-### 1. Material-aware action clause rendering — now THREE material axes
+### 1. Material-aware action clause rendering — now TWO orthogonal axes (material + verb)
 **Learned**: Painted options need `"paint ... to hex #XXX"` (D100). Stained wood options need `"stain ... with wood grain matching hex #XXX"` (D101). Metallic hardware options need `"change ... to match {image}, <finish> finish matching hex #XXX"` (D103). Same subcategory, same authored clause string, but different verb AND different material descriptor at render time.
-**Problem**: `step_photos.prompt_prose.actions[subId]` is a single string. A buyer flipping between Dove (paint) and Driftwood (stain) on the same photo needs the rendered clause to change material. Same gap exists on hardware — Grande Gold (metallic + brushed) vs Sedona Black (metallic + matte) vs a hypothetical plastic/resin option would all need different material phrases.
-**Third axis added 2026-04-13**: D103 confirms hardware is a third material axis. The gap isn't just paint-vs-stain for cabinet color — it's paint/stain/metallic/plus-potentially-more across every subcategory that has materially-different option types.
-**Hardware also needs a structure variant**: combo options (pulls + knobs) need `"cabinet pulls and knobs"`; all-pulls options need `"cabinet pulls"`. That's a second authoring dimension on top of the material dimension.
+
+**Problem**: `step_photos.prompt_prose.actions[subId]` is a single string. A buyer flipping between Dove (paint) and Driftwood (stain) on the same photo needs the rendered clause to change material.
+
+**Axis 1 — material** (paint / stain / metallic / textured / tile / etc.): discovered 2026-04-13 across D100/D101/D102/D103 lab work.
+
+**Axis 2 — verb** (recolor / object-replace): added 2026-04-14 from NBR fan sweep (row 23). Subcategories split along whether their options are color variants of one product (recolor: `paint`, `stain`, `change to match`) or different physical SKUs (object-replace: `change`, `replace`, `remove-and-install {image}`). A metallic fixture can be object-replace while a painted trim piece is recolor — the two axes are orthogonal, and a production schema needs to encode both.
+
+**Hardware also needs a structure variant** (third sub-dimension on material): combo options (pulls + knobs) need `"cabinet pulls and knobs"`; all-pulls options need `"cabinet pulls"`. That's a second authoring dimension on top of the material dimension.
+
 **Candidate fixes** (no decision):
-- Schema extension: `actions[subId] = string | { painted: string, stained: string, textured: string, metallic: string }`, runtime picks based on option's material category
-- Runtime verb + suffix injection: author a placeholder template, runtime substitutes based on a `material_category` column
-- New option columns: `material_category` (paint/stain/stone/wood/metal/tile/etc.) + `hardware_structure` (all-pulls / combo / knobs-only) replacing the binary `is_painted`
-**Blocked on**: Validating D100/D101/D102/D103 patterns hold on at least 2-3 other photos (Valor, SM Kinkade) + across all 4 Nest rooms. Jumping on a schema change now risks locking a shape that doesn't fit what we find in bathrooms, living rooms, or on different photos.
+- Schema extension: `actions[subId] = string | { painted: string, stained: string, textured: string, metallic: string }`, runtime picks based on option's material category. **Does not cover the verb axis.**
+- New option columns: `material_category` (paint/stain/stone/wood/metal/tile/etc.) + `verb_mode` (recolor/object-replace) + `hardware_structure` (all-pulls / combo / knobs-only, for metallic-replace options) replacing the binary `is_painted`. Runtime builds the clause from per-option metadata + a per-subcategory template.
+- Template DSL: author per-subcategory templates with named slots (`{material_verb} the <target> to match {image} <material_descriptor> matching hex #<option_hex>`), runtime fills from option metadata. More powerful, more complex.
+
+**Blocked on**: Validating D100/D101/D102/D103 patterns hold on at least 2-3 other photos (Valor, SM Kinkade) + NL. Three Nest rooms validated, one more plus a non-Nest cross-check before schema migration. Jumping on a schema change now risks locking a shape that doesn't fit what we find in LR or on different photos.
 
 ### 2. Hex anchor injection for textured swatch surfaces
 **Learned (D102)**: When a prompt has multiple textured-swatch surfaces AND other surfaces are hex-anchored (paints, stains), every textured clause needs an inline hex anchor ("at hex #XXX" or "matching hex #XXX") to prevent attention-budget cross-wire where swatches bind to the wrong target. The swatch stays in (for pattern/texture), hex is added to text (for color binding).
@@ -194,13 +344,13 @@ Applied to the scoped-edit main pass output. ~6-10s per pass, cheap. Validated o
 
 ## What we're actively exploring
 
-- Nest kitchen (cabs + counter + backsplash + floor + walls): D101 + D102 patterns locked on Flex g=7
-- Nest bathroom: untested
-- Nest living room: untested
-- Nest bedroom: untested
-- Scoped edit / cumulative edit behavior: untested
-- Cross-photo validation (Valor, SM Kinkade): untested
-- Cross-model validation (Max, Pro): partial (we know Pro drifts cab geometry; Max is slower but untested on new patterns)
+- **Nest kitchen** (cabs + counter + backsplash + floor + walls): D100/D101/D102/D103 + symmetrized anchors + style trailer validated on Flex g=7–9
+- **Nest bathroom** (vanity cabs + floor tile + shower tile + metallic fixtures + paint): validated 2026-04-14 as bundled fullgen, 7 subcategories first try. Marble tile routed to Max (row 12-o).
+- **Nest bedroom** (carpet + wall paint + fan): validated 2026-04-14 across 15 variants on Flex g=8. D100 walls cross-validated on 4 non-default hex values, D102 carpet cross-validated on all 4 options, D103 fan **failed** (multi-material object gap, row 20), baseboard subcategory removed from demo entirely (row 22). Fan swatch contamination surfaced (row 21).
+- **Nest living room**: untested. Next target.
+- **Scoped edit / cumulative edit behavior**: validated on NK (row 15). Untested on NB, NBR.
+- **Cross-photo validation (Valor, SM Kinkade)**: untested. At least one non-Nest room required before graduating LAB-ONLY rows to LOCKED.
+- **Cross-model validation (Max, Pro)**: partial (we know Pro drifts cab geometry; Max confirmed for marble/pattern tile row 12-o; Max/Pro untested on bedroom). Flex g=7–9 is the proven workhorse.
 
 ## How to use this document
 

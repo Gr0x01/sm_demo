@@ -53,6 +53,16 @@ Now focused on: builder outreach (provocation-first strategy), generation qualit
 
 ### 2. Flux 2 Generation Quality (Open Issues)
 
+**Active lab sweep**: Walking room-by-room through the Nest demo to cross-validate the D100/D101/D102/D103 patterns before architecting any schema changes. Lab is discovery phase — nothing from the watchlist ships until the sweep clears. Full detail in `memory-bank/generation/flux2-architecture-watchlist.md`.
+
+| Room | Status |
+|---|---|
+| Nest Kitchen | ✓ done (D101/D102/D103 locked) |
+| Nest Bathroom | ✓ done 2026-04-14 (bundled fullgen, 7 subs, first try) |
+| **Nest Bedroom** | **in progress** (hex backfill done 2026-04-14, prose rewrite next) |
+| Nest Living Room | pending |
+| Valor / SM Kinkade | pending (non-Nest cross-check) |
+
 Pipeline shipped and refactored (see `completed.md` #35). These quality issues remain:
 
 **Prose spec v2 shipped 2026-04-11.** New bare-minimum per-photo prompt spec

@@ -4,6 +4,7 @@ import { getCategoriesWithOptions } from "@/lib/db-queries";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
 import type { PromptProse } from "@/lib/step-config";
+import { IMAGE_MODEL } from "@/lib/models";
 
 export const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
 
@@ -27,9 +28,10 @@ export const SAMPLE_KITCHEN_PROSE: PromptProse = {
   ],
 };
 
-/** Derived from prose content — auto-invalidates when the prose changes. */
+/** Derived from prose content + IMAGE_MODEL — auto-invalidates when either changes. */
 export const DEMO_GENERATION_CACHE_VERSION = createHash("sha256")
   .update(JSON.stringify(SAMPLE_KITCHEN_PROSE))
+  .update(IMAGE_MODEL)
   .digest("hex")
   .slice(0, 8);
 
