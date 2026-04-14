@@ -669,7 +669,7 @@ function PhotoCard({
                   className={`w-full bg-white border px-2 py-1 text-xs text-slate-900 ${
                     proseErrors.some((e) => e.field === "style") ? "border-red-400" : "border-slate-300"
                   }`}
-                  placeholder="Photorealistic real estate photography, natural daylight, neutral white balance."
+                  placeholder="Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography."
                 />
                 {proseErrors.filter((e) => e.field === "style").map((e, i) => (
                   <p key={i} className="text-[10px] text-red-600 mt-0.5">{e.message}</p>

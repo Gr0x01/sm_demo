@@ -267,7 +267,7 @@ State shape:
   version: 2,
   actions: { [subcategorySlug]: "apply {image} to [surface location]" },
   lead?: string,    // default: "Apply the following finishes to this kitchen photo:"
-  style?: string,   // default: "Photorealistic real estate photography, natural daylight, neutral white balance."
+  style?: string,   // default: "Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography." (locked 2026-04-14)
   preserve?: string[],
   mergedClauses?: Array<{ when: string[]; clause: string }>
 }

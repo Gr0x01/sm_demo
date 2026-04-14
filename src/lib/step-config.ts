@@ -60,7 +60,8 @@ export interface PromptProse {
   lead?: string;
   /**
    * Optional override for the style trailer. Defaults to
-   * "Photorealistic real estate photography, natural daylight, neutral white balance."
+   * "Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography."
+   * (locked across NK + NB + NBR 2026-04-14, watchlist row 12-f).
    * Max 20 words. Material/color words are allowed here (for camera/film
    * references); only negative framing is forbidden.
    */

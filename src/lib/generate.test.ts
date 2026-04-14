@@ -256,7 +256,7 @@ describe("buildProsePrompt (v2)", () => {
       "- apply image 4 to the upper walls above the cabinets",
       "- apply image 5 to every cabinet door and drawer front along the walls",
       "- apply image 6 to the range unit in the back",
-      "Photorealistic real estate photography, natural daylight, neutral white balance.",
+      "Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.",
     ].join("\n");
 
     expect(prompt).toBe(expected);
@@ -349,7 +349,7 @@ describe("buildProsePrompt (v2)", () => {
     };
     const { prompt } = await buildProsePrompt(prose, { cabinets: "cab-espresso" }, optionLookup, mockResolver);
     const preserveIdx = prompt.indexOf("Keep the pendant lights");
-    const styleIdx = prompt.indexOf("Photorealistic");
+    const styleIdx = prompt.indexOf("Canon 5D");
     expect(preserveIdx).toBeGreaterThan(0);
     expect(styleIdx).toBeGreaterThan(preserveIdx);
   });
@@ -758,7 +758,7 @@ describe("buildProseScopedEdit (v2)", () => {
       actions: { cabinets: "apply {image} to every cabinet door and drawer front along the walls" },
     };
     const { prompt, swatches } = await buildProseScopedEdit(prose, "cabinets", "cab-espresso", optionLookup, mockResolver);
-    expect(prompt).toBe("Apply image 2 to every cabinet door and drawer front along the walls. Match image 2 exactly. Maintain all other aspects of the original image.");
+    expect(prompt).toBe("Apply image 2 to every cabinet door and drawer front along the walls. Match image 2 exactly. Maintain all other aspects of the original image. Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.");
     expect(swatches).toHaveLength(1);
     expect(swatches[0].subcategoryId).toBe("cabinets");
   });
@@ -780,7 +780,7 @@ describe("buildProseScopedEdit (v2)", () => {
     };
     const { prompt } = await buildProseScopedEdit(prose, "backsplash", "bs-subway-white", optionLookup, mockResolver);
     // Dimensions parenthetical lives inside the clause, period still terminates the full edit.
-    expect(prompt).toBe("Apply image 2 to the wall strip above the countertops (4x16). Match image 2 exactly. Maintain all other aspects of the original image.");
+    expect(prompt).toBe("Apply image 2 to the wall strip above the countertops (4x16). Match image 2 exactly. Maintain all other aspects of the original image. Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.");
   });
 
   it("emits no lead, but DOES emit preserve entries and the style trailer", async () => {
@@ -803,6 +803,19 @@ describe("buildProseScopedEdit (v2)", () => {
     expect(prompt).toContain("Architectural editorial photography.");
     expect(prompt).toContain("Keep the pendant lights unchanged.");
     expect(prompt).toContain("Maintain all other aspects of the original image.");
+  });
+
+  it("falls back to DEFAULT_PROSE_STYLE when prose.style is unset", async () => {
+    // Watchlist row 12-k locks scoped edits to the same Canon 5D trailer as
+    // full gen. Photos that NULL their explicit style (PR #2) must still get
+    // the trailer via the default fallback.
+    const prose: PromptProse = {
+      version: 2,
+      actions: { cabinets: "apply {image} to every cabinet door along the walls" },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "cabinets", "cab-espresso", optionLookup, mockResolver);
+    expect(prompt).toContain("Canon 5D");
+    expect(prompt).toContain("Soft diffused afternoon fill light");
   });
 
   it("substitutes hex for painted options, drops 'Match image 2' clause", async () => {

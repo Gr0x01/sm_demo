@@ -266,7 +266,7 @@ interface PromptProse {
 
 **Defaults:**
 - `lead` → `"Apply the following finishes to this kitchen photo:"`
-- `style` → `"Photorealistic real estate photography, natural daylight, neutral white balance."`
+- `style` → `"Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography."` (locked 2026-04-14, watchlist row 12-f — single source of truth: `DEFAULT_PROSE_STYLE` in `src/lib/generate.ts`)
 - `preserve` → empty. Populate only when an empirical test shows Max
   freelancing a specific unselected surface. This was an explicit agreement
   with the user: start with the bare minimum, add only what failure justifies.

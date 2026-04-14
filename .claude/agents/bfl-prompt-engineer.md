@@ -39,7 +39,7 @@ interface PromptProse {
   version: 2;
   actions: Record<subcategorySlug, string>;  // "apply {image} to [surface location]"
   lead?: string;    // default: "Apply the following finishes to this kitchen photo:"
-  style?: string;   // default: "Photorealistic real estate photography, natural daylight, neutral white balance."
+  style?: string;   // default: "Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography." (locked 2026-04-14, watchlist row 12-f)
   preserve?: string[];  // escape hatch — empty unless empirical test shows Max drifting
   mergedClauses?: Array<{
     when: string[];   // ≥2 subcategory slugs that should collapse when they resolve to the same swatch

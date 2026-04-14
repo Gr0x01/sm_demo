@@ -115,7 +115,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v4.0";
+export const GENERATION_CACHE_VERSION = "v4.1";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -318,11 +318,12 @@ export class PromptProseError extends Error {
 const DEFAULT_PROSE_LEAD = "Apply the following finishes to this kitchen photo:";
 
 /**
- * Default style trailer. "real estate photography" anchors the photographic
- * genre (prevents editorial/product drift) and "neutral white balance"
- * counters Flux's documented warm cast on interiors.
+ * Default style trailer. Canon 5D anchors the photographic genre, "soft
+ * diffused afternoon fill light" supplies a cool-neutral lighting condition
+ * that counters Flux's warm cast on interiors. Locked across NK + NB + NBR
+ * 2026-04-14, watchlist row 12-f.
  */
-const DEFAULT_PROSE_STYLE = "Photorealistic real estate photography, natural daylight, neutral white balance.";
+export const DEFAULT_PROSE_STYLE = "Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.";
 
 const IMAGE_TOKEN = "{image}";
 
@@ -756,7 +757,12 @@ export async function buildProseScopedEdit(
 
   // Painted: no swatch to match, just the hex in the text. Swatch: "Match image 2 exactly."
   const matchClause = isPainted ? "" : " Match image 2 exactly.";
-  const styleTrail = prose.style?.trim() ? ` ${prose.style.trim()}` : "";
+  // Style trailer: fall back to DEFAULT_PROSE_STYLE when prose.style is unset
+  // so scoped edits get the same Canon 5D color/light treatment as full gen
+  // (watchlist row 12-k). Empty string only if the explicit override is empty.
+  const explicitStyle = prose.style?.trim();
+  const resolvedStyle = explicitStyle ?? DEFAULT_PROSE_STYLE.trim();
+  const styleTrail = resolvedStyle ? ` ${resolvedStyle}` : "";
   const prompt = `${withPeriod}${matchClause}${preserveBlock} Maintain all other aspects of the original image.${styleTrail}`;
 
   return { prompt, swatches };
