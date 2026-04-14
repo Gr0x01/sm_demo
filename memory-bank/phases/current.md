@@ -51,17 +51,33 @@ Now focused on: builder outreach (provocation-first strategy), generation qualit
 - InMail targets (`outreach/inmail-targets.md`)
 - Cowork contractor guide (`outreach/cowork-research-guide.md`)
 
-### 2. Flux 2 Generation Quality (Open Issues)
+### 2. Flux 2 Generation Quality (Architecture Restructure In Progress)
 
-**Active lab sweep**: Walking room-by-room through the Nest demo to cross-validate the D100/D101/D102/D103 patterns before architecting any schema changes. Lab is discovery phase — nothing from the watchlist ships until the sweep clears. Full detail in `memory-bank/generation/flux2-architecture-watchlist.md`.
+**Lab sweep status** — discovery phase done on 3 rooms, blocked on NL + non-Nest before the schema migration ships:
 
 | Room | Status |
 |---|---|
 | Nest Kitchen | ✓ done (D101/D102/D103 locked) |
 | Nest Bathroom | ✓ done 2026-04-14 (bundled fullgen, 7 subs, first try) |
-| **Nest Bedroom** | **in progress** (hex backfill done 2026-04-14, prose rewrite next) |
+| Nest Bedroom | ✓ done 2026-04-14 (15 lab variants, baseboard removed from demo, 3 new findings + verb-axis architecture insight) |
 | Nest Living Room | pending |
 | Valor / SM Kinkade | pending (non-Nest cross-check) |
+
+**Architecture restructure (in progress 2026-04-14)** — Plan: `/Users/rb/.claude/plans/moonlit-soaring-scone.md`. Pivot decision: Demo Nest kitchen/bathroom/LR photos getting regenerated via **Nano Banana** (Gemini Flash Image) so the demo runs cleanly on Flex without Max-only workarounds. Architecture simplifies to **Flex + Klein only** as the default model lineup.
+
+**Shipped today:**
+1. **PR #1** (`4b57a06`) — `IMAGE_MODEL` flux-2-max → flux-2-flex, BFL Flex ref cap fix (9→7), range/oven Max exception removed, per-option `scoped_edit_model` retired (still in DB until PR #4), PostHog cost map corrected.
+2. **PR #2** (`540243a`) — Canon 5D style trailer as default, `buildProseScopedEdit` falls back to default trailer (row 12-k regression fix), 5 stale `prompt_prose.style` overrides NULL'd to default.
+3. **PR #3** (`b0baaa7`) — D102 hex anchor auto-injection. Runtime substitutes `{image}` → `image N at hex #XXXXXX` for any textured/metallic option with `swatch_color` set. Prose authors no longer hand-write hex anchors.
+
+**Demo org swatch_color backfill 2026-04-14** — 16 options (5 secondary-bath cabinets, 4 primary shower tile, 4 door hardware, 3 fireplace mantel) on top of the earlier bedroom backfill (11 options). Demo org now at 29 painted/D101 + 71 textured/metallic with hex anchors active + 12 multi-material objects deliberately skipped (lighting, great-room-fan, interior-door-style — row 20 broken pattern).
+
+**Still in queue:**
+- **PR #4** — drop the `options.scoped_edit_model` column entirely
+- **Phase 3a** — draft `src/lib/prose-templates.ts` template catalog (sparse 5-template map keyed by `(material_category, verb_mode)`, design only)
+- **Side task** — gray out SM Kinkade + Lennox selection UI (SM degrades on Flex until re-validated)
+- **Nano Banana** — separate workstream, regenerate Nest demo source photos for kitchen/bathroom/LR
+- **Phase 3 implementation** — material+verb axes schema migration, blocked on NL + non-Nest validation
 
 Pipeline shipped and refactored (see `completed.md` #35). These quality issues remain:
 

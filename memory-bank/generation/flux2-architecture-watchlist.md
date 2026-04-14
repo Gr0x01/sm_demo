@@ -62,20 +62,30 @@ Quick at-a-glance view. Update as new tests run. Detailed prose for each item li
 - ~~**#9 range bundled**~~ — resolved: production ships `kitchen-hero-slide-in-range` secondPass policy
 - **#18 material-aware clauses** — production authoring gap. Now a bigger gap: the bedroom sweep surfaced a **verb-axis dimension** (row 23) on top of the existing material axis. Paint/stain/metallic is one axis; recolor/object-replace is a second orthogonal axis. Schema migration needs to handle both. User deferred implementation until more cross-photo evidence — bedroom adds evidence but LR and a non-Nest room would solidify.
 - **#21 swatch contamination** — NEW blocker. Demo org fan swatches (and likely lighting, possibly others) are marketing product photos with text overlays that poison renders. Parallel to the SM Shaw re-sourcing initiative. Production-blocking for any subcategory that inherits this data-quality issue. Needs its own sourcing sweep.
-- **Demo org stale data** — bathroom options mostly missing swatch_color (hex) and finish descriptors. Driftwood stain fixed 2026-04-14 (`#B09A7E`). Bedroom option hex backfilled 2026-04-14 (3 baseboards, 4 fans, 4 carpets). Rest still need hex backfill before prod can route them through the locked D101/D102/D103 patterns.
+- **Demo org stale data** — Backfill 2026-04-14: bedroom (11 options: 3 baseboards, 4 fans, 4 carpets), then 16 more (5 secondary-bath cabs, 4 primary-shower tiles, 4 door-hardware, 3 fireplace mantels). Demo org now at 29 painted/D101 + 71 textured/metallic with hex set + 12 multi-material objects deliberately skipped (lighting, great-room-fan, interior-door-style — row 20 broken pattern). All textured/metallic options now produce D102/D103 hex anchors automatically via PR #3.
 
-## Architecture decisions ready to ship
+## Architecture restructure (in progress 2026-04-14)
 
-Based on cross-photo validation across NK + NB + NBR (3 rooms, 3 material classes, 19 bedroom variants + bathroom bundled + kitchen sweep), the following are no longer blocked on evidence and can be designed into production:
+Pivot decision: Demo Nest kitchen/bathroom/LR photos being regenerated via **Nano Banana** (Gemini Flash Image) so the demo runs cleanly on Flex without the Max-only workarounds (marble shower tile, slide-in range, oven correction). Architecture simplifies to **Flex + Klein only** as the default model lineup. Max + Pro stay as callable BFL models but are no longer defaults. Plan file: `/Users/rb/.claude/plans/moonlit-soaring-scone.md`.
 
-1. **Row 12-f style trailer** (`Shot on Canon 5D Mark IV. Soft diffused afternoon fill light, neutral interior photography.`) — LOCKED across 3 rooms. Ship as the production default `prose.style` when a step_photo has no explicit override.
-2. **Row 7 symmetrized hex anchors** — validated on NK + NB + NBR. Production needs auto-injection of inline hex anchors on textured-swatch clauses when multiple surfaces share a scene. Currently hand-authored in lab; needs a `buildProsePrompt` change to append `" at hex #XXXXXX"` (or equivalent) to any textured-swatch clause when the option has `swatch_color`. See Open Question #2.
-3. **Row 12-m scoped edits → Flex** — LOCKED. Already a policy decision; ready to lock in `fluxScopedEdit` as Flex-only, retire the per-option `scoped_edit_model` column.
-4. **Row 12-o marble/pattern tile → Max** — VALIDATED on NB. Ship a per-option routing mechanism (tile options with veining → Max; plain tiles → Flex) via either a `full_gen_model` override on options or a heuristic on swatch contents.
-5. **Row 12-b bundled pipeline (Flex g=8–9 + optional Klein 4B refine)** — VALIDATED on 3 rooms. Bedroom confirmed simple scenes can skip the refine pass. Production needs a "refine-when-complex" heuristic: if total swatch count ≥ N or if certain material classes are present, run K4B refine; else skip it.
-6. **Row 23 verb-axis distinction** — captured as framing, not a concrete mechanism yet. Schema migration for material+verb axes is the actual implementation work. Open Question #1 updated with the new dimension.
+**Shipped:**
 
-Still blocked (need NL + non-Nest validation): D101 scoped edit failure (routing stain to full-gen), D103 scope narrowing (single-material only), row 18 material-aware clause authoring (needs schema design).
+1. **PR #1** (commit `4b57a06`) — Flex+Klein lineup. `IMAGE_MODEL` flux-2-max → flux-2-flex. BFL Flex ref cap 9 → 7 (row 17 fixed). Range/oven Max exception removed from `fluxScopedEdit`. Per-option `scoped_edit_model` no longer read by the runtime; PATCH route silently no-ops the field; admin form replaced with read-only "Retired (was X)" indicator. PostHog `BFL_IMAGE_COST` corrected against bfl.ai pricing (Max $0.07, Pro $0.03, Flex $0.06, Klein 9B $0.015, Klein 4B $0.014).
+2. **PR #2** (commit `540243a`) — Canon 5D style trailer as default. `DEFAULT_PROSE_STYLE` updated, exported, and folded into `DEMO_GENERATION_CACHE_VERSION` hash. `buildProseScopedEdit` now falls back to the default trailer when `prose.style` is unset (was emitting empty trailer — row 12-k regression fix). Stale `prompt_prose.style` overrides NULL'd on 5 step_photos so they all resolve to the new default. Doc drift fixed in `step-config.ts`, `PhotoManager.tsx`, `bfl-prompt-engineer.md`, `architecture.md`, `bfl-prompting-guide.md`.
+3. **PR #3** (commit `b0baaa7`) — D102 hex anchor auto-injection. `ActionEntry.swatch` variant gains `swatchColor`. `resolveMerges` and `buildProsePrompt` thread the option's `swatch_color` through entry construction via `normalizeAnchorHex` (whitespace + format guard). Substitution loop renders `image N at hex #XXXXXX` instead of bare `image N` when the option has a valid hex. `buildProseScopedEdit` parallel substitution. Dev warning on divergent merge hexes. 10 new tests covering positive injection, graceful skip, painted untouched, trailing positional/enumeration content, dimensions parenthetical placement, merged clause, scoped edit parallel, prod-shape `swap X for {image} keeping…` clause, and defensive cases against malformed hex values.
+
+Then: **Demo org swatch_color backfill** (16 options across 4 subcategories — secondary-bath cabinets, primary shower tile, door hardware, fireplace mantel). 71 textured/metallic options now produce hex anchors automatically.
+
+**Still in the queue:**
+
+- **PR #4** — drop the `options.scoped_edit_model` column entirely (PR #1 stopped writing; this is the schema cleanup).
+- **Phase 3a** — draft `src/lib/prose-templates.ts` template catalog (sparse 5-template map keyed by `(material_category, verb_mode)`). Design only, not wired to runtime.
+- **Side task** — gray out the SM Kinkade + Lennox selection UI (since SM degrades on Flex until re-validated).
+
+**Still blocked on validation** (NL + non-Nest cross-check):
+- D101 stain scoped-edit failure routing
+- D103 scope narrowing to single-material only
+- Row 18 / Open Question #1 — full material+verb axes schema migration (Phase 3b implementation)
 
 ## Locked recipes (canonical clause templates)
 
@@ -85,7 +95,7 @@ These are the validated clause templates by pattern. Copy-paste ready.
 - `{image}` is the **only** token the runtime substitutes. For painted options (`is_painted=true` + `swatch_color`), it becomes `hex #XXXXXX` and no swatch image is sent. For swatch options, it becomes `image N` referencing the reference image at position N in the BFL payload.
 - `#XXXXXX` in the templates below is a **literal placeholder for hand-authoring** — the runtime does NOT substitute it. When you use a template like `change <target> to match {image} at hex #XXXXXX` for a D102 inline hex anchor, you must hand-write the actual hex into the prose clause at authoring time. This is the root of the material-axis authoring gap (row 1 / row 18): a single prose clause can't carry per-option hex without schema changes.
 - D100 painted options render their hex via `{image}` substitution — the clause `paint <target> to match {image}` becomes `paint <target> to match hex #F5F5F0` at runtime for a white trim option.
-- D102 textured clauses in shipped kitchen prose (as of 2026-04-14) do NOT have inline hex anchors — the anchors are a lab-validated improvement still pending production integration (see Architecture decisions ready to ship, item #2).
+- D102 inline hex anchors are now AUTO-INJECTED by the runtime when an option has `swatch_color` set (PR #3 shipped 2026-04-14, commit `b0baaa7`). Authors no longer write `at hex #X` into prose clauses by hand — they author `to match {image}` and the substitution loop renders `to match image N at hex #XXXXXX` for textured/metallic options. The "literal placeholder" warning above only applies to the legacy hand-authored form which is no longer needed.
 
 ### D100 — Painted surface (no swatch image)
 Full-gen AND scoped edit, any model:
