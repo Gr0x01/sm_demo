@@ -13,7 +13,16 @@ const updateSchema = z.object({
   swatch_color: z.string().nullable().optional(),
   nudge: z.string().nullable().optional(),
   is_default: z.boolean().optional(),
-  scoped_edit_model: z.string().nullable().optional(),
+  // Closed enum — the admin form dropdown is the only legitimate write source
+  // and a typo'd model name would silently fail at BFL request time, not at
+  // save time. Defense in depth.
+  scoped_edit_model: z.enum([
+    "flux-2-flex",
+    "flux-2-pro",
+    "flux-2-max",
+    "flux-2-klein-9b",
+    "flux-2-klein-4b",
+  ]).nullable().optional(),
   sort_order: z.number().int().optional(),
   generation_rules: z.array(z.string().min(1).max(500)).max(20).nullable().optional(),
   dimensions: z.string().max(100).nullable().optional(),
@@ -35,10 +44,7 @@ export async function PATCH(
     if ("error" in auth) return auth.error;
 
     const { supabase, orgId } = auth;
-    // scoped_edit_model retired 2026-04-14 (watchlist row 12-m, all scoped edits → Flex).
-    // Schema still accepts the field for backward compat with stale clients, but writes
-    // are silently dropped here. Column itself drops in PR #4.
-    const { org_id: _orgId, scoped_edit_model: _ignored, ...updates } = parsed.data;
+    const { org_id: _orgId, ...updates } = parsed.data;
 
     const { data, error } = await supabase
       .from("options")

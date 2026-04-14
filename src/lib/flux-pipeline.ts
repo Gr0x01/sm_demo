@@ -280,6 +280,32 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
 // Scoped edit (single surface change)
 // ---------------------------------------------------------------------------
 
+/**
+ * Resolve which BFL model a scoped edit should run on.
+ *
+ * Chain: explicit opts.model wins, then per-option override from the
+ * `scoped_edit_model` column, then the global Flex default. The Demo org
+ * has historically used per-option overrides (Klein 9B for hex mosaic
+ * backsplash, Max for marble shower tile) and the capability is preserved
+ * even though the default for new options is Flex (watchlist row 12-m).
+ *
+ * The pre-2026-04-14 hardcoded range/oven Max exception was removed in
+ * favor of the data-driven override — admins set Max via the column on
+ * any range/oven option that needs it.
+ *
+ * Exported separately so it can be unit-tested without mocking the full
+ * fluxScopedEdit pipeline (BFL, swatch resolver, prose builder).
+ */
+export function selectScopedEditModel(
+  optsModel: string | undefined,
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>,
+  changedSubcategoryId: string,
+  changedOptionId: string,
+): string {
+  const changed = optionLookup.get(`${changedSubcategoryId}:${changedOptionId}`);
+  return optsModel ?? changed?.option.scopedEditModel ?? SCOPED_EDIT_MODEL;
+}
+
 export interface FluxScopedEditOpts {
   baseImageBuffer: Buffer;
   changedSubcategoryId: string;
@@ -331,10 +357,12 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
         swatchResolver,
       );
 
-  // Model selection: explicit opts.model wins, otherwise the global Flex default.
-  // Per-option `scopedEditModel` overrides and the range/oven Max exception were
-  // retired 2026-04-14 — watchlist row 12-m locks "all scoped edits → Flex".
-  const model = opts.model ?? SCOPED_EDIT_MODEL;
+  const model = selectScopedEditModel(
+    opts.model,
+    optionLookup,
+    changedSubcategoryId,
+    changedOptionId,
+  );
 
   const genStart = performance.now();
   const isFlex = model === "flux-2-flex";
