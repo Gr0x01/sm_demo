@@ -534,6 +534,15 @@ export async function getOptionLookup(orgId: string): Promise<Map<string, { opti
 
 // ---------- Partial cache: single-surface diff match ----------
 
+/**
+ * Cache-version contract: this query does NOT filter on `_cacheVersion`
+ * directly. It relies on `computeLeaveOneOutHashes` (in `generate.ts`) folding
+ * the current `GENERATION_CACHE_VERSION` into every hash it emits, so a
+ * version bump produces hash values that simply do not overlap with stale
+ * rows. The demo variant below (`findDemoDiffMatch`) takes an explicit
+ * `cacheVersion` arg because demo rows live in a different table without
+ * `_cacheVersion` baked into the hash inputs the same way.
+ */
 export async function findSingleSurfaceDiffMatch(
   stepPhotoId: string,
   leaveOneOutHashes: string[],

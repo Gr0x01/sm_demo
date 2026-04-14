@@ -149,6 +149,13 @@ export function buildOptionLookup(): OptionLookupMap {
   const counterSub = makeSub("countertops", "Countertops");
   const counterOpt = makeOpt("ct-granite-luna", "Luna Pearl Granite", { swatchUrl: "https://storage/swatch-luna.jpg", price: 1800 });
   map.set("countertops:ct-granite-luna", { option: counterOpt, subCategory: counterSub });
+  // Textured option WITH swatch_color — exercises D102 hex anchor injection.
+  const counterOptCalacatta = makeOpt("ct-quartz-calacatta", "Calacatta Quartz", {
+    swatchUrl: "https://storage/swatch-cala.jpg",
+    swatchColor: "#EAE7E0",
+    price: 2400,
+  });
+  map.set("countertops:ct-quartz-calacatta", { option: counterOptCalacatta, subCategory: counterSub });
 
   const backsplashSub = makeSub("backsplash", "Backsplash");
   const backsplashOpt = makeOpt("bs-subway-white", "White Subway Tile", { swatchUrl: "https://storage/swatch-sub.jpg", price: 0, dimensions: "4x16" });

@@ -115,7 +115,7 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  */
-export const GENERATION_CACHE_VERSION = "v4.1";
+export const GENERATION_CACHE_VERSION = "v4.2";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -355,6 +355,20 @@ const FORBIDDEN_ACTION_MATERIAL_WORDS = [
 /** Hex code like #fff / #ffffff / #ffffffff. */
 const HEX_COLOR_RE = /#[0-9a-f]{3,8}\b/i;
 
+/**
+ * Strict hex validator for D102 anchor injection. Trims whitespace and
+ * confirms the value is a well-formed `#RGB` / `#RGBA` / `#RRGGBB` /
+ * `#RRGGBBAA` token. Returns null for unset / empty / malformed values so
+ * the substitution loop's truthy check produces graceful skip behavior
+ * instead of rendering broken text like `image 2 at hex   ` or `at hex #`.
+ */
+function normalizeAnchorHex(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+  if (!/^#[0-9a-f]{3,8}$/i.test(trimmed)) return null;
+  return trimmed;
+}
+
 function wordCount(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
@@ -425,6 +439,14 @@ type ActionEntry = {
     /** Swatch URL to resolve. Entry sends a reference image to BFL. */
     mode: "swatch";
     swatchUrl: string;
+    /**
+     * Optional `option.swatch_color` for D102 inline hex anchor injection.
+     * When present, the runtime substitutes `{image}` with `image N at hex
+     * #XXXXXX` instead of `image N` alone — anchors swatch color binding so
+     * Flux can't cross-wire textured surfaces in multi-swatch scenes
+     * (watchlist row 7, validated NK + NB + NBR 2026-04-14).
+     */
+    swatchColor?: string | null;
   }
   | {
     /** Painted finish — hex substituted into prompt text, no reference image sent. (D100) */
@@ -502,11 +524,33 @@ function resolveMerges(
         dimensions: firstFound.option.dimensions?.trim() || undefined,
       });
     } else {
+      // Hex anchor for D102 inline injection. Merge keying is on swatch_url
+      // equality, NOT swatch_color equality — so in principle two participants
+      // could share a URL and differ in hex (hand-edited DB row, or future
+      // schema drift). Take the first option's hex deterministically and warn
+      // in dev if any participant's hex diverges, so silently-wrong data
+      // produces a visible breadcrumb instead of mysterious cross-wired output.
+      const firstHex = normalizeAnchorHex(firstFound.option.swatchColor);
+      if (process.env.NODE_ENV !== "production") {
+        for (let j = 1; j < entry.when.length; j++) {
+          const otherSub = entry.when[j];
+          const otherFound = optionLookup.get(`${otherSub}:${visualSelections[otherSub]}`);
+          const otherHex = normalizeAnchorHex(otherFound?.option.swatchColor);
+          if (otherHex !== firstHex) {
+            console.warn(
+              `[resolveMerges] divergent swatch_color across merged subs ` +
+              `(${entry.when[0]}=${firstHex ?? "null"}, ${otherSub}=${otherHex ?? "null"}). ` +
+              `Using first option's hex (${firstHex ?? "null"}) for the merged anchor.`,
+            );
+          }
+        }
+      }
       mergedEntries.push({
         sortSlug: entry.when[0],
         template: entry.clause,
         mode: "swatch",
         swatchUrl: firstUrl,
+        swatchColor: firstHex,
         label: firstFound.subCategory.name,
         swatchSubcategoryId: entry.when[0],
         dimensions: firstFound.option.dimensions?.trim() || undefined,
@@ -596,6 +640,10 @@ export async function buildProsePrompt(
         template,
         mode: "swatch",
         swatchUrl: option.swatchUrl,
+        // Hex anchor for D102 inline injection (watchlist row 7).
+        // Normalize: trims + validates hex shape; malformed values become
+        // null so the substitution loop's truthy check skips gracefully.
+        swatchColor: normalizeAnchorHex(option.swatchColor),
         label: subCategory.name,
         swatchSubcategoryId: subId,
         dimensions: option.dimensions?.trim() || undefined,
@@ -647,7 +695,14 @@ export async function buildProsePrompt(
         subcategoryId: entry.swatchSubcategoryId,
       });
 
-      substituted = entry.template.replace(IMAGE_TOKEN, `image ${imageIndex}`);
+      // D102 inline hex anchor: when the option carries `swatch_color`,
+      // substitute `image N at hex #XXXXXX` so the color binding lands
+      // directly after the image reference (not at clause end). Anchors
+      // attention budget across multi-swatch scenes — watchlist row 7.
+      const imageRef = entry.swatchColor
+        ? `image ${imageIndex} at hex ${entry.swatchColor}`
+        : `image ${imageIndex}`;
+      substituted = entry.template.replace(IMAGE_TOKEN, imageRef);
       imageIndex++;
     }
 
@@ -734,7 +789,11 @@ export async function buildProseScopedEdit(
       subcategoryId: changedSubcategoryId,
     });
 
-    clause = template.replace(IMAGE_TOKEN, "image 2");
+    // D102 inline hex anchor (watchlist row 7) — same as full-gen.
+    // Normalize: malformed/whitespace-only hex falls back to "image 2".
+    const anchorHex = normalizeAnchorHex(changed.option.swatchColor);
+    const imageRef = anchorHex ? `image 2 at hex ${anchorHex}` : "image 2";
+    clause = template.replace(IMAGE_TOKEN, imageRef);
   }
 
   // Capitalize the first letter (templates are authored lowercase) and add a

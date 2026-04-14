@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { hashSelections, DEFAULT_PROSE_STYLE } from "@/lib/generate";
+import { hashSelections, DEFAULT_PROSE_STYLE, GENERATION_CACHE_VERSION } from "@/lib/generate";
 import { getCategoriesWithOptions } from "@/lib/db-queries";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
@@ -29,15 +29,17 @@ export const SAMPLE_KITCHEN_PROSE: PromptProse = {
 };
 
 /**
- * Derived from prose content + IMAGE_MODEL + DEFAULT_PROSE_STYLE — auto-
- * invalidates when any of those change. SAMPLE_KITCHEN_PROSE has no explicit
- * style field, so it uses DEFAULT_PROSE_STYLE at render time; we hash that
- * here so trailer changes also bust the cache.
+ * Derived from prose content + IMAGE_MODEL + DEFAULT_PROSE_STYLE +
+ * GENERATION_CACHE_VERSION — auto-invalidates whenever the production cache
+ * version bumps OR any of the demo-specific inputs change. Keeps the demo
+ * cache in lockstep with prod render semantics so prompt-builder changes
+ * (substitution logic, hex anchor injection, etc.) bust the demo too.
  */
 export const DEMO_GENERATION_CACHE_VERSION = createHash("sha256")
   .update(JSON.stringify(SAMPLE_KITCHEN_PROSE))
   .update(IMAGE_MODEL)
   .update(DEFAULT_PROSE_STYLE)
+  .update(GENERATION_CACHE_VERSION)
   .digest("hex")
   .slice(0, 8);
 

@@ -411,6 +411,156 @@ describe("buildProsePrompt (v2)", () => {
   });
 });
 
+describe("buildProsePrompt (v2) — D102 hex anchor injection", () => {
+  const optionLookup = buildOptionLookup();
+
+  it("injects 'at hex #X' directly after the image reference for textured options with swatchColor", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { countertops: "change every horizontal countertop surface to match {image}" },
+    };
+    const { prompt, swatches } = await buildProsePrompt(prose, { countertops: "ct-quartz-calacatta" }, optionLookup, mockResolver);
+    expect(prompt).toContain("change every horizontal countertop surface to match image 2 at hex #EAE7E0");
+    expect(swatches).toHaveLength(1);
+  });
+
+  it("does NOT inject hex for textured options without swatchColor (graceful skip)", async () => {
+    // ct-granite-luna has no swatchColor — the existing texture path stays unchanged.
+    const prose: PromptProse = {
+      version: 2,
+      actions: { countertops: "change every horizontal countertop surface to match {image}" },
+    };
+    const { prompt } = await buildProsePrompt(prose, { countertops: "ct-granite-luna" }, optionLookup, mockResolver);
+    expect(prompt).toContain("change every horizontal countertop surface to match image 2");
+    expect(prompt).not.toContain("at hex");
+  });
+
+  it("does NOT touch painted options — they stay on the D100 hex substitution path", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { cabinets: "paint every cabinet door and drawer front to match {image}" },
+    };
+    const { prompt, swatches } = await buildProsePrompt(prose, { cabinets: "cab-dove" }, optionLookup, mockResolver);
+    // Painted path: {image} → "hex #F5F5F2", no "image 2", no double-hex injection.
+    expect(prompt).toContain("paint every cabinet door and drawer front to match hex #F5F5F2");
+    expect(prompt).not.toContain("image 2");
+    expect(prompt).not.toContain("at hex #F5F5F2"); // would indicate double-injection
+    expect(swatches).toHaveLength(0);
+  });
+
+  it("preserves trailing positional content after the substitution point", async () => {
+    // Regression check: hex anchor must land directly after `image N`, not at
+    // clause end. Trailing positional phrases (e.g. "in the foreground") would
+    // bind to the wrong subject if the anchor were appended at the tail.
+    const prose: PromptProse = {
+      version: 2,
+      actions: { countertops: "apply {image} to the slabs resting on the perimeter base cabinets" },
+    };
+    const { prompt } = await buildProsePrompt(prose, { countertops: "ct-quartz-calacatta" }, optionLookup, mockResolver);
+    expect(prompt).toContain("apply image 2 at hex #EAE7E0 to the slabs resting on the perimeter base cabinets");
+  });
+
+  it("preserves a trailing enumeration after the substitution point", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { countertops: "change every horizontal countertop surface to match {image}, including the breakfast bar and the island top" },
+    };
+    const { prompt } = await buildProsePrompt(prose, { countertops: "ct-quartz-calacatta" }, optionLookup, mockResolver);
+    expect(prompt).toContain("change every horizontal countertop surface to match image 2 at hex #EAE7E0, including the breakfast bar and the island top");
+  });
+
+  it("preserves prod-shape 'swap X for {image} keeping the same Y' clauses", async () => {
+    // Mirrors the actual prod kitchen range/sink/refrigerator/faucet clauses.
+    // Anchor must land between the image reference and the trailing
+    // preservation directive, never at clause end.
+    const prose: PromptProse = {
+      version: 2,
+      actions: { countertops: "swap the countertop slabs for {image} keeping the same edge profile and overhang depth" },
+    };
+    const { prompt } = await buildProsePrompt(prose, { countertops: "ct-quartz-calacatta" }, optionLookup, mockResolver);
+    expect(prompt).toContain("swap the countertop slabs for image 2 at hex #EAE7E0 keeping the same edge profile and overhang depth");
+  });
+
+  it("normalizeAnchorHex skips whitespace-only and malformed swatch_color values", async () => {
+    // Defense against hand-edited DB rows: empty string, whitespace, missing
+    // '#', or wrong-length hex must NOT render as `image 2 at hex   ` etc.
+    // The substitution falls back to bare `image 2`.
+    const localLookup = new Map(optionLookup);
+    const found = localLookup.get("countertops:ct-quartz-calacatta")!;
+    for (const badHex of ["", "  ", "#", "EAE7E0", "#GGGGGG", "#1234567890"]) {
+      localLookup.set("countertops:ct-quartz-calacatta", {
+        ...found,
+        option: { ...found.option, swatchColor: badHex },
+      });
+      const { prompt } = await buildProsePrompt(
+        { version: 2, actions: { countertops: "change every horizontal countertop surface to match {image}" } },
+        { countertops: "ct-quartz-calacatta" },
+        localLookup,
+        mockResolver,
+      );
+      expect(prompt, `bad hex ${JSON.stringify(badHex)} should not inject anchor`).toContain("to match image 2");
+      expect(prompt, `bad hex ${JSON.stringify(badHex)} should skip 'at hex'`).not.toContain("at hex");
+    }
+  });
+
+  it("appends dimensions parenthetical AFTER the hex anchor (not between {image} and tail)", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { countertops: "change every horizontal countertop surface to match {image}" },
+    };
+    // Add a dimensions field via a temporary lookup tweak.
+    const localLookup = new Map(optionLookup);
+    const found = localLookup.get("countertops:ct-quartz-calacatta")!;
+    localLookup.set("countertops:ct-quartz-calacatta", {
+      ...found,
+      option: { ...found.option, dimensions: "honed finish, large slab" },
+    });
+    const { prompt } = await buildProsePrompt(prose, { countertops: "ct-quartz-calacatta" }, localLookup, mockResolver);
+    expect(prompt).toContain("change every horizontal countertop surface to match image 2 at hex #EAE7E0 (honed finish, large slab)");
+  });
+
+  it("merged textured clauses get a single anchor from the first option's swatchColor", async () => {
+    // Two subs sharing the same swatch_url + swatch_color collapse into one
+    // entry; the merged clause should carry the hex anchor too.
+    const lookup: Map<string, { option: import("@/types").Option; subCategory: import("@/types").SubCategory }> = new Map();
+    const sharedSwatch = "https://storage/shared.jpg";
+    const sharedHex = "#A8B5C4";
+    const cab: import("@/types").SubCategory = { id: "cab-perim", name: "Perimeter", categoryId: "cat", isVisual: true, options: [] };
+    const isl: import("@/types").SubCategory = { id: "cab-island", name: "Island", categoryId: "cat", isVisual: true, options: [] };
+    lookup.set("cab-perim:opt-fog", {
+      option: { id: "opt-fog", name: "Fog", price: 0, swatchUrl: sharedSwatch, swatchColor: sharedHex },
+      subCategory: cab,
+    });
+    lookup.set("cab-island:opt-fog", {
+      option: { id: "opt-fog", name: "Fog", price: 0, swatchUrl: sharedSwatch, swatchColor: sharedHex },
+      subCategory: isl,
+    });
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        "cab-perim": "apply {image} to the perimeter cabinets",
+        "cab-island": "apply {image} to the freestanding center base structure",
+      },
+      mergedClauses: [
+        { when: ["cab-perim", "cab-island"], clause: "apply {image} to every cabinet throughout the kitchen" },
+      ],
+    };
+    const { prompt, swatches } = await buildProsePrompt(prose, { "cab-perim": "opt-fog", "cab-island": "opt-fog" }, lookup, mockResolver);
+    expect(prompt).toContain("apply image 2 at hex #A8B5C4 to every cabinet throughout the kitchen");
+    // Single merged entry, not two separate clauses.
+    expect(swatches).toHaveLength(1);
+  });
+
+  it("buildProseScopedEdit also injects the anchor for textured swatches with swatchColor", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { countertops: "change every horizontal countertop surface to match {image}" },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "countertops", "ct-quartz-calacatta", optionLookup, mockResolver);
+    expect(prompt).toContain("Change every horizontal countertop surface to match image 2 at hex #EAE7E0.");
+  });
+});
+
 describe("buildProsePrompt (v2) — mergedClauses", () => {
   // Helper: build a tiny lookup with explicit swatch URLs per option so we
   // can control merge detection without touching the main fixture.
