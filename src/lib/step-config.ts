@@ -29,6 +29,26 @@ export function requiresMaxRouting(subId: string): boolean {
   return MAX_ROUTING_PATTERNS.some(p => subId.includes(p));
 }
 
+/**
+ * Single source of truth for "does this selection set trip hardware routing".
+ * Both `deriveGenerationContext` (cache-key layer in generate.ts) and
+ * `selectFullGenModel` (pipeline layer in flux-pipeline.ts) call this so the
+ * cache key and the model that actually runs can't diverge. A hardware sub
+ * with no swatchUrl (`-none` / builder-standard default) does NOT trip it —
+ * routing only fires when there's something real to render.
+ */
+export function hasHardwareRoutingTrigger(
+  selections: Record<string, string>,
+  optionLookup: Map<string, { option: { swatchUrl?: string | null } }>,
+): boolean {
+  for (const [subId, optId] of Object.entries(selections)) {
+    if (!requiresMaxRouting(subId)) continue;
+    const entry = optionLookup.get(`${subId}:${optId}`);
+    if (entry?.option.swatchUrl) return true;
+  }
+  return false;
+}
+
 export interface StepPhoto {
   id: string;
   imagePath: string;   // Supabase Storage path
@@ -79,9 +99,10 @@ export interface StepPhoto {
  * Per-material action clause object. Used when a subcategory mixes options of
  * different material classes (e.g. paint + stain in the same kitchen-cabinet-color
  * sub) and a single verb cannot serve all options. Runtime picks the right key
- * based on the selected option's `is_painted` flag:
- *   - `is_painted = true`  → `paint` clause (D100 paint+hex pattern)
- *   - `is_painted = false` → `stain` clause (D101 stain+hex pattern)
+ * based on the selected option's `render_mode`:
+ *   - `hex_paint` → `paint` clause (D100 paint+hex pattern)
+ *   - anything else (hex_stain / textured / metallic) → `stain` clause
+ *     (D101 stain+hex pattern — stain is the non-paint branch)
  * At least one key must be set. Each clause follows the same validation rules
  * as a string action clause.
  */

@@ -42,7 +42,7 @@ async function getOptionLookupDirect(
       id, slug, name, sort_order,
       subcategories (
         id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, is_painted, scoped_edit_model, linked_to_subcategory )
+        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, render_mode, scoped_edit_model, linked_to_subcategory )
       )
     `)
     .eq("org_id", orgId)
@@ -81,7 +81,7 @@ async function getOptionLookupDirect(
           nudge: opt.nudge ?? undefined,
           generationRules: opt.generation_rules ?? undefined,
           isDefault: opt.is_default || undefined,
-          isPainted: opt.is_painted || undefined,
+          renderMode: opt.render_mode ?? undefined,
           scopedEditModel: opt.scoped_edit_model ?? undefined,
           linkedToSubcategory: opt.linked_to_subcategory ?? undefined,
         };
@@ -136,10 +136,12 @@ interface Variant {
   /** When set, runs a second Max pass on the output (oven correction, etc.). */
   refine?: RefineConfig;
   /**
-   * Lab-only: subcategory slugs whose selected options should be treated as
-   * painted (hex in text, no swatch image) even when the DB says
-   * is_painted=false. Used to test hex-vs-swatch generation strategy
-   * independent of the finish's actual material type.
+   * Lab-only: subcategory slugs whose selected options should be routed
+   * through the hex-only render path (no swatch image) regardless of the
+   * DB render_mode. Forces `renderMode: "hex_stain"` on the cloned lookup,
+   * which shares the same substitution as `hex_paint` but preserves the
+   * non-paint branch for `pickActionTemplate` so stained-cabinet tests
+   * still pick up the `stain` key in per-material clause objects.
    */
   forceHex?: string[];
   /** Flex-only: refinement steps 1-50 (default 50). Ignored on Max/Pro. */
@@ -710,8 +712,10 @@ async function run(session: string, explicitConcurrency: number | undefined, var
       let mainBuffer: Buffer;
       let passes = 1;
 
-      // Lab-only: build a per-variant optionLookup that flips isPainted=true
-      // for listed subcategories, forcing hex mode in buildProsePrompt.
+      // Lab-only: build a per-variant optionLookup that forces the hex
+      // render path for listed subcategories. Uses `hex_stain` so the stain
+      // branch of per-material clauses still fires; at the substitution
+      // layer hex_stain is equivalent to hex_paint (hex-in-text, no swatch).
       // Leaves the shared optionLookup untouched for other variants.
       let variantLookup = optionLookup;
       if (variant.forceHex && variant.forceHex.length > 0) {
@@ -728,7 +732,7 @@ async function run(session: string, explicitConcurrency: number | undefined, var
           }
           variantLookup.set(key, {
             ...entry,
-            option: { ...entry.option, isPainted: true },
+            option: { ...entry.option, renderMode: "hex_stain" },
           });
         }
       }

@@ -143,7 +143,7 @@ export function buildOptionLookup(): OptionLookupMap {
   map.set("cabinets:cab-white-shaker", { option: cabinetsOpt, subCategory: cabinetsSub });
   const cabinetsOptUpgrade = makeOpt("cab-espresso", "Espresso", { swatchUrl: "https://storage/swatch-esp.jpg", price: 2500 });
   map.set("cabinets:cab-espresso", { option: cabinetsOptUpgrade, subCategory: cabinetsSub });
-  const cabinetsOptDove = makeOpt("cab-dove", "Dove Paint", { swatchUrl: "https://storage/swatch-dove.jpg", swatchColor: "#F5F5F2", isPainted: true, price: 1200 });
+  const cabinetsOptDove = makeOpt("cab-dove", "Dove Paint", { swatchUrl: "https://storage/swatch-dove.jpg", swatchColor: "#F5F5F2", renderMode: "hex_paint", price: 1200 });
   map.set("cabinets:cab-dove", { option: cabinetsOptDove, subCategory: cabinetsSub });
 
   const counterSub = makeSub("countertops", "Countertops");
@@ -196,6 +196,7 @@ export function buildOptionLookup(): OptionLookupMap {
   const hwBronzeOpt = makeOpt("hw-bronze", "Seaver Bronze", {
     swatchUrl: "https://storage/swatch-hw-bronze.jpg",
     swatchColor: "#804A2E",
+    renderMode: "swatch_metallic",
     price: 0,
   });
   map.set("kitchen-cabinet-hardware:hw-bronze", { option: hwBronzeOpt, subCategory: hwSub });

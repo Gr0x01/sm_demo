@@ -370,7 +370,7 @@ describe("buildProsePrompt (v2)", () => {
     expect(prompt).not.toContain("pendant");
   });
 
-  it("substitutes hex for painted options (isPainted=true), skips swatch image", async () => {
+  it("substitutes hex for painted options (renderMode=hex_paint), skips swatch image", async () => {
     const prose: PromptProse = {
       version: 2,
       actions: {
@@ -392,10 +392,10 @@ describe("buildProsePrompt (v2)", () => {
     expect(swatches[0].subcategoryId).toBe("countertops");
   });
 
-  it("falls through to swatch path when isPainted is true but swatchColor is null", async () => {
-    // Build a lookup with isPainted but no swatchColor
+  it("falls through to swatch path when renderMode is hex_paint but swatchColor is null", async () => {
+    // Build a lookup with renderMode=hex_paint but no swatchColor
     const lookup = buildOptionLookup();
-    const nohex = { id: "cab-nohex", name: "No Hex", price: 0, swatchUrl: "https://storage/swatch-nohex.jpg", isPainted: true };
+    const nohex = { id: "cab-nohex", name: "No Hex", price: 0, swatchUrl: "https://storage/swatch-nohex.jpg", renderMode: "hex_paint" as const };
     const sub = lookup.get("cabinets:cab-dove")!.subCategory;
     lookup.set("cabinets:cab-nohex", { option: nohex, subCategory: sub });
 
@@ -430,6 +430,7 @@ describe("buildProsePrompt (v2) — D102 hex anchor skipped for fixture subcateg
       price: 0,
       swatchUrl: "https://storage/swatch-hw-bronze.jpg",
       swatchColor: "#804A2E",
+      renderMode: "swatch_metallic" as const,
     };
     lookup.set("kitchen-cabinet-hardware:hw-bronze", { option: hwOpt as any, subCategory: hwSub });
     return lookup;
@@ -494,11 +495,11 @@ describe("buildProsePrompt (v2) — per-material action clause object", () => {
   const optionLookup = buildOptionLookup();
 
   // The fixture has two cabinet options:
-  //   cab-dove → isPainted=true,  swatchColor=#F5F5F2 → paint path (D100)
-  //   cab-espresso → isPainted=false, no swatchColor  → swatch path (D101/D102 stain)
+  //   cab-dove → renderMode=hex_paint, swatchColor=#F5F5F2 → paint path (D100)
+  //   cab-espresso → renderMode unset (fallback swatch_textured) → swatch path
   // The per-material object form lets one prompt_prose serve both options
   // by routing the runtime to a different clause based on the option's
-  // is_painted flag.
+  // render_mode.
 
   it("picks the paint clause when the selected option is painted", async () => {
     const prose: PromptProse = {
@@ -1001,15 +1002,15 @@ describe("buildProsePrompt (v2) — mergedClauses", () => {
     expect(swatches).toHaveLength(2);
   });
 
-  it("uses hex for merged clause when options are painted (isPainted=true)", async () => {
+  it("uses hex for merged clause when options are painted (renderMode=hex_paint)", async () => {
     const map = new Map<string, { option: import("@/types").Option; subCategory: import("@/types").SubCategory }>();
     const sub = (id: string) => ({ id, name: id, categoryId: "cat", isVisual: true, options: [] as import("@/types").Option[] });
     map.set("kitchen-cabinet-color:dove-a", {
-      option: { id: "dove-a", name: "Dove", price: 0, swatchUrl: "https://storage/dove.jpg", swatchColor: "#F5F5F2", isPainted: true },
+      option: { id: "dove-a", name: "Dove", price: 0, swatchUrl: "https://storage/dove.jpg", swatchColor: "#F5F5F2", renderMode: "hex_paint" },
       subCategory: sub("kitchen-cabinet-color"),
     });
     map.set("kitchen-island-cabinet-color:dove-b", {
-      option: { id: "dove-b", name: "Dove", price: 0, swatchUrl: "https://storage/dove.jpg", swatchColor: "#F5F5F2", isPainted: true },
+      option: { id: "dove-b", name: "Dove", price: 0, swatchUrl: "https://storage/dove.jpg", swatchColor: "#F5F5F2", renderMode: "hex_paint" },
       subCategory: sub("kitchen-island-cabinet-color"),
     });
     map.set("counter-top:stone", {

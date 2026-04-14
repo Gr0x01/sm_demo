@@ -1,3 +1,10 @@
+/**
+ * How the prose builder substitutes this option into its `{image}` token.
+ * See supabase/migrations/20260415_options_render_mode.sql for the full
+ * enum rules and D100/D101/D102/D103 lineage.
+ */
+export type RenderMode = "hex_paint" | "hex_stain" | "swatch_metallic" | "swatch_textured";
+
 export interface Option {
   id: string;
   name: string;
@@ -9,7 +16,7 @@ export interface Option {
   nudge?: string;
   generationRules?: string[];
   isDefault?: boolean;
-  isPainted?: boolean;
+  renderMode?: RenderMode;
   scopedEditModel?: string;
   linkedToSubcategory?: string;
 }

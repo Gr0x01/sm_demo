@@ -405,7 +405,7 @@ Behavior documented here for reference — prefer the prose spec for new work.
 - **No material/color/pattern words in action clauses** — let the swatch (or the hex) carry the appearance. The hex is a color *anchor*, not a descriptor.
 
 **Painted surfaces — hex WITHOUT swatch (D100):**
-For solid-paint cabinet/island options (`is_painted=true`), send hex code in the prompt with the verb "paint" and do NOT send a swatch image. Swatches for painted finishes are photographed color chips with lighting artifacts (cool cast, shadows) that confuse BFL — Dove (#F5F5F2) consistently rendered as grey when using its swatch. Hex is unambiguous.
+For solid-paint cabinet/island options (`render_mode = "hex_paint"` + `swatch_color`, per D104), send hex code in the prompt with the verb "paint" and do NOT send a swatch image. Swatches for painted finishes are photographed color chips with lighting artifacts (cool cast, shadows) that confuse BFL — Dove (#F5F5F2) consistently rendered as grey when using its swatch. Hex is unambiguous.
 - Use: `"paint every perimeter cabinet door and drawer front on every wall to hex #F5F5F2"`
 - Tested on Valor kitchen: 3/3 runs with hex produced correct white perimeter + dark island separation. 0/15 runs with swatches produced correct white.
 
@@ -432,7 +432,7 @@ The swatch reference image is still sent (via `input_image_N`). The hex is a tex
 - Tested on Nest kitchen Flex g=7 with driftwood cabs (hex) + steel grey granite counter + carbon herringbone backsplash + warm wood floor: 3/3 clean full scene. Previous 7 clause variants without hex anchors averaged ~10% pass rate on counter alone.
 - Also tested lower guidance (g=5, g=6) with and without hex anchors — hex anchors + g=7 won. Higher guidance works BETTER with symmetrized text signals.
 - **Validation gap**: tested on one photo. Needs cross-photo validation before ship. Suspected-fragile cases: multi-tone stones (calacatta averages multiple colors into one hex), reverse-direction transformations (dark source → light target).
-- **Production integration path**: runtime auto-append `" matching hex #XXX"` to every action clause whose option has `swatch_color` AND isn't already painted/stained via is_painted+forceHex. Gated for safe rollout.
+- **Production integration SHIPPED (PR #3 `b0baaa7`, preserved through D104)**: runtime auto-appends the hex anchor for every `swatch_textured` option carrying `swatch_color`. `swatch_metallic` options (hardware/faucet/sink/etc.) are excluded structurally via `render_mode` — they render swatch-only because the bare anchor flattens metallic sheen (see D103).
 
 **D102 layout-class change failure (2026-04-13 evening) and the retile fix**:
 The D102 "match {image} at hex" pattern works for *same-layout* swaps but fails when the swatch has a different structural layout than the source surface. Tested with `bs-baker-4x16-glacier` (4x16 staggered subway layout swatch) on the Nest kitchen (which has a herringbone mosaic backsplash in the source photo). Result: glacier color landed correctly, but the herringbone layout was preserved from the source. Tested at g=7, g=8, g=9 — no guidance level fixed it. Flex has an incumbent-preservation bias on tile geometry.

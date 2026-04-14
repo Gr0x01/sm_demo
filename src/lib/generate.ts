@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
-import type { Option, SubCategory } from "@/types";
+import type { Option, RenderMode, SubCategory } from "@/types";
 import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
-import { isFixtureSubcategory, requiresMaxRouting, type ActionClause, type MaterialActionClause, type PromptProse } from "@/lib/step-config";
+import { hasHardwareRoutingTrigger, type ActionClause, type MaterialActionClause, type PromptProse } from "@/lib/step-config";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
@@ -320,15 +320,35 @@ export class PromptProseError extends Error {
 }
 
 /**
+ * Decide the render_mode for an option. Trusts `option.renderMode` when
+ * present (set by the DB backfill and every runtime reader). Falls back to
+ * a shape-inferred default for test fixtures and legacy data where the
+ * column was not populated:
+ *
+ *   - swatchColor but no swatchUrl → `hex_paint` (D100 shape)
+ *   - swatchUrl (with or without swatchColor) → `swatch_textured` (D102 shape)
+ *
+ * Returns null when the option has no prose-path data at all (prompt-
+ * descriptor-only options rendered via the legacy builder).
+ */
+export function resolveRenderMode(option: Option): RenderMode | null {
+  if (option.renderMode) return option.renderMode;
+  if (option.swatchColor && !option.swatchUrl) return "hex_paint";
+  if (option.swatchUrl) return "swatch_textured";
+  return null;
+}
+
+/**
  * Resolve an `actions[subId]` entry to a single clause string based on the
- * selected option's material class. Handles both the legacy string form
+ * selected option's render mode. Handles both the legacy string form
  * (single-material catalog, one verb fits all) and the per-material object
  * form (mixed paint+stain catalogs — `{paint, stain}`).
  *
- * Selection rule:
- *   - String input → returned as-is
- *   - Object input + `is_painted = true`  → `paint` clause (D100 paint+hex)
- *   - Object input + `is_painted = false` → `stain` clause (D101 stain+hex)
+ * Selection rule for the object form:
+ *   - `hex_paint` → `paint` clause (D100)
+ *   - `hex_stain` → `stain` clause (D101)
+ *   - anything else → `stain` clause fallback (textured/metallic options in
+ *     a mixed-material sub are rare; the stain key is the non-paint branch)
  *
  * Returns `null` when an object form is missing the key matching the option's
  * material class. Callers raise `PromptProseError` so the missing-coverage
@@ -336,11 +356,11 @@ export class PromptProseError extends Error {
  */
 export function pickActionTemplate(
   clause: ActionClause | undefined,
-  isPainted: boolean,
+  renderMode: RenderMode | null,
 ): string | null {
   if (clause === undefined) return null;
   if (typeof clause === "string") return clause;
-  if (isPainted) return clause.paint ?? null;
+  if (renderMode === "hex_paint") return clause.paint ?? null;
   return clause.stain ?? null;
 }
 
@@ -541,9 +561,14 @@ function resolveMerges(
       consumed.add(subId);
     }
 
-    // Merges fire when all swatch URLs match. For painted options, auto-switch
-    // to hex mode (D100) — the merge means same color on both surfaces.
-    if (firstFound.option.isPainted && firstFound.option.swatchColor) {
+    // Merges fire when all swatch URLs match. For hex-path options (paint or
+    // stain), auto-switch to hex mode — the merge means same color on both
+    // surfaces. For swatch-path options, emit a swatch entry with an anchor
+    // hex only when the render mode is `swatch_textured` (metallic surfaces
+    // must not receive the bare hex anchor — it flattens the sheen).
+    const firstMode = resolveRenderMode(firstFound.option);
+    const isHexMode = firstMode === "hex_paint" || firstMode === "hex_stain";
+    if (isHexMode && firstFound.option.swatchColor) {
       mergedEntries.push({
         sortSlug: entry.when[0],
         template: entry.clause,
@@ -560,8 +585,12 @@ function resolveMerges(
       // schema drift). Take the first option's hex deterministically and warn
       // in dev if any participant's hex diverges, so silently-wrong data
       // produces a visible breadcrumb instead of mysterious cross-wired output.
-      const firstHex = normalizeAnchorHex(firstFound.option.swatchColor);
-      if (process.env.NODE_ENV !== "production") {
+      //
+      // Metallic surfaces (`swatch_metallic`) suppress the anchor entirely —
+      // see D103. Textured surfaces use it for multi-swatch attention anchoring.
+      const rawHex = normalizeAnchorHex(firstFound.option.swatchColor);
+      const firstHex = firstMode === "swatch_metallic" ? null : rawHex;
+      if (process.env.NODE_ENV !== "production" && firstMode !== "swatch_metallic") {
         for (let j = 1; j < entry.when.length; j++) {
           const otherSub = entry.when[j];
           const otherFound = optionLookup.get(`${otherSub}:${visualSelections[otherSub]}`);
@@ -645,17 +674,20 @@ export async function buildProsePrompt(
         `Missing actions["${subId}"] in prompt_prose. Every selected subcategory must have an action clause.`,
       );
     }
-    const isPaintedOption = !!(option.isPainted && option.swatchColor);
-    const template = pickActionTemplate(clauseEntry, isPaintedOption);
+    const renderMode = resolveRenderMode(option);
+    const template = pickActionTemplate(clauseEntry, renderMode);
     if (!template) {
       throw new PromptProseError(
-        `actions["${subId}"] is a per-material object but has no clause for the selected option's material class (option "${option.id}", isPainted=${isPaintedOption}). Add a "${isPaintedOption ? "paint" : "stain"}" key to the object.`,
+        `actions["${subId}"] is a per-material object but has no clause for the selected option's material class (option "${option.id}", renderMode=${renderMode ?? "null"}). Add a "${renderMode === "hex_paint" ? "paint" : "stain"}" key to the object.`,
       );
     }
 
-    if (option.isPainted && option.swatchColor) {
-      // Painted finish (D100): use hex in prompt text, skip swatch image.
-      // Dramatically better color fidelity for flat paint vs photographed swatches.
+    // Dispatch on render_mode. The four substitution paths are documented in
+    // supabase/migrations/20260415_options_render_mode.sql. Hex modes
+    // (paint + stain) share the same substitution — hex token in prompt, no
+    // swatch image. Swatch modes differ only in whether they emit an inline
+    // hex anchor: textured does (D102), metallic does not (D103).
+    if ((renderMode === "hex_paint" || renderMode === "hex_stain") && option.swatchColor) {
       entries.push({
         sortSlug: subId,
         template,
@@ -666,21 +698,24 @@ export async function buildProsePrompt(
         dimensions: option.dimensions?.trim() || undefined,
       });
     } else {
-      // Textured finish: reference image sent to BFL
       if (!option.swatchUrl) {
         throw new PromptProseError(
           `actions["${subId}"] references a swatch, but option "${option.id}" has no swatchUrl.`,
         );
       }
+      // D102 hex anchor ON for swatch_textured, OFF for swatch_metallic.
+      // Normalize hex to null if shape-invalid so the substitution check
+      // skips gracefully.
+      const anchorHex =
+        renderMode === "swatch_metallic"
+          ? null
+          : normalizeAnchorHex(option.swatchColor);
       entries.push({
         sortSlug: subId,
         template,
         mode: "swatch",
         swatchUrl: option.swatchUrl,
-        // Hex anchor for D102 inline injection (watchlist row 7).
-        // Normalize: trims + validates hex shape; malformed values become
-        // null so the substitution loop's truthy check skips gracefully.
-        swatchColor: normalizeAnchorHex(option.swatchColor),
+        swatchColor: anchorHex,
         label: subCategory.name,
         swatchSubcategoryId: subId,
         dimensions: option.dimensions?.trim() || undefined,
@@ -732,21 +767,13 @@ export async function buildProsePrompt(
         subcategoryId: entry.swatchSubcategoryId,
       });
 
-      // D102 inline hex anchor: when the option carries `swatch_color`,
-      // substitute `image N at hex #XXXXXX` so the color binding lands
-      // directly after the image reference. Anchors attention budget
-      // across multi-swatch scenes — watchlist row 3 / row 7.
-      //
-      // FIXTURE SKIP: metallic surfaces (hardware, faucet, sink, range,
-      // lighting, fan, refrigerator) must NOT receive the bare hex anchor.
-      // Watchlist row 4 / D103 requires metallics to use a finish-name
-      // gate (`oil-rubbed bronze finish matching hex`) which the runtime
-      // cannot auto-emit per-option. Bare hex alone (D102 form) flattens
-      // the metallic finish and Flex renders bright saturated paint.
-      // Skipping the hex falls back to the pre-PR-#3 swatch-only behavior
-      // — the swatch image carries the metallic appearance reliably.
-      const skipHexForFixture = isFixtureSubcategory(entry.swatchSubcategoryId);
-      const imageRef = entry.swatchColor && !skipHexForFixture
+      // D102 inline hex anchor: `image N at hex #XXXXXX` anchors color
+      // binding across multi-swatch scenes (watchlist row 3 / row 7). The
+      // metallic skip is now upstream — metallic entries already have
+      // `swatchColor: null` set when they were built, so the truthy check
+      // below handles both textured-with-anchor and metallic-without in
+      // one line. (D103.)
+      const imageRef = entry.swatchColor
         ? `image ${imageIndex} at hex ${entry.swatchColor}`
         : `image ${imageIndex}`;
       substituted = entry.template.replace(IMAGE_TOKEN, imageRef);
@@ -802,18 +829,23 @@ export async function buildProseScopedEdit(
       `Missing actions["${changedSubcategoryId}"] in prompt_prose. Scoped edits reuse the full-gen actions map.`,
     );
   }
-  const isPainted = !!(changed.option.isPainted && changed.option.swatchColor);
-  const template = pickActionTemplate(clauseEntry, isPainted);
+  const renderMode = resolveRenderMode(changed.option);
+  const template = pickActionTemplate(clauseEntry, renderMode);
   if (!template) {
     throw new PromptProseError(
-      `actions["${changedSubcategoryId}"] is a per-material object but has no clause for the selected option's material class (option "${changed.option.id}", isPainted=${isPainted}). Add a "${isPainted ? "paint" : "stain"}" key to the object.`,
+      `actions["${changedSubcategoryId}"] is a per-material object but has no clause for the selected option's material class (option "${changed.option.id}", renderMode=${renderMode ?? "null"}). Add a "${renderMode === "hex_paint" ? "paint" : "stain"}" key to the object.`,
     );
   }
   const swatches: SwatchImage[] = [];
   let clause: string;
 
-  if (isPainted) {
-    // Painted finish (D100): hex in prompt text, no swatch image
+  // Hex-path render modes (paint + stain) share one substitution: hex token
+  // in the clause, no swatch image reference.
+  const isHexMode =
+    (renderMode === "hex_paint" || renderMode === "hex_stain") &&
+    !!changed.option.swatchColor;
+
+  if (isHexMode) {
     clause = template.replace(IMAGE_TOKEN, `hex ${changed.option.swatchColor}`);
   } else {
     // Swatch path: resolve swatch buffer
@@ -841,13 +873,12 @@ export async function buildProseScopedEdit(
       subcategoryId: changedSubcategoryId,
     });
 
-    // D102 inline hex anchor — same as full-gen, with the same fixture skip
-    // (see full-gen comment above): metallic surfaces render cleaner from the
-    // swatch image alone than with a bare D102 hex anchor. Without the skip,
-    // Flex interprets the hex as flat saturated paint and the metallic
-    // finish disappears.
-    const skipHexForFixture = isFixtureSubcategory(changedSubcategoryId);
-    const anchorHex = skipHexForFixture ? null : normalizeAnchorHex(changed.option.swatchColor);
+    // D102 inline hex anchor for textured surfaces, OFF for metallic (D103).
+    // Dispatch is now by render_mode, not substring matching on the sub slug.
+    const anchorHex =
+      renderMode === "swatch_metallic"
+        ? null
+        : normalizeAnchorHex(changed.option.swatchColor);
     const imageRef = anchorHex ? `image 2 at hex ${anchorHex}` : "image 2";
     clause = template.replace(IMAGE_TOKEN, imageRef);
   }
@@ -870,8 +901,9 @@ export async function buildProseScopedEdit(
     .map(p => p.endsWith(".") ? p.charAt(0).toUpperCase() + p.slice(1) : `${p.charAt(0).toUpperCase()}${p.slice(1)}.`);
   const preserveBlock = specificPreserves.length > 0 ? ` ${specificPreserves.join(" ")}` : "";
 
-  // Painted: no swatch to match, just the hex in the text. Swatch: "Match image 2 exactly."
-  const matchClause = isPainted ? "" : " Match image 2 exactly.";
+  // Hex path: no swatch to match, just the hex in the text.
+  // Swatch path: "Match image 2 exactly."
+  const matchClause = isHexMode ? "" : " Match image 2 exactly.";
   // Style trailer: fall back to DEFAULT_PROSE_STYLE when prose.style is unset
   // so scoped edits get the same Canon 5D color/light treatment as full gen
   // (watchlist row 12-k). Empty string only if the explicit override is empty.
@@ -1321,12 +1353,12 @@ export function deriveGenerationContext(
   // key on `_model`, so a hardware-selecting LRU match will only match
   // prior Max rows, and non-hardware queries only match Flex rows. No
   // cache version bump needed — the partition naturally separates.
-  const hasHardwareWithSwatch = Object.entries(scopedSelections).some(([subId, optId]) => {
-    if (!requiresMaxRouting(subId)) return false;
-    const entry = optionLookup.get(`${subId}:${optId}`);
-    return !!entry?.option.swatchUrl;
-  });
-  const modelName = hasHardwareWithSwatch ? "flux-2-max" : IMAGE_MODEL;
+  //
+  // Delegates to `hasHardwareRoutingTrigger` so this and the pipeline layer
+  // in `selectFullGenModel` share one source of truth.
+  const modelName = hasHardwareRoutingTrigger(scopedSelections, optionLookup)
+    ? "flux-2-max"
+    : IMAGE_MODEL;
   const scopedSubcategoryIds = photoScopedIds ? [...photoScopedIds] : [];
   const promptContext = buildPromptContextSignature({
     sceneDescription,

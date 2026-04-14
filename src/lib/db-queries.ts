@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import { getServiceClient } from "./supabase";
-import type { Category, SubCategory, Option } from "@/types";
+import type { Category, SubCategory, Option, RenderMode } from "@/types";
 import type { StepConfig, StepSection, StepPhoto, PromptProse } from "./step-config";
 
 // ---------- Cross-request cache (Next.js data cache) ----------
@@ -87,7 +87,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
       id, slug, name, sort_order,
       subcategories (
         id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, is_painted, scoped_edit_model, linked_to_subcategory )
+        options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, generation_rules, is_default, render_mode, scoped_edit_model, linked_to_subcategory )
       )
     `)
     .eq("org_id", orgId)
@@ -106,7 +106,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
       options: {
         id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
         dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
-        sort_order: number; generation_rules: string[] | null; is_default: boolean; is_painted: boolean | null;
+        sort_order: number; generation_rules: string[] | null; is_default: boolean; render_mode: string | null;
         scoped_edit_model: string | null; linked_to_subcategory: string | null;
       }[];
     }[])
@@ -136,7 +136,7 @@ const _getCategoriesWithOptions = async (orgId: string): Promise<Category[]> => 
             nudge: opt.nudge ?? undefined,
             generationRules: opt.generation_rules ?? undefined,
             isDefault: opt.is_default || undefined,
-            isPainted: opt.is_painted || undefined,
+            renderMode: (opt.render_mode as RenderMode | null) ?? undefined,
             scopedEditModel: opt.scoped_edit_model ?? undefined,
             linkedToSubcategory: opt.linked_to_subcategory ?? undefined,
           })),
@@ -164,7 +164,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
         id, slug, name, sort_order,
         subcategories (
           id, slug, name, category_id, is_visual, is_additive, unit_label, max_quantity, sort_order, floorplan_ids, generation_hint, generation_rules, generation_rules_when_not_selected, is_appliance,
-          options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default, is_painted, scoped_edit_model, linked_to_subcategory )
+          options ( id, slug, name, price, prompt_descriptor, dimensions, swatch_url, swatch_color, nudge, sort_order, floorplan_ids, generation_rules, is_default, render_mode, scoped_edit_model, linked_to_subcategory )
         )
       `)
       .eq("org_id", orgId)
@@ -203,7 +203,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
       id: string; slug: string; name: string; price: number; prompt_descriptor: string | null;
       dimensions: string | null; swatch_url: string | null; swatch_color: string | null; nudge: string | null;
       sort_order: number; floorplan_ids: string[]; generation_rules: string[] | null; is_default: boolean;
-      is_painted: boolean | null; scoped_edit_model: string | null;
+      render_mode: string | null; scoped_edit_model: string | null;
       linked_to_subcategory: string | null;
     }[];
   };
@@ -245,7 +245,7 @@ const _getCategoriesForFloorplan = async (orgId: string, floorplanId: string): P
               nudge: opt.nudge ?? undefined,
               generationRules: opt.generation_rules ?? undefined,
               isDefault: opt.is_default || undefined,
-              isPainted: opt.is_painted || undefined,
+              renderMode: (opt.render_mode as RenderMode | null) ?? undefined,
               scopedEditModel: opt.scoped_edit_model ?? undefined,
               linkedToSubcategory: opt.linked_to_subcategory ?? undefined,
             })),

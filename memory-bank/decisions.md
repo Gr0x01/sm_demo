@@ -730,3 +730,39 @@ remove the existing sink and install {image} in the same countertop cutout, poli
 - Scoped edit + cumulative edit works (watchlist items #7 and #8 resolved). A scoped edit on top of a hex-anchored full-gen base preserves the scene correctly.
 - The `"Match image 2 exactly."` scoped-edit suffix in `buildProseScopedEdit` aggressively binds to the nearest preceding anchor. Clause-tail content needs to be friendly to this — keep hex out of the tail.
 - Trailing positional modifier trap (critical rule #9) confirmed on hardware: `"drawer front"` was being parsed as "the front face of the drawer" and rendering only the front face. Dropped to `"drawer"` alone.
+
+## D104: `render_mode` enum replaces `is_painted` flag; routing oracle unified
+**Context (2026-04-15)**: Post-PR #5 stocktake on the prose builder flagged two frankenstein-shaped code smells. First, `buildProsePrompt` + `buildProseScopedEdit` + `resolveMerges` all dispatched on a cascading `(option.isPainted, option.swatchColor, isFixtureSubcategory(subId))` check to pick among five substitution paths (D100 paint, D101 stain, D102 textured, D103 metallic, lab forceHex). The `is_painted` column name was a lie — true meant "render via hex-only path", which covered both D100 paint AND D101 stain. New readers had to relearn that each time. Second, the hardware routing check was duplicated byte-for-byte between `deriveGenerationContext` (cache-key layer) and `selectFullGenModel` (pipeline layer) — PR #5 added tests at both sites so the cache key and the runtime model couldn't diverge, but there was no structural forcing function keeping them aligned.
+
+**Decision**:
+1. Rename `options.is_painted` → `options.render_mode` (text enum: `hex_paint | hex_stain | swatch_metallic | swatch_textured | NULL`). Column name is self-describing, dispatch becomes a switch on one value instead of a three-argument cascade, and the `isFixtureSubcategory` substring check drops out of the prose path entirely — metallic entries carry `swatchColor: null` upstream so the substitution loop is a plain truthy check.
+2. Extract `hasHardwareRoutingTrigger(selections, optionLookup)` into step-config.ts as the single-source-of-truth oracle. Both cache-key layer and pipeline layer delegate to it.
+
+**Backfill rules** (see `supabase/migrations/20260415_options_render_mode.sql`):
+- `hex_paint` — old `is_painted = TRUE` with `swatch_color` set
+- `hex_stain` — cabinet/vanity subs with swatch_color AND name matching stain keywords (stain/wood/oak/walnut/cherry/maple/mahog/driftwood/espresso/cappucino/sahara)
+- `swatch_metallic` — sub slug matches `FIXTURE_PATTERNS` (hardware/faucet/sink/lighting/fan/refrigerator/range/dishwasher)
+- `swatch_textured` — catchall for remaining options with a swatch_url
+- `NULL` — legacy prompt-descriptor-only options rendered via buildEditPrompt
+
+**Migration also backfilled latent hex gaps** (same PR because the render_mode classification depends on hex presence and was blocked by missing data):
+- 12 SM stain options (laundry/powder/primary-bath/secondary-bath Cappucino/Driftwood/Sahara) got hex backfilled from slug-pattern match against kitchen twins
+- 9 SM primary-bath paint options (Admiral Blue/Blue Smoke/Buttercream/Fog/Onyx/Pacific Sand/Saddle/White/Willow) got hex backfilled from same-name kitchen-cabinet-color twins
+- The 9 crown/baseboard rows tagged `is_painted=true` without hex are untouched — their names don't match any kitchen twin, so they fall through to `swatch_textured` in the migration which is the correct final state (they render via molding profile swatch, not paint verb)
+
+**Final distribution after migration**:
+| Org | hex_paint | hex_stain | swatch_metallic | swatch_textured | NULL |
+|-----|-----------|-----------|-----------------|-----------------|------|
+| demo | 33 | 3 | 46 | 37 | 17 |
+| stonemartin | 54 | 15 | 147 | 269 | 127 |
+
+**Runtime consumers updated**: `src/types/index.ts` (Option.renderMode + new RenderMode type export), `src/lib/db-queries.ts` (both mapper blocks select render_mode instead of is_painted), `src/lib/generate.ts` (`resolveRenderMode` helper + dispatch switches in buildProsePrompt/buildProseScopedEdit/resolveMerges, pickActionTemplate signature changed `isPainted: boolean` → `renderMode: RenderMode | null`), `scripts/prompt-lab.ts` (forceHex sets `renderMode: "hex_stain"` on cloned lookup so per-material clauses pick the stain key).
+
+**`resolveRenderMode` fallback**: the helper trusts `option.renderMode` when set, falls back to swatch-shape inference (hex_paint if swatchColor only, swatch_textured if swatchUrl). This exists for test fixtures and any future legacy data without the column populated; production data always has the column set post-migration. Intentional compromise — keeps existing test fixtures terse.
+
+**What this did NOT collapse**:
+- `FIXTURE_PATTERNS` still exists in step-config.ts and is still consumed by `flux-pipeline.ts` for the two-pass structural-vs-fixture swatch count. That's a different question from rendering ("should this surface go in pass 1 or pass 2") answered by the same substring patterns, and the two concerns don't actually line up 1:1 (two-pass is about ref-limit pressure, render_mode is about color binding). Kept independent.
+- Dual builder (`buildProsePrompt` v2 vs `buildEditPrompt` legacy) is migration state, not code shape — 127 SM + 17 Demo options still render via legacy because they have no prose data. Goes away when legacy is deleted or every photo gets prose, not this refactor.
+- Material-axis vs verb-axis mismatch (watchlist row 23 / Open Q #1). The per-material `{paint, stain}` clause shape still doesn't compose cleanly with object-replace verbs or metallic finish gates. Deeper design question — not a rename.
+
+**Tests**: 283 → 283 (no new tests — existing per-material, D102 fixture-skip, and merge tests exercise every render_mode branch via the `renderMode` field + `resolveRenderMode` fallback). `npx tsc --noEmit` clean.

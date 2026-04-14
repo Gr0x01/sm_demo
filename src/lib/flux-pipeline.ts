@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { buildEditPrompt, buildScopedEditPrompt, buildProsePrompt, buildProseScopedEdit } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
-import { isFixtureSubcategory, requiresMaxRouting, type PromptProse } from "@/lib/step-config";
+import { hasHardwareRoutingTrigger, isFixtureSubcategory, type PromptProse } from "@/lib/step-config";
 import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
 import { generateImage } from "@/lib/bfl";
 import type { BflModel } from "@/lib/bfl";
@@ -215,14 +215,10 @@ export function selectFullGenModel(opts: {
     return { singlePassModel: m, pass1Model: m, pass2Model: m, routedForHardware: false };
   }
 
-  // Check if any selected option is a hardware subcategory with an actual
-  // swatch — otherwise `-none` / builder-standard defaults trip the routing
-  // and pay the Max penalty for a no-op render.
-  const hasHardwareWithSwatch = Object.entries(selections).some(([subId, optId]) => {
-    if (!requiresMaxRouting(subId)) return false;
-    const entry = optionLookup.get(`${subId}:${optId}`);
-    return !!entry?.option.swatchUrl;
-  });
+  // Routing decision delegates to the shared oracle in step-config.ts so the
+  // cache key (deriveGenerationContext) and the pipeline layer stay provably
+  // in sync. See `hasHardwareRoutingTrigger` for the rule.
+  const hasHardwareWithSwatch = hasHardwareRoutingTrigger(selections, optionLookup);
 
   const defaultModel = IMAGE_MODEL as BflModel;
   if (!hasHardwareWithSwatch) {
