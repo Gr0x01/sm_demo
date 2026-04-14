@@ -77,9 +77,11 @@ Pivot decision: Demo Nest kitchen/bathroom/LR photos being regenerated via **Nan
 
 Then: **Demo org swatch_color backfill** (16 options across 4 subcategories — secondary-bath cabinets, primary shower tile, door hardware, fireplace mantel). 71 textured/metallic options now produce hex anchors automatically.
 
+Then: **SM Kinkade + Lenox temporary disable** (commit `f7900a6`). All 8 SM floorplans set `is_active=false` while SM hasn't been re-validated on Flex. The org chooser at `stonemartin.withfin.ch` already grayscales + de-clicks inactive floorplans (`/[orgSlug]/page.tsx` keys off `fp.is_active`); a parallel 404 guard added in `/[orgSlug]/[floorplanSlug]/page.tsx` so direct deep links can't bypass the gating. Re-enable by flipping `is_active=true` on the relevant rows once SM is validated.
+
 **Still in the queue:**
 
-- **Side task** — gray out the SM Kinkade + Lennox selection UI (since SM degrades on Flex until re-validated).
+- (nothing — the architecture restructure tasks are done)
 
 **Still blocked on validation** (NL + non-Nest cross-check):
 - D101 stain scoped-edit failure routing

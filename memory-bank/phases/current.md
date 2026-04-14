@@ -65,19 +65,19 @@ Now focused on: builder outreach (provocation-first strategy), generation qualit
 
 **Architecture restructure (in progress 2026-04-14)** — Plan: `/Users/rb/.claude/plans/moonlit-soaring-scone.md`. Pivot decision: Demo Nest kitchen/bathroom/LR photos getting regenerated via **Nano Banana** (Gemini Flash Image) so the demo runs cleanly on Flex without Max-only workarounds. Architecture simplifies to **Flex + Klein only** as the default model lineup.
 
-**Shipped today:**
-1. **PR #1** (`4b57a06`) — `IMAGE_MODEL` flux-2-max → flux-2-flex, BFL Flex ref cap fix (9→7), range/oven Max exception removed, per-option `scoped_edit_model` retired (still in DB until PR #4), PostHog cost map corrected.
+**Shipped today (2026-04-14):**
+1. **PR #1** (`4b57a06`) — `IMAGE_MODEL` flux-2-max → flux-2-flex, BFL Flex ref cap fix (9→7), hardcoded range/oven Max exception removed (now data-driven via the per-option override column), PostHog cost map corrected against bfl.ai pricing. Per-option `scoped_edit_model` runtime read was also removed but later restored — see PR #4.
 2. **PR #2** (`540243a`) — Canon 5D style trailer as default, `buildProseScopedEdit` falls back to default trailer (row 12-k regression fix), 5 stale `prompt_prose.style` overrides NULL'd to default.
 3. **PR #3** (`b0baaa7`) — D102 hex anchor auto-injection. Runtime substitutes `{image}` → `image N at hex #XXXXXX` for any textured/metallic option with `swatch_color` set. Prose authors no longer hand-write hex anchors.
+4. **PR #4** (`a2cfc92`) — Restored per-option `scoped_edit_model` override capability that PR #1 over-removed. Original PR #4 plan was "drop the column" but the column carries real value (Demo org has historically used Klein 9B for hex mosaic backsplash, Max for marble shower tile). The 36 SM Kinkade rows of historical intent are preserved. Runtime read restored, PATCH route re-accepts the field (now Zod-enum-validated), admin form is a real dropdown again. New `selectScopedEditModel` helper extracted + 4 unit tests so the regression can't happen again.
 
 **Demo org swatch_color backfill 2026-04-14** — 16 options (5 secondary-bath cabinets, 4 primary shower tile, 4 door hardware, 3 fireplace mantel) on top of the earlier bedroom backfill (11 options). Demo org now at 29 painted/D101 + 71 textured/metallic with hex anchors active + 12 multi-material objects deliberately skipped (lighting, great-room-fan, interior-door-style — row 20 broken pattern).
 
+**SM Kinkade + Lenox temporary disable** (`f7900a6`) — All 8 SM floorplans set `is_active=false` while SM hasn't been re-validated on Flex. Org chooser at `stonemartin.withfin.ch` already grayscales + de-clicks inactive floorplans (`/[orgSlug]/page.tsx` keys off `fp.is_active`); added a parallel 404 guard in `/[orgSlug]/[floorplanSlug]/page.tsx` so direct deep links can't bypass the gating. Re-enable by flipping `is_active=true` on the relevant rows once SM is validated.
+
 **Still in queue:**
-- **PR #4** — drop the `options.scoped_edit_model` column entirely
-- **Phase 3a** — draft `src/lib/prose-templates.ts` template catalog (sparse 5-template map keyed by `(material_category, verb_mode)`, design only)
-- **Side task** — gray out SM Kinkade + Lennox selection UI (SM degrades on Flex until re-validated)
 - **Nano Banana** — separate workstream, regenerate Nest demo source photos for kitchen/bathroom/LR
-- **Phase 3 implementation** — material+verb axes schema migration, blocked on NL + non-Nest validation
+- **Phase 3 implementation** — material+verb axes schema migration. Blocked on NL + non-Nest validation. Phase 3a (draft template catalog file) was cancelled — it was design-only with no runtime caller, premature artifact. Locked recipes already live in the watchlist + bfl-prompting-guide.
 
 Pipeline shipped and refactored (see `completed.md` #35). These quality issues remain:
 
