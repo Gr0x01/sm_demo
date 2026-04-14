@@ -153,6 +153,13 @@ interface Variant {
    * known-good outputs without re-rendering the main pass each time.
    */
   inputImageOverride?: string;
+  /**
+   * Lab-only: per-variant selections override. Merged on top of
+   * `config.selections` to compute the effective selections for this variant's
+   * fluxGenerate call. Lets multiple variants test different option selections
+   * in parallel without having to swap config.selections sequentially.
+   */
+  selectionsOverride?: Record<string, string>;
 }
 
 interface SessionConfig {
@@ -614,8 +621,28 @@ async function run(session: string, explicitConcurrency: number | undefined, var
   const supabase = getSupabase();
   const optionLookup = await getOptionLookupDirect(supabase, config.orgId);
   const rawResolver = createSwatchResolver(supabase as ReturnType<typeof import("@/lib/supabase").getServiceClient>);
+
+  // Pre-warm by calling preWarmSwatchCache once per variant with that variant's
+  // effective selections. Different variants may target different options for the
+  // same subcategory (e.g. multiple backsplash options across variants), so a
+  // single Record<subId, optId> would collapse them. Per-variant resolvers each
+  // cover their own swatches; the combined resolver checks all of them.
   console.log("Pre-warming swatch cache...");
-  const cachedResolver = await preWarmSwatchCache(config.selections, optionLookup, rawResolver);
+  const variantResolvers = await Promise.all(
+    config.variants.map(async (variant) => {
+      const sels: Record<string, string> = { ...config.selections };
+      if (variant.selectionsOverride) Object.assign(sels, variant.selectionsOverride);
+      if (variant.scoped) sels[variant.scoped.subcategoryId] = variant.scoped.optionId;
+      return preWarmSwatchCache(sels, optionLookup, rawResolver);
+    }),
+  );
+  const cachedResolver = async (url: string) => {
+    for (const r of variantResolvers) {
+      const result = await r(url);
+      if (result) return result;
+    }
+    return null;
+  };
   console.log("Swatches cached.");
 
   // Build run queue
@@ -713,9 +740,14 @@ async function run(session: string, explicitConcurrency: number | undefined, var
         console.log(`[${tag}] Scoped edit: ${subcategoryId} → ${modelUsed} (${prompt.split(/\s+/).length} words)`);
       } else {
         // --- Full generation — delegate to production path (handles two-pass split) ---
+        // Merge per-variant selectionsOverride on top of the global config.selections
+        // so multiple variants can test different option selections in parallel.
+        const effectiveSelections = variant.selectionsOverride
+          ? { ...config.selections, ...variant.selectionsOverride }
+          : config.selections;
         const result = await fluxGenerate({
           heroBuffer,
-          selections: config.selections,
+          selections: effectiveSelections,
           optionLookup: variantLookup,
           spatialHints: config.spatialHints,
           swatchResolver: cachedResolver,
@@ -862,20 +894,22 @@ function buildReviewHtml(
   .meta { font-size: 13px; color: #888; margin-bottom: 24px; }
   .meta span { color: #aaa; }
 
-  .grid { display: flex; gap: 24px; overflow-x: auto; padding-bottom: 24px; }
+  .source-block { max-width: 480px; margin-bottom: 24px; border: 1px solid #333; background: #111; padding: 12px; }
+  .source-block img { width: 100%; display: block; cursor: pointer; }
+  .source-block .label { font-size: 13px; color: #888; margin-top: 8px; }
 
-  .source-col { flex: 0 0 320px; }
-  .source-col img { width: 100%; display: block; }
-  .source-col .label { font-size: 13px; color: #888; margin-top: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; padding-bottom: 24px; }
 
-  .variant-col { flex: 0 0 400px; border: 1px solid #333; background: #111; }
+  .variant-col { border: 1px solid #333; background: #111; position: relative; }
   .variant-col.approved { border-color: #2a6; }
   .variant-col.rejected { border-color: #a33; }
   .variant-col.maybe { border-color: #a83; }
+  .variant-col.new { border-color: #4af; box-shadow: 0 0 0 1px #4af; }
+  .variant-col.new::before { content: "NEW"; position: absolute; top: -10px; left: 12px; background: #4af; color: #000; font-size: 10px; font-weight: 700; padding: 2px 8px; letter-spacing: 0.5px; z-index: 1; }
 
-  .variant-header { padding: 12px 16px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
-  .variant-header h2 { font-size: 15px; font-weight: 600; }
-  .variant-header .id { font-size: 12px; color: #666; font-family: monospace; }
+  .variant-header { padding: 12px 16px; border-bottom: 1px solid #333; display: flex; flex-direction: column; gap: 4px; }
+  .variant-header h2 { font-size: 15px; font-weight: 600; line-height: 1.35; }
+  .variant-header .id { font-size: 11px; color: #666; font-family: monospace; }
 
   .verdict-bar { display: flex; gap: 8px; padding: 8px 16px; border-bottom: 1px solid #222; }
   .verdict-bar button { padding: 4px 12px; border: 1px solid #444; background: #1a1a1a; color: #ccc; cursor: pointer; font-size: 12px; }
@@ -939,7 +973,9 @@ function buildReviewHtml(
 
 <div class="actions-bar">
   <button onclick="exportDecisions()">Export Decisions</button>
+  <button onclick="markAllSeen()">Mark All Seen</button>
   <span class="status" id="export-status"></span>
+  <span class="status" id="new-count"></span>
 </div>
 
 ${(() => {
@@ -949,15 +985,22 @@ ${(() => {
   const firstOverride = overrides[0];
   const sourcePath = firstOverride ?? "source.jpg";
   const sourceLabel = firstOverride ? `Input: ${firstOverride}` : `Source: ${config.photo.label}`;
-  return `<div class="grid">
-  <div class="source-col">
-    <img src="${escapeHtml(sourcePath)}" alt="Source" onclick="openLightbox(this.src)">
-    <div class="label">${escapeHtml(sourceLabel)}</div>
-  </div>`;
+  return `<div class="source-block">
+  <img src="${escapeHtml(sourcePath)}" alt="Source" onclick="openLightbox(this.src)">
+  <div class="label">${escapeHtml(sourceLabel)}</div>
+</div>
+
+<div class="grid">`;
 })()}
 
-  ${variantsWithResults.map(v => `
-  <div class="variant-col" id="variant-${escapeHtml(v.id)}" data-variant-id="${escapeHtml(v.id)}">
+  ${variantsWithResults.map(v => {
+    // Latest result timestamp — used to compute "new" state client-side
+    const latestTs = v.results
+      .map(r => r.timestamp)
+      .sort()
+      .at(-1) ?? "";
+    return `
+  <div class="variant-col" id="variant-${escapeHtml(v.id)}" data-variant-id="${escapeHtml(v.id)}" data-latest-ts="${escapeHtml(latestTs)}">
     <div class="variant-header">
       <h2>${escapeHtml(v.label)}</h2>
       <span class="id">${escapeHtml(v.id)} &middot; ${v.scoped ? `scoped: ${escapeHtml(v.scoped.subcategoryId)}` : "full"} &middot; ${escapeHtml(v.model ?? (v.scoped ? SCOPED_EDIT_MODEL : IMAGE_MODEL))}</span>
@@ -985,7 +1028,8 @@ ${(() => {
       <textarea placeholder="Notes..." data-notes-for="${escapeHtml(v.id)}">${escapeHtml(v.notes ?? "")}</textarea>
     </div>
   </div>
-  `).join("")}
+  `;
+  }).join("")}
 </div>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
@@ -996,6 +1040,54 @@ ${(() => {
   // State
   const verdicts = JSON.parse(localStorage.getItem('prompt-lab-${session}') || '{}');
 
+  // Seen timestamps: { variantId: lastSeenTimestamp }
+  const seenKey = 'prompt-lab-seen-${session}';
+  const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
+
+  function isNew(col) {
+    const id = col.dataset.variantId;
+    const latest = col.dataset.latestTs;
+    if (!latest) return false;
+    const lastSeen = seen[id];
+    return !lastSeen || latest > lastSeen;
+  }
+
+  function markColNew(col, isNewVal) {
+    col.classList.toggle('new', isNewVal);
+  }
+
+  function updateNewCount() {
+    const cols = document.querySelectorAll('.variant-col');
+    const newCount = Array.from(cols).filter(c => c.classList.contains('new')).length;
+    const status = document.getElementById('new-count');
+    if (status) status.textContent = newCount > 0 ? (newCount + ' new') : 'all seen';
+  }
+
+  function sortUnseenFirst() {
+    const grid = document.querySelector('.grid');
+    if (!grid) return;
+    const cols = Array.from(grid.querySelectorAll('.variant-col'));
+    cols.sort((a, b) => {
+      const an = a.classList.contains('new') ? 0 : 1;
+      const bn = b.classList.contains('new') ? 0 : 1;
+      if (an !== bn) return an - bn;
+      // Stable by data-latest-ts descending within same "new" bucket
+      return (b.dataset.latestTs || '').localeCompare(a.dataset.latestTs || '');
+    });
+    cols.forEach(c => grid.appendChild(c));
+  }
+
+  function markAllSeen() {
+    document.querySelectorAll('.variant-col').forEach(col => {
+      const id = col.dataset.variantId;
+      const latest = col.dataset.latestTs;
+      if (latest) seen[id] = latest;
+      col.classList.remove('new');
+    });
+    localStorage.setItem(seenKey, JSON.stringify(seen));
+    updateNewCount();
+  }
+
   // Restore state on load
   document.addEventListener('DOMContentLoaded', () => {
     for (const [variantId, data] of Object.entries(verdicts)) {
@@ -1005,6 +1097,10 @@ ${(() => {
         if (ta) ta.value = data.notes;
       }
     }
+    // Apply NEW badges based on seen state
+    document.querySelectorAll('.variant-col').forEach(col => markColNew(col, isNew(col)));
+    sortUnseenFirst();
+    updateNewCount();
   });
 
   // Save notes on change
