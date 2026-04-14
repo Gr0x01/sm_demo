@@ -160,6 +160,23 @@ interface Variant {
    * in parallel without having to swap config.selections sequentially.
    */
   selectionsOverride?: Record<string, string>;
+  /**
+   * Lab-only: per-variant selections REPLACEMENT. Unlike `selectionsOverride`
+   * (which merges on top of config.selections), this REPLACES the global
+   * selections entirely for the variant — only the listed subs are sent to
+   * fluxGenerate. Used for pass-2-only experiments where you want to send
+   * only the fixture selections (hardware, sink, faucet, range) on top of a
+   * cached pass-1 base image, dodging the 2-pass split.
+   */
+  selectionsReplace?: Record<string, string>;
+  /**
+   * Lab-only: path (relative to session dir) to an existing image. When set,
+   * uses the file as the input image for full-gen / scoped / refine instead
+   * of the session source photo. Pairs with `selectionsReplace` for
+   * pass-2-only experiments on top of a cached pass-1 image. Supersedes
+   * `inputImageOverride` (which was refine-coupled and is kept for back-compat).
+   */
+  baseImage?: string;
 }
 
 interface SessionConfig {
@@ -630,8 +647,16 @@ async function run(session: string, explicitConcurrency: number | undefined, var
   console.log("Pre-warming swatch cache...");
   const variantResolvers = await Promise.all(
     config.variants.map(async (variant) => {
-      const sels: Record<string, string> = { ...config.selections };
-      if (variant.selectionsOverride) Object.assign(sels, variant.selectionsOverride);
+      // Selection precedence must match the run path (see effectiveSelections
+      // below): selectionsReplace > selectionsOverride > config.selections.
+      // Skipping selectionsReplace here warms the wrong swatches, and the
+      // run-time lookup fails with "Swatch failed to resolve" because the
+      // per-variant URLs were never pre-fetched.
+      const sels: Record<string, string> = variant.selectionsReplace
+        ? { ...variant.selectionsReplace }
+        : variant.selectionsOverride
+        ? { ...config.selections, ...variant.selectionsOverride }
+        : { ...config.selections };
       if (variant.scoped) sels[variant.scoped.subcategoryId] = variant.scoped.optionId;
       return preWarmSwatchCache(sels, optionLookup, rawResolver);
     }),
@@ -708,23 +733,41 @@ async function run(session: string, explicitConcurrency: number | undefined, var
         }
       }
 
-      if (variant.inputImageOverride) {
-        // --- Lab-only: skip main pass, load an existing image directly ---
-        // Used for testing refine/tone-shift passes against a known-good output
-        // without re-rendering the main pass each time.
-        const overridePath = path.join(dir, variant.inputImageOverride);
+      // Resolve the input image: per-variant `baseImage` (or back-compat
+      // `inputImageOverride`) wins over the session source photo. Used for
+      // pass-2-only experiments on top of a cached pass-1 file.
+      let inputBuffer = heroBuffer;
+      const baseImagePath = variant.baseImage ?? variant.inputImageOverride;
+      if (baseImagePath) {
+        const overridePath = path.join(dir, baseImagePath);
         if (!fs.existsSync(overridePath)) {
-          throw new Error(`inputImageOverride not found: ${overridePath}`);
+          throw new Error(`baseImage / inputImageOverride not found: ${overridePath}`);
         }
-        mainBuffer = fs.readFileSync(overridePath);
+        inputBuffer = fs.readFileSync(overridePath);
+        console.log(`[${tag}] Using base image: ${baseImagePath} (${(inputBuffer.length / 1024).toFixed(0)}KB)`);
+      }
+
+      // Pass-2-only legacy mode: when the variant uses `inputImageOverride`
+      // WITHOUT scoped/refine/full-gen modes, we keep the historical "skip
+      // main pass entirely, mark as override-only" behavior so old configs
+      // that paired inputImageOverride + refine still work unchanged.
+      const legacySkipMain =
+        variant.inputImageOverride !== undefined &&
+        variant.baseImage === undefined &&
+        !variant.scoped &&
+        // The legacy semantic was "load file, run refine on it." If there's
+        // no refine step, we fall through to the new full-gen-with-base path.
+        variant.refine !== undefined;
+
+      if (legacySkipMain) {
+        mainBuffer = inputBuffer;
         prompt = `[inputImageOverride: ${variant.inputImageOverride}]`;
         modelUsed = "none";
-        console.log(`[${tag}] Using override image: ${variant.inputImageOverride} (${(mainBuffer.length / 1024).toFixed(0)}KB)`);
       } else if (variant.scoped) {
         // --- Scoped edit (single surface) — delegate to production path ---
         const { subcategoryId, optionId } = variant.scoped;
         const result = await fluxScopedEdit({
-          baseImageBuffer: heroBuffer,
+          baseImageBuffer: inputBuffer,
           changedSubcategoryId: subcategoryId,
           changedOptionId: optionId,
           optionLookup: variantLookup,
@@ -740,13 +783,18 @@ async function run(session: string, explicitConcurrency: number | undefined, var
         console.log(`[${tag}] Scoped edit: ${subcategoryId} → ${modelUsed} (${prompt.split(/\s+/).length} words)`);
       } else {
         // --- Full generation — delegate to production path (handles two-pass split) ---
-        // Merge per-variant selectionsOverride on top of the global config.selections
-        // so multiple variants can test different option selections in parallel.
-        const effectiveSelections = variant.selectionsOverride
+        // Selection resolution priority:
+        //   1. selectionsReplace — REPLACES global selections entirely (for
+        //      pass-2-only experiments where you only want fixture selections)
+        //   2. selectionsOverride — MERGED on top of global selections
+        //   3. global config.selections — default
+        const effectiveSelections = variant.selectionsReplace
+          ? { ...variant.selectionsReplace }
+          : variant.selectionsOverride
           ? { ...config.selections, ...variant.selectionsOverride }
           : config.selections;
         const result = await fluxGenerate({
-          heroBuffer,
+          heroBuffer: inputBuffer,
           selections: effectiveSelections,
           optionLookup: variantLookup,
           spatialHints: config.spatialHints,
@@ -762,6 +810,16 @@ async function run(session: string, explicitConcurrency: number | undefined, var
         mainBuffer = result.imageBuffer;
         passes = result.passes;
         console.log(`[${tag}] Full gen: ${modelUsed} (${passes} pass${passes === 1 ? "" : "es"}, ${prompt.split(/\s+/).length} words)`);
+
+        // Save the pass-1 intermediate as a reusable artifact when the run
+        // did a 2-pass split. Future variants can set
+        // `baseImage: "results/${variant.id}-${runIndex}-pass1.jpg"` to run
+        // pass-2-only experiments on top of it without re-rendering pass 1.
+        if (result.pass1ImageBuffer) {
+          const pass1Name = `${variant.id}-${runIndex}-pass1.jpg`;
+          fs.writeFileSync(path.join(resultsDir(session), pass1Name), result.pass1ImageBuffer);
+          console.log(`[${tag}] Saved pass-1 intermediate: results/${pass1Name}`);
+        }
       }
 
       let finalBuffer = mainBuffer;

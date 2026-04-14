@@ -1,3 +1,34 @@
+/**
+ * Subcategory slug patterns that classify as fixture (metallic/object) surfaces
+ * vs structural (paint/textured) surfaces. Used by the two-pass split logic
+ * in fluxGenerate AND by the hex-anchor injection logic in buildProsePrompt
+ * to skip D102 hex injection for metallic surfaces (they render from the
+ * swatch image alone; hex injection flattens the metallic finish to bright
+ * paint — see watchlist row 4 / D103 vs row 3 / D102).
+ */
+export const FIXTURE_PATTERNS = ["hardware", "faucet", "sink", "lighting", "fan", "refrigerator", "range", "dishwasher"];
+
+/** Check if a subcategory slug matches one of the fixture patterns. */
+export function isFixtureSubcategory(subId: string): boolean {
+  return FIXTURE_PATTERNS.some(p => subId.includes(p));
+}
+
+/**
+ * Subcategory slug patterns that require the Flux 2 Max model for full-gen
+ * rendering. Flex produces generic bar pulls regardless of swatch shape for
+ * small metallic objects — Max is the only model that reads the reference
+ * image faithfully and differentiates knob vs pull vs arched profile vs
+ * rectilinear profile (lab-validated on Nest kitchen 2026-04-15). Hardware
+ * is the only routed subcategory today; extend this list as other fixtures
+ * are validated.
+ */
+export const MAX_ROUTING_PATTERNS = ["hardware"];
+
+/** Check if a subcategory slug requires Max routing for full-gen. */
+export function requiresMaxRouting(subId: string): boolean {
+  return MAX_ROUTING_PATTERNS.some(p => subId.includes(p));
+}
+
 export interface StepPhoto {
   id: string;
   imagePath: string;   // Supabase Storage path
@@ -44,14 +75,33 @@ export interface StepPhoto {
  * - The standalone word `island` is forbidden (BFL groups surfaces by that
  *   word); describe positionally instead.
  */
+/**
+ * Per-material action clause object. Used when a subcategory mixes options of
+ * different material classes (e.g. paint + stain in the same kitchen-cabinet-color
+ * sub) and a single verb cannot serve all options. Runtime picks the right key
+ * based on the selected option's `is_painted` flag:
+ *   - `is_painted = true`  → `paint` clause (D100 paint+hex pattern)
+ *   - `is_painted = false` → `stain` clause (D101 stain+hex pattern)
+ * At least one key must be set. Each clause follows the same validation rules
+ * as a string action clause.
+ */
+export interface MaterialActionClause {
+  paint?: string;
+  stain?: string;
+}
+
+export type ActionClause = string | MaterialActionClause;
+
 export interface PromptProse {
   version: 2;
   /**
-   * Per-surface action clauses, keyed by subcategory slug. Each value is a
-   * lowercase imperative fragment containing exactly one `{image}` token.
-   * See clause rules above.
+   * Per-surface action clauses, keyed by subcategory slug. Each value is either
+   * a lowercase imperative fragment containing exactly one `{image}` token
+   * (single-material catalog), OR a `MaterialActionClause` object with
+   * per-material variants when the catalog mixes paint and stain options in
+   * the same subcategory. See clause rules above.
    */
-  actions: Record<string, string>;
+  actions: Record<string, ActionClause>;
   /**
    * Optional override for the lead-in clause. Defaults to
    * "Apply the following finishes to this kitchen photo:". Use for non-kitchen

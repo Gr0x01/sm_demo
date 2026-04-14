@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { buildEditPrompt, buildScopedEditPrompt, buildProsePrompt, buildProseScopedEdit } from "@/lib/generate";
 import type { SwatchBufferResolver } from "@/lib/generate";
-import type { PromptProse } from "@/lib/step-config";
+import { isFixtureSubcategory, requiresMaxRouting, type PromptProse } from "@/lib/step-config";
 import { IMAGE_MODEL, SCOPED_EDIT_MODEL } from "@/lib/models";
 import { generateImage } from "@/lib/bfl";
 import type { BflModel } from "@/lib/bfl";
@@ -18,8 +18,8 @@ const MAX_SWATCHES = 7;
 /** Max swatch dimension — BFL only needs color/pattern info, 512px JPEG is plenty. */
 const SWATCH_MAX_DIM = 512;
 
-/** Subcategory slug patterns that classify as fixture (vs structural) surfaces. */
-const FIXTURE_PATTERNS = ["hardware", "faucet", "sink", "lighting", "fan", "refrigerator", "range", "dishwasher"];
+// Re-export for back-compat with any internal callers that used the local constant.
+export { FIXTURE_PATTERNS, isFixtureSubcategory } from "@/lib/step-config";
 
 // ---------------------------------------------------------------------------
 // Swatch utilities
@@ -155,6 +155,91 @@ export interface FluxGenerateResult {
   prompt: string;
   durationMs: number;
   passes: number;
+  /**
+   * BFL model(s) actually used for each pass, in order. Length always equals
+   * `passes`. Callers use this for accurate cost estimation, DB `model`
+   * column writes, and PostHog telemetry — because `fluxGenerate` may route
+   * hardware-selecting runs to Max at runtime, the caller's stale
+   * `IMAGE_MODEL` constant does NOT reflect what actually ran. Use
+   * `modelsUsed.at(-1)` for a single-value "terminal model" label, or pass
+   * the full array to `estimateBflCost` for an accurate total.
+   */
+  modelsUsed: string[];
+  /**
+   * Pass 1 intermediate buffer when the run did a 2-pass split. Used by the
+   * lab to save the structural pass output as a reusable artifact so future
+   * variants can run pass-2-only experiments on top of a cached pass 1 (no
+   * cost to re-render the structural pass for every variant). Undefined for
+   * single-pass runs.
+   */
+  pass1ImageBuffer?: Buffer;
+}
+
+/**
+ * Decide which BFL model to use for a full generation run, given the current
+ * selections. Extracted as a pure function so routing logic has a
+ * unit-testable seam AND so the caller can read per-pass decisions
+ * (pass 1 / pass 2 / single-pass) without the function needing to know
+ * which path it will take.
+ *
+ * Routing rules:
+ *   1. Explicit `opts.model` override always wins (lab/test escape hatch).
+ *   2. If any selected option has a subId matching `MAX_ROUTING_PATTERNS`
+ *      AND the option carries an actual swatch URL (so the Max routing
+ *      won't fire for `-none` / `-no-upgrade` defaults with no swatch),
+ *      then:
+ *        - Single-pass → whole pass on Max.
+ *        - 2-pass split → pass 1 on Flex (structural surfaces never need
+ *          Max; hardware subs are always fixtures per FIXTURE_PATTERNS so
+ *          they always live in pass 2 by construction), pass 2 on Max.
+ *   3. Otherwise → default model (Flex) throughout.
+ *
+ * Returns per-pass decisions as a flat record; the caller selects which
+ * field to use based on whether it's running single-pass or 2-pass.
+ */
+export function selectFullGenModel(opts: {
+  selections: Record<string, string>;
+  optionLookup: Map<string, { option: Option; subCategory: SubCategory }>;
+  explicitModel?: string;
+}): {
+  singlePassModel: BflModel;
+  pass1Model: BflModel;
+  pass2Model: BflModel;
+  /** True when hardware routing is active (i.e. Max was chosen because a hardware sub is present). False for explicit overrides or no-hardware runs. */
+  routedForHardware: boolean;
+} {
+  const { selections, optionLookup, explicitModel } = opts;
+
+  if (explicitModel) {
+    const m = explicitModel as BflModel;
+    return { singlePassModel: m, pass1Model: m, pass2Model: m, routedForHardware: false };
+  }
+
+  // Check if any selected option is a hardware subcategory with an actual
+  // swatch — otherwise `-none` / builder-standard defaults trip the routing
+  // and pay the Max penalty for a no-op render.
+  const hasHardwareWithSwatch = Object.entries(selections).some(([subId, optId]) => {
+    if (!requiresMaxRouting(subId)) return false;
+    const entry = optionLookup.get(`${subId}:${optId}`);
+    return !!entry?.option.swatchUrl;
+  });
+
+  const defaultModel = IMAGE_MODEL as BflModel;
+  if (!hasHardwareWithSwatch) {
+    return {
+      singlePassModel: defaultModel,
+      pass1Model: defaultModel,
+      pass2Model: defaultModel,
+      routedForHardware: false,
+    };
+  }
+
+  return {
+    singlePassModel: "flux-2-max",
+    pass1Model: defaultModel,
+    pass2Model: "flux-2-max",
+    routedForHardware: true,
+  };
 }
 
 /**
@@ -166,13 +251,13 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     heroBuffer, selections, optionLookup, spatialHints,
     swatchResolver, defaultSurfaceColors, promptProse,
   } = opts;
-  const model = (opts.model ?? IMAGE_MODEL) as BflModel;
+  const explicitModel = opts.model as BflModel | undefined;
 
   // Pre-warm swatch cache (parallel download + downscale)
   const cachedResolver = await preWarmSwatchCache(selections, optionLookup, swatchResolver);
 
   // Count swatches to decide single vs two-pass
-  const isFixture = (subId: string) => FIXTURE_PATTERNS.some(p => subId.includes(p));
+  const isFixture = isFixtureSubcategory;
   let structuralSwatchCount = 0;
   let fixtureSwatchCount = 0;
   for (const [subId, optId] of Object.entries(selections)) {
@@ -185,6 +270,18 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
   const needsSplit = (structuralSwatchCount + fixtureSwatchCount) > MAX_SWATCHES
     && fixtureSwatchCount > 0
     && structuralSwatchCount > 0;
+
+  // Hardware routing via `selectFullGenModel`. See that function for the
+  // full rule set. The lab/test escape hatch is `opts.model`; everything
+  // else flows through selection-based routing.
+  const {
+    singlePassModel, pass1Model, pass2Model, routedForHardware,
+  } = selectFullGenModel({ selections, optionLookup, explicitModel });
+  if (routedForHardware) {
+    console.log(
+      `[flux-pipeline] hardware routing → ${needsSplit ? `pass1=${pass1Model}, pass2=${pass2Model}` : `single-pass=${singlePassModel}`}`,
+    );
+  }
 
   // Prose-path eligibility: needs the full selections (not per-pass subsets).
   // Log a warning when prose is present but incomplete — that's the smoking-
@@ -212,7 +309,7 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     console.log(`[flux-pipeline] swatch order (becomes input_image_2..N): ${JSON.stringify(swatches.map((s, i) => ({ idx: i + 2, subId: s.subcategoryId, label: s.label })))}`);
 
     const result = await generateImage({
-      model,
+      model: singlePassModel,
       prompt,
       inputImage: heroBuffer,
       referenceImages: swatches.map(s => s.buffer),
@@ -226,6 +323,7 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
       prompt,
       durationMs: Math.round(performance.now() - genStart),
       passes: 1,
+      modelsUsed: [singlePassModel],
     };
   }
 
@@ -249,17 +347,19 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     : await buildEditPrompt(fixtureSelections, optionLookup, spatialHints, cachedResolver);
 
   const pass1Result = await generateImage({
-    model,
+    model: pass1Model,
     prompt: structuralPrompt,
     inputImage: heroBuffer,
     referenceImages: structuralSwatches.map(s => s.buffer),
     maxWaitMs: opts.maxWaitMs,
+    // steps/guidance are Flex-only params; generateImage silently skips them
+    // for other models, so we pass them through unconditionally.
     steps: opts.steps,
     guidance: opts.guidance,
   });
 
   const pass2Result = await generateImage({
-    model,
+    model: pass2Model,
     prompt: fixturePrompt,
     inputImage: pass1Result.imageBuffer,
     referenceImages: fixtureSwatches.map(s => s.buffer),
@@ -273,6 +373,8 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     prompt: `${structuralPrompt}\n\nPASS_2 (fixtures):\n${fixturePrompt}`,
     durationMs: Math.round(performance.now() - genStart),
     passes: 2,
+    modelsUsed: [pass1Model, pass2Model],
+    pass1ImageBuffer: pass1Result.imageBuffer,
   };
 }
 

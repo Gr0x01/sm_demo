@@ -3,7 +3,7 @@ import { hashSelections, DEFAULT_PROSE_STYLE, GENERATION_CACHE_VERSION } from "@
 import { getCategoriesWithOptions } from "@/lib/db-queries";
 import type { DemoSceneAnalysis } from "@/lib/demo-scene";
 import { filterDemoSelectionsByVisibility } from "@/lib/demo-scene";
-import type { PromptProse } from "@/lib/step-config";
+import { MAX_ROUTING_PATTERNS, type PromptProse } from "@/lib/step-config";
 import { IMAGE_MODEL } from "@/lib/models";
 
 export const DEMO_ORG_ID = "0d255878-9268-468a-b9e2-95b7552b6126";
@@ -30,16 +30,27 @@ export const SAMPLE_KITCHEN_PROSE: PromptProse = {
 
 /**
  * Derived from prose content + IMAGE_MODEL + DEFAULT_PROSE_STYLE +
- * GENERATION_CACHE_VERSION — auto-invalidates whenever the production cache
- * version bumps OR any of the demo-specific inputs change. Keeps the demo
- * cache in lockstep with prod render semantics so prompt-builder changes
- * (substitution logic, hex anchor injection, etc.) bust the demo too.
+ * GENERATION_CACHE_VERSION + MAX_ROUTING_PATTERNS — auto-invalidates whenever
+ * the production cache version bumps, any of the demo-specific inputs change,
+ * OR the hardware routing pattern set changes. Keeps the demo cache in
+ * lockstep with prod render semantics so prompt-builder changes
+ * (substitution logic, hex anchor injection, routing rules, etc.) bust the
+ * demo too.
+ *
+ * Hardware routing note: `MAX_ROUTING_PATTERNS` is folded into the version
+ * so that adding/removing a routing pattern (e.g. when faucets start routing
+ * to Max) flushes stale cached renders that were produced under the prior
+ * routing regime. This also flushes the PR #3 "orange bronze hardware" rows
+ * that existed under the old Flex path — when this file ships with
+ * `MAX_ROUTING_PATTERNS = ["hardware"]` for the first time, the version
+ * string changes and the whole demo cache re-seeds.
  */
 export const DEMO_GENERATION_CACHE_VERSION = createHash("sha256")
   .update(JSON.stringify(SAMPLE_KITCHEN_PROSE))
   .update(IMAGE_MODEL)
   .update(DEFAULT_PROSE_STYLE)
   .update(GENERATION_CACHE_VERSION)
+  .update(JSON.stringify(MAX_ROUTING_PATTERNS))
   .digest("hex")
   .slice(0, 8);
 

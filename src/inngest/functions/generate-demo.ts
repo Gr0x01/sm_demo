@@ -129,8 +129,13 @@ export const generateDemo = inngest.createFunction(
           .upload(outputPath, result.imageBuffer, { contentType: "image/jpeg", upsert: true });
         if (uploadError) throw new Error(`Storage upload failed: ${uploadError.message}`);
 
-        console.log(`[generate/demo] Generation complete in ${result.durationMs}ms (${result.passes} pass${result.passes > 1 ? "es" : ""})`);
-        return { type: "generated" as const, prompt: result.prompt, durationMs: result.durationMs };
+        console.log(`[generate/demo] Generation complete in ${result.durationMs}ms (${result.passes} pass${result.passes > 1 ? "es" : ""}, models: ${result.modelsUsed.join(", ")})`);
+        return {
+          type: "generated" as const,
+          prompt: result.prompt,
+          durationMs: result.durationMs,
+          modelsUsed: result.modelsUsed,
+        };
       } catch (err) {
         await captureAiError("anonymous", {
           provider: "bfl",
@@ -265,7 +270,9 @@ export const generateDemo = inngest.createFunction(
         image_path: outputPath,
         prompt: result.prompt,
         step_id: null,
-        model: IMAGE_MODEL,
+        // Terminal model actually used. Hardware-routed demo runs will write
+        // `flux-2-max` here; non-hardware runs stay on IMAGE_MODEL.
+        model: result.modelsUsed.at(-1) ?? IMAGE_MODEL,
         org_id: DEMO_ORG_ID,
         scoped_edit_depth: 0,
         leave_one_out_hashes: leaveOneOutHashes,
@@ -278,10 +285,12 @@ export const generateDemo = inngest.createFunction(
     await step.run("track", async () => {
       await captureAiEvent("anonymous", {
         provider: "bfl",
-        model: IMAGE_MODEL,
+        // Terminal model (Max for hardware-routed runs, Flex otherwise).
+        model: result.modelsUsed.at(-1) ?? IMAGE_MODEL,
         route: "/api/try/generate",
         duration_ms: result.durationMs,
-        cost_usd: estimateBflCost(IMAGE_MODEL),
+        // Per-pass model array so hybrid Flex+Max runs sum correctly.
+        cost_usd: estimateBflCost(result.modelsUsed),
         image_size: "1536x1024",
       });
 

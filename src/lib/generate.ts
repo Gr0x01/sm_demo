@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import type { Option, SubCategory } from "@/types";
 import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
-import type { PromptProse } from "@/lib/step-config";
+import { isFixtureSubcategory, requiresMaxRouting, type ActionClause, type MaterialActionClause, type PromptProse } from "@/lib/step-config";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
@@ -114,8 +114,13 @@ export interface SwatchImage {
 
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
+ *
+ * v4.3 (2026-04-15): hardware routing to Max. Flushes PR #3 "orange bronze
+ * hardware" rows that were rendered under the old all-Flex + hex-injection
+ * regime. After this bump, hardware-selecting runs write under the new
+ * `_model: flux-2-max` partition and orange rows age out naturally.
  */
-export const GENERATION_CACHE_VERSION = "v4.2";
+export const GENERATION_CACHE_VERSION = "v4.3";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
@@ -312,6 +317,31 @@ export class PromptProseError extends Error {
     super(message);
     this.name = "PromptProseError";
   }
+}
+
+/**
+ * Resolve an `actions[subId]` entry to a single clause string based on the
+ * selected option's material class. Handles both the legacy string form
+ * (single-material catalog, one verb fits all) and the per-material object
+ * form (mixed paint+stain catalogs — `{paint, stain}`).
+ *
+ * Selection rule:
+ *   - String input → returned as-is
+ *   - Object input + `is_painted = true`  → `paint` clause (D100 paint+hex)
+ *   - Object input + `is_painted = false` → `stain` clause (D101 stain+hex)
+ *
+ * Returns `null` when an object form is missing the key matching the option's
+ * material class. Callers raise `PromptProseError` so the missing-coverage
+ * case fails loudly instead of silently rendering the wrong material.
+ */
+export function pickActionTemplate(
+  clause: ActionClause | undefined,
+  isPainted: boolean,
+): string | null {
+  if (clause === undefined) return null;
+  if (typeof clause === "string") return clause;
+  if (isPainted) return clause.paint ?? null;
+  return clause.stain ?? null;
 }
 
 /** Default lead clause appended in front of the action bullets. */
@@ -609,10 +639,17 @@ export async function buildProsePrompt(
     if (optId.endsWith("-none") || optId.endsWith("-no-upgrade")) continue;
     if (!option.swatchUrl && !option.swatchColor && !option.promptDescriptor) continue;
 
-    const template = prose.actions?.[subId];
-    if (!template) {
+    const clauseEntry = prose.actions?.[subId];
+    if (clauseEntry === undefined) {
       throw new PromptProseError(
         `Missing actions["${subId}"] in prompt_prose. Every selected subcategory must have an action clause.`,
+      );
+    }
+    const isPaintedOption = !!(option.isPainted && option.swatchColor);
+    const template = pickActionTemplate(clauseEntry, isPaintedOption);
+    if (!template) {
+      throw new PromptProseError(
+        `actions["${subId}"] is a per-material object but has no clause for the selected option's material class (option "${option.id}", isPainted=${isPaintedOption}). Add a "${isPaintedOption ? "paint" : "stain"}" key to the object.`,
       );
     }
 
@@ -697,9 +734,19 @@ export async function buildProsePrompt(
 
       // D102 inline hex anchor: when the option carries `swatch_color`,
       // substitute `image N at hex #XXXXXX` so the color binding lands
-      // directly after the image reference (not at clause end). Anchors
-      // attention budget across multi-swatch scenes — watchlist row 7.
-      const imageRef = entry.swatchColor
+      // directly after the image reference. Anchors attention budget
+      // across multi-swatch scenes — watchlist row 3 / row 7.
+      //
+      // FIXTURE SKIP: metallic surfaces (hardware, faucet, sink, range,
+      // lighting, fan, refrigerator) must NOT receive the bare hex anchor.
+      // Watchlist row 4 / D103 requires metallics to use a finish-name
+      // gate (`oil-rubbed bronze finish matching hex`) which the runtime
+      // cannot auto-emit per-option. Bare hex alone (D102 form) flattens
+      // the metallic finish and Flex renders bright saturated paint.
+      // Skipping the hex falls back to the pre-PR-#3 swatch-only behavior
+      // — the swatch image carries the metallic appearance reliably.
+      const skipHexForFixture = isFixtureSubcategory(entry.swatchSubcategoryId);
+      const imageRef = entry.swatchColor && !skipHexForFixture
         ? `image ${imageIndex} at hex ${entry.swatchColor}`
         : `image ${imageIndex}`;
       substituted = entry.template.replace(IMAGE_TOKEN, imageRef);
@@ -749,14 +796,19 @@ export async function buildProseScopedEdit(
     return { prompt: "Return this image unchanged.", swatches: [] };
   }
 
-  const template = prose.actions?.[changedSubcategoryId];
-  if (!template) {
+  const clauseEntry = prose.actions?.[changedSubcategoryId];
+  if (clauseEntry === undefined) {
     throw new PromptProseError(
       `Missing actions["${changedSubcategoryId}"] in prompt_prose. Scoped edits reuse the full-gen actions map.`,
     );
   }
-
-  const isPainted = changed.option.isPainted && changed.option.swatchColor;
+  const isPainted = !!(changed.option.isPainted && changed.option.swatchColor);
+  const template = pickActionTemplate(clauseEntry, isPainted);
+  if (!template) {
+    throw new PromptProseError(
+      `actions["${changedSubcategoryId}"] is a per-material object but has no clause for the selected option's material class (option "${changed.option.id}", isPainted=${isPainted}). Add a "${isPainted ? "paint" : "stain"}" key to the object.`,
+    );
+  }
   const swatches: SwatchImage[] = [];
   let clause: string;
 
@@ -789,9 +841,13 @@ export async function buildProseScopedEdit(
       subcategoryId: changedSubcategoryId,
     });
 
-    // D102 inline hex anchor (watchlist row 7) — same as full-gen.
-    // Normalize: malformed/whitespace-only hex falls back to "image 2".
-    const anchorHex = normalizeAnchorHex(changed.option.swatchColor);
+    // D102 inline hex anchor — same as full-gen, with the same fixture skip
+    // (see full-gen comment above): metallic surfaces render cleaner from the
+    // swatch image alone than with a bare D102 hex anchor. Without the skip,
+    // Flex interprets the hex as flat saturated paint and the metallic
+    // finish disappears.
+    const skipHexForFixture = isFixtureSubcategory(changedSubcategoryId);
+    const anchorHex = skipHexForFixture ? null : normalizeAnchorHex(changed.option.swatchColor);
     const imageRef = anchorHex ? `image 2 at hex ${anchorHex}` : "image 2";
     clause = template.replace(IMAGE_TOKEN, imageRef);
   }
@@ -836,6 +892,38 @@ export async function buildProseScopedEdit(
  * `mergedClauses[0].clause` so error messages point at the offending field.
  */
 function validateActionClause(loc: string, clause: unknown): void {
+  // Accept either a string (single-material catalog) or a per-material object
+  // (mixed paint+stain catalogs). For the object form, validate every defined
+  // key as its own clause.
+  if (clause !== null && typeof clause === "object" && !Array.isArray(clause)) {
+    const obj = clause as Record<string, unknown>;
+    const allowedKeys = ["paint", "stain"] as const;
+    const definedKeys = allowedKeys.filter(k => obj[k] !== undefined);
+    if (definedKeys.length === 0) {
+      throw new PromptProseError(
+        `${loc} is a per-material object but has no clauses set. Add at least one of: paint, stain.`,
+      );
+    }
+    for (const key of Object.keys(obj)) {
+      if (!allowedKeys.includes(key as typeof allowedKeys[number])) {
+        throw new PromptProseError(
+          `${loc}.${key} is not a valid material key. Allowed: ${allowedKeys.join(", ")}.`,
+        );
+      }
+    }
+    for (const key of definedKeys) {
+      validateActionClauseString(`${loc}.${key}`, obj[key]);
+    }
+    return;
+  }
+  validateActionClauseString(loc, clause);
+}
+
+/**
+ * Validate a single action clause STRING. Used directly for legacy string
+ * action entries and indirectly for each key inside a per-material object.
+ */
+function validateActionClauseString(loc: string, clause: unknown): void {
   if (typeof clause !== "string") {
     throw new PromptProseError(`${loc} must be a string.`);
   }
@@ -869,7 +957,15 @@ function validateActionClause(loc: string, clause: unknown): void {
 
   // Strip the literal {image} token before scanning so nothing inside the
   // placeholder is mistaken for forbidden text.
-  const scanText = trimmed.replace(IMAGE_TOKEN, "");
+  let scanText = trimmed.replace(IMAGE_TOKEN, "");
+  // D101 carve-out: clauses that lead with the `stain` verb are the
+  // documented stained-wood pattern, which requires the literal phrase
+  // "wood grain matching" — see watchlist locked-recipes section. Strip
+  // that phrase before scanning so the material guard doesn't reject the
+  // canonical D101 form.
+  if (/^stain\b/i.test(trimmed)) {
+    scanText = scanText.replace(/\bwood\s+grain(\s+matching)?\b/gi, "");
+  }
   const neg = findForbiddenWord(scanText, FORBIDDEN_NEGATIVE_WORDS);
   if (neg) {
     throw new PromptProseError(
@@ -1214,7 +1310,23 @@ export function deriveGenerationContext(
 
   const sceneDescription = buildSceneDescription(aiConfig);
 
-  const modelName = IMAGE_MODEL;
+  // Hardware routing lives here (not just in fluxGenerate) so the cache key
+  // `_model`, DB `generated_images.model`, and PostHog telemetry all reflect
+  // the terminal (dominant) model that actually ran. Without this hoist, the
+  // caller stamps everything with the stale IMAGE_MODEL constant and cost
+  // reports under-count Max-routed kitchens.
+  //
+  // Partitioning: hardware-selecting runs get "flux-2-max" as their cache
+  // key, non-hardware runs stay on IMAGE_MODEL (Flex). Diff-match queries
+  // key on `_model`, so a hardware-selecting LRU match will only match
+  // prior Max rows, and non-hardware queries only match Flex rows. No
+  // cache version bump needed — the partition naturally separates.
+  const hasHardwareWithSwatch = Object.entries(scopedSelections).some(([subId, optId]) => {
+    if (!requiresMaxRouting(subId)) return false;
+    const entry = optionLookup.get(`${subId}:${optId}`);
+    return !!entry?.option.swatchUrl;
+  });
+  const modelName = hasHardwareWithSwatch ? "flux-2-max" : IMAGE_MODEL;
   const scopedSubcategoryIds = photoScopedIds ? [...photoScopedIds] : [];
   const promptContext = buildPromptContextSignature({
     sceneDescription,

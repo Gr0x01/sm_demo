@@ -411,6 +411,293 @@ describe("buildProsePrompt (v2)", () => {
   });
 });
 
+describe("buildProsePrompt (v2) — D102 hex anchor skipped for fixture subcategories", () => {
+  // Watchlist regression: PR #3 auto-injected hex anchors for every option
+  // with swatch_color, including metallic fixtures (hardware/faucet/sink/range).
+  // Metallic surfaces need D103's finish-gated form, which the runtime can't
+  // auto-emit per-option; bare D102 hex flattens metallic finishes into
+  // bright saturated paint. Fix: fixture subcategories skip the hex anchor
+  // and fall back to swatch-only (pre-PR-#3 behavior).
+
+  function buildFixtureLookup() {
+    const lookup = buildOptionLookup();
+    // Add a hardware option WITH swatch_color — would trigger the old
+    // auto-inject bug if not for the fixture skip.
+    const hwSub = { id: "kitchen-cabinet-hardware", name: "Kitchen Cabinet Hardware", categoryId: "hardware", isVisual: true, options: [] } as any;
+    const hwOpt = {
+      id: "hw-bronze",
+      name: "Seaver Bronze",
+      price: 0,
+      swatchUrl: "https://storage/swatch-hw-bronze.jpg",
+      swatchColor: "#804A2E",
+    };
+    lookup.set("kitchen-cabinet-hardware:hw-bronze", { option: hwOpt as any, subCategory: hwSub });
+    return lookup;
+  }
+
+  it("skips hex anchor for kitchen-cabinet-hardware (fixture) even when swatch_color is set", async () => {
+    const lookup = buildFixtureLookup();
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-hardware": "change every cabinet pull and knob to match {image}",
+      },
+    };
+    const { prompt } = await buildProsePrompt(prose, { "kitchen-cabinet-hardware": "hw-bronze" }, lookup, mockResolver);
+    // D102 hex anchor MUST NOT be injected for the fixture subcategory
+    expect(prompt).toContain("change every cabinet pull and knob to match image 2");
+    expect(prompt).not.toContain("at hex #804A2E");
+    expect(prompt).not.toContain("hex #");
+  });
+
+  it("still injects hex anchor for non-fixture textured surfaces (countertops)", async () => {
+    const lookup = buildOptionLookup();
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        countertops: "change every horizontal countertop surface to match {image}",
+      },
+    };
+    const { prompt } = await buildProsePrompt(prose, { countertops: "ct-quartz-calacatta" }, lookup, mockResolver);
+    // Countertop is a D102 textured surface — hex anchor stays
+    expect(prompt).toMatch(/image 2 at hex #[0-9a-fA-F]+/);
+  });
+
+  it("buildProseScopedEdit also skips the hex anchor for fixture subcategories", async () => {
+    const lookup = buildFixtureLookup();
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        "kitchen-cabinet-hardware": "change every cabinet pull and knob to match {image}",
+      },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "kitchen-cabinet-hardware", "hw-bronze", lookup, mockResolver);
+    expect(prompt).toContain("Change every cabinet pull and knob to match image 2");
+    expect(prompt).not.toContain("at hex #804A2E");
+    expect(prompt).not.toContain("hex #");
+  });
+
+  it("buildProseScopedEdit still injects hex for non-fixture textured surfaces", async () => {
+    const lookup = buildOptionLookup();
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        countertops: "change every horizontal countertop surface to match {image}",
+      },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "countertops", "ct-quartz-calacatta", lookup, mockResolver);
+    expect(prompt).toMatch(/image 2 at hex #[0-9a-fA-F]+/);
+  });
+});
+
+describe("buildProsePrompt (v2) — per-material action clause object", () => {
+  const optionLookup = buildOptionLookup();
+
+  // The fixture has two cabinet options:
+  //   cab-dove → isPainted=true,  swatchColor=#F5F5F2 → paint path (D100)
+  //   cab-espresso → isPainted=false, no swatchColor  → swatch path (D101/D102 stain)
+  // The per-material object form lets one prompt_prose serve both options
+  // by routing the runtime to a different clause based on the option's
+  // is_painted flag.
+
+  it("picks the paint clause when the selected option is painted", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+      },
+    };
+    const { prompt, swatches } = await buildProsePrompt(
+      prose,
+      { cabinets: "cab-dove" },
+      optionLookup,
+      mockResolver,
+    );
+    expect(prompt).toContain("paint every cabinet door and drawer along the walls to hex #F5F5F2");
+    expect(prompt).not.toContain("stain");
+    expect(prompt).not.toContain("wood grain");
+    expect(swatches).toHaveLength(0);
+  });
+
+  it("picks the stain clause when the selected option is not painted", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+      },
+    };
+    const { prompt, swatches } = await buildProsePrompt(
+      prose,
+      { cabinets: "cab-espresso" },
+      optionLookup,
+      mockResolver,
+    );
+    expect(prompt).toContain("stain every cabinet door and drawer along the walls with wood grain matching image 2");
+    expect(prompt).not.toMatch(/paint every cabinet/);
+    expect(swatches).toHaveLength(1);
+  });
+
+  it("throws when the per-material object lacks a clause for the selected option's material", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        // Only paint key — Espresso (stain) selection should error.
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+        },
+      },
+    };
+    await expect(
+      buildProsePrompt(prose, { cabinets: "cab-espresso" }, optionLookup, mockResolver),
+    ).rejects.toThrow(/per-material object but has no clause/);
+  });
+
+  it("legacy string clauses still work alongside per-material object clauses", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+        countertops: "apply {image} to all horizontal countertop surfaces",
+      },
+    };
+    const { prompt } = await buildProsePrompt(
+      prose,
+      { cabinets: "cab-dove", countertops: "ct-granite-luna" },
+      optionLookup,
+      mockResolver,
+    );
+    expect(prompt).toContain("paint every cabinet door and drawer along the walls to hex #F5F5F2");
+    expect(prompt).toContain("apply image 2 to all horizontal countertop surfaces");
+  });
+});
+
+describe("buildProseScopedEdit (v2) — per-material action clause object", () => {
+  const optionLookup = buildOptionLookup();
+
+  it("picks the paint clause for a painted option in scoped edit", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+      },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "cabinets", "cab-dove", optionLookup, mockResolver);
+    expect(prompt).toContain("Paint every cabinet door and drawer along the walls to hex #F5F5F2");
+    expect(prompt).not.toContain("stain");
+  });
+
+  it("picks the stain clause for a non-painted option in scoped edit", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+      },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "cabinets", "cab-espresso", optionLookup, mockResolver);
+    expect(prompt).toContain("Stain every cabinet door and drawer along the walls with wood grain matching image 2");
+    expect(prompt).not.toMatch(/Paint every cabinet/);
+  });
+
+  it("scoped edit throws when per-material object is missing the matching key", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: {
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+      },
+    };
+    await expect(
+      buildProseScopedEdit(prose, "cabinets", "cab-dove", optionLookup, mockResolver),
+    ).rejects.toThrow(/per-material object but has no clause/);
+  });
+});
+
+describe("validatePromptProse (v2) — per-material action clause object", () => {
+  it("accepts an actions entry that is a {paint, stain} object", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+      },
+    };
+    expect(() => validatePromptProse(prose, ["cabinets"])).not.toThrow();
+  });
+
+  it("accepts an actions entry with only a paint key", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: { paint: "paint every cabinet door and drawer along the walls to {image}" },
+      },
+    };
+    expect(() => validatePromptProse(prose, ["cabinets"])).not.toThrow();
+  });
+
+  it("accepts an actions entry with only a stain key", () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: {
+        cabinets: { stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}" },
+      },
+    };
+    expect(() => validatePromptProse(prose, ["cabinets"])).not.toThrow();
+  });
+
+  it("rejects an empty per-material object", () => {
+    const prose = {
+      version: 2,
+      actions: { cabinets: {} },
+    } as unknown as PromptProse;
+    expect(() => validatePromptProse(prose, ["cabinets"])).toThrow(/no clauses set/);
+  });
+
+  it("rejects a per-material object with an unknown material key", () => {
+    const prose = {
+      version: 2,
+      actions: {
+        cabinets: {
+          paint: "paint every cabinet door and drawer along the walls to {image}",
+          metallic: "change every cabinet door and drawer along the walls to {image}",
+        },
+      },
+    } as unknown as PromptProse;
+    expect(() => validatePromptProse(prose, ["cabinets"])).toThrow(/not a valid material key/);
+  });
+
+  it("validates each material clause against the same string-clause rules", () => {
+    const prose = {
+      version: 2,
+      actions: {
+        // Paint clause is too short (3 words)
+        cabinets: {
+          paint: "paint cabinets {image}",
+          stain: "stain every cabinet door and drawer along the walls with wood grain matching {image}",
+        },
+      },
+    } as unknown as PromptProse;
+    expect(() => validatePromptProse(prose, ["cabinets"])).toThrow(/4–30 words/);
+  });
+});
+
 describe("buildProsePrompt (v2) — D102 hex anchor injection", () => {
   const optionLookup = buildOptionLookup();
 

@@ -34,7 +34,7 @@ export const kitchenAiConfig: StepPhotoAiConfig = {
     imagePath: "org-001/rooms/step-kitchen-001/kitchen-hero.webp",
     spatialHint: "Wide-angle shot of kitchen from dining area looking toward back wall",
     photoBaseline: "Modern kitchen with white shaker cabinets, gray granite counters, stainless appliances",
-    subcategoryIds: ["cabinets", "countertops", "backsplash", "range", "refrigerator", "dishwasher"],
+    subcategoryIds: ["cabinets", "countertops", "backsplash", "range", "refrigerator", "dishwasher", "kitchen-cabinet-hardware"],
     remapAccentAsWallPaint: false,
     promptProse: null,
   },
@@ -188,6 +188,19 @@ export function buildOptionLookup(): OptionLookupMap {
   const dishwasherSub = makeSub("dishwasher", "Dishwasher", { isAppliance: true });
   const dishwasherOpt = makeOpt("dw-ss-standard", "Stainless Standard", { price: 0 });
   map.set("dishwasher:dw-ss-standard", { option: dishwasherOpt, subCategory: dishwasherSub });
+
+  // Kitchen cabinet hardware — used by hardware routing tests. One option
+  // with a real swatch (triggers Max routing) and one no-upgrade default
+  // (must NOT trigger Max routing).
+  const hwSub = makeSub("kitchen-cabinet-hardware", "Kitchen Cabinet Hardware");
+  const hwBronzeOpt = makeOpt("hw-bronze", "Seaver Bronze", {
+    swatchUrl: "https://storage/swatch-hw-bronze.jpg",
+    swatchColor: "#804A2E",
+    price: 0,
+  });
+  map.set("kitchen-cabinet-hardware:hw-bronze", { option: hwBronzeOpt, subCategory: hwSub });
+  const hwNoneOpt = makeOpt("hw-none", "Builder Standard", { price: 0 });
+  map.set("kitchen-cabinet-hardware:hw-none", { option: hwNoneOpt, subCategory: hwSub });
 
   const carpetSub = makeSub("carpet-color", "Carpet Color");
   const carpetOpt = makeOpt("carpet-warm-beige", "Warm Beige", { swatchUrl: "https://storage/swatch-carpet.jpg" });

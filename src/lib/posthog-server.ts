@@ -206,8 +206,25 @@ export function estimateGeminiImageCost(model: string): number {
   return GEMINI_IMAGE_COST[model] ?? DEFAULT_GEMINI_IMAGE_COST;
 }
 
-export function estimateBflCost(model: string, passes: number = 1): number {
-  return (BFL_IMAGE_COST[model] ?? DEFAULT_BFL_IMAGE_COST) * passes;
+/**
+ * Estimate BFL cost for a generation run.
+ *
+ * Two forms:
+ *   - `estimateBflCost("flux-2-flex", 2)` — single-model × N passes (back-compat)
+ *   - `estimateBflCost(["flux-2-flex", "flux-2-max"])` — per-pass models summed,
+ *     used when fluxGenerate routes a hybrid run (e.g. hardware routing bills
+ *     Flex pass 1 + Max pass 2 correctly).
+ */
+export function estimateBflCost(models: string[]): number;
+export function estimateBflCost(model: string, passes?: number): number;
+export function estimateBflCost(modelOrModels: string | string[], passes: number = 1): number {
+  if (Array.isArray(modelOrModels)) {
+    return modelOrModels.reduce(
+      (sum, m) => sum + (BFL_IMAGE_COST[m] ?? DEFAULT_BFL_IMAGE_COST),
+      0,
+    );
+  }
+  return (BFL_IMAGE_COST[modelOrModels] ?? DEFAULT_BFL_IMAGE_COST) * passes;
 }
 
 export function estimateGeminiCost(model: string, usage: { inputTokens?: number; outputTokens?: number }): number {

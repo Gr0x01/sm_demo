@@ -107,6 +107,11 @@ function validateProseClient(prose: PromptProse): ProseValidationError[] {
 
   for (const [subId, clause] of Object.entries(prose.actions ?? {})) {
     const field = `actions.${subId}`;
+    // Per-material object clauses (`{paint, stain}`) are authored via SQL
+    // and validated server-side. Skip client-side string validation for the
+    // object form; the server's `validatePromptProse` catches structural
+    // issues at save time.
+    if (typeof clause !== "string") continue;
     const trimmed = clause.trim();
     if (trimmed.length === 0) {
       errors.push({ field, message: "Action clause is empty." });
@@ -613,27 +618,47 @@ function PhotoCard({
                 </div>
                 {scopedIds.map((subId, idx) => {
                   const previewIndex = idx + 2;
-                  const actionValue = prose.actions?.[subId] ?? "";
+                  const rawAction = prose.actions?.[subId];
+                  // Per-material object clauses can't be edited in the
+                  // textarea UI — show them read-only until the admin gets
+                  // proper per-material pickers. Authored via SQL for now.
+                  const isObjectForm = rawAction !== undefined && typeof rawAction !== "string";
+                  const actionValue = typeof rawAction === "string" ? rawAction : "";
                   const actionError = proseErrors.find((e) => e.field === `actions.${subId}`);
                   return (
                     <div key={subId} className="bg-white border border-slate-200 p-2 space-y-1">
                       <div className="text-[11px] text-slate-700 font-mono">{subId}</div>
-                      <textarea
-                        value={actionValue}
-                        onChange={(e) => setActionLine(subId, e.target.value)}
-                        className={`w-full bg-white border px-2 py-1 text-xs text-slate-900 resize-y ${
-                          actionError ? "border-red-400" : "border-slate-300"
-                        }`}
-                        rows={2}
-                        placeholder={`apply {image} to [surface description]`}
-                      />
-                      {actionValue && (
-                        <p className="text-[10px] text-slate-500 italic">
-                          → - {renderProseLinePreview(actionValue, previewIndex)}
-                        </p>
-                      )}
-                      {actionError && (
-                        <p className="text-[10px] text-red-600">{actionError.message}</p>
+                      {isObjectForm ? (
+                        <>
+                          <div className="text-[11px] text-slate-500 italic p-2 bg-slate-50 border border-slate-200">
+                            Per-material object clause — authored via SQL. Edit in DB.
+                          </div>
+                          {rawAction && typeof rawAction === "object" && (
+                            <pre className="text-[10px] text-slate-600 bg-slate-50 p-2 overflow-x-auto">
+                              {JSON.stringify(rawAction, null, 2)}
+                            </pre>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <textarea
+                            value={actionValue}
+                            onChange={(e) => setActionLine(subId, e.target.value)}
+                            className={`w-full bg-white border px-2 py-1 text-xs text-slate-900 resize-y ${
+                              actionError ? "border-red-400" : "border-slate-300"
+                            }`}
+                            rows={2}
+                            placeholder={`apply {image} to [surface description]`}
+                          />
+                          {actionValue && (
+                            <p className="text-[10px] text-slate-500 italic">
+                              → - {renderProseLinePreview(actionValue, previewIndex)}
+                            </p>
+                          )}
+                          {actionError && (
+                            <p className="text-[10px] text-red-600">{actionError.message}</p>
+                          )}
+                        </>
                       )}
                     </div>
                   );

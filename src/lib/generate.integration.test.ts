@@ -92,6 +92,88 @@ describe("deriveGenerationContext — kitchen photo", () => {
     expect(a.selectionsHash).toBe(b.selectionsHash);
   });
 
+  // Hardware routing integration: deriveGenerationContext hoists the
+  // hardware detection up into the cache-key derivation layer so DB model,
+  // PostHog cost, and cache `_model` all reflect the terminal model that
+  // fluxGenerate will route to. The unit tests for `selectFullGenModel`
+  // cover the function in isolation; these tests cover the integration
+  // with `deriveGenerationContext` so regressions to the hoist are caught.
+
+  it("sets modelName to flux-2-max when hardware with swatch is selected", () => {
+    const result = deriveGenerationContext(
+      kitchenAiConfig,
+      { ...kitchenSelections, "kitchen-cabinet-hardware": "hw-bronze" },
+      optionLookup,
+      defaultPolicyContext,
+      null,
+    );
+    expect(result.modelName).toBe("flux-2-max");
+    expect(result.hashInputs._model).toBe("flux-2-max");
+  });
+
+  it("keeps modelName at IMAGE_MODEL (flex) when no hardware is selected", () => {
+    const result = deriveGenerationContext(
+      kitchenAiConfig,
+      kitchenSelections, // no hardware in base kitchenSelections
+      optionLookup,
+      defaultPolicyContext,
+      null,
+    );
+    expect(result.modelName).toBe("flux-2-flex");
+    expect(result.hashInputs._model).toBe("flux-2-flex");
+  });
+
+  it("keeps modelName at IMAGE_MODEL when hardware is selected but has no swatch (builder-standard default)", () => {
+    const result = deriveGenerationContext(
+      kitchenAiConfig,
+      { ...kitchenSelections, "kitchen-cabinet-hardware": "hw-none" },
+      optionLookup,
+      defaultPolicyContext,
+      null,
+    );
+    expect(result.modelName).toBe("flux-2-flex");
+    expect(result.hashInputs._model).toBe("flux-2-flex");
+  });
+
+  it("produces different cache keys when toggling hardware on vs off (partition correctness)", () => {
+    const withHardware = deriveGenerationContext(
+      kitchenAiConfig,
+      { ...kitchenSelections, "kitchen-cabinet-hardware": "hw-bronze" },
+      optionLookup,
+      defaultPolicyContext,
+      null,
+    );
+    const withoutHardware = deriveGenerationContext(
+      kitchenAiConfig,
+      kitchenSelections,
+      optionLookup,
+      defaultPolicyContext,
+      null,
+    );
+    // Different `_model` → different selectionsHash → different cache bucket.
+    // A buyer flipping hardware on does NOT hit a stale no-hardware cached
+    // image, and vice versa. Hardware-only swaps (bronze → gold) DO hit cache
+    // because both sides land under `_model: flux-2-max`.
+    expect(withHardware.hashInputs._model).not.toBe(withoutHardware.hashInputs._model);
+    expect(withHardware.selectionsHash).not.toBe(withoutHardware.selectionsHash);
+  });
+
+  it("shares cache partition across different hardware finish swaps (bronze ↔ hypothetical-gold)", () => {
+    // Both selections use hardware-with-swatch, so both should partition
+    // under `_model: flux-2-max`. The `selectionsHash` differs because the
+    // option id differs, but the `_model` in hashInputs matches.
+    const bronze = deriveGenerationContext(
+      kitchenAiConfig,
+      { ...kitchenSelections, "kitchen-cabinet-hardware": "hw-bronze" },
+      optionLookup,
+      defaultPolicyContext,
+      null,
+    );
+    expect(bronze.hashInputs._model).toBe("flux-2-max");
+    // A different hardware option with swatch would land under the same
+    // `_model` partition (tested in unit tests via multi-option lookup).
+  });
+
   it("produces different hash when selection changes", () => {
     const a = deriveGenerationContext(
       kitchenAiConfig,

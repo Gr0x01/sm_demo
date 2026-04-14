@@ -138,13 +138,19 @@ export const generatePhoto = inngest.createFunction(
         : rawImageBuffer;
 
       try {
+        // IMPORTANT: do NOT thread `modelName` into `fluxGenerate` as
+        // `opts.model`. That explicit override short-circuits
+        // `selectFullGenModel` and collapses the 2-pass hybrid (Flex pass 1
+        // + Max pass 2) into a single model for both passes — double-billing
+        // hardware runs. `modelName` stays for cache-key + DB + error label
+        // use only; the pipeline layer does its own per-pass routing via
+        // `selectFullGenModel` based on the selection set.
         const result = await fluxGenerate({
           heroBuffer,
           selections: scopedSelections,
           optionLookup,
           spatialHints,
           swatchResolver: createSwatchResolver(supabase),
-          model: modelName,
           promptProse,
         });
 
@@ -153,8 +159,15 @@ export const generatePhoto = inngest.createFunction(
         const destPath = willRefine ? mainPassPath : outputPath;
         await uploadIntermediate(supabase, result.imageBuffer, destPath);
         lap("generation-done");
-        console.log(`[generate/photo] ${result.passes === 1 ? "Single" : "Two"}-pass complete for ${stepPhotoId} in ${result.durationMs}ms`);
-        return { type: "generated" as const, prompt: result.prompt, durationMs: result.durationMs, lastPath: destPath, passes: result.passes };
+        console.log(`[generate/photo] ${result.passes === 1 ? "Single" : "Two"}-pass complete for ${stepPhotoId} in ${result.durationMs}ms (models: ${result.modelsUsed.join(", ")})`);
+        return {
+          type: "generated" as const,
+          prompt: result.prompt,
+          durationMs: result.durationMs,
+          lastPath: destPath,
+          passes: result.passes,
+          modelsUsed: result.modelsUsed,
+        };
       } catch (err) {
         await captureAiError(sessionId, {
           provider: "bfl",
@@ -189,6 +202,11 @@ export const generatePhoto = inngest.createFunction(
     let finalPrompt: string;
     let totalDurationMs: number;
     let totalPasses: number;
+    // Per-pass models actually used. Threaded from fluxGenerate / fluxScopedEdit
+    // so DB `model` column, PostHog `model` label, and PostHog `cost_usd` all
+    // reflect what actually ran (Max-routed hardware runs, hybrid Flex+Max
+    // 2-pass splits, scoped edits with per-option model overrides).
+    let modelsUsed: string[] = [];
 
     // --- Scoped edit path (diff cache hit) ---
     if (generateResult.type === "scoped-edit-needed") {
@@ -247,10 +265,12 @@ export const generatePhoto = inngest.createFunction(
       finalPrompt = scopedResult.prompt;
       totalDurationMs = scopedResult.durationMs;
       scopedEditModelUsed = scopedResult.model;
+      modelsUsed = [scopedEditModelUsed];
     } else {
       finalPrompt = generateResult.prompt;
       totalDurationMs = generateResult.durationMs;
       totalPasses = generateResult.passes;
+      modelsUsed = [...generateResult.modelsUsed];
     }
 
     // --- Step 2: Oven correction / second pass (conditional) ---
@@ -331,6 +351,10 @@ export const generatePhoto = inngest.createFunction(
       if (secondPass.success) {
         finalPrompt = `${finalPrompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
         totalPasses += 1;
+        // Refine uses the same cache-key model (`modelName`) — hardware runs
+        // refine on Max, non-hardware on Flex. Append so cost estimation
+        // covers the extra pass.
+        modelsUsed.push(modelName);
       }
     }
 
@@ -352,7 +376,12 @@ export const generatePhoto = inngest.createFunction(
           step_photo_id: stepPhotoId,
           buyer_session_id: sessionId,
           selections_fingerprint: selectionsFingerprint,
-          model: modelName,
+          // Terminal (dominant) model — for hybrid 2-pass runs this is the
+          // pass 2 model (Max for hardware); for single-pass it's the only
+          // model. `modelName` is the cache-key label, which matches for
+          // hardware-routed runs but could diverge in future rules; prefer
+          // the actual last-used model.
+          model: modelsUsed.at(-1) ?? modelName,
           org_id: orgId,
           scoped_edit_depth: isScopedEdit ? scopedEditDepth : 0,
           leave_one_out_hashes: leaveOneOutHashes,
@@ -365,12 +394,14 @@ export const generatePhoto = inngest.createFunction(
     await step.run("track", async () => {
       await captureAiEvent(sessionId, {
         provider: "bfl",
-        model: isScopedEdit ? scopedEditModelUsed : modelName,
+        // Label with the terminal model. For hybrid flex+max runs this is
+        // `flux-2-max`; the cost field below accounts for both passes.
+        model: modelsUsed.at(-1) ?? modelName,
         route: "/api/generate/photo",
         duration_ms: totalDurationMs,
-        cost_usd: isScopedEdit
-          ? estimateBflCost(scopedEditModelUsed)
-          : estimateBflCost(modelName, totalPasses),
+        // Pass the full per-pass model array so hybrid runs get an accurate
+        // sum (flex pass 1 + max pass 2) instead of `max × 2` or `flex × 2`.
+        cost_usd: estimateBflCost(modelsUsed),
         orgId,
         orgSlug,
         floorplanSlug,
