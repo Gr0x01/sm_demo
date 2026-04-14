@@ -79,13 +79,12 @@ Then: **Demo org swatch_color backfill** (16 options across 4 subcategories — 
 
 **Still in the queue:**
 
-- **Phase 3a** — draft `src/lib/prose-templates.ts` template catalog (sparse 5-template map keyed by `(material_category, verb_mode)`). Design only, not wired to runtime.
 - **Side task** — gray out the SM Kinkade + Lennox selection UI (since SM degrades on Flex until re-validated).
 
 **Still blocked on validation** (NL + non-Nest cross-check):
 - D101 stain scoped-edit failure routing
 - D103 scope narrowing to single-material only
-- Row 18 / Open Question #1 — full material+verb axes schema migration (Phase 3b implementation)
+- Row 18 / Open Question #1 — full material+verb axes schema migration. The template catalog design lives in the watchlist locked-recipes section; an actual `src/lib/prose-templates.ts` file is not worth writing until the runtime caller is being implemented (otherwise it just becomes stale draft code).
 
 ## Locked recipes (canonical clause templates)
 
