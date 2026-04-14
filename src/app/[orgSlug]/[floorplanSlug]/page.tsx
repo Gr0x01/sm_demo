@@ -16,6 +16,10 @@ export default async function DemoPage({
 
   const floorplan = await getFloorplan(org.id, floorplanSlug);
   if (!floorplan) notFound();
+  // Inactive floorplans are grayscale + non-clickable in the org chooser
+  // (`/[orgSlug]/page.tsx`). Deep links to the floorplan URL get a 404 so
+  // there's no buyer-facing path to a floorplan that isn't ready.
+  if (!floorplan.is_active) notFound();
 
   const [categories, steps] = await Promise.all([
     getCategoriesForFloorplan(org.id, floorplan.id),
