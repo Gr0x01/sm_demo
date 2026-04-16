@@ -113,11 +113,21 @@ Now focused on: builder outreach (provocation-first strategy), generation qualit
 
 16. **Prompt Lab improvements.** (a) NEW badge system rewritten: server-authoritative `isNew` field set by `run` command, replaces broken localStorage approach. (b) Per-variant "Testing" table shows effective selections per card. (c) Session-baseline selections block collapsed by default. (d) Grid width bumped 360→560px for 2-column layout. (e) `model` label bug fixed (line 813): now uses `result.modelsUsed` instead of `variant.model ?? IMAGE_MODEL`. (f) Slug column dropped from selections tables.
 
+**Shipped 2026-04-17 (review cleanup + sweep fast wins):**
+
+17. **Cleanup commit (`38ffd28`)** — three fixes flagged during pipeline review on top of PR #7:
+    - **secondPass model cost tracking bug**. `modelsUsed.push(modelName)` was pushing the cache-key label instead of the model the refine step actually used. Fridge secondPass runs on Max via policy override; prior code undercounted cost as flex+flex. Refine step now returns `model: secondPassModel` and the caller pushes that.
+    - **`isHardwareSubcategory` helper** extracted in `step-config.ts`. Three `subId.includes("hardware")` sites in generate.ts collapsed to one call. One seam if hardware definition ever shifts (e.g. excluding `door-hardware`).
+    - **DEBUG leak removed**. The `mainPassPath` fire-and-forget `.remove()` on successful refine was commented out with a "revert after debugging" note that made it into HEAD. Orphaned intermediate jpegs on every refine run. Restored the cleanup + stripped debug fields from the step return.
+
+18. **Cache bump + Nest kitchen hygiene (`25febac`)**:
+    - `GENERATION_CACHE_VERSION v4.3 → v4.4` — flushes prod cache entries from before default-skip / guidance=8 / hex narrowing / clause rewrites.
+    - Demo Nest kitchen `photo_baseline` + `spatial_hint` NULL'd (both described the OLD layout — sink on island, fridge in alcove, pendants — all wrong for the current hero photo). v2 prose doesn't read them in prompts; they were cache-key input only and active misdirection for anyone reading DB state.
+    - `prompt_prose.actions.range` dropped from Demo Nest kitchen. Range has 2 options with no swatch images, so the action clause never fired (guard at generate.ts:671 skips options without swatch/color/descriptor). Clause was stale ("back wall" wrong) AND violated the allowed-verb rule. Just deleted it.
+
 **Still open from 2026-04-15/16:**
-- **`GENERATION_CACHE_VERSION` still `"v4.3"`** — needs bump to `"v4.4"` to flush stale prod cache entries from before the default-skip / guidance / hex changes. `DEMO_GENERATION_CACHE_VERSION` auto-bumped via hash.
-- **`photo_baseline` + `spatial_hint` stale on Nest Kitchen** — describe old kitchen layout (sink on island, fridge in alcove, pendants). v2 prose doesn't use them in prompts (cache key only). Should be NULL'd or rewritten for hygiene.
-- **Allowed verb rule** — action clauses must lead with change/replace/apply/paint/stain. "Remove existing X and install" is banned (caused duplicate fixtures + no shape fidelity). Range clause still uses `remove existing` but is effectively a no-op (default selected = skipped).
 - **Dimensions field** — `"small hardware, narrow relative to the cabinet face"` biased against non-bar shapes. NULL'd on Demo hardware during testing. New T-bar pull options shipped with `dimensions: NULL`. Dimensions concept needs rethinking for non-hardware fixtures.
+- **Fridge action clause uses `install` verb** — not in the allowed list (change/replace/apply/paint/stain) but load-bearing for the actual fridge-install operation. Allowed-verb rule bends here; the rule is a prior, not an absolute. Worth capturing in the verb-rule doc if it grows to include other install/remove cases.
 
 **Lab session 2026-04-15 findings (not yet in the watchlist):**
 - **Flex shape-fidelity gap on small metallic objects.** Tested across 5 clause variants, 5 guidance levels (g=6-10), and 5 different hardware options. Flex installs its generic rectilinear bar-pull prior regardless of what the swatch shows (arched eyebrow / hourglass-tapered / rectilinear / combo with knob). The prior is stronger than the swatch reference signal; guidance does not help; clause rewording does not help. Max reads the swatch correctly. Klein 9B matches Flex's failure. Klein 4B matches AND drifts cabinet color. Pro renders decent hardware BUT unreliably restructures unrelated surfaces (island geometry, upper cab color).
