@@ -115,12 +115,16 @@ export interface SwatchImage {
 /**
  * Bump this when prompt semantics materially change so old cached images are not reused.
  *
+ * v4.4 (2026-04-16): Nest kitchen sweep — default-skip, DEFAULT_FLEX_GUIDANCE=8,
+ * metallic hex-skip narrowed to hardware only, counter/backsplash/sink/faucet
+ * clauses rewritten. Prod rows from before these changes no longer match the
+ * current prompt semantics.
+ *
  * v4.3 (2026-04-15): hardware routing to Max. Flushes PR #3 "orange bronze
  * hardware" rows that were rendered under the old all-Flex + hex-injection
- * regime. After this bump, hardware-selecting runs write under the new
- * `_model: flux-2-max` partition and orange rows age out naturally.
+ * regime.
  */
-export const GENERATION_CACHE_VERSION = "v4.3";
+export const GENERATION_CACHE_VERSION = "v4.4";
 
 export interface PromptPolicyOverrides {
   invariantRulesAlways?: string[];
