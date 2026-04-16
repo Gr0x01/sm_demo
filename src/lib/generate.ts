@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import type { Option, RenderMode, SubCategory } from "@/types";
 import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
-import { hasHardwareRoutingTrigger, type ActionClause, type MaterialActionClause, type PromptProse } from "@/lib/step-config";
+import { hasHardwareRoutingTrigger, isHardwareSubcategory, type ActionClause, type MaterialActionClause, type PromptProse } from "@/lib/step-config";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
@@ -590,7 +590,7 @@ function resolveMerges(
       // Metallic surfaces: hex-skip only for hardware (D103 bronze distortion).
       // Other metallic fixtures get hex anchors for pass-2 attention binding.
       const rawHex = normalizeAnchorHex(firstFound.option.swatchColor);
-      const skipMergedHex = firstMode === "swatch_metallic" && entry.when[0].includes("hardware");
+      const skipMergedHex = firstMode === "swatch_metallic" && isHardwareSubcategory(entry.when[0]);
       const firstHex = skipMergedHex ? null : rawHex;
       if (process.env.NODE_ENV !== "production" && firstMode !== "swatch_metallic") {
         for (let j = 1; j < entry.when.length; j++) {
@@ -717,8 +717,7 @@ export async function buildProsePrompt(
       // pass-2 prompts where attention budget is tight. Lab-validated that
       // neutral hex (#C8C8C8 stainless, #CCBA78 gold) doesn't cause the
       // same distortion as saturated hex (#804A2E bronze).
-      const skipHex = renderMode === "swatch_metallic"
-        && subId.includes("hardware");
+      const skipHex = renderMode === "swatch_metallic" && isHardwareSubcategory(subId);
       const anchorHex = skipHex
         ? null
         : normalizeAnchorHex(option.swatchColor);
@@ -887,8 +886,7 @@ export async function buildProseScopedEdit(
 
     // Hex anchor: ON for textured (D102), OFF only for hardware metallics
     // (D103 bronze distortion). Other metallic fixtures get hex anchors.
-    const skipScopedHex = renderMode === "swatch_metallic"
-      && changedSubcategoryId.includes("hardware");
+    const skipScopedHex = renderMode === "swatch_metallic" && isHardwareSubcategory(changedSubcategoryId);
     const anchorHex = skipScopedHex
       ? null
       : normalizeAnchorHex(changed.option.swatchColor);

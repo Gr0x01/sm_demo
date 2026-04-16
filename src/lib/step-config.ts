@@ -14,6 +14,17 @@ export function isFixtureSubcategory(subId: string): boolean {
 }
 
 /**
+ * Check if a subcategory slug is hardware (cabinet pulls/knobs, door hardware, etc.).
+ * Used by the metallic hex-skip rule — bronze hardware hex (#804A2E) flattened
+ * to bright saturated paint (D103). Neutral metallic fixtures (sink/faucet/fridge)
+ * don't exhibit the same distortion so they still get hex anchors for pass-2
+ * attention binding.
+ */
+export function isHardwareSubcategory(subId: string): boolean {
+  return subId.includes("hardware");
+}
+
+/**
  * Subcategory slug patterns that require the Flux 2 Max model for full-gen
  * rendering. Empty list as of 2026-04-16: hardware was the only routed
  * subcategory, and was removed when Demo Nest kitchen migrated from

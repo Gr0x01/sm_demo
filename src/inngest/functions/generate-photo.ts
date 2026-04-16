@@ -319,19 +319,16 @@ export const generatePhoto = inngest.createFunction(
             referenceImages: refineReferenceImages.length > 0 ? refineReferenceImages : undefined,
           });
 
-          // Success — refined image becomes the final output.
-          // DEBUG: mainPassPath is NOT deleted here (normally fire-and-forget removed)
-          // so we can diff pre-refine vs post-refine externally. Revert after debugging.
+          // Success — refined image becomes the final output. Orphan the
+          // mainPass intermediate in the background (not load-bearing).
           await uploadIntermediate(supabase, result.imageBuffer, outputPath);
+          supabase.storage.from("generated-images").remove([mainPassPath]).catch(() => {});
           const durationMs = Math.round(performance.now() - genStart);
           console.log(`[generate/photo] Second pass complete for ${stepPhotoId} in ${durationMs}ms`);
           return {
             durationMs,
             success: true as const,
-            // DEBUG: surface what BFL actually received so Inngest captures it.
-            debugPrompt: resolvedPolicy.secondPass!.prompt,
-            debugReferenceCount: refineReferenceImages.length,
-            debugMainPassPath: mainPassPath,
+            model: secondPassModel,
           };
         } catch (err) {
           // Refine failed — promote main pass to final output with a
@@ -352,10 +349,7 @@ export const generatePhoto = inngest.createFunction(
       if (secondPass.success) {
         finalPrompt = `${finalPrompt}\n\nSECOND_PASS (${resolvedPolicy.secondPass.reason}):\n${resolvedPolicy.secondPass.prompt}`;
         totalPasses += 1;
-        // Refine uses the same cache-key model (`modelName`) — hardware runs
-        // refine on Max, non-hardware on Flex. Append so cost estimation
-        // covers the extra pass.
-        modelsUsed.push(modelName);
+        modelsUsed.push(secondPass.model);
       }
     }
 
