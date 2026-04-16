@@ -57,7 +57,7 @@ Now focused on: builder outreach (provocation-first strategy), generation qualit
 
 | Room | Status |
 |---|---|
-| Nest Kitchen | ✓ done 2026-04-14 (D101/D102/D103 locked); **re-tuned 2026-04-15** after new photo landed — scope trimmed, prose rewritten, hardware shape-fidelity gap surfaced → Max routing shipped |
+| Nest Kitchen | ✓ done 2026-04-14 (D101/D102/D103 locked); **re-tuned 2026-04-15/16** — sink validated (2 farmhouse options, scoped+bundled), faucet clause rewritten, hardware migrated to 3 T-bar pull SKUs on Flex, fridge secondPass policy on Max, default-skip shipped, guidance=8 default, hex narrowing, counter+backsplash clauses rewritten |
 | Nest Bathroom | ✓ done 2026-04-14 (bundled fullgen, 7 subs, first try) |
 | Nest Bedroom | ✓ done 2026-04-14 (15 lab variants, baseboard removed from demo, 3 new findings + verb-axis architecture insight) |
 | Nest Living Room | ✓ done 2026-04-15 (scope trimmed 12→3 after new photo, new `living-room-cabinet-color` subcategory seeded, prose v2 authored + lab-validated) |
@@ -90,6 +90,34 @@ Now focused on: builder outreach (provocation-first strategy), generation qualit
    - **Intentionally NOT collapsed**: `FIXTURE_PATTERNS` is still separate from render_mode because the two-pass split is about ref-limit pressure, not color binding. Dual builder (`buildProsePrompt` v2 vs `buildEditPrompt` legacy) is migration state not code shape. Material-axis vs verb-axis mismatch (watchlist row 23 / Open Q #1) is a deeper design question, not a rename — still open.
    - **Files touched**: `supabase/migrations/20260415_options_render_mode.sql` (new), `src/types/index.ts` (Option.renderMode + RenderMode export), `src/lib/db-queries.ts`, `src/lib/generate.ts` (resolveRenderMode helper + dispatch switches), `src/lib/step-config.ts` (hasHardwareRoutingTrigger), `src/lib/flux-pipeline.ts` (delegates to oracle), `src/lib/generate.test.ts` + `src/lib/__fixtures__/generation.ts` (rename), `scripts/prompt-lab.ts` (forceHex sets `renderMode: "hex_stain"` on cloned lookup).
    - **Tests**: 283 → 283, `npx tsc --noEmit` clean. No new tests — existing per-material, D102 fixture-skip, and merge tests already exercise every render_mode branch through the `renderMode` field or the `resolveRenderMode` fallback.
+
+**Shipped 2026-04-15/16 (Nest Kitchen fixture sweep):**
+
+7. **Sink validated + DB updated.** Dropped 2 undermount options (high-divide 60/40, single-bowl stainless) — source photo has farmhouse, no need for geometry subtraction. Kept 2 farmhouse options: fireclay (default, $0) + stainless ($0 swap). Clause: `change the farmhouse apron sink beneath the center window to match {image}`. Validated on Flex scoped-edit (V1) and bundled full-gen.
+
+8. **Faucet clause rewritten.** `remove existing faucet...` → `change the faucet behind the back-wall sink to match {image}`. The "remove existing" verb was causing duplicate-faucet-on-island failures in 2/6 Max bundled runs. Both `change` and `replace` verbs fixed it; `change` selected for consistency with sink clause.
+
+9. **Hardware migrated to T-bar pull SKUs.** Deleted 5 combo SKUs (Seaver bronze/nickel, Sedona pull+knob/all-pulls, Stanton gold) — source photo already has T-bar pulls, so combo SKUs required shape changes that Max couldn't reliably land. Replaced with 3 finish-only T-bar pull options (Black default, Gold, Stainless) uploaded to Supabase Storage. Clause: `apply {image} as the cabinet hardware, with knobs on every cabinet door and pulls on every drawer front` → simplified to `change every pull on every upper, lower, corner, and center cabinet to match {image}`. Validated on Flex single-pass and bundled.
+
+10. **`MAX_ROUTING_PATTERNS` emptied.** Hardware was the only routing trigger. With T-bar pull SKUs (shape matches source), Flex handles finish swaps. All kitchen renders now Flex+Flex (no Max). Tests updated (282 passing).
+
+11. **Default options skipped from pipeline.** `buildProsePrompt` + `buildEditPrompt` now skip options with `is_default=true`. Source photo already shows defaults — no transformation needed. Saves swatch slots + attention budget. Critical for pass-2 fixture prompts: dropped from 5 fixtures to 3 active changes (faucet/sink/fridge). Pass-2 attention starvation was the root cause of all fixture failures in bundled production renders.
+
+12. **Guidance default = 8.** `DEFAULT_FLEX_GUIDANCE = 8` in `flux-pipeline.ts`. BFL's own default (4.5) was too low for multi-surface prompts — pass-2 fixtures failed at 4.5 but landed at 8. All lab sweeps validated at g=8. Applies to both full-gen and scoped-edit.
+
+13. **Hex anchor narrowing.** Metallic hex-skip narrowed from ALL `swatch_metallic` → only hardware-slug metallics. Sink/faucet/fridge/range now get D102-style hex anchors (`image N at hex #XXXXXX`) in bundled pass-2 prompts. Bronze hardware (#804A2E) still skips hex (proven distortion in PR #5). Neutral hex (#C8C8C8 stainless, #CCBA78 gold) doesn't distort.
+
+14. **Counter + backsplash clauses rewritten.** Counter: `apply {image} to every horizontal countertop surface throughout the kitchen` (was wrong: "on the back-wall cabinets and waterfall center workspace" excluded island and described nonexistent waterfall). Backsplash: `change the vertical wall surface between the upper cabinets and perimeter countertop to match {image}` (was: "the wall between the upper cabinets and the back-wall counter" — bled onto island with large-format tiles).
+
+15. **Fridge secondPass policy on Max.** `step_photo_generation_policies` re-enabled with fridge config: when any non-default refrigerator is selected, a dedicated Max pass runs AFTER the main Flex render to install the fridge in the alcove. Lab-validated: Max lands fridge cleanly, Flex lands it in scoped-edit but not in bundled pass-2. The old range secondPass (cooktop hallucination bug) was disabled. Policy supports `model` field for per-secondPass model override.
+
+16. **Prompt Lab improvements.** (a) NEW badge system rewritten: server-authoritative `isNew` field set by `run` command, replaces broken localStorage approach. (b) Per-variant "Testing" table shows effective selections per card. (c) Session-baseline selections block collapsed by default. (d) Grid width bumped 360→560px for 2-column layout. (e) `model` label bug fixed (line 813): now uses `result.modelsUsed` instead of `variant.model ?? IMAGE_MODEL`. (f) Slug column dropped from selections tables.
+
+**Still open from 2026-04-15/16:**
+- **`GENERATION_CACHE_VERSION` still `"v4.3"`** — needs bump to `"v4.4"` to flush stale prod cache entries from before the default-skip / guidance / hex changes. `DEMO_GENERATION_CACHE_VERSION` auto-bumped via hash.
+- **`photo_baseline` + `spatial_hint` stale on Nest Kitchen** — describe old kitchen layout (sink on island, fridge in alcove, pendants). v2 prose doesn't use them in prompts (cache key only). Should be NULL'd or rewritten for hygiene.
+- **Allowed verb rule** — action clauses must lead with change/replace/apply/paint/stain. "Remove existing X and install" is banned (caused duplicate fixtures + no shape fidelity). Range clause still uses `remove existing` but is effectively a no-op (default selected = skipped).
+- **Dimensions field** — `"small hardware, narrow relative to the cabinet face"` biased against non-bar shapes. NULL'd on Demo hardware during testing. New T-bar pull options shipped with `dimensions: NULL`. Dimensions concept needs rethinking for non-hardware fixtures.
 
 **Lab session 2026-04-15 findings (not yet in the watchlist):**
 - **Flex shape-fidelity gap on small metallic objects.** Tested across 5 clause variants, 5 guidance levels (g=6-10), and 5 different hardware options. Flex installs its generic rectilinear bar-pull prior regardless of what the swatch shows (arched eyebrow / hourglass-tapered / rectilinear / combo with knob). The prior is stronger than the swatch reference signal; guidance does not help; clause rewording does not help. Max reads the swatch correctly. Klein 9B matches Flex's failure. Klein 4B matches AND drifts cabinet color. Pro renders decent hardware BUT unreliably restructures unrelated surfaces (island geometry, upper cab color).

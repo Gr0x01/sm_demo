@@ -311,9 +311,17 @@ No opening sentence, no rules block, no scene block. Each line is "Apply image N
 - `src/lib/bfl.ts` — BFL API client (submit → poll → download)
 - `src/inngest/functions/generate-photo.ts` — main pipeline orchestrator
 - `src/inngest/functions/generate-demo.ts` — demo pipeline orchestrator
-- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-max"`, `SCOPED_EDIT_MODEL = "flux-2-max"`
+- `src/lib/models.ts` — `IMAGE_MODEL = "flux-2-flex"`, `SCOPED_EDIT_MODEL = "flux-2-flex"`
 
-**Model history**: gpt-image-1 → Gemini → gpt-image-1.5 → gpt-image-1.5 + Gemini Flash/Pro post-passes → multi-pass pipeline → Flux 2 Max/Pro → **Flux 2 Max/Max + Flex for backsplash scoped edits** (current). OpenAI and Gemini pipelines fully removed. Flex tested for full gen (2026-04-07): good instruction following but warm orange color cast and poor two-tone cabinet discrimination. Not suitable for multi-surface full gen.
+**Default-skip (2026-04-16)**: `buildProsePrompt` + `buildEditPrompt` skip options with `is_default=true`. Source photo already shows defaults; rendering them wastes swatch slots + attention budget. Critical for pass-2 where 5 fixtures → 3 active changes after skip.
+
+**Guidance default (2026-04-16)**: `DEFAULT_FLEX_GUIDANCE = 8` in `flux-pipeline.ts`. BFL default (4.5) too low for multi-surface prompts. All lab validation at g=8.
+
+**Hex anchor narrowing (2026-04-16)**: Metallic hex-skip narrowed from all `swatch_metallic` to hardware-slug only. Sink/faucet/fridge/range get hex anchors for pass-2 attention binding. Hardware keeps hex-skip (bronze distortion proven).
+
+**Fridge secondPass (2026-04-16)**: `step_photo_generation_policies` supports `model` field for per-secondPass model override. Nest Kitchen policy: when non-default fridge selected, dedicated Max pass installs fridge after main Flex render. Fridge can't land in bundled Flex pass-2 but lands reliably via dedicated Max pass or Flex scoped-edit.
+
+**Model history**: gpt-image-1 → Gemini → gpt-image-1.5 → multi-pass → Flux 2 Max/Pro → Flux 2 Flex+Klein (PR #1, 2026-04-14) → **Flex-only default (2026-04-16)**: `MAX_ROUTING_PATTERNS = []`, all renders Flex+Flex. Max used only for fridge secondPass policy. Demo Nest kitchen hardware migrated from combo SKUs (shape changes) to T-bar pull SKUs (finish-only swaps) so Flex handles them without Max routing.
 
 ## Swatch Images
 

@@ -242,12 +242,19 @@ export function selectFullGenModel(opts: {
  * Run a full Flux 2 generation (single or two-pass split).
  * Stateless — caller handles storage downloads/uploads.
  */
+/** Lab-validated default for Flex full-gen. BFL's own default (4.5) is too low
+ * for multi-surface prompts — pass-2 fixtures consistently fail at 4.5 but
+ * land at 8. All Nest kitchen lab sweeps (2026-04-15/16) validated at g=8. */
+const DEFAULT_FLEX_GUIDANCE = 8;
+
 export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerateResult> {
   const {
     heroBuffer, selections, optionLookup, spatialHints,
     swatchResolver, defaultSurfaceColors, promptProse,
   } = opts;
   const explicitModel = opts.model as BflModel | undefined;
+  // Apply validated guidance default when caller doesn't specify
+  const guidance = opts.guidance ?? DEFAULT_FLEX_GUIDANCE;
 
   // Pre-warm swatch cache (parallel download + downscale)
   const cachedResolver = await preWarmSwatchCache(selections, optionLookup, swatchResolver);
@@ -311,7 +318,7 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
       referenceImages: swatches.map(s => s.buffer),
       maxWaitMs: opts.maxWaitMs,
       steps: opts.steps,
-      guidance: opts.guidance,
+      guidance,
     });
 
     return {
@@ -351,7 +358,7 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     // steps/guidance are Flex-only params; generateImage silently skips them
     // for other models, so we pass them through unconditionally.
     steps: opts.steps,
-    guidance: opts.guidance,
+    guidance,
   });
 
   const pass2Result = await generateImage({
@@ -361,7 +368,7 @@ export async function fluxGenerate(opts: FluxGenerateOpts): Promise<FluxGenerate
     referenceImages: fixtureSwatches.map(s => s.buffer),
     maxWaitMs: opts.maxWaitMs,
     steps: opts.steps,
-    guidance: opts.guidance,
+    guidance,
   });
 
   return {
@@ -470,7 +477,7 @@ export async function fluxScopedEdit(opts: FluxScopedEditOpts): Promise<FluxScop
     inputImage: baseImageBuffer,
     referenceImages: swatches.map(s => s.buffer),
     maxWaitMs: opts.maxWaitMs,
-    ...(isFlex && { steps: 50, guidance: 7 }),
+    ...(isFlex && { steps: 50, guidance: DEFAULT_FLEX_GUIDANCE }),
   });
 
   return {

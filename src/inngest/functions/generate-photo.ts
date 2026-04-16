@@ -311,8 +311,9 @@ export const generatePhoto = inngest.createFunction(
 
         const genStart = performance.now();
         try {
+          const secondPassModel = (resolvedPolicy.secondPass!.model ?? modelName) as BflModel;
           const result = await generateImage({
-            model: modelName as BflModel,
+            model: secondPassModel,
             prompt: resolvedPolicy.secondPass!.prompt,
             inputImage: prevBuffer,
             referenceImages: refineReferenceImages.length > 0 ? refineReferenceImages : undefined,

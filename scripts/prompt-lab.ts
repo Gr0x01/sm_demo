@@ -179,6 +179,13 @@ interface Variant {
    * `inputImageOverride` (which was refine-coupled and is kept for back-compat).
    */
   baseImage?: string;
+  /**
+   * Server-authoritative NEW badge state. Set to `true` by the run command when
+   * this variant produced new results in the most recent invocation; set to `false`
+   * on all other variants in the same invocation. Read by `buildReviewHtml` to
+   * render the NEW badge. Replaces the prior localStorage-based approach.
+   */
+  isNew?: boolean;
 }
 
 interface SessionConfig {
@@ -810,7 +817,12 @@ async function run(session: string, explicitConcurrency: number | undefined, var
           guidance: variant.guidance,
         });
         prompt = result.prompt;
-        modelUsed = (variant.model ?? IMAGE_MODEL) as string;
+        // Use the actual model(s) from the pipeline, not the default/override input.
+        // Routing (hardware → Max) can upgrade the model post-dispatch, and 2-pass
+        // splits use two different models. result.modelsUsed reflects what actually ran.
+        modelUsed = result.modelsUsed.length === 1
+          ? result.modelsUsed[0]
+          : result.modelsUsed.join("+");
         mainBuffer = result.imageBuffer;
         passes = result.passes;
         console.log(`[${tag}] Full gen: ${modelUsed} (${passes} pass${passes === 1 ? "" : "es"}, ${prompt.split(/\s+/).length} words)`);
@@ -900,6 +912,11 @@ async function run(session: string, explicitConcurrency: number | undefined, var
   const active: Promise<void>[] = [];
   const pending = [...queue];
 
+  // Snapshot each variant's result count before the run so we can tell
+  // which variants actually produced new results (vs all-failed).
+  const startingCounts = new Map<string, number>();
+  for (const v of config.variants) startingCounts.set(v.id, v.results.length);
+
   while (pending.length > 0 || active.length > 0) {
     while (active.length < concurrency && pending.length > 0) {
       const job = pending.shift()!;
@@ -911,6 +928,13 @@ async function run(session: string, explicitConcurrency: number | undefined, var
     if (active.length > 0) {
       await Promise.race(active);
     }
+  }
+
+  // Update server-authoritative NEW state: variants whose result count
+  // increased this run are NEW; everything else is cleared.
+  for (const v of config.variants) {
+    const before = startingCounts.get(v.id) ?? 0;
+    v.isNew = v.results.length > before;
   }
 
   // Save updated config with results
@@ -935,11 +959,25 @@ function buildReviewHtml(
   session: string,
   config: SessionConfig,
   resolvedSelections: Record<string, { optionId: string; optionName: string }> = {},
+  optionLookup?: Map<string, { option: { name?: string | null } }>,
 ): string {
-  const variantsWithResults = config.variants.filter(v => v.results.length > 0);
+  const optionName = (subId: string, optId: string): string => {
+    const entry = optionLookup?.get(`${subId}:${optId}`);
+    return entry?.option.name ?? resolvedSelections[subId]?.optionName ?? optId;
+  };
+  const effectiveSelections = (v: Variant): Record<string, string> => {
+    if (v.selectionsReplace) return v.selectionsReplace;
+    if (v.selectionsOverride) return { ...config.selections, ...v.selectionsOverride };
+    return config.selections;
+  };
+  const variantsWithResults = config.variants
+    .filter(v => v.results.length > 0)
+    // Server-authoritative NEW state: new variants float to the top.
+    .sort((a, b) => Number(b.isNew === true) - Number(a.isNew === true));
   if (variantsWithResults.length === 0) {
     return "<html><body><h1>No results yet. Run some variants first.</h1></body></html>";
   }
+  const newCount = variantsWithResults.filter(v => v.isNew === true).length;
 
   // Find the first result's prompt to show what selections were used
   const samplePrompt = variantsWithResults[0]?.results[0]?.prompt ?? "";
@@ -960,7 +998,7 @@ function buildReviewHtml(
   .source-block img { width: 100%; display: block; cursor: pointer; }
   .source-block .label { font-size: 13px; color: #888; margin-top: 8px; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px; padding-bottom: 24px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 24px; padding-bottom: 24px; }
 
   .variant-col { border: 1px solid #333; background: #111; position: relative; }
   .variant-col.approved { border-color: #2a6; }
@@ -1005,6 +1043,9 @@ function buildReviewHtml(
   .selections-table .sub { color: #666; font-family: monospace; }
   .selections-table .name { color: #e0e0e0; font-weight: 500; }
   .selections-table .slug { color: #555; font-family: monospace; font-size: 11px; }
+  .variant-sels { padding: 8px 16px 12px 16px; border-bottom: 1px solid #222; }
+  .variant-sels summary { font-size: 12px; color: #888; cursor: pointer; }
+  .variant-sels .selections-table { font-size: 11px; }
 
   /* Lightbox */
   .lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 100; align-items: center; justify-content: center; cursor: zoom-out; }
@@ -1022,22 +1063,21 @@ function buildReviewHtml(
   Total runs: <span>${variantsWithResults.reduce((s, v) => s + v.results.length, 0)}</span>
 </div>
 
-<details class="selections-block" open>
-  <summary>Selections (${Object.keys(config.selections).length} surfaces)</summary>
+<details class="selections-block">
+  <summary>Session baseline (${Object.keys(config.selections).length} surfaces) — variants with selectionsReplace / selectionsOverride shown per-card</summary>
   <table class="selections-table">
     ${Object.entries(config.selections).map(([subId, optId]) => {
       const resolved = resolvedSelections[subId];
       const name = resolved?.optionName ?? optId;
-      return `<tr><td class="sub">${escapeHtml(subId)}</td><td class="name">${escapeHtml(name)}</td><td class="slug">${escapeHtml(optId)}</td></tr>`;
+      return `<tr><td class="sub">${escapeHtml(subId)}</td><td class="name">${escapeHtml(name)}</td></tr>`;
     }).join("")}
   </table>
 </details>
 
 <div class="actions-bar">
   <button onclick="exportDecisions()">Export Decisions</button>
-  <button onclick="markAllSeen()">Mark All Seen</button>
   <span class="status" id="export-status"></span>
-  <span class="status" id="new-count"></span>
+  <span class="status">${newCount > 0 ? `${newCount} new` : "all seen"}</span>
 </div>
 
 ${(() => {
@@ -1056,17 +1096,23 @@ ${(() => {
 })()}
 
   ${variantsWithResults.map(v => {
-    // Latest result timestamp — used to compute "new" state client-side
-    const latestTs = v.results
-      .map(r => r.timestamp)
-      .sort()
-      .at(-1) ?? "";
+    const newClass = v.isNew === true ? " new" : "";
     return `
-  <div class="variant-col" id="variant-${escapeHtml(v.id)}" data-variant-id="${escapeHtml(v.id)}" data-latest-ts="${escapeHtml(latestTs)}">
+  <div class="variant-col${newClass}" id="variant-${escapeHtml(v.id)}" data-variant-id="${escapeHtml(v.id)}">
     <div class="variant-header">
       <h2>${escapeHtml(v.label)}</h2>
       <span class="id">${escapeHtml(v.id)} &middot; ${v.scoped ? `scoped: ${escapeHtml(v.scoped.subcategoryId)}` : "full"} &middot; ${escapeHtml(v.model ?? (v.scoped ? SCOPED_EDIT_MODEL : IMAGE_MODEL))}</span>
     </div>
+    ${(() => {
+      const eff = effectiveSelections(v);
+      const source = v.selectionsReplace ? "selectionsReplace" : v.selectionsOverride ? "selectionsOverride (merged)" : "session baseline";
+      return `<details class="variant-sels" open>
+      <summary>Testing (${Object.keys(eff).length} surfaces &middot; ${escapeHtml(source)})</summary>
+      <table class="selections-table">
+        ${Object.entries(eff).map(([subId, optId]) => `<tr><td class="sub">${escapeHtml(subId)}</td><td class="name">${escapeHtml(optionName(subId, optId))}</td></tr>`).join("")}
+      </table>
+    </details>`;
+    })()}
     <div class="verdict-bar">
       <button onclick="setVerdict('${escapeHtml(v.id)}', 'approved')" data-verdict="approved">Approve</button>
       <button onclick="setVerdict('${escapeHtml(v.id)}', 'rejected')" data-verdict="rejected">Reject</button>
@@ -1102,53 +1148,8 @@ ${(() => {
   // State
   const verdicts = JSON.parse(localStorage.getItem('prompt-lab-${session}') || '{}');
 
-  // Seen timestamps: { variantId: lastSeenTimestamp }
-  const seenKey = 'prompt-lab-seen-${session}';
-  const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
-
-  function isNew(col) {
-    const id = col.dataset.variantId;
-    const latest = col.dataset.latestTs;
-    if (!latest) return false;
-    const lastSeen = seen[id];
-    return !lastSeen || latest > lastSeen;
-  }
-
-  function markColNew(col, isNewVal) {
-    col.classList.toggle('new', isNewVal);
-  }
-
-  function updateNewCount() {
-    const cols = document.querySelectorAll('.variant-col');
-    const newCount = Array.from(cols).filter(c => c.classList.contains('new')).length;
-    const status = document.getElementById('new-count');
-    if (status) status.textContent = newCount > 0 ? (newCount + ' new') : 'all seen';
-  }
-
-  function sortUnseenFirst() {
-    const grid = document.querySelector('.grid');
-    if (!grid) return;
-    const cols = Array.from(grid.querySelectorAll('.variant-col'));
-    cols.sort((a, b) => {
-      const an = a.classList.contains('new') ? 0 : 1;
-      const bn = b.classList.contains('new') ? 0 : 1;
-      if (an !== bn) return an - bn;
-      // Stable by data-latest-ts descending within same "new" bucket
-      return (b.dataset.latestTs || '').localeCompare(a.dataset.latestTs || '');
-    });
-    cols.forEach(c => grid.appendChild(c));
-  }
-
-  function markAllSeen() {
-    document.querySelectorAll('.variant-col').forEach(col => {
-      const id = col.dataset.variantId;
-      const latest = col.dataset.latestTs;
-      if (latest) seen[id] = latest;
-      col.classList.remove('new');
-    });
-    localStorage.setItem(seenKey, JSON.stringify(seen));
-    updateNewCount();
-  }
+  // NEW state is server-authoritative now: variant-col.new is set by
+  // buildReviewHtml from variant.isNew. No localStorage, no mutation.
 
   // Restore state on load
   document.addEventListener('DOMContentLoaded', () => {
@@ -1159,10 +1160,6 @@ ${(() => {
         if (ta) ta.value = data.notes;
       }
     }
-    // Apply NEW badges based on seen state
-    document.querySelectorAll('.variant-col').forEach(col => markColNew(col, isNew(col)));
-    sortUnseenFirst();
-    updateNewCount();
   });
 
   // Save notes on change
@@ -1254,7 +1251,7 @@ async function review(session: string) {
     };
   }
 
-  const html = buildReviewHtml(session, config, resolvedSelections);
+  const html = buildReviewHtml(session, config, resolvedSelections, optionLookup);
   const outPath = reviewPath(session);
   fs.writeFileSync(outPath, html);
   console.log(`Review page written to ${outPath}`);

@@ -26,6 +26,8 @@ export interface ResolvedPhotoGenerationPolicy {
      * reference this swatch as `image 2`.
      */
     swatchSubId?: string;
+    /** Override BFL model for this second pass (e.g. "flux-2-max"). Falls back to main modelName if unset. */
+    model?: string;
   };
 }
 
@@ -33,6 +35,8 @@ interface SecondPassPolicyConfig {
   reason: string;
   prompt: string;
   models?: string[];
+  /** Override BFL model for the second pass itself (parsed from policy_json). */
+  model?: string;
   whenSelected?: {
     subId: string;
     optionIds?: string[];
@@ -61,6 +65,7 @@ function resolveDbBackedPolicy(
         // Expose the whenSelected subId so the refine step knows which
         // subcategory's swatch to resolve and pass as `input_image_2`.
         swatchSubId: secondPassConfig.whenSelected?.subId,
+        model: secondPassConfig.model,
       }
     : undefined;
 
@@ -112,7 +117,9 @@ function parseSecondPassConfig(value: unknown): SecondPassPolicyConfig | null {
     }
   }
 
-  return { reason, prompt, models, whenSelected };
+  const model = typeof obj.model === "string" ? obj.model.trim() || undefined : undefined;
+
+  return { reason, prompt, models, model, whenSelected };
 }
 
 function shouldRunSecondPassConfig(

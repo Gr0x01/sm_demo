@@ -176,6 +176,7 @@ export async function buildEditPrompt(
     // Suppress zero-change options
     if (optId.endsWith("-none") || optId.endsWith("-no-upgrade")) continue;
     if (!option.swatchUrl && !option.swatchColor && !option.promptDescriptor) continue;
+    if (option.isDefault) continue;
 
     const hint = spatialHints[subId];
     const surface = hint || subCategory.name;
@@ -586,10 +587,11 @@ function resolveMerges(
       // in dev if any participant's hex diverges, so silently-wrong data
       // produces a visible breadcrumb instead of mysterious cross-wired output.
       //
-      // Metallic surfaces (`swatch_metallic`) suppress the anchor entirely —
-      // see D103. Textured surfaces use it for multi-swatch attention anchoring.
+      // Metallic surfaces: hex-skip only for hardware (D103 bronze distortion).
+      // Other metallic fixtures get hex anchors for pass-2 attention binding.
       const rawHex = normalizeAnchorHex(firstFound.option.swatchColor);
-      const firstHex = firstMode === "swatch_metallic" ? null : rawHex;
+      const skipMergedHex = firstMode === "swatch_metallic" && entry.when[0].includes("hardware");
+      const firstHex = skipMergedHex ? null : rawHex;
       if (process.env.NODE_ENV !== "production" && firstMode !== "swatch_metallic") {
         for (let j = 1; j < entry.when.length; j++) {
           const otherSub = entry.when[j];
@@ -667,6 +669,11 @@ export async function buildProsePrompt(
 
     if (optId.endsWith("-none") || optId.endsWith("-no-upgrade")) continue;
     if (!option.swatchUrl && !option.swatchColor && !option.promptDescriptor) continue;
+    // Skip default options — the source photo already shows the default state,
+    // so no transformation is needed. Saves a swatch slot + attention budget in
+    // the BFL call, which is critical for pass-2 fixture prompts where 5
+    // fixtures competing starves the active changes.
+    if (option.isDefault) continue;
 
     const clauseEntry = prose.actions?.[subId];
     if (clauseEntry === undefined) {
@@ -703,13 +710,18 @@ export async function buildProsePrompt(
           `actions["${subId}"] references a swatch, but option "${option.id}" has no swatchUrl.`,
         );
       }
-      // D102 hex anchor ON for swatch_textured, OFF for swatch_metallic.
-      // Normalize hex to null if shape-invalid so the substitution check
-      // skips gracefully.
-      const anchorHex =
-        renderMode === "swatch_metallic"
-          ? null
-          : normalizeAnchorHex(option.swatchColor);
+      // D102 hex anchor for swatch_textured surfaces (always ON).
+      // swatch_metallic: hex-skip ONLY for hardware — bronze hex flattened
+      // metallic sheen to paint (D103, PR #5). Other metallic fixtures
+      // (sink, faucet, fridge, range) benefit from hex anchoring in bundled
+      // pass-2 prompts where attention budget is tight. Lab-validated that
+      // neutral hex (#C8C8C8 stainless, #CCBA78 gold) doesn't cause the
+      // same distortion as saturated hex (#804A2E bronze).
+      const skipHex = renderMode === "swatch_metallic"
+        && subId.includes("hardware");
+      const anchorHex = skipHex
+        ? null
+        : normalizeAnchorHex(option.swatchColor);
       entries.push({
         sortSlug: subId,
         template,
@@ -873,12 +885,13 @@ export async function buildProseScopedEdit(
       subcategoryId: changedSubcategoryId,
     });
 
-    // D102 inline hex anchor for textured surfaces, OFF for metallic (D103).
-    // Dispatch is now by render_mode, not substring matching on the sub slug.
-    const anchorHex =
-      renderMode === "swatch_metallic"
-        ? null
-        : normalizeAnchorHex(changed.option.swatchColor);
+    // Hex anchor: ON for textured (D102), OFF only for hardware metallics
+    // (D103 bronze distortion). Other metallic fixtures get hex anchors.
+    const skipScopedHex = renderMode === "swatch_metallic"
+      && changedSubcategoryId.includes("hardware");
+    const anchorHex = skipScopedHex
+      ? null
+      : normalizeAnchorHex(changed.option.swatchColor);
     const imageRef = anchorHex ? `image 2 at hex ${anchorHex}` : "image 2";
     clause = template.replace(IMAGE_TOKEN, imageRef);
   }

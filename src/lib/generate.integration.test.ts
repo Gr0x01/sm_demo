@@ -92,14 +92,14 @@ describe("deriveGenerationContext — kitchen photo", () => {
     expect(a.selectionsHash).toBe(b.selectionsHash);
   });
 
-  // Hardware routing integration: deriveGenerationContext hoists the
-  // hardware detection up into the cache-key derivation layer so DB model,
-  // PostHog cost, and cache `_model` all reflect the terminal model that
-  // fluxGenerate will route to. The unit tests for `selectFullGenModel`
-  // cover the function in isolation; these tests cover the integration
-  // with `deriveGenerationContext` so regressions to the hoist are caught.
+  // 2026-04-16: hardware no longer triggers Max routing (MAX_ROUTING_PATTERNS = []).
+  // The Demo Nest kitchen migrated from combo SKUs to T-bar pull SKUs whose
+  // swatch shape matches the source pull geometry, so finish swaps run on
+  // Flex without Max's shape-fidelity routing. These tests previously covered
+  // the routing UPGRADE path; they now cover the absence-of-upgrade and lock
+  // in the all-Flex partition behavior.
 
-  it("sets modelName to flux-2-max when hardware with swatch is selected", () => {
+  it("keeps modelName at IMAGE_MODEL (flex) when hardware with swatch is selected", () => {
     const result = deriveGenerationContext(
       kitchenAiConfig,
       { ...kitchenSelections, "kitchen-cabinet-hardware": "hw-bronze" },
@@ -107,8 +107,8 @@ describe("deriveGenerationContext — kitchen photo", () => {
       defaultPolicyContext,
       null,
     );
-    expect(result.modelName).toBe("flux-2-max");
-    expect(result.hashInputs._model).toBe("flux-2-max");
+    expect(result.modelName).toBe("flux-2-flex");
+    expect(result.hashInputs._model).toBe("flux-2-flex");
   });
 
   it("keeps modelName at IMAGE_MODEL (flex) when no hardware is selected", () => {
@@ -135,7 +135,7 @@ describe("deriveGenerationContext — kitchen photo", () => {
     expect(result.hashInputs._model).toBe("flux-2-flex");
   });
 
-  it("produces different cache keys when toggling hardware on vs off (partition correctness)", () => {
+  it("produces the SAME cache _model partition when toggling hardware on vs off (no routing-driven split)", () => {
     const withHardware = deriveGenerationContext(
       kitchenAiConfig,
       { ...kitchenSelections, "kitchen-cabinet-hardware": "hw-bronze" },
@@ -150,18 +150,15 @@ describe("deriveGenerationContext — kitchen photo", () => {
       defaultPolicyContext,
       null,
     );
-    // Different `_model` → different selectionsHash → different cache bucket.
-    // A buyer flipping hardware on does NOT hit a stale no-hardware cached
-    // image, and vice versa. Hardware-only swaps (bronze → gold) DO hit cache
-    // because both sides land under `_model: flux-2-max`.
-    expect(withHardware.hashInputs._model).not.toBe(withoutHardware.hashInputs._model);
+    // No more routing-driven model split. Both partitions land on `flux-2-flex`.
+    // selectionsHash still differs because the selection set differs; the cache
+    // partition shifts via the selection content, not via _model.
+    expect(withHardware.hashInputs._model).toBe(withoutHardware.hashInputs._model);
+    expect(withHardware.hashInputs._model).toBe("flux-2-flex");
     expect(withHardware.selectionsHash).not.toBe(withoutHardware.selectionsHash);
   });
 
-  it("shares cache partition across different hardware finish swaps (bronze ↔ hypothetical-gold)", () => {
-    // Both selections use hardware-with-swatch, so both should partition
-    // under `_model: flux-2-max`. The `selectionsHash` differs because the
-    // option id differs, but the `_model` in hashInputs matches.
+  it("hardware finish swaps stay on the flex partition (bronze under default model)", () => {
     const bronze = deriveGenerationContext(
       kitchenAiConfig,
       { ...kitchenSelections, "kitchen-cabinet-hardware": "hw-bronze" },
@@ -169,9 +166,7 @@ describe("deriveGenerationContext — kitchen photo", () => {
       defaultPolicyContext,
       null,
     );
-    expect(bronze.hashInputs._model).toBe("flux-2-max");
-    // A different hardware option with swatch would land under the same
-    // `_model` partition (tested in unit tests via multi-option lookup).
+    expect(bronze.hashInputs._model).toBe("flux-2-flex");
   });
 
   it("produces different hash when selection changes", () => {

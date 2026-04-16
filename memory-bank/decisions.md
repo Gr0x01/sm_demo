@@ -766,3 +766,41 @@ remove the existing sink and install {image} in the same countertop cutout, poli
 - Material-axis vs verb-axis mismatch (watchlist row 23 / Open Q #1). The per-material `{paint, stain}` clause shape still doesn't compose cleanly with object-replace verbs or metallic finish gates. Deeper design question — not a rename.
 
 **Tests**: 283 → 283 (no new tests — existing per-material, D102 fixture-skip, and merge tests exercise every render_mode branch via the `renderMode` field + `resolveRenderMode` fallback). `npx tsc --noEmit` clean.
+
+## D105: Default options skipped from prompt (2026-04-16)
+
+**Decision**: `buildProsePrompt` + `buildEditPrompt` skip options with `is_default=true`. Source photo already shows the default state — no transformation is needed.
+
+**Why**: Pass-2 fixture prompts had 5 metallic swatches competing (hardware, faucet, sink, range, fridge). Hardware + range were defaults = no-ops from source, but consumed swatch slots + attention budget. Dropping them (5→3 fixtures) unblocked faucet, sink, and fridge.
+
+**Rule**: any option that IS the photo's baseline state gets skipped. The `is_default` flag is the proxy for "matches source."
+
+## D106: Guidance default = 8 for Flex (2026-04-16)
+
+**Decision**: `DEFAULT_FLEX_GUIDANCE = 8` in `flux-pipeline.ts`, applied to all Flex full-gen and scoped-edit calls.
+
+**Why**: BFL's own default (4.5) was too low for multi-surface prompts. Pass-2 fixtures consistently failed at 4.5 but landed at 8 in every lab sweep. All Nest kitchen validation (2026-04-15/16) ran at g=8.
+
+## D107: Hex anchor narrowed to hardware-only skip (2026-04-16)
+
+**Decision**: Metallic hex-skip narrowed from ALL `swatch_metallic` options to only subcategories containing "hardware" in the slug. Sink, faucet, fridge, range now get D102-style hex anchors.
+
+**Why**: PR #5 blanket-skipped hex for all fixtures because hardware bronze (#804A2E) rendered as fire-engine red. But neutral hex (#C8C8C8 stainless, #CCBA78 gold) doesn't cause the same distortion. In bundled pass-2 with 3+ fixtures, hex anchors are needed for attention binding — without them, fixtures get no color guidance and fail silently.
+
+## D108: T-bar pull hardware migration (2026-04-16)
+
+**Decision**: Demo Nest kitchen hardware migrated from 5 combo SKUs (Seaver pull+knob, Sedona pull+knob, Stanton all-pulls) to 3 T-bar pull finish-only SKUs (Black, Gold, Stainless). Source photo already has T-bar pulls; finish swap only, no shape change.
+
+**Why**: Flex can't reliably change hardware shape (row 25 — installs generic bar-pull prior regardless of swatch). Max CAN but combo SKUs with knob+pull in one swatch confused Max (double-install, cone misplacement). Matching source geometry eliminates the shape-fidelity requirement entirely.
+
+## D109: Fridge install via dedicated Max secondPass (2026-04-16)
+
+**Decision**: When a non-default refrigerator is selected, a dedicated Max pass runs AFTER the main Flex render to install the fridge in the alcove. Policy-driven via `step_photo_generation_policies` with `model: "flux-2-max"` override.
+
+**Why**: Fridge installs are heavy geometry-adds that fail in bundled Flex pass-2 (attention starvation from competing fixtures). Fridge works on Flex scoped-edit (single surface, full attention) and on Max dedicated pass. The secondPass architecture already existed (was used for range); re-purposed for fridge with model override.
+
+## D110: Allowed action clause verbs (2026-04-16)
+
+**Decision**: Action clauses in `step_photos.prompt_prose.actions` must lead with one of: `change`, `replace`, `apply`, `paint`, `stain`. The verb `remove existing X and install` is banned.
+
+**Why**: "Remove existing" produced duplicate-fixture-on-island failures (faucet appeared on island + back wall simultaneously in 2/6 Max bundled runs). Doesn't fix shape fidelity (tested: identical output to `change X to match`). Every clause rewrite away from "remove" was a quality improvement.

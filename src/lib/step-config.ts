@@ -15,14 +15,20 @@ export function isFixtureSubcategory(subId: string): boolean {
 
 /**
  * Subcategory slug patterns that require the Flux 2 Max model for full-gen
- * rendering. Flex produces generic bar pulls regardless of swatch shape for
- * small metallic objects — Max is the only model that reads the reference
- * image faithfully and differentiates knob vs pull vs arched profile vs
- * rectilinear profile (lab-validated on Nest kitchen 2026-04-15). Hardware
- * is the only routed subcategory today; extend this list as other fixtures
- * are validated.
+ * rendering. Empty list as of 2026-04-16: hardware was the only routed
+ * subcategory, and was removed when Demo Nest kitchen migrated from
+ * combo SKUs (Seaver/Sedona/Stanton) to a single T-bar pull SKU in three
+ * finishes (cabinet-pull-black/gold/stainless). The new swatch shape
+ * matches the source photo's existing pull geometry, so finish swaps are
+ * pure color/material changes that Flex handles cleanly without needing
+ * Max's shape-fidelity routing. Lab-validated on Flex single-pass and
+ * Flex+Flex 2-pass bundles before shipping.
+ *
+ * Re-add a pattern here only when a new subcategory ships with shape
+ * complexity that Flex can't handle from the swatch alone, AND the
+ * extra cost/latency of Max routing is justified by the visual delta.
  */
-export const MAX_ROUTING_PATTERNS = ["hardware"];
+export const MAX_ROUTING_PATTERNS: string[] = [];
 
 /** Check if a subcategory slug requires Max routing for full-gen. */
 export function requiresMaxRouting(subId: string): boolean {

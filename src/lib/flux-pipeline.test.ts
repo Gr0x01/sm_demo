@@ -7,14 +7,13 @@ import { buildOptionLookup } from "./__fixtures__/generation";
 import type { Option, SubCategory } from "@/types/admin";
 
 describe("requiresMaxRouting (step-config)", () => {
-  it("matches subcategory slugs containing 'hardware'", () => {
-    expect(requiresMaxRouting("kitchen-cabinet-hardware")).toBe(true);
-    expect(requiresMaxRouting("bath-hardware")).toBe(true);
-    expect(requiresMaxRouting("door-hardware")).toBe(true);
-    expect(requiresMaxRouting("bathroom-cabinet-hardware")).toBe(true);
-  });
-
-  it("does not match non-hardware subcategories", () => {
+  // 2026-04-16: MAX_ROUTING_PATTERNS is empty after Demo Nest kitchen
+  // migrated from combo SKUs to T-bar pull SKUs. The new swatch shape
+  // matches source pull geometry, so Flex handles finish swaps cleanly
+  // without Max's shape-fidelity routing.
+  it("returns false for every subcategory slug while MAX_ROUTING_PATTERNS is empty", () => {
+    expect(requiresMaxRouting("kitchen-cabinet-hardware")).toBe(false);
+    expect(requiresMaxRouting("bath-hardware")).toBe(false);
     expect(requiresMaxRouting("kitchen-cabinet-color")).toBe(false);
     expect(requiresMaxRouting("kitchen-faucet")).toBe(false);
     expect(requiresMaxRouting("kitchen-sink")).toBe(false);
@@ -22,8 +21,8 @@ describe("requiresMaxRouting (step-config)", () => {
     expect(requiresMaxRouting("backsplash")).toBe(false);
   });
 
-  it("has hardware as the only routing pattern today (guards against accidental expansion)", () => {
-    expect(MAX_ROUTING_PATTERNS).toEqual(["hardware"]);
+  it("MAX_ROUTING_PATTERNS is empty (guards against accidental re-introduction)", () => {
+    expect(MAX_ROUTING_PATTERNS).toEqual([]);
   });
 });
 
@@ -115,25 +114,30 @@ describe("selectFullGenModel — hardware routing", () => {
     return lookup;
   }
 
-  it("routes single-pass to Max when hardware (with swatch) is selected", () => {
+  // 2026-04-16: hardware no longer triggers Max routing (MAX_ROUTING_PATTERNS = []).
+  // These two tests previously asserted the routing UPGRADE; they now assert
+  // that hardware-containing selections fall through to the default model on
+  // both single-pass and 2-pass paths. Re-add upgrade coverage if a new
+  // routing pattern is introduced.
+  it("does NOT route to Max when hardware (with swatch) is selected — routing list is empty", () => {
     const result = selectFullGenModel({
       selections: { "kitchen-cabinet-hardware": "hw-bronze", cabinets: "cab-white" },
       optionLookup: buildLookup(),
       explicitModel: undefined,
     });
-    expect(result.singlePassModel).toBe("flux-2-max");
-    expect(result.routedForHardware).toBe(true);
+    expect(result.singlePassModel).toBe(IMAGE_MODEL);
+    expect(result.routedForHardware).toBe(false);
   });
 
-  it("routes 2-pass: pass 1 Flex + pass 2 Max when hardware is selected and needsSplit=true", () => {
+  it("does NOT split routing on 2-pass either when hardware is selected — both passes default model", () => {
     const result = selectFullGenModel({
       selections: { "kitchen-cabinet-hardware": "hw-bronze", cabinets: "cab-white" },
       optionLookup: buildLookup(),
       explicitModel: undefined,
     });
     expect(result.pass1Model).toBe(IMAGE_MODEL);
-    expect(result.pass2Model).toBe("flux-2-max");
-    expect(result.routedForHardware).toBe(true);
+    expect(result.pass2Model).toBe(IMAGE_MODEL);
+    expect(result.routedForHardware).toBe(false);
   });
 
   it("does NOT route to Max when no hardware is selected", () => {
