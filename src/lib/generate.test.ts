@@ -712,6 +712,30 @@ describe("buildProsePrompt (v2) — D102 hex anchor injection", () => {
     expect(swatches).toHaveLength(1);
   });
 
+  it("floor-tile subcategories drop the word 'hex' from the anchor (emits `at #XXXXXX`)", async () => {
+    // Flex latches onto the word "hex" on tile surfaces and renders hex-mosaic
+    // regardless of swatch shape. Validated 2026-04-17 on Calacatta/Omega Grey/
+    // Silver/Onyx Matte. Only floor-tile subcategories take this branch —
+    // countertops, backsplashes, etc. keep the full `at hex #XXXXXX` form.
+    const prose: PromptProse = {
+      version: 2,
+      actions: { "floor-tile-color": "change the horizontal bathroom floor to match {image}" },
+    };
+    const { prompt } = await buildProsePrompt(prose, { "floor-tile-color": "floor-tile-calacatta" }, optionLookup, mockResolver);
+    expect(prompt).toContain("match image 2 at #EAE6DF");
+    expect(prompt).not.toContain("at hex");
+  });
+
+  it("floor-tile scoped edit also drops the word 'hex' from the anchor", async () => {
+    const prose: PromptProse = {
+      version: 2,
+      actions: { "floor-tile-color": "change the horizontal bathroom floor to match {image}" },
+    };
+    const { prompt } = await buildProseScopedEdit(prose, "floor-tile-color", "floor-tile-calacatta", optionLookup, mockResolver);
+    expect(prompt).toContain("image 2 at #EAE6DF");
+    expect(prompt).not.toContain("at hex");
+  });
+
   it("does NOT inject hex for textured options without swatchColor (graceful skip)", async () => {
     // ct-granite-luna has no swatchColor — the existing texture path stays unchanged.
     const prose: PromptProse = {

@@ -157,6 +157,16 @@ export function buildOptionLookup(): OptionLookupMap {
   });
   map.set("countertops:ct-quartz-calacatta", { option: counterOptCalacatta, subCategory: counterSub });
 
+  // Floor tile — D102 textured surface that must render the anchor as
+  // `at #XXXXXX` (no "hex" word) per isFloorTileSubcategory branch.
+  const floorTileSub = makeSub("floor-tile-color", "Floor Tile Color");
+  const floorTileOpt = makeOpt("floor-tile-calacatta", "Calacatta 12x24", {
+    swatchUrl: "https://storage/swatch-floor.jpg",
+    swatchColor: "#EAE6DF",
+    price: 1200,
+  });
+  map.set("floor-tile-color:floor-tile-calacatta", { option: floorTileOpt, subCategory: floorTileSub });
+
   const backsplashSub = makeSub("backsplash", "Backsplash");
   const backsplashOpt = makeOpt("bs-subway-white", "White Subway Tile", { swatchUrl: "https://storage/swatch-sub.jpg", price: 0, dimensions: "4x16" });
   map.set("backsplash:bs-subway-white", { option: backsplashOpt, subCategory: backsplashSub });

@@ -25,6 +25,32 @@ export function isHardwareSubcategory(subId: string): boolean {
 }
 
 /**
+ * Narrower than `isHardwareSubcategory` — matches only cabinet hardware
+ * (kitchen or bath cabinet pulls/knobs), not wall-mounted bath accessories
+ * (`bath-hardware`). Re-introduced 2026-04-18 to test whether bath-hardware
+ * silver finishes benefit from hex anchoring against Nano Banana matte-black
+ * source photos. Keep ONLY if the lab run validates visible improvement.
+ */
+export function isCabinetHardwareSubcategory(subId: string): boolean {
+  return subId.includes("cabinet-hardware");
+}
+
+/**
+ * Check if a subcategory slug is a floor tile surface. Used by the D102 hex
+ * anchor formatter to drop the literal word "hex" from the anchor (emits
+ * `image N at #XXXXXX` instead of `image N at hex #XXXXXX`). Flex's tile prior
+ * otherwise latches onto "hex" and renders hex-mosaic regardless of the swatch
+ * shape — validated on Calacatta 12x24, Omega Grey 13x13, Onyx 12x24, and
+ * Omega Silver 13x13 in the 2026-04-17 Nest bath lab. Other D102 textured
+ * surfaces (countertops, backsplashes, fireplace tile, showers) keep the full
+ * `at hex #XXXXXX` form because the hex-mosaic hallucination has only been
+ * observed on floor tile.
+ */
+export function isFloorTileSubcategory(subId: string): boolean {
+  return subId.includes("floor-tile");
+}
+
+/**
  * Subcategory slug patterns that require the Flux 2 Max model for full-gen
  * rendering. Empty list as of 2026-04-16: hardware was the only routed
  * subcategory, and was removed when Demo Nest kitchen migrated from

@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import type { Option, RenderMode, SubCategory } from "@/types";
 import type { StepPhotoGenerationPolicyRecord } from "@/lib/db-queries";
-import { hasHardwareRoutingTrigger, isHardwareSubcategory, type ActionClause, type MaterialActionClause, type PromptProse } from "@/lib/step-config";
+import { hasHardwareRoutingTrigger, isCabinetHardwareSubcategory, isFloorTileSubcategory, isHardwareSubcategory, type ActionClause, type MaterialActionClause, type PromptProse } from "@/lib/step-config";
 import { getPhotoScopedIds, normalizePrimaryAccentAsWallPaint } from "@/lib/photo-scope";
 import { resolveScopedFlooringSelections } from "@/lib/flooring-selection";
 import { resolvePhotoGenerationPolicy, type ResolvedPhotoGenerationPolicy } from "@/lib/photo-generation-policy";
@@ -594,7 +594,7 @@ function resolveMerges(
       // Metallic surfaces: hex-skip only for hardware (D103 bronze distortion).
       // Other metallic fixtures get hex anchors for pass-2 attention binding.
       const rawHex = normalizeAnchorHex(firstFound.option.swatchColor);
-      const skipMergedHex = firstMode === "swatch_metallic" && isHardwareSubcategory(entry.when[0]);
+      const skipMergedHex = firstMode === "swatch_metallic" && isCabinetHardwareSubcategory(entry.when[0]);
       const firstHex = skipMergedHex ? null : rawHex;
       if (process.env.NODE_ENV !== "production" && firstMode !== "swatch_metallic") {
         for (let j = 1; j < entry.when.length; j++) {
@@ -721,7 +721,7 @@ export async function buildProsePrompt(
       // pass-2 prompts where attention budget is tight. Lab-validated that
       // neutral hex (#C8C8C8 stainless, #CCBA78 gold) doesn't cause the
       // same distortion as saturated hex (#804A2E bronze).
-      const skipHex = renderMode === "swatch_metallic" && isHardwareSubcategory(subId);
+      const skipHex = renderMode === "swatch_metallic" && isCabinetHardwareSubcategory(subId);
       const anchorHex = skipHex
         ? null
         : normalizeAnchorHex(option.swatchColor);
@@ -787,9 +787,13 @@ export async function buildProsePrompt(
       // metallic skip is now upstream — metallic entries already have
       // `swatchColor: null` set when they were built, so the truthy check
       // below handles both textured-with-anchor and metallic-without in
-      // one line. (D103.)
+      // one line. (D103.) Floor tile drops the word "hex" because Flex
+      // latches onto it and renders hex-mosaic regardless of swatch shape
+      // — validated 2026-04-17 on Calacatta/Omega Grey/Omega Silver/Onyx
+      // Matte. Other textured surfaces keep the full form.
+      const anchorPrefix = isFloorTileSubcategory(entry.swatchSubcategoryId) ? "at" : "at hex";
       const imageRef = entry.swatchColor
-        ? `image ${imageIndex} at hex ${entry.swatchColor}`
+        ? `image ${imageIndex} ${anchorPrefix} ${entry.swatchColor}`
         : `image ${imageIndex}`;
       substituted = entry.template.replace(IMAGE_TOKEN, imageRef);
       imageIndex++;
@@ -890,11 +894,15 @@ export async function buildProseScopedEdit(
 
     // Hex anchor: ON for textured (D102), OFF only for hardware metallics
     // (D103 bronze distortion). Other metallic fixtures get hex anchors.
-    const skipScopedHex = renderMode === "swatch_metallic" && isHardwareSubcategory(changedSubcategoryId);
+    // Floor tile drops the word "hex" from the anchor — Flex otherwise
+    // latches onto it and renders hex-mosaic regardless of swatch shape
+    // (validated 2026-04-17 Nest bath floor-tile lab).
+    const skipScopedHex = renderMode === "swatch_metallic" && isCabinetHardwareSubcategory(changedSubcategoryId);
     const anchorHex = skipScopedHex
       ? null
       : normalizeAnchorHex(changed.option.swatchColor);
-    const imageRef = anchorHex ? `image 2 at hex ${anchorHex}` : "image 2";
+    const anchorPrefix = isFloorTileSubcategory(changedSubcategoryId) ? "at" : "at hex";
+    const imageRef = anchorHex ? `image 2 ${anchorPrefix} ${anchorHex}` : "image 2";
     clause = template.replace(IMAGE_TOKEN, imageRef);
   }
 
