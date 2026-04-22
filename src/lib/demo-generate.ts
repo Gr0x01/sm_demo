@@ -51,6 +51,7 @@ export const DEMO_GENERATION_CACHE_VERSION = createHash("sha256")
   .update(DEFAULT_PROSE_STYLE)
   .update(GENERATION_CACHE_VERSION)
   .update(JSON.stringify(MAX_ROUTING_PATTERNS))
+  .update("v14-island-inject")
   .digest("hex")
   .slice(0, 8);
 

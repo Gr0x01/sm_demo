@@ -98,6 +98,23 @@ export const generateDemo = inngest.createFunction(
       const resolvedSelections = { ...effectiveSelections };
       resolveLinkedOptions(resolvedSelections, optionLookup, spatialHints);
 
+      // Visual-class collision fix (lab session try-fog-onyx-calacatta, 2026-04-23).
+      // When a buyer picks one of a painted cab/island pair but not the other,
+      // Flex's "painted cabinet surfaces" visual class treats both as one
+      // atomic surface and the selected color bleeds onto the unselected
+      // partner. Auto-inject the partner at the source photo's current color
+      // (Dove #F5F5F2) so BFL sees an explicit claim on both surfaces and
+      // the two clauses anchor each other. Scoped to the /try sample kitchen.
+      if (photoHash === SAMPLE_KITCHEN_HASH) {
+        const hasCab = "kitchen-cabinet-color" in resolvedSelections;
+        const hasIsland = "kitchen-island-cabinet-color" in resolvedSelections;
+        if (hasCab && !hasIsland) {
+          resolvedSelections["kitchen-island-cabinet-color"] = "island-color-white";
+        } else if (hasIsland && !hasCab) {
+          resolvedSelections["kitchen-cabinet-color"] = "kitchen-cab-color-white";
+        }
+      }
+
       // Remove merged subcategories from defaultSurfaceColors so they don't
       // get contradicting preservation lines (e.g. "island stays at #F5F5F2"
       // while the merged cabinet line tells Flux to apply the swatch there)
